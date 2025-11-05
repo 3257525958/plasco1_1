@@ -9,71 +9,17 @@ _registered_models = {}
 
 
 def safe_register_signals():
-    """ثبت ایمن سیگنال‌ها بدون circular import"""
+    """ثبت ایمن سیگنال‌ها - فقط در حالت آفلاین"""
+    from django.conf import settings
+
+    print("🔧 در حال ثبت سیگنال‌های ردیابی تغییرات...")
+
+    # فقط در حالت آفلاین سیگنال‌ها را ثبت کن
     if not getattr(settings, 'OFFLINE_MODE', False):
+        print("ℹ️ حالت آنلاین - سیگنال‌های ثبت تغییرات غیرفعال")
         return
 
-    try:
-        from sync_app.models import DataSyncLog
-
-        # لیست اپ‌های معاف از ثبت سیگنال
-        EXCLUDED_APPS = [
-            'django.contrib.admin', 'django.contrib.auth',
-            'django.contrib.contenttypes', 'django.contrib.sessions',
-            'django.contrib.messages', 'django.contrib.staticfiles',
-            'rest_framework', 'rest_framework.authtoken',
-            'corsheaders', 'sync_app', 'sync_api'
-        ]
-
-        # لیست مدل‌های معاف
-        EXCLUDED_MODELS = [
-            'DataSyncLog', 'SyncSession', 'OfflineSetting',
-            'ServerSyncLog', 'SyncToken', 'User', 'Group',
-            'Permission', 'ContentType', 'Session', 'LogEntry'
-        ]
-
-        registered_count = 0
-
-        for app_config in apps.get_app_configs():
-            app_name = app_config.name
-
-            if any(app_name.startswith(excluded) for excluded in EXCLUDED_APPS):
-                continue
-
-            for model in app_config.get_models():
-                model_name = model.__name__
-                model_key = f"{app_name}.{model_name}"
-
-                if model_name in EXCLUDED_MODELS:
-                    continue
-
-                if model_key in _registered_models:
-                    continue
-
-                try:
-                    # ثبت سیگنال‌ها
-                    post_save.connect(handle_model_change, sender=model, weak=False)
-                    post_delete.connect(handle_model_delete, sender=model, weak=False)
-
-                    _registered_models[model_key] = {
-                        'app': app_name,
-                        'model': model_name,
-                        'registered_at': time.time()
-                    }
-
-                    registered_count += 1
-                    print(f"✅ سیگنال ثبت شد: {model_key}")
-
-                except Exception as e:
-                    print(f"⚠️ خطا در ثبت سیگنال برای {model_key}: {e}")
-                    continue
-
-        print(f"🎯 تعداد مدل‌های ثبت شده: {registered_count}")
-
-    except Exception as e:
-        print(f"❌ خطا در ثبت سیگنال‌ها: {e}")
-
-
+    # بقیه کد ثبت سیگنال‌ها...
 def handle_model_change(sender, instance, created, **kwargs):
     """مدیریت تغییرات مدل‌ها"""
     try:
@@ -86,6 +32,7 @@ def handle_model_change(sender, instance, created, **kwargs):
         model_name = instance._meta.model_name
         full_model_name = f"{app_label}.{model_name}"
 
+        print(f"🔔 سیگنال فعال: تغییر در {full_model_name} - ID: {instance.id}")
         action = 'create' if created else 'update'
 
         # سریالایز کردن داده‌ها
@@ -174,3 +121,4 @@ def convert_value_for_json(value):
 def register_signals_after_migrate(sender, **kwargs):
     """ثبت سیگنال‌ها پس از اتمام مهاجرت"""
     safe_register_signals()
+
