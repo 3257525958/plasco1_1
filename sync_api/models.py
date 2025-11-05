@@ -19,3 +19,4 @@ class ChangeTracker(models.Model):
     def __str__(self):
         return f"{self.app_name}.{self.model_name} - {self.record_id} - {self.action}"
 
+

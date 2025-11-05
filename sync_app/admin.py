@@ -24,25 +24,25 @@ class SyncSessionAdmin(admin.ModelAdmin):
 # در sync_app/admin.py - به انتهای فایل اضافه کنید
 from sync_api.models import ChangeTracker
 
-@admin.register(ChangeTracker)
-class ChangeTrackerAdmin(admin.ModelAdmin):
-    list_display = [
-        'app_name',
-        'model_name',
-        'record_id',
-        'action',
-        'changed_at',
-        'is_synced'
-    ]
-    list_filter = [
-        'app_name',
-        'model_name',
-        'action',
-        'is_synced'
-    ]
-    search_fields = [
-        'app_name',
-        'model_name',
-        'record_id'
-    ]
-    readonly_fields = ['changed_at']
+# @admin.register(ChangeTracker)
+# class ChangeTrackerAdmin(admin.ModelAdmin):
+#     list_display = [
+#         'app_name',
+#         'model_name',
+#         'record_id',
+#         'action',
+#         'changed_at',
+#         'is_synced'
+#     ]
+#     list_filter = [
+#         'app_name',
+#         'model_name',
+#         'action',
+#         'is_synced'
+#     ]
+#     search_fields = [
+#         'app_name',
+#         'model_name',
+#         'record_id'
+#     ]
+#     readonly_fields = ['changed_at']
