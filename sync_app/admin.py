@@ -19,3 +19,30 @@ class SyncSessionAdmin(admin.ModelAdmin):
     list_display = ['session_id', 'start_time', 'end_time', 'records_synced', 'sync_direction', 'status']
     list_filter = ['status', 'sync_direction']
     readonly_fields = ['start_time', 'end_time']
+
+
+# در sync_app/admin.py - به انتهای فایل اضافه کنید
+from sync_api.models import ChangeTracker
+
+@admin.register(ChangeTracker)
+class ChangeTrackerAdmin(admin.ModelAdmin):
+    list_display = [
+        'app_name',
+        'model_name',
+        'record_id',
+        'action',
+        'changed_at',
+        'is_synced'
+    ]
+    list_filter = [
+        'app_name',
+        'model_name',
+        'action',
+        'is_synced'
+    ]
+    search_fields = [
+        'app_name',
+        'model_name',
+        'record_id'
+    ]
+    readonly_fields = ['changed_at']
