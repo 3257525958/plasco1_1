@@ -1,44 +1,105 @@
-# signals.py
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from django.db import transaction
-from .models import ChangeTracker, DataSyncLog
-import json
+from django.conf import settings
+from .models import ChangeTracker
+
+print("🔧 [SIGNALS] ماژول signals.py برای sync_api بارگذاری شد")
 
 
-@receiver(post_save, sender=ChangeTracker)
-def create_data_sync_log_from_change_tracker(sender, instance, created, **kwargs):
-    """
-    ایجاد خودکار DataSyncLog از ChangeTracker
-    دقیقاً مشابه منطق sync_app
-    """
-    if created and not instance.is_synced:
-        try:
-            with transaction.atomic():
-                # ایجاد رکورد متناظر در DataSyncLog
-                sync_log = DataSyncLog.objects.create(
-                    model_type=f"{instance.app_name}.{instance.model_name}",
-                    record_id=instance.record_id,
-                    action=instance.action,
-                    data={},  # داده‌های اضافی اگر نیاز باشد
-                    sync_direction='local_to_server',  # یا بر اساس منطق شما
-                    sync_status=False,
-                    app_name=instance.app_name,
-                    model_name=instance.model_name,
-                    branch_id=None,  # می‌توانید از settings بگیرید
-                    batch_id=f"change_tracker_{instance.id}",
-                    is_full_sync=False,
-                    error_message=""  # مقدار پیش‌فرض برای خطا
-                )
+@receiver(post_save)
+def handle_model_save(sender, instance, created, **kwargs):
+    """ردیابی ایجاد و آپدیت برای سیستم آنلاین"""
+    # فقط در حالت آنلاین پردازش کن
+    if getattr(settings, 'OFFLINE_MODE', False):
+        return
 
-                # علامت‌گذاری ChangeTracker به عنوان سینک شده
-                instance.is_synced = True
-                instance.save(update_fields=['is_synced'])
+    # فقط مدل‌های syncable را ردیابی کن
+    if sender._meta.app_label in ['django.contrib.admin', 'django.contrib.auth',
+                                  'django.contrib.contenttypes', 'django.contrib.sessions',
+                                  'django.contrib.messages', 'django.contrib.staticfiles',
+                                  'rest_framework', 'rest_framework.authtoken',
+                                  'corsheaders', 'sync_app', 'sync_api']:
+        return
 
-                print(f"DataSyncLog created for ChangeTracker {instance.id}")
+    try:
+        app_label = sender._meta.app_label
+        model_name = sender._meta.model_name
+        full_model_name = f"{app_label}.{model_name}"
 
-        except Exception as e:
-            print(f"Error creating DataSyncLog: {str(e)}")
-            # در صورت خطا، is_synced را false نگه می‌داریم تا مجدداً تلاش شود
-            instance.is_synced = False
-            instance.save(update_fields=['is_synced'])
+        action = 'create' if created else 'update'
+
+        # سریالایز کردن داده‌ها
+        data = {}
+        for field in instance._meta.get_fields():
+            if not field.is_relation or field.one_to_one:
+                try:
+                    field_name = field.name
+                    value = getattr(instance, field_name)
+
+                    # تبدیل مقادیر برای JSON
+                    if value is None:
+                        data[field_name] = None
+                    elif hasattr(value, 'isoformat'):
+                        data[field_name] = value.isoformat()
+                    elif isinstance(value, (int, float, bool)):
+                        data[field_name] = value
+                    else:
+                        data[field_name] = str(value)
+                except (AttributeError, ValueError):
+                    data[field_name] = None
+
+        # ایجاد لاگ
+        ChangeTracker.objects.create(
+            model_type=full_model_name,
+            record_id=instance.id,
+            action=action,
+            data=data,
+            sync_direction='server_to_local',  # در آنلاین جهت به سمت لوکال‌ها است
+            app_name=app_label,
+            model_name=model_name
+        )
+
+        print(f"📝 تغییر ثبت شد (آنلاین): {full_model_name} - ID: {instance.id} - Action: {action}")
+
+    except Exception as e:
+        print(f"❌ خطا در پردازش تغییرات برای {sender.__name__}: {e}")
+
+
+@receiver(post_delete)
+def handle_model_delete(sender, instance, **kwargs):
+    """ردیابی حذف برای سیستم آنلاین"""
+    # فقط در حالت آنلاین پردازش کن
+    if getattr(settings, 'OFFLINE_MODE', False):
+        return
+
+    # فقط مدل‌های syncable را ردیابی کن
+    if sender._meta.app_label in ['django.contrib.admin', 'django.contrib.auth',
+                                  'django.contrib.contenttypes', 'django.contrib.sessions',
+                                  'django.contrib.messages', 'django.contrib.staticfiles',
+                                  'rest_framework', 'rest_framework.authtoken',
+                                  'corsheaders', 'sync_app', 'sync_api']:
+        return
+
+    try:
+        app_label = sender._meta.app_label
+        model_name = sender._meta.model_name
+        full_model_name = f"{app_label}.{model_name}"
+
+        # برای حذف، فقط اطلاعات پایه را ذخیره کن
+        ChangeTracker.objects.create(
+            model_type=full_model_name,
+            record_id=instance.id,
+            action='delete',
+            data={'id': instance.id, 'model': full_model_name},
+            sync_direction='server_to_local',  # در آنلاین جهت به سمت لوکال‌ها است
+            app_name=app_label,
+            model_name=model_name
+        )
+
+        print(f"🗑️ حذف ثبت شد (آنلاین): {full_model_name} - ID: {instance.id}")
+
+    except Exception as e:
+        print(f"❌ خطا در پردازش حذف برای {sender.__name__}: {e}")
+
+
+print("✅ سیگنال‌های sync_api با دکوراتور @receiver ثبت شدند")

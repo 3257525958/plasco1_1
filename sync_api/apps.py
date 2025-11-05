@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+import sys
 
 
 class SyncApiConfig(AppConfig):
@@ -6,6 +7,11 @@ class SyncApiConfig(AppConfig):
     name = 'sync_api'
 
     def ready(self):
+        # اگر در حال اجرای migration هستیم، سیگنال‌ها را فعال نکن
+        if 'migrate' in sys.argv or 'makemigrations' in sys.argv:
+            print("🔴 حالت migration - سیگنال‌های sync_api غیرفعال")
+            return
+
         from django.conf import settings
 
         print(f"🔧 راه‌اندازی sync_api - OFFLINE_MODE: {getattr(settings, 'OFFLINE_MODE', False)}")
@@ -15,8 +21,5 @@ class SyncApiConfig(AppConfig):
             print("🔴 حالت آفلاین - سیگنال‌های sync_api غیرفعال")
             return
 
-        try:
-            import sync_api.signals
-            print("✅ سیگنال‌های sync_api برای حالت آنلاین فعال شدند")
-        except Exception as e:
-            print(f"⚠️ خطا در فعال‌سازی سیگنال‌های sync_api: {e}")
+        print("✅ حالت آنلاین - وارد کردن سیگنال‌های sync_api")
+        import sync_api.signals
