@@ -1,5 +1,4 @@
-
-from django.db import models  # ← این خط را اضافه کن
+from django.db import models
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -22,11 +21,11 @@ def sync_pull(request):
         # پیدا کردن تغییرات جدید
         if last_sync:
             changes_tracked = ChangeTracker.objects.filter(
-                changed_at__gt=last_sync,
-                is_synced=False
+                created_at__gt=last_sync,  # تغییر از changed_at به created_at
+                sync_status=False  # تغییر از is_synced به sync_status
             )
         else:
-            changes_tracked = ChangeTracker.objects.filter(is_synced=False)
+            changes_tracked = ChangeTracker.objects.filter(sync_status=False)  # تغییر از is_synced به sync_status
 
         changes = []
         for tracker in changes_tracked:
@@ -42,7 +41,7 @@ def sync_pull(request):
                         'action': 'delete',
                         'data': {'id': tracker.record_id},
                         'tracker_id': tracker.id,
-                        'changed_at': tracker.changed_at.isoformat()
+                        'changed_at': tracker.created_at.isoformat()  # تغییر از changed_at به created_at
                     })
                 else:
                     # برای ایجاد/آپدیت، داده کامل بفرست
@@ -68,7 +67,7 @@ def sync_pull(request):
                         'action': tracker.action,
                         'data': data,
                         'tracker_id': tracker.id,
-                        'changed_at': tracker.changed_at.isoformat()
+                        'changed_at': tracker.created_at.isoformat()  # تغییر از changed_at به created_at
                     })
 
             except Exception as e:
@@ -99,7 +98,7 @@ def sync_receive(request):
 
         if tracker_id:
             tracker = ChangeTracker.objects.get(id=tracker_id)
-            tracker.is_synced = True
+            tracker.sync_status = True  # تغییر از is_synced به sync_status
             tracker.save()
 
             return Response({
@@ -113,4 +112,4 @@ def sync_receive(request):
             }, status=400)
 
     except Exception as e:
-        return Response({'status': 'error', 'message': str(e)}, status=400)@api_view(['POST'])
+        return Response({'status': 'error', 'message': str(e)}, status=400)
