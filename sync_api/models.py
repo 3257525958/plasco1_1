@@ -37,7 +37,7 @@ class ChangeTracker(models.Model):
     is_full_sync = models.BooleanField(default=False, help_text="آیا سینک کامل بوده است؟")
 
     class Meta:
-        db_table = 'sync_api_changetracker'  # تغییر نام جدول برای جلوگیری از تداخل
+        # db_table = 'sync_api_changetracker'  # تغییر نام جدول برای جلوگیری از تداخل
         indexes = [
             models.Index(fields=['sync_status', 'model_type']),
             models.Index(fields=['app_name', 'model_name']),
