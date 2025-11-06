@@ -113,3 +113,25 @@ def sync_receive(request):
 
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)}, status=400)
+
+
+@api_view(['GET'])
+def sync_model_data(request):
+    """ارسال داده‌های کامل یک مدل خاص"""
+    try:
+        app_name = request.GET.get('app')
+        model_name = request.GET.get('model')
+
+        model_class = apps.get_model(app_name, model_name)
+        records = list(model_class.objects.values())
+
+        return Response({
+            'status': 'success',
+            'app': app_name,
+            'model': model_name,
+            'records_count': len(records),
+            'records': records
+        })
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)})
