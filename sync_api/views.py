@@ -135,3 +135,70 @@ def sync_model_data(request):
 
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)})
+
+
+@api_view(['POST'])
+def receive_change(request):
+    """دریافت تغییرات از لوکال‌ها"""
+    try:
+        data = request.data
+
+        # ایجاد ChangeTracker در سرور
+        ChangeTracker.objects.create(
+            app_name=data['app_name'],
+            model_name=data['model_name'],
+            record_id=data['record_id'],
+            action=data['action'],
+            data=data['data'],
+            sync_direction='local_to_server',
+            created_at=timezone.now()
+        )
+
+        # اعمال تغییر در دیتابیس سرور
+        model_class = apps.get_model(data['app_name'], data['model_name'])
+
+        if data['action'] == 'delete':
+            model_class.objects.filter(id=data['record_id']).delete()
+        else:
+            # آپدیت یا ایجاد رکورد
+            model_class.objects.update_or_create(
+                id=data['record_id'],
+                defaults=data['data']
+            )
+
+        return Response({'status': 'success', 'message': 'تغییر اعمال شد'})
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)})
+
+
+@api_view(['GET'])
+def get_changes(request):
+    """ارسال تغییرات سرور به لوکال‌ها"""
+    try:
+        since = request.GET.get('since')
+
+        queryset = ChangeTracker.objects.filter(
+            sync_direction='server_to_local',
+            created_at__gt=since if since else timezone.now() - timedelta(days=1)
+        )
+
+        changes = []
+        for tracker in queryset:
+            changes.append({
+                'app_name': tracker.app_name,
+                'model_name': tracker.model_name,
+                'record_id': tracker.record_id,
+                'action': tracker.action,
+                'data': tracker.data,
+                'created_at': tracker.created_at.isoformat()
+            })
+
+        return Response({
+            'status': 'success',
+            'changes': changes,
+            'server_time': timezone.now().isoformat()
+        })
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)})

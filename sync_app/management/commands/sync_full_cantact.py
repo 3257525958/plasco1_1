@@ -2,7 +2,6 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 import requests
 from django.apps import apps
-from django.utils import timezone
 
 
 class Command(BaseCommand):
@@ -51,6 +50,8 @@ class Command(BaseCommand):
                 if data.get('status') == 'success':
                     records = data.get('records', [])
                     return self.save_records(model_class, records)
+            else:
+                self.stdout.write(f"⚠️ خطا در پاسخ سرور برای {model_class.__name__}: {response.status_code}")
 
             return 0
 

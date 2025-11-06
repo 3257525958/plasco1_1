@@ -1,20 +1,32 @@
 from django.core.management.base import BaseCommand
-from plasco.sync_service import sync_service
+from django.conf import settings
+from sync_service import sync_service
 
 
 class Command(BaseCommand):
     help = 'اجرای فوری سینک دوطرفه'
 
     def handle(self, *args, **options):
-        self.stdout.write("🔄 شروع سینک فوری...")
-
-        result = sync_service.full_sync()
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"🎉 سینک کامل شد!\n"
-                f"   📤 به سرور ارسال شد: {result['sent_to_server']}\n"
-                f"   📥 از سرور دریافت شد: {result['received_from_server']}\n"
-                f"   📊 مجموع: {result['total']}"
+        if not getattr(settings, 'OFFLINE_MODE', False):
+            self.stdout.write(
+                self.style.WARNING('❌ این دستور فقط در حالت آفلاین قابل اجراست')
             )
-        )
+            return
+
+        self.stdout.write('⚡ اجرای فوری سینک دوطرفه...')
+
+        try:
+            result = sync_service.bidirectional_sync()
+
+            self.stdout.write(
+                self.style.SUCCESS('✅ سینک فوری با موفقیت انجام شد')
+            )
+            self.stdout.write(f'📤 ارسال شده به سرور: {result.get("sent_to_server", 0)}')
+            self.stdout.write(f'📥 دریافت شده از سرور: {result.get("received_from_server", 0)}')
+            self.stdout.write(f'🔧 تعارض‌های حل شده: {result.get("conflicts_resolved", 0)}')
+            self.stdout.write(f'📊 مجموع: {result.get("total", 0)}')
+
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'❌ خطا در سینک فوری: {e}')
+            )
