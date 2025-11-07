@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from sync_service import sync_service
+from sync_app.sync_service import sync_service  # ✅ تغییر این خط
 
 
 class Command(BaseCommand):

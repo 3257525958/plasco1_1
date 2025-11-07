@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from sync_service import sync_service
-
+from sync_app.sync_service import sync_service  # ✅ تغییر این خط
 
 class Command(BaseCommand):
     help = 'اجرای فوری سینک دوطرفه'
@@ -23,7 +22,6 @@ class Command(BaseCommand):
             )
             self.stdout.write(f'📤 ارسال شده به سرور: {result.get("sent_to_server", 0)}')
             self.stdout.write(f'📥 دریافت شده از سرور: {result.get("received_from_server", 0)}')
-            self.stdout.write(f'🔧 تعارض‌های حل شده: {result.get("conflicts_resolved", 0)}')
             self.stdout.write(f'📊 مجموع: {result.get("total", 0)}')
 
         except Exception as e:

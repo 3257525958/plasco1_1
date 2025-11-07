@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from sync_service import sync_service
+from sync_app.sync_service import sync_service  # ✅ اصلاح این خط
 from sync_app.models import DataSyncLog
 from django.utils import timezone
 

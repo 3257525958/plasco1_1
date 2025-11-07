@@ -3,7 +3,6 @@ from sync_app.models import DataSyncLog
 from django.utils import timezone
 from datetime import timedelta
 
-
 class Command(BaseCommand):
     help = 'پاکسازی لاگ‌های سینک قدیمی'
 

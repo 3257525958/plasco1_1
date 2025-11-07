@@ -1,4 +1,4 @@
-# sync_service.py - نسخه بهبود یافته
+# sync_app/sync_service.py
 import requests
 import json
 import time
@@ -7,15 +7,17 @@ import threading
 from decimal import Decimal
 from django.db import models
 from django.conf import settings
-from sync_app.models import DataSyncLog
 from django.utils import timezone
 from django.apps import apps
+
+# import های داخلی sync_app
+from .models import DataSyncLog
+
+print("🔄 راه‌اندازی سرویس سینک جهانی...")
 
 
 class UniversalSyncService:
     def __init__(self):
-        print("🔄 راه‌اندازی سرویس سینک جهانی...")
-
         self.server_url = getattr(settings, 'ONLINE_SERVER_URL', 'https://plasmarket.ir')
         self.offline_mode = getattr(settings, 'OFFLINE_MODE', False)
         self.is_running = False
@@ -110,13 +112,9 @@ class UniversalSyncService:
         # 2. دریافت تغییرات از سرور
         received_count = self.pull_server_changes()
 
-        # 3. حل تعارض‌ها
-        resolved_count = self.resolve_conflicts()
-
         return {
             'sent_to_server': sent_count,
             'received_from_server': received_count,
-            'conflicts_resolved': resolved_count,
             'total': sent_count + received_count
         }
 
@@ -127,18 +125,15 @@ class UniversalSyncService:
 
         print("📤 ارسال تغییرات لوکال به سرور...")
 
-        # دریافت تغییرات سینک نشده
         unsynced_logs = DataSyncLog.objects.filter(
             sync_status=False,
             sync_direction='local_to_server'
-        ).order_by('created_at')[:100]  # محدودیت برای جلوگیری از overload
+        ).order_by('created_at')[:100]
 
         sent_count = 0
-        errors = []
 
         for log in unsynced_logs:
             try:
-                # آماده‌سازی داده برای ارسال
                 sync_payload = {
                     'local_log_id': log.id,
                     'app_name': log.app_name,
@@ -150,35 +145,22 @@ class UniversalSyncService:
                     'branch_id': log.branch_id
                 }
 
-                # ارسال به سرور
                 response = requests.post(
-                    f"{self.server_url}/api/sync/receive-change/",
+                    f"{self.server_url}/api/sync/receive/",  # استفاده از endpoint موجود
                     json=sync_payload,
                     timeout=30
                 )
 
                 if response.status_code == 200:
-                    result = response.json()
-                    if result.get('status') == 'success':
-                        # مارک کردن به عنوان سینک شده
-                        log.sync_status = True
-                        log.synced_at = timezone.now()
-                        log.save()
-                        sent_count += 1
-                        print(f"✅ ارسال شد: {log.model_name} - ID: {log.record_id}")
-                    else:
-                        errors.append(f"سرور خطا: {result.get('message')}")
-                else:
-                    errors.append(f"خطای HTTP: {response.status_code}")
+                    log.sync_status = True
+                    log.synced_at = timezone.now()
+                    log.save()
+                    sent_count += 1
+                    print(f"✅ ارسال شد: {log.model_name} - ID: {log.record_id}")
 
             except Exception as e:
-                error_msg = f"❌ خطا در ارسال {log.model_name}-{log.record_id}: {str(e)}"
-                print(error_msg)
-                errors.append(error_msg)
+                print(f"❌ خطا در ارسال {log.model_name}-{log.record_id}: {str(e)}")
                 continue
-
-        if errors:
-            print(f"⚠️ {len(errors)} خطا در ارسال")
 
         return sent_count
 
@@ -187,23 +169,8 @@ class UniversalSyncService:
         print("📥 دریافت تغییرات از سرور...")
 
         try:
-            # دریافت آخرین زمان سینک موفق
-            last_sync = DataSyncLog.objects.filter(
-                sync_status=True,
-                sync_direction='server_to_local'
-            ).order_by('-synced_at').first()
-
-            last_sync_time = last_sync.synced_at if last_sync else None
-
-            # پارامترهای درخواست
-            params = {}
-            if last_sync_time:
-                params['since'] = last_sync_time.isoformat()
-
-            # درخواست تغییرات از سرور
             response = requests.get(
-                f"{self.server_url}/api/sync/get-changes/",
-                params=params,
+                f"{self.server_url}/api/sync/pull/",  # استفاده از endpoint موجود
                 timeout=60
             )
 
@@ -225,14 +192,13 @@ class UniversalSyncService:
     def apply_server_changes(self, changes):
         """اعمال تغییرات دریافتی از سرور"""
         processed_count = 0
-        errors = []
 
         print(f"📋 دریافت {len(changes)} تغییر از سرور")
 
         for change in changes:
             try:
                 app_name = change['app_name']
-                model_name = change['model_name']
+                model_name = change['model_type']  # توجه: model_type نه model_name
                 model_key = f"{app_name}.{model_name}"
 
                 if model_key not in self.sync_models:
@@ -245,13 +211,10 @@ class UniversalSyncService:
                 data = change['data']
 
                 if action == 'delete':
-                    # حذف رکورد
                     model_class.objects.filter(id=record_id).delete()
                     processed_count += 1
                     print(f"🗑️ حذف: {model_key} - ID: {record_id}")
-
                 else:
-                    # ایجاد یا آپدیت
                     filtered_data = self._filter_and_convert_data(model_class, data, model_key)
 
                     if filtered_data:
@@ -264,64 +227,12 @@ class UniversalSyncService:
                         action_text = "ایجاد" if created else "آپدیت"
                         print(f"✅ {action_text}: {model_key} - ID: {record_id}")
 
-                # ثبت لاگ برای تغییرات دریافتی از سرور
-                DataSyncLog.objects.create(
-                    model_type=model_key,
-                    record_id=record_id,
-                    action='update',  # برای تغییرات سرور همیشه update در نظر می‌گیریم
-                    data=data,
-                    sync_direction='server_to_local',
-                    sync_status=True,  # چون از سرور دریافت شده، سینک شده محسوب می‌شود
-                    synced_at=timezone.now(),
-                    app_name=app_name,
-                    model_name=model_name
-                )
-
             except Exception as e:
-                error_msg = f"❌ خطا در پردازش {model_key} - ID {record_id}: {str(e)}"
-                print(error_msg)
-                errors.append(error_msg)
+                print(f"❌ خطا در پردازش {model_key} - ID {record_id}: {str(e)}")
                 continue
 
         print(f"🎯 اعمال شد: {processed_count} رکورد از سرور")
-        if errors:
-            print(f"⚠️ {len(errors)} خطا در پردازش")
-
         return processed_count
-
-    def resolve_conflicts(self):
-        """حل تعارض‌های احتمالی"""
-        print("🔍 بررسی تعارض‌ها...")
-
-        # پیدا کردن تعارض‌ها (رکوردهایی که همزمان در لوکال و سرور تغییر کرده‌اند)
-        conflicts = DataSyncLog.objects.filter(
-            conflict_resolved=False,
-            error_message__icontains='conflict'
-        )
-
-        resolved_count = 0
-
-        for conflict in conflicts:
-            try:
-                # استراتژی حل تعارض: آخرین تغییر برنده
-                if self.resolve_single_conflict(conflict):
-                    conflict.conflict_resolved = True
-                    conflict.save()
-                    resolved_count += 1
-
-            except Exception as e:
-                print(f"⚠️ خطا در حل تعارض {conflict.id}: {e}")
-
-        if resolved_count > 0:
-            print(f"✅ حل شد: {resolved_count} تعارض")
-
-        return resolved_count
-
-    def resolve_single_conflict(self, conflict):
-        """حل یک تعارض خاص"""
-        # در اینجا می‌توانید منطق پیچیده‌تری برای حل تعارض پیاده‌سازی کنید
-        # فعلاً از استراتژی "آخرین تغییر برنده" استفاده می‌کنیم
-        return True
 
     def _filter_and_convert_data(self, model_class, data, model_key):
         """فیلتر و تبدیل داده‌ها به انواع صحیح"""
@@ -375,7 +286,6 @@ class UniversalSyncService:
 
         except Exception as e:
             print(f"⚠️ خطا در فیلتر داده‌ها: {e}")
-            # در صورت خطا، تمام داده‌ها را بدون فیلتر کردن بریز
             for field_name, value in data.items():
                 if value not in ["None", "null", None, ""]:
                     filtered_data[field_name] = value
@@ -385,7 +295,6 @@ class UniversalSyncService:
 
     def _handle_required_fields(self, model_key, data):
         """مدیریت فیلدهای اجباری برای مدل‌های خاص"""
-        # منطق مدیریت فیلدهای اجباری (همانند قبل)
         if model_key == 'account_app.InventoryCount':
             if 'branch_id' not in data:
                 try:
