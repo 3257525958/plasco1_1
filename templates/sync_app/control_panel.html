@@ -75,6 +75,38 @@
         </div>
 
         <!-- آمار سریع -->
+        <!-- وضعیت اتصال -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header" id="connectionHeader">
+                <h5 class="mb-0">
+                    <i class="bi bi-wifi"></i>
+                    وضعیت اتصال به سرور
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>آدرس سرور:</strong> <span id="serverUrl">{{ settings.ONLINE_SERVER_URL }}</span></p>
+                        <p><strong>وضعیت:</strong> <span id="connectionStatus">در حال بررسی...</span></p>
+                        <p><strong>پیام:</strong> <span id="connectionMessage">-</span></p>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-outline-primary" onclick="checkConnection()">
+                            <i class="bi bi-arrow-repeat"></i>
+                            بروزرسانی وضعیت
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="showServerConfig()">
+                            <i class="bi bi-gear"></i>
+                            تنظیمات سرور
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
         <div class="row mb-4">
             <div class="col-md-4">
                 <div class="card stats-card">
@@ -320,6 +352,46 @@
             // به روزرسانی خودکار آمار هر 30 ثانیه
             setInterval(updateStats, 30000);
         });
+        // بررسی وضعیت اتصال
+function checkConnection() {
+    fetch('/sync/connection-status/')
+        .then(response => response.json())
+        .then(data => {
+            const statusElement = document.getElementById('connectionStatus');
+            const messageElement = document.getElementById('connectionMessage');
+            const headerElement = document.getElementById('connectionHeader');
+            
+            if (data.connected) {
+                statusElement.innerHTML = '<span class="badge bg-success">برقرار</span>';
+                messageElement.textContent = data.message;
+                headerElement.className = 'card-header bg-success text-white';
+            } else {
+                statusElement.innerHTML = '<span class="badge bg-danger">قطع</span>';
+                messageElement.textContent = data.message;
+                headerElement.className = 'card-header bg-danger text-white';
+            }
+        })
+        .catch(error => {
+            document.getElementById('connectionStatus').innerHTML = '<span class="badge bg-danger">خطا</span>';
+            document.getElementById('connectionMessage').textContent = 'خطا در بررسی وضعیت';
+        });
+}
+
+// نمایش تنظیمات سرور
+function showServerConfig() {
+    const currentUrl = document.getElementById('serverUrl').textContent;
+    const newUrl = prompt('آدرس سرور جدید را وارد کنید:', currentUrl);
+    
+    if (newUrl && newUrl !== currentUrl) {
+        // در اینجا می‌توانید آدرس سرور را به صورت dynamic تغییر دهید
+        alert(`آدرس سرور به ${newUrl} تغییر خواهد یافت. برای اعمال تغییرات، سرور را restart کنید.`);
+    }
+}
+
+// بارگذاری اولیه وضعیت اتصال
+document.addEventListener('DOMContentLoaded', function() {
+    checkConnection();
+});
     </script>
 </body>
 </html>

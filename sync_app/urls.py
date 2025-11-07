@@ -8,4 +8,5 @@ urlpatterns = [
     path('execute-command/', views.execute_command, name='execute_command'),
     path('command-status/', views.get_command_status, name='command_status'),
     path('stats/', views.get_sync_stats, name='sync_stats'),
+
 ]

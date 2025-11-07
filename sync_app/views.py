@@ -113,3 +113,29 @@ def get_sync_stats(request):
         })
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+import requests
+from django.conf import settings
+
+def get_connection_status(request):
+    """بررسی وضعیت اتصال به سرور"""
+    try:
+        response = requests.get(
+            f"{settings.ONLINE_SERVER_URL}/",
+            timeout=10,
+            verify=False
+        )
+        return JsonResponse({
+            'status': 'success',
+            'connected': True,
+            'server_url': settings.ONLINE_SERVER_URL,
+            'message': 'اتصال به سرور برقرار است'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'success',
+            'connected': False,
+            'server_url': settings.ONLINE_SERVER_URL,
+            'message': f'خطا در اتصال: {str(e)}'
+        })
