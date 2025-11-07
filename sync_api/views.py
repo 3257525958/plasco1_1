@@ -11,65 +11,35 @@ import decimal
 # در sync_api/views.py
 @api_view(['GET'])
 def sync_pull(request):
-    """ارسال تغییرات از سرور به لوکال - مبتنی بر ChangeTracker"""
+    """ارسال تغییرات از سرور به لوکال - بهینه‌سازی شده"""
     try:
         last_sync_str = request.GET.get('last_sync')
         last_sync = timezone.datetime.fromisoformat(last_sync_str) if last_sync_str else None
 
         print(f"📤 ارسال تغییرات از سرور - آخرین سینک: {last_sync}")
 
-        # پیدا کردن تغییرات جدید
+        # پیدا کردن تغییرات جدید با محدودیت
         if last_sync:
             changes_tracked = ChangeTracker.objects.filter(
-                created_at__gt=last_sync,  # تغییر از changed_at به created_at
-                sync_status=False  # تغییر از is_synced به sync_status
-            )
+                created_at__gt=last_sync,
+                sync_status=False
+            )[:100]  # محدود به 100 رکورد
         else:
-            changes_tracked = ChangeTracker.objects.filter(sync_status=False)  # تغییر از is_synced به sync_status
+            changes_tracked = ChangeTracker.objects.filter(sync_status=False)[:100]  # محدود به 100 رکورد
 
         changes = []
         for tracker in changes_tracked:
             try:
-                model_class = apps.get_model(tracker.app_name, tracker.model_name)
-
-                if tracker.action == 'delete':
-                    # برای حذف، فقط اطلاعات پایه بفرست
-                    changes.append({
-                        'app_name': tracker.app_name,
-                        'model_type': tracker.model_name,
-                        'record_id': tracker.record_id,
-                        'action': 'delete',
-                        'data': {'id': tracker.record_id},
-                        'tracker_id': tracker.id,
-                        'changed_at': tracker.created_at.isoformat()  # تغییر از changed_at به created_at
-                    })
-                else:
-                    # برای ایجاد/آپدیت، داده کامل بفرست
-                    obj = model_class.objects.get(id=tracker.record_id)
-                    data = {}
-                    for field in obj._meta.get_fields():
-                        if not field.is_relation or field.one_to_one:
-                            try:
-                                value = getattr(obj, field.name)
-                                if hasattr(value, 'isoformat'):
-                                    data[field.name] = value.isoformat()
-                                elif isinstance(value, (int, float, bool)):
-                                    data[field.name] = value
-                                else:
-                                    data[field.name] = str(value)
-                            except:
-                                data[field.name] = None
-
-                    changes.append({
-                        'app_name': tracker.app_name,
-                        'model_type': tracker.model_name,
-                        'record_id': tracker.record_id,
-                        'action': tracker.action,
-                        'data': data,
-                        'tracker_id': tracker.id,
-                        'changed_at': tracker.created_at.isoformat()  # تغییر از changed_at به created_at
-                    })
-
+                # پردازش ساده‌تر
+                changes.append({
+                    'app_name': tracker.app_name,
+                    'model_type': tracker.model_name,
+                    'record_id': tracker.record_id,
+                    'action': tracker.action,
+                    'data': tracker.data or {},
+                    'tracker_id': tracker.id,
+                    'changed_at': tracker.created_at.isoformat()
+                })
             except Exception as e:
                 print(f"⚠️ خطا در پردازش تغییرات {tracker}: {e}")
                 continue
@@ -139,38 +109,46 @@ def sync_model_data(request):
 
 @api_view(['POST'])
 def receive_change(request):
-    """دریافت تغییرات از لوکال‌ها"""
+    """دریافت تغییرات از لوکال‌ها و اعمال مستقیم در دیتابیس سرور"""
     try:
         data = request.data
+        print(f"📥 دریافت تغییر از لوکال: {data}")
 
-        # ایجاد ChangeTracker در سرور
-        ChangeTracker.objects.create(
-            app_name=data['app_name'],
-            model_name=data['model_name'],
-            record_id=data['record_id'],
-            action=data['action'],
-            data=data['data'],
-            sync_direction='local_to_server',
-            created_at=timezone.now()
-        )
+        app_name = data['app_name']
+        model_name = data['model_name']
+        record_id = data['record_id']
+        action = data['action']
+        change_data = data['data']
 
-        # اعمال تغییر در دیتابیس سرور
-        model_class = apps.get_model(data['app_name'], data['model_name'])
+        # پیدا کردن مدل مربوطه
+        model_class = apps.get_model(app_name, model_name)
 
-        if data['action'] == 'delete':
-            model_class.objects.filter(id=data['record_id']).delete()
+        if action == 'delete':
+            # حذف رکورد
+            model_class.objects.filter(id=record_id).delete()
+            print(f"🗑️ حذف در سرور: {app_name}.{model_name} - ID: {record_id}")
+
         else:
-            # آپدیت یا ایجاد رکورد
-            model_class.objects.update_or_create(
-                id=data['record_id'],
-                defaults=data['data']
+            # ایجاد یا آپدیت رکورد
+            obj, created = model_class.objects.update_or_create(
+                id=record_id,
+                defaults=change_data
             )
 
-        return Response({'status': 'success', 'message': 'تغییر اعمال شد'})
+            action_text = "ایجاد" if created else "آپدیت"
+            print(f"✅ {action_text} در سرور: {app_name}.{model_name} - ID: {record_id}")
+
+        return Response({
+            'status': 'success',
+            'message': f'تغییر {action} برای {model_name}-{record_id} اعمال شد'
+        })
 
     except Exception as e:
-        return Response({'status': 'error', 'message': str(e)})
-
+        print(f"❌ خطا در پردازش تغییر از لوکال: {e}")
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
 
 @api_view(['GET'])
 def get_changes(request):

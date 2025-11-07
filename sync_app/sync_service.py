@@ -31,6 +31,57 @@ class UniversalSyncService:
         print(f"🌐 آدرس سرور: {self.server_url}")
         print(f"⏰ بازه سینک: {self.sync_interval} ثانیه")
 
+
+    def discover_all_models(self):
+        """کشف خودکار تمام مدل‌های موجود در پروژه"""
+        sync_models = {}
+
+        for app_config in apps.get_app_configs():
+            app_name = app_config.name
+
+            # فقط اپ‌های سیستمی غیرضروری را حذف کن
+            excluded_apps = [
+                'django.contrib.admin',
+                'django.contrib.contenttypes',
+                'django.contrib.sessions',
+                'django.contrib.messages',
+                'django.contrib.staticfiles',
+                'sync_app',
+                'sync_api'
+            ]
+
+            if app_name in excluded_apps:
+                continue
+
+            for model in app_config.get_models():
+                model_name = model.__name__
+                model_key = f"{app_name}.{model_name}".lower()  # تبدیل به حروف کوچک
+
+                # فقط مدل‌های لاگ سینک را حذف کن
+                if model_name.lower() in ['datasynclog', 'syncsession', 'offlinesetting', 'serversynclog', 'synctoken',
+                                          'changetracker']:
+                    continue
+
+                sync_models[model_key] = {
+                    'app_name': app_name,
+                    'model_name': model_name,
+                    'model_class': model
+                }
+
+        # افزودن مدل‌هایی که ممکن است با حروف کوچک شناخته شوند
+        additional_models = {
+            'account_app.productpricing': 'account_app.ProductPricing',
+            'auth.user': 'django.contrib.auth.User'
+        }
+
+        for wrong_key, correct_key in additional_models.items():
+            if wrong_key not in sync_models and correct_key.lower() in sync_models:
+                sync_models[wrong_key] = sync_models[correct_key.lower()]
+                print(f"✅ افزودن نگاشت مدل: {wrong_key} -> {correct_key}")
+
+        print(f"🔍 کشف شد: {len(sync_models)} مدل برای سینک")
+        return sync_models
+
     def start_auto_sync(self):
         """شروع سینک خودکار در فواصل زمانی"""
         if not getattr(settings, 'SYNC_AUTO_START', True):
@@ -61,60 +112,6 @@ class UniversalSyncService:
         self.is_running = False
         print("🛑 سرویس سینک خودکار متوقف شد")
 
-    def discover_all_models(self):
-        """کشف خودکار تمام مدل‌های موجود در پروژه"""
-        sync_models = {}
-
-        for app_config in apps.get_app_configs():
-            app_name = app_config.name
-
-            # فقط اپ‌های سیستمی غیرضروری را حذف کن - auth را نگه دار
-            excluded_apps = [
-                'django.contrib.admin',
-                'django.contrib.contenttypes',
-                'django.contrib.sessions',
-                'django.contrib.messages',
-                'django.contrib.staticfiles',
-                'sync_app',
-                'sync_api'
-            ]
-
-            if app_name in excluded_apps:
-                continue
-
-            for model in app_config.get_models():
-                model_name = model.__name__
-                model_key = f"{app_name}.{model_name}"
-
-                # فقط مدل‌های لاگ سینک را حذف کن
-                if model_name in ['DataSyncLog', 'SyncSession', 'OfflineSetting', 'ServerSyncLog', 'SyncToken',
-                                  'ChangeTracker']:
-                    continue
-
-                sync_models[model_key] = {
-                    'app_name': app_name,
-                    'model_name': model_name,
-                    'model_class': model
-                }
-
-        # افزودن مدل User به صورت دستی اگر پیدا نشد
-        if 'auth.User' not in sync_models:
-            try:
-                from django.contrib.auth.models import User
-                sync_models['auth.User'] = {
-                    'app_name': 'auth',
-                    'model_name': 'User',
-                    'model_class': User
-                }
-                print("✅ مدل User به صورت دستی اضافه شد")
-            except Exception as e:
-                print(f"⚠️ خطا در افزودن مدل User: {e}")
-
-        print(f"🔍 کشف شد: {len(sync_models)} مدل برای سینک")
-        for model_key in sorted(sync_models.keys()):
-            print(f"   📁 {model_key}")
-
-        return sync_models
 
     def check_internet_connection(self):
         """بررسی اتصال به اینترنت"""
@@ -163,41 +160,53 @@ class UniversalSyncService:
         unsynced_logs = DataSyncLog.objects.filter(
             sync_status=False,
             sync_direction='local_to_server'
-        ).order_by('created_at')[:20]  # کاهش تعداد برای تست
+        )
+
+        unsynced_count = unsynced_logs.count()
+        print(f"📝 تعداد تغییرات در انتظار ارسال: {unsynced_count}")
+
+        if unsynced_count == 0:
+            print("ℹ️ هیچ تغییری برای ارسال وجود ندارد")
+            return 0
+
+        # فقط 2 رکورد برای تست
+        logs_to_sync = unsynced_logs.order_by('created_at')[:2]
+        print(f"🔧 ارسال اولین {len(logs_to_sync)} تغییر برای تست...")
 
         sent_count = 0
 
-        for log in unsynced_logs:
+        for log in logs_to_sync:
             try:
-                # فرمت جدید برای سرور - مطابق با expectations سرور
+                # فرمت داده برای سرور
                 sync_payload = {
                     'app_name': log.app_name,
-                    'model_name': log.model_name,  # تغییر از model_type به model_name
+                    'model_name': log.model_name,
                     'record_id': log.record_id,
                     'action': log.action,
                     'data': log.data or {},
                     'created_at': log.created_at.isoformat() if log.created_at else None,
-                    'local_log_id': log.id,
+                    'tracker_id': log.id,  # استفاده از tracker_id
                     'sync_direction': 'local_to_server'
                 }
 
-                # دیباگ: نمایش payload قبل از ارسال
-                print(f"🔍 ارسال داده برای {log.model_name}-{log.record_id}:")
-                print(f"   Payload: {json.dumps(sync_payload, indent=2, default=str)}")
+                print(f"🔍 ارسال داده برای {log.model_name}-{log.record_id}...")
+                print(f"📦 payload: {sync_payload}")  # این خط را اضافه کنید
 
-                # ارسال به endpoint صحیح سرور
+                # ارسال به سرور
                 response = requests.post(
-                    f"{self.server_url}/api/sync/receive/",  # مطمئن شوید این endpoint درست است
+                    f"{self.server_url}/api/sync/receive/",
                     json=sync_payload,
-                    timeout=60,
+                    timeout=30,
                     verify=False,
                     headers={'Content-Type': 'application/json'}
                 )
 
-                print(f"📡 پاسخ سرور: {response.status_code} - {response.text}")
+                print(f"📡 وضعیت پاسخ: {response.status_code}")
+                print(f"📄 محتوای پاسخ: {response.text}")  # این خط را اضافه کنید
 
                 if response.status_code == 200:
                     response_data = response.json()
+                    print(f"✅ پاسخ سرور: {response_data}")  # این خط را اضافه کنید
                     if response_data.get('status') == 'success':
                         log.sync_status = True
                         log.synced_at = timezone.now()
@@ -213,7 +222,9 @@ class UniversalSyncService:
                 print(f"❌ خطا در ارسال {log.model_name}-{log.record_id}: {str(e)}")
                 continue
 
+        print(f"📤 ارسال کامل شد: {sent_count} از {len(logs_to_sync)}")
         return sent_count
+
     def pull_server_changes(self):
         """دریافت تغییرات از سرور"""
         print("📥 دریافت تغییرات از سرور...")
@@ -222,25 +233,49 @@ class UniversalSyncService:
             # افزایش timeout و غیرفعال کردن SSL
             response = requests.get(
                 f"{self.server_url}/api/sync/pull/",
-                timeout=60,
+                timeout=120,  # افزایش از 60 به 120 ثانیه
                 verify=False
             )
 
+            print(f"📡 وضعیت پاسخ سرور: {response.status_code}")
+
             if response.status_code == 200:
-                data = response.json()
-                if data.get('status') == 'success':
-                    changes = data.get('changes', [])
-                    return self.apply_server_changes(changes)
-                else:
-                    print(f"❌ خطا در سرور: {data.get('message')}")
+                try:
+                    data = response.json()
+                    print(f"📦 داده دریافتی: {data.get('message', 'بدون پیام')}")
+
+                    if data.get('status') == 'success':
+                        changes = data.get('changes', [])
+                        print(f"🔄 تعداد تغییرات دریافتی: {len(changes)}")
+                        return self.apply_server_changes(changes)
+                    else:
+                        print(f"❌ خطا در سرور: {data.get('message')}")
+                except json.JSONDecodeError as e:
+                    print(f"❌ خطا در پردازش JSON از سرور: {e}")
+                    print(f"📄 محتوای پاسخ: {response.text}")
+
+            elif response.status_code == 502:
+                print("❌ خطای 502 - سرور overload شده است")
+                print("💡 پیشنهاد: چند دقیقه صبر کنید و مجدداً تلاش کنید")
+            elif response.status_code == 504:
+                print("❌ خطای 504 - Gateway Timeout")
+                print("💡 پیشنهاد: timeout را بیشتر کنید یا سرور را بهینه کنید")
             else:
                 print(f"❌ خطای HTTP: {response.status_code}")
+                print(f"📄 محتوای پاسخ: {response.text}")
 
+        except requests.exceptions.Timeout:
+            print("⏰ timeout در دریافت از سرور - سرور کند پاسخ می‌دهد")
+            print("💡 پیشنهاد:")
+            print("   - timeout را بیشتر کنید")
+            print("   - در ساعت کم‌ترافیک سینک کنید")
+            print("   - endpoint سرور را بهینه کنید")
+        except requests.exceptions.ConnectionError:
+            print("🔌 خطای اتصال - سرور در دسترس نیست")
         except Exception as e:
-            print(f"❌ خطا در دریافت از سرور: {e}")
+            print(f"❌ خطای غیرمنتظره در دریافت از سرور: {e}")
 
         return 0
-
     def apply_server_changes(self, changes):
         """اعمال تغییرات دریافتی از سرور با مدیریت وابستگی‌ها"""
         processed_count = 0
@@ -528,6 +563,7 @@ class UniversalSyncService:
     def download_from_server(self):
         result = self.pull_server_changes()
         return {'status': 'success', 'processed_count': result}
+
 
 
 # ایجاد سرویس جهانی
