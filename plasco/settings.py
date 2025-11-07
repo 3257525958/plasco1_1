@@ -133,8 +133,15 @@ SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@
 DEBUG = False
 
 # در بخش ALLOWED_HOSTS
-ALLOWED_HOSTS = ['plasmarket.ir', 'www.plasmarket.ir', 'localhost', '127.0.0.1', '0.0.0.0']
-
+ALLOWED_HOSTS = [
+    'plasmarket.ir',
+    'www.plasmarket.ir',
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    'testserver',  # این خط را اضافه کنید برای تست‌ها
+    '.plascodata1-ayh-service',  # این هم اگر نیاز است
+]
 # در بخش CORS (اگر نیاز است)
 CORS_ALLOW_ALL_ORIGINS = True  # فقط برای تست
 # یا
