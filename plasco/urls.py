@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from . import settings
 admin.autodiscover()
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('home_app.urls')),
