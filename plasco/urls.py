@@ -16,6 +16,7 @@ urlpatterns = [
     path('it/', include('it_app.urls')),
     path('pos-payment/', include('pos_payment.urls')),
     path('api/sync/', include('sync_api.urls')),
+    path('sync_app/', include('sync_app.urls')),
 
 ]
 USE_X_FORWARDED_HOST = True
