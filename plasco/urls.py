@@ -5,7 +5,7 @@ from . import settings
 
 # ایمپورت ویوها از اپلیکیشن‌های مربوطه
 from control_panel.views import control_panel, set_mode
-from offline_ins.views import offline_install, install_step
+from offline_ins.views import offline_install, install_step, offline_success  # offline_success اضافه شد
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,7 +25,7 @@ urlpatterns = [
     path('set-mode/', set_mode, name='set_mode'),
     path('offline/install/', offline_install, name='offline_install'),
     path('offline/install-step/', install_step, name='install_step'),
-    path('offline/success/', offline_success, name='offline_success'),
+    path('offline/success/', offline_success, name='offline_success'),  # این خط باید کار کنه
 ]
 
 USE_X_FORWARDED_HOST = True
