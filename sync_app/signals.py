@@ -1,105 +1,146 @@
+# sync_app/signals.py
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
 from .models import DataSyncLog
+import time
 
-print("🔧 [SIGNALS] ماژول signals.py بارگذاری شد")
+print("🔧 سیگنال‌های سینک کامل فعال شدند")
+
+# ایجاد یک دیکشنری برای پیگیری تغییرات اخیر
+_recent_changes = {}
+
+
+def should_create_sync_log(instance):
+    """بررسی آیا باید برای این instance لاگ سینک ایجاد کرد"""
+    # اگر instance فیلد id نداشته باشد (مثل Session)، لاگ ایجاد نکن
+    if not hasattr(instance, 'id'):
+        return False
+
+    # اگر از سینک سرور آمده، لاگ ایجاد نکن
+    if getattr(instance, '_from_sync', False):
+        return False
+
+    # اگر مدل از sync_app هست، لاگ ایجاد نکن
+    if instance._meta.app_label == 'sync_app':
+        return False
+
+    # اگر مدل‌های سیستمی Django است، لاگ ایجاد نکن
+    excluded_models = [
+        'Session', 'ContentType', 'LogEntry', 'Permission',
+        'Group', 'Migration', 'Token', 'DataSyncLog',
+        'ServerSyncLog', 'SyncToken', 'SyncSession',
+        'TokenProxy', 'ChangeTracker'
+    ]
+
+    if instance.__class__.__name__ in excluded_models:
+        return False
+
+    # اپ‌های سیستمی Django را حذف کن
+    excluded_apps = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        'rest_framework',
+        'rest_framework.authtoken',
+        'corsheaders',
+        'sync_api'
+    ]
+
+    if instance._meta.app_label in excluded_apps:
+        return False
+
+    # 🚨 بسیار مهم: اگر اخیراً پردازش شده، لاگ ایجاد نکن
+    instance_key = f"{instance._meta.app_label}.{instance.__class__.__name__}.{instance.id}"
+    if instance_key in _recent_changes:
+        timestamp = _recent_changes[instance_key]
+        if time.time() - timestamp < 30:  # ۳۰ ثانیه
+            return False
+
+    return True
+
+
+def mark_as_recently_processed(instance):
+    """علامت‌گذاری instance به عنوان پردازش شده اخیر"""
+    if not hasattr(instance, 'id'):
+        return
+    instance_key = f"{instance._meta.app_label}.{instance.__class__.__name__}.{instance.id}"
+    _recent_changes[instance_key] = time.time()
 
 
 @receiver(post_save)
-def handle_model_save(sender, instance, created, **kwargs):
-    """ردیابی ایجاد و آپدیت برای سیستم آفلاین"""
-    # فقط در حالت آفلاین پردازش کن
-    if not getattr(settings, 'OFFLINE_MODE', False):
-        return
+def on_model_save(sender, instance, created, **kwargs):
+    """سیگنال برای ذخیره سازی مدل‌ها - برای تمام مدل‌ها"""
 
-    # فقط مدل‌های syncable را ردیابی کن
-    if sender._meta.app_label in ['django.contrib.admin', 'django.contrib.auth',
-                                  'django.contrib.contenttypes', 'django.contrib.sessions',
-                                  'django.contrib.messages', 'django.contrib.staticfiles',
-                                  'rest_framework', 'rest_framework.authtoken',
-                                  'corsheaders', 'sync_app', 'sync_api']:
-        return
+    def create_log_after_commit():
+        if not should_create_sync_log(instance):
+            return
 
-    try:
-        app_label = sender._meta.app_label
-        model_name = sender._meta.model_name
-        full_model_name = f"{app_label}.{model_name}"
+        try:
+            # تعیین action
+            action = 'create' if created else 'update'
 
-        action = 'create' if created else 'update'
+            # 🚨 بررسی آیا قبلاً لاگ مشابهی وجود دارد
+            existing_log = DataSyncLog.objects.filter(
+                app_name=sender._meta.app_label,
+                model_name=sender.__name__,
+                record_id=instance.id,
+                sync_status=False,
+                sync_direction='local_to_server'
+            ).exists()
 
-        # سریالایز کردن داده‌ها
-        data = {}
-        for field in instance._meta.get_fields():
-            if not field.is_relation or field.one_to_one:
-                try:
-                    field_name = field.name
-                    value = getattr(instance, field_name)
+            if existing_log:
+                print(f"⏭️ لاگ تکراری وجود دارد: {sender._meta.app_label}.{sender.__name__}-{instance.id}")
+                return
 
-                    # تبدیل مقادیر برای JSON
-                    if value is None:
-                        data[field_name] = None
-                    elif hasattr(value, 'isoformat'):
-                        data[field_name] = value.isoformat()
-                    elif isinstance(value, (int, float, bool)):
-                        data[field_name] = value
-                    else:
-                        data[field_name] = str(value)
-                except (AttributeError, ValueError):
-                    data[field_name] = None
+            # ایجاد DataSyncLog
+            DataSyncLog.objects.create(
+                app_name=sender._meta.app_label,
+                model_name=sender.__name__,
+                record_id=instance.id,
+                action=action,
+                data={},
+                sync_status=False,
+                sync_direction='local_to_server'
+            )
+            print(
+                f"📝 تغییر ثبت شد (آفلاین): {sender._meta.app_label}.{sender.__name__} - ID: {instance.id} - Action: {action}")
 
-        # ایجاد لاگ
-        DataSyncLog.objects.create(
-            model_type=full_model_name,
-            record_id=instance.id,
-            action=action,
-            data=data,
-            sync_direction='local_to_server',
-            app_name=app_label,
-            model_name=model_name
-        )
+            # علامت‌گذاری به عنوان پردازش شده
+            mark_as_recently_processed(instance)
+        except Exception as e:
+            print(f"❌ خطا در ثبت تغییر: {e}")
 
-        print(f"📝 تغییر ثبت شد (آفلاین): {full_model_name} - ID: {instance.id} - Action: {action}")
-
-    except Exception as e:
-        print(f"❌ خطا در پردازش تغییرات برای {sender.__name__}: {e}")
+    transaction.on_commit(create_log_after_commit)
 
 
 @receiver(post_delete)
-def handle_model_delete(sender, instance, **kwargs):
-    """ردیابی حذف برای سیستم آفلاین"""
-    # فقط در حالت آفلاین پردازش کن
-    if not getattr(settings, 'OFFLINE_MODE', False):
-        return
+def on_model_delete(sender, instance, **kwargs):
+    """سیگنال برای حذف مدل‌ها - برای تمام مدل‌ها"""
 
-    # فقط مدل‌های syncable را ردیابی کن
-    if sender._meta.app_label in ['django.contrib.admin', 'django.contrib.auth',
-                                  'django.contrib.contenttypes', 'django.contrib.sessions',
-                                  'django.contrib.messages', 'django.contrib.staticfiles',
-                                  'rest_framework', 'rest_framework.authtoken',
-                                  'corsheaders', 'sync_app', 'sync_api']:
-        return
+    def create_delete_log_after_commit():
+        if not should_create_sync_log(instance):
+            return
 
-    try:
-        app_label = sender._meta.app_label
-        model_name = sender._meta.model_name
-        full_model_name = f"{app_label}.{model_name}"
+        try:
+            DataSyncLog.objects.create(
+                app_name=sender._meta.app_label,
+                model_name=sender.__name__,
+                record_id=instance.id,
+                action='delete',
+                data={},
+                sync_status=False,
+                sync_direction='local_to_server'
+            )
+            print(f"📝 حذف ثبت شد (آفلاین): {sender._meta.app_label}.{sender.__name__} - ID: {instance.id}")
 
-        # برای حذف، فقط اطلاعات پایه را ذخیره کن
-        DataSyncLog.objects.create(
-            model_type=full_model_name,
-            record_id=instance.id,
-            action='delete',
-            data={'id': instance.id, 'model': full_model_name},
-            sync_direction='local_to_server',
-            app_name=app_label,
-            model_name=model_name
-        )
+            # علامت‌گذاری به عنوان پردازش شده
+            mark_as_recently_processed(instance)
+        except Exception as e:
+            print(f"❌ خطا در ثبت حذف: {e}")
 
-        print(f"🗑️ حذف ثبت شد (آفلاین): {full_model_name} - ID: {instance.id}")
-
-    except Exception as e:
-        print(f"❌ خطا در پردازش حذف برای {sender.__name__}: {e}")
-
-
-print("✅ سیگنال‌های sync_app با دکوراتور @receiver ثبت شدند")
+    transaction.on_commit(create_delete_log_after_commit)

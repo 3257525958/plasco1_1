@@ -1,30 +1,35 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from sync_app.sync_service import sync_service  # ✅ تغییر این خط
+# management/commands/sync_now.py
+from django.core.management.base import BaseCommand
+from sync_app.sync_service import sync_service
+
 
 class Command(BaseCommand):
-    help = 'اجرای فوری سینک دوطرفه'
+    help = 'انجام سینک فوری با قابلیت تشخیص تغییرات واقعی'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='اجبار به سینک کامل بدون درنظرگیری timestamp',
+        )
 
     def handle(self, *args, **options):
-        if not getattr(settings, 'OFFLINE_MODE', False):
-            self.stdout.write(
-                self.style.WARNING('❌ این دستور فقط در حالت آفلاین قابل اجراست')
-            )
-            return
-
-        self.stdout.write('⚡ اجرای فوری سینک دوطرفه...')
-
-        try:
+        if options['force']:
+            self.stdout.write("🔄 سینک اجباری در حال اجرا...")
+            result = sync_service.full_sync()
+        else:
+            self.stdout.write("🔍 سینک هوشمند در حال اجرا...")
             result = sync_service.bidirectional_sync()
 
-            self.stdout.write(
-                self.style.SUCCESS('✅ سینک فوری با موفقیت انجام شد')
+        # نمایش نتایج دقیق
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✅ سینک کامل شد\n"
+                f"📤 ارسال شده به سرور: {result.get('sent_to_server', 0)}\n"
+                f"📥 دریافت شده از سرور: {result.get('received_from_server', 0)}\n"
+                f"📊 مجموع واقعی: {result.get('total', 0)}"
             )
-            self.stdout.write(f'📤 ارسال شده به سرور: {result.get("sent_to_server", 0)}')
-            self.stdout.write(f'📥 دریافت شده از سرور: {result.get("received_from_server", 0)}')
-            self.stdout.write(f'📊 مجموع: {result.get("total", 0)}')
-
-        except Exception as e:
-            self.stdout.write(
-                self.style.ERROR(f'❌ خطا در سینک فوری: {e}')
-            )
+        )
