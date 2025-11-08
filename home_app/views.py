@@ -1,3 +1,4 @@
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from cantact_app.models import accuntmodel
 from django.contrib.auth import authenticate,login, logout
@@ -119,3 +120,4 @@ def start_offline_installation(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
