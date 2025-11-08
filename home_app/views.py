@@ -7,6 +7,7 @@ from django.shortcuts import redirect
 profilestatus =['']
 
 def home_def(request):
+
     login_user = 'false'
     if request.user.is_authenticated:
         login_user = 'true'

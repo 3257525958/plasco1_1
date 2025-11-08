@@ -30,7 +30,7 @@ def set_mode(request):
             return JsonResponse({
                 'status': 'success',
                 'message': 'حالت آنلاین فعال شد',
-                'redirect': '/'
+                'redirect': '/'  # به صفحه اصلی (home_def) هدایت شود
             })
 
         elif mode == 'offline':
