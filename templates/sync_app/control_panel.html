@@ -1,336 +1,552 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل مدیریت سینک - پلاسکو</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <title>پنل کنترل انتقال داده‌ها</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
+            padding: 20px;
         }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            transition: transform 0.3s ease;
         }
-        .card:hover {
-            transform: translateY(-5px);
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
         }
-        .btn {
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .progress-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 2px solid #e9ecef;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 25px;
+            height: 40px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            background: linear-gradient(45deg, #28a745, #20c997, #28a745);
+            height: 100%;
+            border-radius: 25px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .progress-message {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 15px 0;
+            color: #2d3748;
+            min-height: 30px;
+        }
+
+        .superuser-info {
+            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+            border: 2px solid #17a2b8;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .superuser-info h3 {
+            color: #0c5460;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-item {
+            background: white;
             border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .info-item label {
+            font-weight: 600;
+            color: #2d3748;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .info-item code {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            border: 1px solid #e9ecef;
+        }
+
+        .copy-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .copy-btn:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .btn {
+            padding: 18px 25px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
             font-weight: 600;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
         }
-        .btn-primary { background: linear-gradient(45deg, #007bff, #0056b3); }
-        .btn-success { background: linear-gradient(45deg, #28a745, #1e7e34); }
-        .btn-danger { background: linear-gradient(45deg, #dc3545, #c82333); }
-        .btn-warning { background: linear-gradient(45deg, #ffc107, #e0a800); }
-        .btn-info { background: linear-gradient(45deg, #17a2b8, #138496); }
-        
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 5px 10px;
-            border-radius: 20px;
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
         }
-        
+
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
+        }
+
         .log-container {
             background: #1a1a1a;
             color: #00ff00;
+            padding: 20px;
+            border-radius: 12px;
             font-family: 'Courier New', monospace;
-            height: 400px;
+            height: 300px;
             overflow-y: auto;
+            margin: 20px 0;
+            border: 2px solid #333;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-active {
+            background: #28a745;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-inactive {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
             border-radius: 10px;
-            padding: 15px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
         }
-        
-        .section-title {
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            color: #333;
+
+        .notification.show {
+            transform: translateX(0);
         }
-        
-        .stats-card {
-            background: linear-gradient(45deg, #ffffff, #f8f9fa);
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .panel {
+                padding: 20px;
+            }
+            
+            .control-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container py-5">
-        <!-- هدر -->
-        <div class="row mb-4">
-            <div class="col-12 text-center">
-                <h1 class="text-white mb-3">
-                    <i class="bi bi-cloud-arrow-up-fill"></i>
-                    پنل مدیریت سینک - پلاسکو
-                </h1>
-                <p class="text-white-50">مدیریت کامل سیستم همگام‌سازی داده‌ها</p>
+    <div class="container">
+        <div class="panel">
+            <div class="header">
+                <h1>🚀 پنل کنترل انتقال داده‌ها</h1>
+                <p>مدیریت کامل انتقال داده‌ها بین سرور و کامپیوترهای محلی</p>
             </div>
-        </div>
 
-        <!-- آمار سریع -->
-        <!-- وضعیت اتصال -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header" id="connectionHeader">
-                <h5 class="mb-0">
-                    <i class="bi bi-wifi"></i>
-                    وضعیت اتصال به سرور
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>آدرس سرور:</strong> <span id="serverUrl">{{ settings.ONLINE_SERVER_URL }}</span></p>
-                        <p><strong>وضعیت:</strong> <span id="connectionStatus">در حال بررسی...</span></p>
-                        <p><strong>پیام:</strong> <span id="connectionMessage">-</span></p>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <button class="btn btn-outline-primary" onclick="checkConnection()">
-                            <i class="bi bi-arrow-repeat"></i>
-                            بروزرسانی وضعیت
-                        </button>
-                        <button class="btn btn-outline-warning" onclick="showServerConfig()">
-                            <i class="bi bi-gear"></i>
-                            تنظیمات سرور
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <h3 id="totalLogs">0</h3>
-                        <p class="text-muted">کل لاگ‌ها</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <h3 id="syncedLogs" class="text-success">0</h3>
-                        <p class="text-muted">سینک شده</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <h3 id="unsyncedLogs" class="text-danger">0</h3>
-                        <p class="text-muted">در انتظار سینک</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- سینک اولیه -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-download"></i>
-                            سینک اولیه - انتقال کامل داده‌ها
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">برای راه‌اندازی اولیه سیستم اجرا کنید:</p>
-                        
-                        <div class="d-grid gap-2 mb-3">
-                            <button class="btn btn-success" onclick="executeCommand('sync_full_cantact')">
-                                <i class="bi bi-people-fill"></i>
-                                سینک Cantact App
-                            </button>
-                            <button class="btn btn-success" onclick="executeCommand('sync_full_account')">
-                                <i class="bi bi-wallet-fill"></i>
-                                سینک Account App
-                            </button>
-                            <button class="btn btn-success" onclick="executeCommand('sync_full_dashbord')">
-                                <i class="bi bi-speedometer2"></i>
-                                سینک Dashboard App
-                            </button>
-                            <button class="btn btn-success" onclick="executeCommand('sync_full_invoice')">
-                                <i class="bi bi-receipt"></i>
-                                سینک Invoice App
-                            </button>
-                            <button class="btn btn-success" onclick="executeCommand('sync_full_pos_payment')">
-                                <i class="bi bi-credit-card-fill"></i>
-                                سینک POS Payment
-                            </button>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-warning" onclick="executeCommand('makemigrations')">
-                                <i class="bi bi-database-add"></i>
-                                ایجاد Migrations
-                            </button>
-                            <button class="btn btn-info" onclick="executeCommand('migrate')">
-                                <i class="bi bi-database-check"></i>
-                                اجرای Migrate
-                            </button>
-                            <button class="btn btn-danger" onclick="executeCommand('clear_all_sync_logs')">
-                                <i class="bi bi-trash-fill"></i>
-                                پاکسازی کامل لاگ‌ها
-                            </button>
-                        </div>
-                    </div>
+            <!-- نوار پیشرفت -->
+            <div class="progress-container">
+                <div class="progress-message" id="progressMessage">آماده برای شروع...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
                 </div>
             </div>
 
-            <!-- کنترل سینک دوره‌ای -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-play-circle"></i>
-                            کنترل سینک دوره‌ای
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2 mb-3">
-                            <button class="btn btn-outline-primary" onclick="executeCommand('sync_status')">
-                                <i class="bi bi-info-circle"></i>
-                                مشاهده وضعیت
-                            </button>
-                            <button class="btn btn-outline-success" onclick="executeCommand('start_sync_service')">
-                                <i class="bi bi-play-fill"></i>
-                                شروع سرویس خودکار
-                            </button>
-                            <button class="btn btn-outline-warning" onclick="executeCommand('sync_now')">
-                                <i class="bi bi-lightning-fill"></i>
-                                سینک فوری
-                            </button>
-                            <button class="btn btn-outline-danger" onclick="executeCommand('stop_sync_service')">
-                                <i class="bi bi-stop-fill"></i>
-                                توقف سرویس
-                            </button>
-                            <button class="btn btn-outline-info" onclick="executeCommand('clean_sync_logs')">
-                                <i class="bi bi-broom"></i>
-                                پاکسازی لاگ‌های قدیمی
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <!-- اطلاعات سوپریوزر -->
+            <div class="superuser-info" id="superuserInfo">
+                <h3>👑 اطلاعات کاربر مدیر سیستم</h3>
+                <div id="superuserContent"></div>
+            </div>
 
-                <!-- لاگ اجرا -->
-                <div class="card mt-4">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-terminal"></i>
-                            خروجی اجرای دستورات
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="log-container" id="logOutput">
-                            سیستم آماده اجرای دستورات است...
-                        </div>
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="refreshLog()">
-                                <i class="bi bi-arrow-clockwise"></i>
-                                بروزرسانی
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="clearLog()">
-                                <i class="bi bi-x-circle"></i>
-                                پاکسازی خروجی
-                            </button>
-                        </div>
-                    </div>
+            <!-- آمار -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalLogs">0</div>
+                    <div class="stat-label">کل لاگ‌ها</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="syncedLogs">0</div>
+                    <div class="stat-label">سینک شده</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="unsyncedLogs">0</div>
+                    <div class="stat-label">در انتظار</div>
+                </div>
+            </div>
+
+            <!-- دکمه‌های کنترل -->
+            <div class="control-buttons">
+                <button class="btn btn-success" onclick="startFullTransfer()">
+                    🚀 شروع انتقال داده به کامپیوتر محلی
+                </button>
+                <button class="btn btn-danger" onclick="clearLocalDB()">
+                    🧹 پاکسازی کامل دیتابیس لوکال
+                </button>
+                <button class="btn btn-primary" onclick="checkProgress()">
+                    🔄 بروزرسانی وضعیت
+                </button>
+            </div>
+
+            <!-- وضعیت سینک -->
+            <div style="margin: 20px 0;">
+                <h3>📊 وضعیت سینک</h3>
+                <p>
+                    <span class="status-indicator status-inactive" id="syncStatus"></span>
+                    وضعیت سینک خودکار: <span id="syncStatusText">غیرفعال</span>
+                </p>
+            </div>
+
+            <!-- نمایش لاگ -->
+            <div>
+                <h3>📝 لاگ اجرای دستورات</h3>
+                <div class="log-container" id="logContent">
+                    لاگ‌ها اینجا نمایش داده می‌شوند...
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- ناحیه نوتیفیکیشن -->
+    <div id="notificationArea"></div>
+
     <script>
-        let currentCommand = null;
-        
-        // اجرای دستور
+        let progressInterval;
+
+        function startFullTransfer() {
+            if (confirm('⚠️ آیا مطمئن هستید؟\n\nاین عمل:\n• تمام داده‌های فعلی را پاک می‌کند\n• داده‌های جدید از سرور دریافت می‌کند\n• یک کاربر مدیر جدید ایجاد می‌کند')) {
+                executeCommand('full_data_transfer');
+                startProgressMonitor();
+                showNotification('🚀 فرآیند انتقال داده شروع شد...', 'success');
+            }
+        }
+
+        function clearLocalDB() {
+            if (confirm('🚨 ⚠️  هشدار جدی!\n\nاین عمل تمام داده‌های دیتابیس لوکال را پاک می‌کند.\nتمام اطلاعات کاربران، محصولات، فاکتورها و... حذف خواهند شد.\n\nآیا مطمئن هستید؟')) {
+                executeCommand('clear_local_db');
+                startProgressMonitor();
+                showNotification('🧹 پاکسازی دیتابیس شروع شد...', 'success');
+            }
+        }
+
         function executeCommand(command) {
-            currentCommand = command;
-            document.getElementById('logOutput').innerHTML = '🔄 در حال اجرای دستور...';
-            
             fetch('/sync/execute-command/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': getCSRFToken()
                 },
                 body: JSON.stringify({command: command})
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('logOutput').innerHTML = '✅ ' + data.message;
-                    // شروع به روزرسانی خودکار لاگ
-                    startLogPolling();
-                } else {
-                    document.getElementById('logOutput').innerHTML = '❌ ' + data.message;
-                }
-                updateStats();
+                showNotification(data.message, data.status === 'success' ? 'success' : 'error');
             })
             .catch(error => {
-                document.getElementById('logOutput').innerHTML = '❌ خطا در ارتباط با سرور: ' + error;
+                showNotification('❌ خطا در اجرای دستور', 'error');
             });
         }
-        
-        // به روزرسانی لاگ
-        function startLogPolling() {
-            let pollInterval = setInterval(() => {
-                fetch('/sync/command-status/')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            document.getElementById('logOutput').innerHTML = data.content;
-                            if (data.content.includes('✅') || data.content.includes('❌')) {
-                                clearInterval(pollInterval);
-                            }
-                        }
-                    });
+
+        function startProgressMonitor() {
+            if (progressInterval) clearInterval(progressInterval);
+            
+            progressInterval = setInterval(() => {
+                checkProgress();
+                loadStats();
             }, 2000);
         }
-        
-        // بروزرسانی آمار
-        function updateStats() {
-            fetch('/sync/stats/')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        document.getElementById('totalLogs').textContent = data.stats.total_logs;
-                        document.getElementById('syncedLogs').textContent = data.stats.synced_logs;
-                        document.getElementById('unsyncedLogs').textContent = data.stats.unsynced_logs;
-                    }
-                });
-        }
-        
-        // بروزرسانی لاگ
-        function refreshLog() {
+
+        function checkProgress() {
+            // بارگذاری لاگ‌ها
             fetch('/sync/command-status/')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        document.getElementById('logOutput').innerHTML = data.content;
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('logContent').innerText = data.content;
+                    document.getElementById('logContent').scrollTop = document.getElementById('logContent').scrollHeight;
+                }
+            });
+
+            // بارگذاری پیشرفت
+            fetch('/sync/transfer-progress/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const progress = data.data;
+                    document.getElementById('progressMessage').innerText = progress.message;
+                    document.getElementById('progressFill').style.width = progress.percentage + '%';
+                    document.getElementById('progressFill').innerText = progress.percentage + '%';
+
+                    if (progress.completed) {
+                        clearInterval(progressInterval);
+                        if (progress.superuser_info) {
+                            showSuperuserInfo(progress.superuser_info);
+                        }
+                        showNotification('✅ انتقال داده‌ها با موفقیت انجام شد!', 'success');
                     }
-                });
+
+                    if (progress.error) {
+                        clearInterval(progressInterval);
+                        showNotification('❌ خطا در انتقال داده‌ها', 'error');
+                    }
+                }
+            });
         }
-        
-        // پاکسازی لاگ
-        function clearLog() {
-            document.getElementById('logOutput').innerHTML = 'خروجی پاکسازی شد...';
+
+        function loadStats() {
+            fetch('/sync/stats/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const stats = data.data.stats;
+                    document.getElementById('totalLogs').innerText = stats.total_logs;
+                    document.getElementById('syncedLogs').innerText = stats.synced_logs;
+                    document.getElementById('unsyncedLogs').innerText = stats.unsynced_logs;
+                }
+            });
         }
-        
-        // دریافت CSRF token
-        function getCookie(name) {
+
+        function showSuperuserInfo(info) {
+            const content = `
+                <div class="info-item">
+                    <label>📍 نام کامپیوتر</label>
+                    <code>${info.hostname}</code>
+                </div>
+                <div class="info-item">
+                    <label>👤 نام کاربری</label>
+                    <div>
+                        <code>${info.username}</code>
+                        <button class="copy-btn" onclick="copyToClipboard('${info.username}')">📋 کپی کاربری</button>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>🔑 رمز عبور</label>
+                    <div>
+                        <code>${info.password}</code>
+                        <button class="copy-btn" onclick="copyToClipboard('${info.password}')">📋 کپی رمز</button>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background: #0c5460; color: white; border-radius: 8px;">
+                    <strong>💡 ${info.message}</strong>
+                </div>
+            `;
+            
+            document.getElementById('superuserContent').innerHTML = content;
+            document.getElementById('superuserInfo').style.display = 'block';
+            
+            // اسکرول به اطلاعات کاربر
+            document.getElementById('superuserInfo').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('✅ متن در کلیپ‌بورد کپی شد', 'success');
+            }).catch(() => {
+                // Fallback برای مرورگرهای قدیمی
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('✅ متن کپی شد', 'success');
+            });
+        }
+
+        function showNotification(message, type) {
+            const notificationArea = document.getElementById('notificationArea');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} show`;
+            notification.innerHTML = message;
+            
+            notificationArea.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        function getCSRFToken() {
+            const name = 'csrftoken';
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
@@ -344,54 +560,12 @@
             }
             return cookieValue;
         }
-        
+
         // بارگذاری اولیه
         document.addEventListener('DOMContentLoaded', function() {
-            updateStats();
-            refreshLog();
-            // به روزرسانی خودکار آمار هر 30 ثانیه
-            setInterval(updateStats, 30000);
+            checkProgress();
+            loadStats();
         });
-        // بررسی وضعیت اتصال
-function checkConnection() {
-    fetch('/sync/connection-status/')
-        .then(response => response.json())
-        .then(data => {
-            const statusElement = document.getElementById('connectionStatus');
-            const messageElement = document.getElementById('connectionMessage');
-            const headerElement = document.getElementById('connectionHeader');
-            
-            if (data.connected) {
-                statusElement.innerHTML = '<span class="badge bg-success">برقرار</span>';
-                messageElement.textContent = data.message;
-                headerElement.className = 'card-header bg-success text-white';
-            } else {
-                statusElement.innerHTML = '<span class="badge bg-danger">قطع</span>';
-                messageElement.textContent = data.message;
-                headerElement.className = 'card-header bg-danger text-white';
-            }
-        })
-        .catch(error => {
-            document.getElementById('connectionStatus').innerHTML = '<span class="badge bg-danger">خطا</span>';
-            document.getElementById('connectionMessage').textContent = 'خطا در بررسی وضعیت';
-        });
-}
-
-// نمایش تنظیمات سرور
-function showServerConfig() {
-    const currentUrl = document.getElementById('serverUrl').textContent;
-    const newUrl = prompt('آدرس سرور جدید را وارد کنید:', currentUrl);
-    
-    if (newUrl && newUrl !== currentUrl) {
-        // در اینجا می‌توانید آدرس سرور را به صورت dynamic تغییر دهید
-        alert(`آدرس سرور به ${newUrl} تغییر خواهد یافت. برای اعمال تغییرات، سرور را restart کنید.`);
-    }
-}
-
-// بارگذاری اولیه وضعیت اتصال
-document.addEventListener('DOMContentLoaded', function() {
-    checkConnection();
-});
     </script>
 </body>
 </html>

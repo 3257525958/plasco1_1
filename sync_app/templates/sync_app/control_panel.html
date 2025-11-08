@@ -1,0 +1,304 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+.progress-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 2px solid #e9ecef;
+}
+
+.progress-bar {
+    background: #e9ecef;
+    border-radius: 20px;
+    height: 30px;
+    margin: 15px 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.progress-message {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 10px 0;
+    color: #495057;
+}
+
+.superuser-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.copy-btn {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.copy-btn:hover {
+    background: #138496;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #1e7e34;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.log-container {
+    background: #1e1e1e;
+    color: #00ff00;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    height: 300px;
+    overflow-y: auto;
+    margin: 20px 0;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-active {
+    background: #28a745;
+    animation: pulse 1.5s infinite;
+}
+
+.status-inactive {
+    background: #dc3545;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="progress-container">
+    <h2>🚀 پنل کنترل انتقال داده‌ها</h2>
+
+    <!-- نوار پیشرفت -->
+    <div class="progress-message" id="progressMessage">آماده برای شروع...</div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+    </div>
+
+    <!-- اطلاعات سوپریوزر -->
+    <div class="superuser-info" id="superuserInfo" style="display: none;">
+        <h4>👑 اطلاعات کاربر مدیر</h4>
+        <div id="superuserContent"></div>
+    </div>
+
+    <!-- دکمه‌های کنترل -->
+    <div class="control-buttons">
+        <button class="btn btn-success" onclick="startFullTransfer()">
+            🚀 شروع انتقال داده به کامپیوتر محلی
+        </button>
+        <button class="btn btn-danger" onclick="clearLocalDB()">
+            🧹 پاکسازی کامل دیتابیس لوکال
+        </button>
+        <button class="btn btn-primary" onclick="checkProgress()">
+            🔄 بروزرسانی وضعیت
+        </button>
+    </div>
+
+    <!-- وضعیت سینک -->
+    <div style="margin: 20px 0;">
+        <h4>📊 وضعیت سینک</h4>
+        <p>
+            <span class="status-indicator status-inactive" id="syncStatus"></span>
+            وضعیت سینک خودکار: <span id="syncStatusText">غیرفعال</span>
+        </p>
+    </div>
+
+    <!-- نمایش لاگ -->
+    <div class="log-container" id="logContent">
+        لاگ‌ها اینجا نمایش داده می‌شوند...
+    </div>
+</div>
+
+<script>
+let progressInterval;
+
+function startFullTransfer() {
+    if (confirm('⚠️ آیا مطمئن هستید؟ این عمل تمام داده‌های فعلی را پاک کرده و داده‌های جدید از سرور دریافت می‌کند.')) {
+        executeCommand('full_data_transfer');
+        startProgressMonitor();
+    }
+}
+
+function clearLocalDB() {
+    if (confirm('🚨 ⚠️  هشدار! این عمل تمام داده‌های دیتابیس لوکال را پاک می‌کند. آیا مطمئن هستید؟')) {
+        executeCommand('clear_local_db');
+        startProgressMonitor();
+    }
+}
+
+function executeCommand(command) {
+    fetch('/sync/execute-command/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({command: command})
+    })
+    .then(response => response.json())
+    .then(data => {
+        showNotification(data.message, data.status);
+    })
+    .catch(error => {
+        showNotification('خطا در اجرای دستور', 'error');
+    });
+}
+
+function startProgressMonitor() {
+    if (progressInterval) clearInterval(progressInterval);
+
+    progressInterval = setInterval(() => {
+        checkProgress();
+    }, 2000);
+}
+
+function checkProgress() {
+    fetch('/sync/command-status/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('logContent').innerText = data.content;
+        }
+    });
+
+    fetch('/sync/transfer-progress/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const progress = data.data;
+            document.getElementById('progressMessage').innerText = progress.message;
+            document.getElementById('progressFill').style.width = progress.percentage + '%';
+            document.getElementById('progressFill').innerText = progress.percentage + '%';
+
+            if (progress.completed) {
+                clearInterval(progressInterval);
+                if (progress.superuser_info) {
+                    showSuperuserInfo(progress.superuser_info);
+                }
+                showNotification('✅ انتقال داده‌ها با موفقیت completed!', 'success');
+            }
+
+            if (progress.error) {
+                clearInterval(progressInterval);
+                showNotification('❌ خطا در انتقال داده‌ها', 'error');
+            }
+        }
+    });
+}
+
+function showSuperuserInfo(info) {
+    const content = `
+        <p><strong>${info.message}</strong></p>
+        <p>📍 نام کامپیوتر: ${info.hostname}</p>
+        <p>👤 نام کاربری: <code>${info.username}</code>
+            <button class="copy-btn" onclick="copyToClipboard('${info.username}')">📋 کپی</button>
+        </p>
+        <p>🔑 رمز عبور: <code>${info.password}</code>
+            <button class="copy-btn" onclick="copyToClipboard('${info.password}')">📋 کپی</button>
+        </p>
+        <p>💡 نکته: از این اطلاعات برای ورود به سیستم استفاده کنید</p>
+    `;
+
+    document.getElementById('superuserContent').innerHTML = content;
+    document.getElementById('superuserInfo').style.display = 'block';
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('✅ متن کپی شد', 'success');
+    });
+}
+
+function showNotification(message, type) {
+    // پیاده‌سازی نمایش نوتیفیکیشن
+    alert(message);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// بارگذاری اولیه
+document.addEventListener('DOMContentLoaded', function() {
+    checkProgress();
+});
+</script>
+{% endblock %}
