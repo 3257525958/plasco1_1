@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کنترل پنل - انتخاب حالت اجرا</title>
+    <style>
+        body { 
+            font-family: 'Tahoma', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        .ip-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-online {
+            background: #28a745;
+            color: white;
+        }
+        .btn-offline {
+            background: #007bff;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ کنترل پنل سیستم</h1>
+        <p>لطفاً حالت اجرای سیستم را انتخاب کنید:</p>
+        
+        <div class="ip-info">
+            🔍 IP شما: <strong>{{ client_ip }}</strong>
+        </div>
+        
+        <button class="btn btn-online" onclick="setMode('online')">
+            🟢 حالت آنلاین (سرور اصلی)
+        </button>
+        
+        <button class="btn btn-offline" onclick="setMode('offline')">
+            🔵 حالت آفلاین (نصب محلی)
+        </button>
+        
+        <div id="message" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        function setMode(mode) {
+            const message = document.getElementById('message');
+            message.innerHTML = '⏳ در حال اعمال تنظیمات...';
+            
+            fetch('/set-mode/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: 'mode=' + mode
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    message.innerHTML = '✅ ' + data.message;
+                    if (data.redirect) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 2000);
+                    }
+                } else {
+                    message.innerHTML = '❌ ' + data.message;
+                }
+            })
+            .catch(error => {
+                message.innerHTML = '❌ خطا در ارتباط با سرور';
+            });
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

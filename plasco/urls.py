@@ -1,11 +1,11 @@
-
-from home_app import views
-from django.urls import path , include
+from django.urls import path, include
 from django.contrib import admin
 from django.conf.urls.static import static
 from . import settings
-admin.autodiscover()
 
+# ایمپورت ویوها از اپلیکیشن‌های مربوطه
+from control_panel.views import control_panel, set_mode
+from offline_ins.views import offline_install, install_step
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -20,7 +20,14 @@ urlpatterns = [
     path('sync_app/', include('sync_app.urls')),
     path('sync/', include('sync_app.urls')),
 
+    # کنترل پنل و نصب آفلاین
+    path('control-panel/', control_panel, name='control_panel'),
+    path('set-mode/', set_mode, name='set_mode'),
+    path('offline/install/', offline_install, name='offline_install'),
+    path('offline/install-step/', install_step, name='install_step'),
+    path('offline/success/', offline_success, name='offline_success'),
 ]
+
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

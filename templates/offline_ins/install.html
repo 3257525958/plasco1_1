@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نصب سیستم آفلاین</title>
+    <style>
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-right: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .step.active {
+            border-right-color: #28a745;
+            background: #e8f5e8;
+        }
+        .step.completed {
+            border-right-color: #6c757d;
+            background: #e9ecef;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ نصب سیستم آفلاین</h1>
+        <p>در حال نصب سیستم بر روی IP: <strong>{{ client_ip }}</strong></p>
+        
+        <div id="steps-container">
+            {% for step in installation_steps %}
+            <div class="step" id="step-{{ forloop.counter }}">
+                <strong>مرحله {{ forloop.counter }}:</strong> {{ step }}
+                <span id="status-{{ forloop.counter }}">⏳ در انتظار...</span>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <button id="start-btn" class="btn" onclick="startInstallation()">
+            شروع نصب
+        </button>
+        
+        <div id="message" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = {{ installation_steps|length }};
+
+        function startInstallation() {
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').innerText = 'در حال نصب...';
+            executeStep(1);
+        }
+
+        function executeStep(step) {
+            currentStep = step;
+            
+            // آپدیت ظاهر مرحله
+            document.querySelectorAll('.step').forEach((el, index) => {
+                el.className = 'step';
+                if (index + 1 === step) {
+                    el.classList.add('active');
+                } else if (index + 1 < step) {
+                    el.classList.add('completed');
+                }
+            });
+
+            // ارسال درخواست به سرور
+            fetch('/offline/install-step/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: 'step=' + step
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusElement = document.getElementById('status-' + step);
+                
+                if (data.status === 'success') {
+                    statusElement.innerHTML = '✅ تکمیل شد';
+                    statusElement.style.color = 'green';
+                    
+                    if (data.next_step) {
+                        // اجرای مرحله بعد
+                        setTimeout(() => executeStep(parseInt(data.next_step)), 1000);
+                    } else if (data.redirect) {
+                        // هدایت به صفحه بعد
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 2000);
+                    }
+                } else {
+                    statusElement.innerHTML = '❌ خطا: ' + data.message;
+                    statusElement.style.color = 'red';
+                    document.getElementById('message').innerHTML = 
+                        '❌ خطا در نصب: ' + data.message;
+                }
+            })
+            .catch(error => {
+                document.getElementById('status-' + step).innerHTML = '❌ خطای شبکه';
+                document.getElementById('message').innerHTML = 
+                    '❌ خطا در ارتباط با سرور: ' + error;
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

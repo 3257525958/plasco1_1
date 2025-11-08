@@ -1,23 +1,26 @@
-from django.conf import settings
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.urls import reverse
+from .offline_ip_manager import is_allowed_offline_ip, get_client_ip
 
 
-class OfflineModeMiddleware:
+class ControlPanelMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # فقط در حالت آفلاین IP چک شود
-        if getattr(settings, 'OFFLINE_MODE', False):
-            client_ip = self.get_client_ip(request)
-            allowed_ips = getattr(settings, 'ALLOWED_OFFLINE_IPS', [])
+        # اگر کاربر در حال دسترسی به کنترل پنل یا نصب آفلاین هست، اجازه بده
+        if (request.path.startswith('/control-panel/') or
+                request.path.startswith('/offline/') or
+                request.path.startswith('/static/') or
+                request.path.startswith('/media/') or
+                request.path.startswith('/admin/')):
+            return self.get_response(request)
 
-            if client_ip not in allowed_ips:
-                return HttpResponseForbidden(
-                    "🚫 دسترسی غیرمجاز - این آدرس فقط برای IPهای داخلی شرکت قابل دسترسی است\n\n"
-                    f"IP شما: {client_ip}\n"
-                    f"IPهای مجاز: {', '.join(allowed_ips)}"
-                )
+        # اگر IP کاربر مجاز آفلاین هست و هنوز حالت انتخاب نکرده
+        if (is_allowed_offline_ip(request) and
+                'operation_mode' not in request.session):
+            # کاربر رو به کنترل پنل هدایت کن
+            return HttpResponseRedirect(reverse('control_panel'))
 
         response = self.get_response(request)
         return response

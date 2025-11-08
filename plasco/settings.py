@@ -39,6 +39,8 @@
 #     'pos_payment.apps.PosPaymentConfig',
 #     'sync_app',
 #     'sync_api',
+#     'control_panel',
+#     'offline_ins'
 # ]
 #
 # MIDDLEWARE = [
@@ -50,9 +52,8 @@
 #     'django.contrib.auth.middleware.AuthenticationMiddleware',
 #     'django.contrib.messages.middleware.MessageMiddleware',
 #     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-#     'plasco.middleware.OfflineModeMiddleware',
+#     'plasco.middleware.ControlPanelMiddleware',  # این خط اضافه شد
 # ]
-#
 # ROOT_URLCONF = 'plasco.urls'
 #
 # TEMPLATES = [
@@ -172,6 +173,8 @@ INSTALLED_APPS = [
     'pos_payment.apps.PosPaymentConfig',
     'sync_app',
     'sync_api',
+    'control_panel',
+    'offline_ins'
 ]
 
 MIDDLEWARE = [
@@ -183,8 +186,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'plasco.middleware.ControlPanelMiddleware',  # این خط اضافه شد
 ]
-
 ROOT_URLCONF = 'plasco.urls'
 
 TEMPLATES = [
