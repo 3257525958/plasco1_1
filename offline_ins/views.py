@@ -216,3 +216,13 @@ def offline_success(request):
     return render(request, 'offline_ins/success.html', {
         'client_ip': get_client_ip(request)
     })
+
+
+def switch_to_offline(request):
+    """سوئیچ به حالت آفلاین"""
+    # تنظیم session برای حالت آفلاین
+    request.session['operation_mode'] = 'offline'
+    request.session['offline_installed'] = True
+
+    # هدایت به صفحه اصلی سیستم آفلاین
+    return redirect('/')

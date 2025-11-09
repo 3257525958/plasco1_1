@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/sync/', include('sync_api.urls')),
     path('sync_app/', include('sync_app.urls')),
     path('sync/', include('sync_app.urls')),
+path('switch-to-offline/', switch_to_offline, name='switch_to_offline'),
 ]
 
 USE_X_FORWARDED_HOST = True
