@@ -48,46 +48,20 @@ logger = logging.getLogger(__name__)
 #         else:
 #             ip = request.META.get('REMOTE_ADDR')
 #         return ip
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from .offline_ip_manager import is_allowed_offline_ip, get_client_ip
-import logging
-
-logger = logging.getLogger(__name__)
-
-
 class ControlPanelMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        try:
-            client_ip = get_client_ip(request)
+        client_ip = get_client_ip(request)
 
-            # لاگ‌گیری دقیق
-            logger.info(f"🔴 میدلور اجرا شد - IP: {client_ip}, مسیر: {request.path}")
-            logger.info(f"🔴 آیا IP مجازه: {is_allowed_offline_ip(request)}")
+        # دیباگ ساده
+        print(f"🔴 میدلور - IP: {client_ip}, مسیر: {request.path}")
+        print(f"🔴 آیا مجازه: {is_allowed_offline_ip(request)}")
 
-            # اگر کاربر به کنترل پنل مستقیم میاد
-            if request.path == '/control-panel/':
-                logger.info(f"🔴 دسترسی مستقیم به کنترل پنل از IP: {client_ip}")
-                return self.get_response(request)
+        # مستقیماً همه رو به کنترل پنل هدایت کن (موقتاً)
+        if request.path == '/':
+            print(f"🔴 هدایت همه به کنترل پنل - IP: {client_ip}")
+            return HttpResponseRedirect('/control-panel/')
 
-            # اگر کاربر به صفحه اصلی میاد و IP مجازه
-            if request.path == '/' and is_allowed_offline_ip(request):
-                logger.info(f"🔴 هدایت به کنترل پنل از صفحه اصلی - IP: {client_ip}")
-                return HttpResponseRedirect('/control-panel/')
-
-            return self.get_response(request)
-
-        except Exception as e:
-            logger.error(f"❌ خطا در میدلور: {str(e)}")
-            return self.get_response(request)
-
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
+        return self.get_response(request)
