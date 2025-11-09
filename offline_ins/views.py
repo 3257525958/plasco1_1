@@ -8,7 +8,20 @@ from pathlib import Path
 import shutil
 from django.conf import settings
 from plasco.offline_ip_manager import is_allowed_offline_ip, get_client_ip, add_allowed_ip
+import logging
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import os
+import subprocess
+import sqlite3
+from pathlib import Path
+import shutil
+from django.conf import settings
+from plasco.offline_ip_manager import is_allowed_offline_ip, get_client_ip, add_allowed_ip
 
+# این خط باید حتماً وجود داشته باشد
+logger = logging.getLogger(__name__)
 
 def offline_install(request):
     """صفحه نصب آفلاین"""
@@ -181,6 +194,7 @@ DATABASES = {
 
 
 def finish_installation(request):
+    logger = logging.getLogger(__name__)  # این خط را اضافه کنید اگر نیست
     """اتمام نصب"""
     client_ip = get_client_ip(request)
 
