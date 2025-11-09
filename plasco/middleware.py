@@ -29,9 +29,9 @@ class ControlPanelMiddleware:
             return self.get_response(request)
 
         # اگر کاربر به صفحه اصلی میاد (/) و IP مجاز هست و هنوز حالت انتخاب نکرده
+        # اگر کاربر به صفحه اصلی میاد (/) و IP مجاز هست
         if (request.path == '/' and
-                is_allowed_offline_ip(request) and
-                'operation_mode' not in request.session):
+                is_allowed_offline_ip(request)):
             logger.info("🔄 هدایت به کنترل پنل از صفحه اصلی")
             # کاربر رو به کنترل پنل هدایت کن
             return HttpResponseRedirect(reverse('control_panel'))
