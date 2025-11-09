@@ -26,3 +26,39 @@ def control_panel(request):
         'client_ip': client_ip,
     }
     return render(request, 'control_panel/control_panel.html', context)
+
+
+@csrf_exempt
+def set_mode(request):
+    """تنظیم حالت اجرای سیستم"""
+    client_ip = get_client_ip(request)
+    logger.info(f"🔄 set_mode called - IP: {client_ip}")
+
+    if request.method == 'POST':
+        mode = request.POST.get('mode')
+        logger.info(f"🔄 Requested mode: {mode}")
+
+        if mode == 'online':
+            # اجرا در حالت آنلاین
+            request.session['operation_mode'] = 'online'
+            logger.info(f"✅ حالت آنلاین تنظیم شد برای IP: {client_ip}")
+            return JsonResponse({
+                'status': 'success',
+                'message': 'حالت آنلاین فعال شد',
+                'redirect': '/'
+            })
+
+        elif mode == 'offline':
+            # اجرا در حالت آفلاین
+            request.session['operation_mode'] = 'offline'
+            logger.info(f"✅ حالت آفلاین تنظیم شد برای IP: {client_ip}")
+            return JsonResponse({
+                'status': 'success',
+                'message': 'در حال بررسی و نصب حالت آفلاین...',
+                'redirect': '/offline/install/'
+            })
+
+    return JsonResponse({
+        'status': 'error',
+        'message': 'درخواست نامعتبر'
+    })
