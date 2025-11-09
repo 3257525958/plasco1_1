@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from .windows_installer import create_windows_installer, create_install_package
+import zipfile
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import os
@@ -142,56 +144,137 @@ def create_offline_database():
 
 
 def setup_offline_settings():
-    """پیکربندی تنظیمات آفلاین"""
+    """ایجاد بسته نصب ویندوز"""
     try:
-        # ایجاد فایل settings_offline.py اگر وجود ندارد
         BASE_DIR = Path(__file__).resolve().parent.parent
+
+        print("🔧 ایجاد بسته نصب ویندوز...")
+
+        # ایجاد فایل‌های نصب ویندوز
+        bat_content, requirements_content = create_windows_installer()
+
+        # ذخیره فایل start_windows.bat
+        bat_path = BASE_DIR / 'start_windows.bat'
+        with open(bat_path, 'w', encoding='utf-8') as f:
+            f.write(bat_content)
+
+        # ذخیره فایل requirements
+        requirements_path = BASE_DIR / 'requirements_offline.txt'
+        with open(requirements_path, 'w', encoding='utf-8') as f:
+            f.write(requirements_content)
+
+        # ایجاد فایل settings_offline.py
         settings_offline_path = BASE_DIR / 'plasco' / 'settings_offline.py'
+        settings_content = '''
+"""
+Django settings for plasco project.
+برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
+"""
 
-        if not settings_offline_path.exists():
-            # کپی از settings اصلی با تغییرات آفلاین
-            with open(BASE_DIR / 'plasco' / 'settings.py', 'r', encoding='utf-8') as f:
-                content = f.read()
+from pathlib import Path
+import os
 
-            # اعمال تغییرات برای حالت آفلاین
-            content = content.replace("IS_OFFLINE_MODE = False", "IS_OFFLINE_MODE = True")
-            content = content.replace("DEBUG = False", "DEBUG = True")
-            content = content.replace("OFFLINE_MODE = False", "OFFLINE_MODE = True")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-            # تغییر دیتابیس به SQLite
-            db_config = """
-# دیتابیس SQLite برای حالت آفلاین
+IS_OFFLINE_MODE = True
+SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
+DEBUG = True
+
+ALLOWED_HOSTS = ['192.168.1.172', '192.168.1.157', '127.0.0.1', 'localhost', '192.168.1.100', '192.168.1.101']
+
+print("🟢 اجرا در حالت آفلاین - ديتابيس محلي (Slave)")
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
+    'account_app',
+    'dashbord_app',
+    'cantact_app',
+    'invoice_app',
+    'it_app',
+    'pos_payment',
+    'sync_app',
+    'sync_api',
+    'control_panel',
+    'offline_ins'
+]
+
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'plasco.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'plasco.wsgi.application'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db_offline.sqlite3',
     }
 }
-"""
-            # پیدا کردن بخش DATABASES و جایگزینی
-            import re
-            content = re.sub(
-                r"DATABASES = \{.*?\n\}",
-                db_config,
-                content,
-                flags=re.DOTALL
-            )
 
-            with open(settings_offline_path, 'w', encoding='utf-8') as f:
-                f.write(content)
+LANGUAGE_CODE = 'fa-ir'
+TIME_ZONE = 'Asia/Tehran'
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+OFFLINE_MODE = True
+'''
+
+        with open(settings_offline_path, 'w', encoding='utf-8') as f:
+            f.write(settings_content)
+
+        print("✅ بسته نصب ویندوز ایجاد شد")
 
         return JsonResponse({
             'status': 'success',
-            'message': 'تنظیمات آفلاین پیکربندی شد',
+            'message': 'بسته نصب ویندوز ایجاد شد. آماده دانلود...',
             'next_step': '5'
         })
 
     except Exception as e:
+        print(f"❌ خطا در ایجاد بسته نصب: {str(e)}")
         return JsonResponse({
             'status': 'error',
-            'message': f'خطا در پیکربندی تنظیمات: {str(e)}'
+            'message': f'خطا در ایجاد بسته نصب: {str(e)}'
         })
-
 
 def finish_installation(request):
     logger = logging.getLogger(__name__)  # این خط را اضافه کنید اگر نیست
