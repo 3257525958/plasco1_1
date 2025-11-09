@@ -15,6 +15,8 @@ ALLOWED_OFFLINE_IPS = [
     '10.206.217.*'      # کل range شبکه شما
 ]
 
+
+
 def get_client_ip(request):
     """دریافت IP واقعی کاربر"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
