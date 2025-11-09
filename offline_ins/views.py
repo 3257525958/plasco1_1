@@ -182,18 +182,18 @@ DATABASES = {
 
 def finish_installation(request):
     """اتمام نصب"""
-    # علامت گذاری که نصب کامل شده و کاربر حالت آفلاین رو انتخاب کرده
+    client_ip = get_client_ip(request)
+
+    # علامت گذاری که نصب کامل شده
     request.session['offline_installed'] = True
     request.session['operation_mode'] = 'offline'
 
-    # پاک کردن session مربوط به کنترل پنل
-    if 'show_control_panel' in request.session:
-        del request.session['show_control_panel']
+    logger.info(f"✅ نصب آفلاین کامل شد برای IP: {client_ip}")
 
     return JsonResponse({
         'status': 'success',
         'message': 'نصب سیستم آفلاین با موفقیت завер شد!',
-        'redirect': '/'  # به صفحه اصلی هدایت شود، نه کنترل پنل
+        'redirect': '/offline/success/'  # به صفحه موفقیت هدایت شود
     })
 
 
