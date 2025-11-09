@@ -21,7 +21,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
         }
         .success-icon {
             font-size: 80px;
@@ -35,7 +35,18 @@
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 6px;
-            margin-top: 20px;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .btn-download {
+            background: #28a745;
+        }
+        .instructions {
+            text-align: right;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -43,9 +54,24 @@
     <div class="container">
         <div class="success-icon">✅</div>
         <h1>نصب موفق!</h1>
-        <p>سیستم آفلاین با موفقیت بر روی IP <strong>{{ client_ip }}</strong> نصب شد.</p>
-        <p>حالا می‌توانید از سیستم در حالت آفلاین استفاده کنید.</p>
+        <p>بسته نصب سیستم آفلاین آماده است.</p>
+        
+        <div class="instructions">
+            <h3>📋 راهنمای نصب:</h3>
+            <ol style="text-align: right; direction: rtl;">
+                <li>بسته نصب را دانلود کنید</li>
+                <li>فایل ZIP را در پوشه دلخواه Extract کنید</li>
+                <li>روی فایل <strong>start_windows.bat</strong> دوبار کلیک کنید</li>
+                <li>سیستم به طور خودکار راه‌اندازی می‌شود</li>
+                <li>از آدرس <strong>http://192.168.1.172:8000</strong> استفاده کنید</li>
+            </ol>
+        </div>
+        
+        <a href="/media/offline_package/plasco_offline_package.zip" class="btn btn-download">
+            📥 دانلود بسته نصب (ویندوز)
+        </a>
         <br>
-        <a href="/switch-to-offline/" class="btn">ورود به سیستم آفلاین</a>    </div>
+        <a href="/" class="btn">بازگشت به سیستم آنلاین</a>
+    </div>
 </body>
 </html>

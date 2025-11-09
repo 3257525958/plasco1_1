@@ -25,6 +25,86 @@ from plasco.offline_ip_manager import is_allowed_offline_ip, get_client_ip, add_
 # این خط باید حتماً وجود داشته باشد
 logger = logging.getLogger(__name__)
 
+
+
+def create_install_package():
+    """ایجاد پکیج نصب کامل"""
+    try:
+        BASE_DIR = Path(__file__).resolve().parent.parent
+
+        print("📦 ایجاد پکیج نصب کامل...")
+
+        # ایجاد فایل ZIP
+        import zipfile
+        import os
+
+        package_path = BASE_DIR / 'plasco_offline_package.zip'
+
+        with zipfile.ZipFile(package_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # فایل‌های اصلی
+            essential_files = [
+                'manage.py',
+                'requirements_offline.txt',
+                'start_windows.bat',
+                'plasco/settings_offline.py',
+                'plasco/__init__.py',
+                'plasco/urls.py',
+                'plasco/wsgi.py'
+            ]
+
+            # اضافه کردن فایل‌های اصلی
+            for file in essential_files:
+                file_path = BASE_DIR / file
+                if file_path.exists():
+                    zipf.write(file_path, file)
+                    print(f"✅ اضافه شد: {file}")
+
+            # اضافه کردن پوشه اپ‌ها
+            app_folders = [
+                'account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
+                'it_app', 'pos_payment', 'sync_app', 'sync_api',
+                'control_panel', 'offline_ins', 'home_app'
+            ]
+
+            for app in app_folders:
+                app_path = BASE_DIR / app
+                if app_path.exists():
+                    for root, dirs, files in os.walk(app_path):
+                        for file in files:
+                            if file.endswith('.py'):
+                                file_path = os.path.join(root, file)
+                                arcname = os.path.relpath(file_path, BASE_DIR)
+                                zipf.write(file_path, arcname)
+                    print(f"✅ اپ {app} اضافه شد")
+
+            # اضافه کردن پوشه templates
+            templates_path = BASE_DIR / 'templates'
+            if templates_path.exists():
+                for root, dirs, files in os.walk(templates_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, BASE_DIR)
+                        zipf.write(file_path, arcname)
+                print("✅ پوشه templates اضافه شد")
+
+            # اضافه کردن پوشه static
+            static_path = BASE_DIR / 'static'
+            if static_path.exists():
+                for root, dirs, files in os.walk(static_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, BASE_DIR)
+                        zipf.write(file_path, arcname)
+                print("✅ پوشه static اضافه شد")
+
+        print(f"✅ پکیج نصب ایجاد شد: {package_path}")
+        return str(package_path)
+
+    except Exception as e:
+        print(f"❌ خطا در ایجاد پکیج: {str(e)}")
+        return None
+
+
 def offline_install(request):
     """صفحه نصب آفلاین"""
     if not is_allowed_offline_ip(request):
@@ -276,22 +356,40 @@ OFFLINE_MODE = True
             'message': f'خطا در ایجاد بسته نصب: {str(e)}'
         })
 
+
 def finish_installation(request):
-    logger = logging.getLogger(__name__)  # این خط را اضافه کنید اگر نیست
-    """اتمام نصب"""
-    client_ip = get_client_ip(request)
+    """اتمام نصب و ایجاد پکیج دانلود"""
+    try:
+        # ایجاد پکیج نصب
+        package_path = create_install_package()
 
-    # علامت گذاری که نصب کامل شده
-    request.session['offline_installed'] = True
-    request.session['operation_mode'] = 'offline'
+        if package_path:
+            # ایجاد لینک دانلود
+            download_url = f"/media/offline_package/plasco_offline_package.zip"
 
-    logger.info(f"✅ نصب آفلاین کامل شد برای IP: {client_ip}")
+            # کپی پکیج به پوشه media برای دانلود
+            import shutil
+            media_dir = Path(__file__).resolve().parent.parent / 'media' / 'offline_package'
+            media_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(package_path, media_dir / 'plasco_offline_package.zip')
 
-    return JsonResponse({
-        'status': 'success',
-        'message': 'نصب سیستم آفلاین با موفقیت завер شد!',
-        'redirect': '/offline/success/'  # به صفحه موفقیت هدایت شود
-    })
+            return JsonResponse({
+                'status': 'success',
+                'message': 'نصب کامل شد! حالا می‌توانید بسته نصب را دانلود کنید.',
+                'download_url': download_url,
+                'redirect': '/offline/success/'
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'خطا در ایجاد بسته نصب'
+            })
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در اتمام نصب: {str(e)}'
+        })
 
 
 def offline_success(request):
@@ -309,3 +407,4 @@ def switch_to_offline(request):
 
     # هدایت به صفحه اصلی سیستم آفلاین
     return redirect('/')
+
