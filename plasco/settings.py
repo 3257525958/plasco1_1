@@ -1,5 +1,5 @@
-#
-# # -------------------------لوکال هاست---------------------------------
+
+# -------------------------لوکال هاست---------------------------------
 # """
 # Django settings for plasco project.
 # برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
@@ -40,7 +40,8 @@
 #     'sync_app',
 #     'sync_api',
 #     'control_panel',
-#     'offline_ins'
+#     'offline_ins',
+#     'ip_manager'
 # ]
 #
 # MIDDLEWARE = [
@@ -174,7 +175,8 @@ INSTALLED_APPS = [
     'sync_app',
     'sync_api',
     'control_panel',
-    'offline_ins'
+'offline_ins',
+'ip_manager'
 ]
 
 MIDDLEWARE = [
@@ -244,3 +246,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SYNC_INTERVAL = 60
 ONLINE_SERVER_URL = "https://plasmarket.ir"
 OFFLINE_MODE = False
+

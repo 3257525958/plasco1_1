@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت IPهای مجاز</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Tahoma', sans-serif;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .ip-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-right: 4px solid #007bff;
+        }
+        .ip-card:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s;
+        }
+        .btn-action {
+            margin: 0 2px;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- هدر -->
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-network-wired"></i> مدیریت IPهای مجاز</h1>
+                    <p class="mb-0">مدیریت دسترسی کامپیوترها به سیستم آفلاین</p>
+                </div>
+                <div class="col-md-4 text-start">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/admin/" class="btn btn-outline-light">
+                            <i class="fas fa-cog"></i> پنل ادمین
+                        </a>
+                        <a href="/" class="btn btn-light">
+                            <i class="fas fa-home"></i> صفحه اصلی
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- فرم افزودن IP جدید -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-plus-circle"></i> افزودن IP جدید</h5>
+            </div>
+            <div class="card-body">
+                <form id="addIpForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="ip_address" class="form-label">آدرس IP</label>
+                            <input type="text" class="form-control" id="ip_address" 
+                                   placeholder="مثال: 192.168.1.100" required>
+                            <div class="form-text">فرمت IP باید صحیح باشد</div>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="description" class="form-label">توضیحات</label>
+                            <input type="text" class="form-control" id="description" 
+                                   placeholder="مثال: کامپیوتر اتاق مالی">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-save"></i> افزودن IP
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- لیست IPهای موجود -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> لیست IPهای مجاز</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>آدرس IP</th>
+                                <th>توضیحات</th>
+                                <th>تاریخ ثبت</th>
+                                <th>وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ipTableBody">
+                            {% for ip in ips %}
+                            <tr id="ip-row-{{ ip.id }}">
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-desktop"></i> {{ ip.ip_address }}
+                                    </span>
+                                </td>
+                                <td>{{ ip.description }}</td>
+                                <td>{{ ip.created_at|date:"Y/m/d H:i" }}</td>
+                                <td>
+                                    {% if ip.is_active %}
+                                        <span class="badge bg-success">فعال</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">غیرفعال</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-warning btn-action edit-ip" 
+                                                data-id="{{ ip.id }}" data-ip="{{ ip.ip_address }}" 
+                                                data-desc="{{ ip.description }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-action delete-ip" 
+                                                data-id="{{ ip.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% if ip.is_active %}
+                                        <button class="btn btn-outline-secondary btn-action toggle-ip" 
+                                                data-id="{{ ip.id }}" data-action="deactivate">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-outline-success btn-action toggle-ip" 
+                                                data-id="{{ ip.id }}" data-action="activate">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                    هیچ IPی ثبت نشده است
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal برای ویرایش -->
+    <div class="modal fade" id="editIpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ویرایش IP</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editIpForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="edit_ip_id">
+                        <div class="mb-3">
+                            <label for="edit_ip_address" class="form-label">آدرس IP</label>
+                            <input type="text" class="form-control" id="edit_ip_address" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_description" class="form-label">توضیحات</label>
+                            <input type="text" class="form-control" id="edit_description">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">ذخیره تغییرات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // افزودن IP جدید
+            $('#addIpForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const ip = $('#ip_address').val();
+                const desc = $('#description').val();
+                const csrf = $('[name=csrfmiddlewaretoken]').val();
+                
+                if (!isValidIP(ip)) {
+                    alert('❌ آدرس IP نامعتبر است');
+                    return;
+                }
+                
+                $.ajax({
+                    url: '/api/ip-manager/add/',
+                    method: 'POST',
+                    data: {
+                        ip_address: ip,
+                        description: desc,
+                        csrfmiddlewaretoken: csrf
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            location.reload();
+                        } else {
+                            alert('❌ ' + response.message);
+                        }
+                    }
+                });
+            });
+            
+            // حذف IP
+            $('.delete-ip').on('click', function() {
+                const ipId = $(this).data('id');
+                const csrf = $('[name=csrfmiddlewaretoken]').val();
+                
+                if (confirm('⚠️ آیا از حذف این IP مطمئن هستید؟')) {
+                    $.ajax({
+                        url: '/api/ip-manager/delete/' + ipId + '/',
+                        method: 'POST',
+                        data: { csrfmiddlewaretoken: csrf },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                $('#ip-row-' + ipId).fadeOut();
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // باز کردن مودال ویرایش
+            $('.edit-ip').on('click', function() {
+                const ipId = $(this).data('id');
+                const ipAddress = $(this).data('ip');
+                const description = $(this).data('desc');
+                
+                $('#edit_ip_id').val(ipId);
+                $('#edit_ip_address').val(ipAddress);
+                $('#edit_description').val(description);
+                
+                $('#editIpModal').modal('show');
+            });
+            
+            // ذخیره ویرایش
+            $('#saveEditBtn').on('click', function() {
+                const ipId = $('#edit_ip_id').val();
+                const ip = $('#edit_ip_address').val();
+                const desc = $('#edit_description').val();
+                const csrf = $('[name=csrfmiddlewaretoken]').val();
+                
+                if (!isValidIP(ip)) {
+                    alert('❌ آدرس IP نامعتبر است');
+                    return;
+                }
+                
+                $.ajax({
+                    url: '/api/ip-manager/update/' + ipId + '/',
+                    method: 'POST',
+                    data: {
+                        ip_address: ip,
+                        description: desc,
+                        csrfmiddlewaretoken: csrf
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+            
+            // فعال/غیرفعال کردن IP
+            $('.toggle-ip').on('click', function() {
+                const ipId = $(this).data('id');
+                const action = $(this).data('action');
+                const csrf = $('[name=csrfmiddlewaretoken]').val();
+                
+                $.ajax({
+                    url: '/api/ip-manager/toggle/' + ipId + '/',
+                    method: 'POST',
+                    data: {
+                        action: action,
+                        csrfmiddlewaretoken: csrf
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+            
+            // بررسی صحت IP
+            function isValidIP(ip) {
+                const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+                if (!ipPattern.test(ip)) return false;
+                
+                const parts = ip.split('.');
+                for (let part of parts) {
+                    if (parseInt(part) > 255) return false;
+                }
+                return true;
+            }
+        });
+    </script>
+</body>
+</html>
