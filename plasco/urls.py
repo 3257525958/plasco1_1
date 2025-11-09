@@ -7,6 +7,12 @@ from . import settings
 from control_panel.views import control_panel, set_mode
 from offline_ins.views import offline_install, install_step, offline_success
 from home_app.views import home_def  # تابع home شما
+from offline_ins.views import switch_to_offline
+
+urlpatterns = [
+    # ... سایر URLها
+    path('offline-system/', switch_to_offline, name='offline_system'),
+]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,7 +33,7 @@ urlpatterns = [
     path('api/sync/', include('sync_api.urls')),
     path('sync_app/', include('sync_app.urls')),
     path('sync/', include('sync_app.urls')),
-path('switch-to-offline/', switch_to_offline, name='switch_to_offline'),
+    path('switch-to-offline/', switch_to_offline, name='switch_to_offline'),
 ]
 
 USE_X_FORWARDED_HOST = True
