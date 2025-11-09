@@ -95,7 +95,7 @@ def add_ip_to_allowed(client_ip):
 def create_offline_database():
     """ایجاد دیتابیس SQLite"""
     try:
-        BASE_DIR = Path(__file__).resolve().parent.parent.parent
+        BASE_DIR = Path(__file__).resolve().parent.parent
         db_path = BASE_DIR / 'db_offline.sqlite3'
 
         # اگر دیتابیس قدیمی وجود دارد، پاک شود
@@ -132,7 +132,7 @@ def setup_offline_settings():
     """پیکربندی تنظیمات آفلاین"""
     try:
         # ایجاد فایل settings_offline.py اگر وجود ندارد
-        BASE_DIR = Path(__file__).resolve().parent.parent.parent
+        BASE_DIR = Path(__file__).resolve().parent.parent
         settings_offline_path = BASE_DIR / 'plasco' / 'settings_offline.py'
 
         if not settings_offline_path.exists():
