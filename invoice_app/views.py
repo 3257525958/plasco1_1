@@ -203,10 +203,22 @@ def create_invoice(request):
     })
 
 
+def convert_persian_arabic_to_english(text):
+    """
+    تبدیل اعداد فارسی و عربی به انگلیسی
+    """
+    persian_numbers = '۰۱۲۳۴۵۶۷۸۹'
+    arabic_numbers = '٠١٢٣٤٥٦٧٨٩'
+    english_numbers = '0123456789'
+
+    translation_table = str.maketrans(persian_numbers + arabic_numbers, english_numbers * 2)
+    return text.translate(translation_table)
+
+
 @login_required
 @csrf_exempt
 def search_product(request):
-    """جستجوی محصولات - نسخه بدون محدودیت"""
+    """جستجوی محصولات - نسخه بدون محدودیت با تبدیل اعداد فارسی/عربی"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -219,14 +231,20 @@ def search_product(request):
             if len(query) < 2:
                 return JsonResponse({'results': []})
 
-            # 🔥 حذف کامل محدودیت و بهینه‌سازی
+            # تبدیل اعداد فارسی و عربی به انگلیسی
+            query_english = convert_persian_arabic_to_english(query)
+            print(f"🔍 جستجوی اصلی: '{query}' -> تبدیل شده: '{query_english}'")
+
+            # جستجوی بدون محدودیت
             products = InventoryCount.objects.filter(
                 branch_id=branch_id
             ).filter(
-                models.Q(product_name__icontains=query) |
-                models.Q(barcode_data__icontains=query)
+                models.Q(product_name__icontains=query) |  # جستجو با نام اصلی
+                models.Q(product_name__icontains=query_english) |  # جستجو با نام تبدیل شده
+                models.Q(barcode_data__icontains=query_english)  # جستجو در بارکد با اعداد انگلیسی
             ).select_related('branch').order_by('product_name')
 
+            # 🔥 حذف کامل محدودیت - تمام نتایج برگردانده می‌شود
             results = []
             for product in products:
                 results.append({
@@ -239,11 +257,19 @@ def search_product(request):
                     'branch_name': product.branch.name if product.branch else 'نامشخص'
                 })
 
-            print(f"🔍 جستجوی '{query}' در شعبه {branch_id}: {len(results)} نتیجه یافت شد")
+            print(
+                f"🔍 جستجوی '{query}' (تبدیل شده: '{query_english}') در شعبه {branch_id}: {len(results)} نتیجه یافت شد")
 
             return JsonResponse({
                 'results': results,
-                'total_count': len(results)
+                'total_count': len(results),
+                'has_more': False,  # چون همه نتایج برگردانده می‌شود
+                'debug': {
+                    'original_query': query,
+                    'converted_query': query_english,
+                    'branch_id': branch_id,
+                    'unlimited_results': True
+                }
             })
 
         except Exception as e:
@@ -251,7 +277,6 @@ def search_product(request):
             return JsonResponse({'error': f'خطا در جستجو: {str(e)}'}, status=500)
 
     return JsonResponse({'error': 'درخواست نامعتبر'}, status=400)
-
 @login_required
 @csrf_exempt
 def remove_item_from_invoice(request):
