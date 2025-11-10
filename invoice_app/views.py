@@ -202,9 +202,11 @@ def create_invoice(request):
         'customer_phone': request.session.get('customer_phone', ''),
     })
 
+
 @login_required
 @csrf_exempt
 def search_product(request):
+    """جستجوی محصولات - نسخه بدون محدودیت"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -217,12 +219,13 @@ def search_product(request):
             if len(query) < 2:
                 return JsonResponse({'results': []})
 
+            # 🔥 حذف کامل محدودیت و بهینه‌سازی
             products = InventoryCount.objects.filter(
                 branch_id=branch_id
             ).filter(
                 models.Q(product_name__icontains=query) |
                 models.Q(barcode_data__icontains=query)
-            )[:10]
+            ).select_related('branch').order_by('product_name')
 
             results = []
             for product in products:
@@ -232,12 +235,19 @@ def search_product(request):
                     'barcode': product.barcode_data or '',
                     'quantity': product.quantity,
                     'price': product.selling_price,
-                    'low_stock': product.quantity <= 0
+                    'low_stock': product.quantity <= 0,
+                    'branch_name': product.branch.name if product.branch else 'نامشخص'
                 })
 
-            return JsonResponse({'results': results})
+            print(f"🔍 جستجوی '{query}' در شعبه {branch_id}: {len(results)} نتیجه یافت شد")
+
+            return JsonResponse({
+                'results': results,
+                'total_count': len(results)
+            })
 
         except Exception as e:
+            print(f"❌ خطا در جستجوی محصول: {str(e)}")
             return JsonResponse({'error': f'خطا در جستجو: {str(e)}'}, status=500)
 
     return JsonResponse({'error': 'درخواست نامعتبر'}, status=400)
