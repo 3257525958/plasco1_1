@@ -134,8 +134,28 @@ IS_OFFLINE_MODE = False
 SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
 
 DEBUG = True
-ALLOWED_HOSTS = ['http://plasmarket.ir','plasmarket.ir','www.plasmarket.ir','https://plasmarket.ir','192.168.1.157']
-CSRF_TRUSTED_ORIGINS = ["https://plasmarket.ir",'http://plasmarket.ir','https://www.plasmarket.ir','http://www.plasmarket.ir']
+# ALLOWED_HOSTS = ['http://plasmarket.ir','plasmarket.ir','www.plasmarket.ir','https://plasmarket.ir','192.168.1.157']
+# CSRF_TRUSTED_ORIGINS = ["https://plasmarket.ir",'http://plasmarket.ir','https://www.plasmarket.ir','http://www.plasmarket.ir']
+ALLOWED_HOSTS = [
+    'plasmarket.ir',      # دامنه اصلی
+    'www.plasmarket.ir',  # زیردامنه www
+    '192.168.1.157',      # IP داخلی سرور
+    'localhost',          # برای تست محلی
+    '127.0.0.1',          # برای تست محلی
+    '0.0.0.0',            # برای همه IPها
+    '.plasmarket.ir',     # همه زیردامنه‌ها
+    '*',                  # ⚠️ موقتاً برای تست - در تولید حذف شود
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://plasmarket.ir",
+    "https://www.plasmarket.ir",
+    "http://plasmarket.ir",
+    "http://www.plasmarket.ir",
+    "http://192.168.1.157",
+    "https://192.168.1.157",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
 
 print("🔵 اجرا در حالت آنلاین - ديتابيس اصلی (Master)")
 
