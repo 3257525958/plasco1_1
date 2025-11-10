@@ -2,10 +2,18 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import logging
-from plasco.offline_ip_manager import is_allowed_offline_ip, get_client_ip
-
+from plasco.offline_ip_manager import is_allowed_offline_ip
 logger = logging.getLogger(__name__)
 
+
+def get_client_ip(request):
+    """دریافت IP واقعی کاربر"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 def control_panel(request):
     """صفحه کنترل پنل برای انتخاب حالت اجرا"""
