@@ -1,5 +1,5 @@
-
-# -------------------------لوکال هاست---------------------------------
+#
+# # -------------------------لوکال هاست---------------------------------
 # """
 # Django settings for plasco project.
 # برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
@@ -132,27 +132,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 IS_OFFLINE_MODE = False
 SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
-DEBUG = False
 
-# در بخش ALLOWED_HOSTS
-ALLOWED_HOSTS = [
-    'plasmarket.ir',
-    'www.plasmarket.ir',
-    'localhost',
-    '127.0.0.1',
-    '0.0.0.0',
-    'testserver',  # این خط را اضافه کنید برای تست‌ها
-    '.plascodata1-ayh-service',  # این هم اگر نیاز است
-]
-# در بخش CORS (اگر نیاز است)
-CORS_ALLOW_ALL_ORIGINS = True  # فقط برای تست
-# یا
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
+DEBUG = True
+ALLOWED_HOSTS = ['http://plasmarket.ir','plasmarket.ir','www.plasmarket.ir','https://plasmarket.ir','192.168.1.157']
+CSRF_TRUSTED_ORIGINS = ["https://plasmarket.ir",'http://plasmarket.ir','https://www.plasmarket.ir','http://www.plasmarket.ir']
 
 print("🔵 اجرا در حالت آنلاین - ديتابيس اصلی (Master)")
 
@@ -188,7 +171,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'plasco.middleware.ControlPanelMiddleware',  # این خط اضافه شد
+    # 'plasco.middleware.ControlPanelMiddleware',  # این خط اضافه شد
 ]
 ROOT_URLCONF = 'plasco.urls'
 
