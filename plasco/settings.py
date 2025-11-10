@@ -182,17 +182,38 @@ INSTALLED_APPS = [
 'ip_manager'
 ]
 
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # حتماً از دیتابیس استفاده کنید
+SESSION_COOKIE_NAME = 'plasco_session_id'
+SESSION_COOKIE_AGE = 3600  # ۱ ساعت
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SECURE = True  # برای HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_SAVE_EVERY_REQUEST = True
+
+# جلوگیری از cache شدن صفحات حساس
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-plasco-cache',
+    }
+}
+
+# Middlewareها باید به این ترتیب باشند
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',  # این خط مهم
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # این خط مهم
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'plasco.middleware.ControlPanelMiddleware',  # این خط اضافه شد
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'plasco.middleware.StrictSessionMiddleware',  # این خط را اضافه کنید
 ]
+
 ROOT_URLCONF = 'plasco.urls'
 
 TEMPLATES = [
@@ -226,11 +247,6 @@ DATABASES = {
         }
     }
 }
-
-# بقیه تنظیمات...
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # یا 'django.contrib.sessions.backends.cache'
-SESSION_COOKIE_AGE = 3600  # 1 hour
-SESSION_SAVE_EVERY_REQUEST = True
 
 LANGUAGE_CODE = 'fa-ir'
 TIME_ZONE = 'Asia/Tehran'

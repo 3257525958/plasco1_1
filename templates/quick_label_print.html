@@ -1,5 +1,3 @@
-
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -116,12 +114,33 @@
         }
 
         .results-container {
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: 10px;
             margin-bottom: 15px;
             display: none;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) #f1f1f1;
+        }
+
+        /* استایل اسکرول بار برای مرورگرهای مبتنی بر Webkit */
+        .results-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .results-container::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .results-container::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
         }
 
         .result-item {
@@ -132,6 +151,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            min-height: 60px;
+            flex-shrink: 0;
         }
 
         .result-item:hover {
@@ -155,11 +176,13 @@
             font-weight: bold;
             font-size: 14px;
             margin-bottom: 5px;
+            line-height: 1.4;
         }
 
         .branch-name {
             color: #666;
             font-size: 12px;
+            line-height: 1.4;
         }
 
         .quantity-info {
@@ -168,6 +191,7 @@
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
+            white-space: nowrap;
         }
 
         .no-results {
@@ -219,7 +243,21 @@
             flex: 1;
             overflow-y: auto;
             padding: 10px;
-            max-height: 300px;
+            max-height: 400px;
+        }
+
+        /* استایل اسکرول بار برای لیست انتخاب‌ها */
+        .selected-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .selected-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .selected-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
         }
 
         .selected-item {
@@ -238,6 +276,11 @@
             color: var(--red-color);
             cursor: pointer;
             padding: 5px;
+            transition: all 0.2s;
+        }
+
+        .remove-btn:hover {
+            transform: scale(1.1);
         }
 
         .actions {
@@ -283,6 +326,13 @@
             transform: translateY(-2px);
         }
 
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .footer {
             text-align: center;
             padding: 15px;
@@ -310,6 +360,18 @@
             border-left: 4px solid var(--red-color);
         }
 
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #ddd;
+        }
+
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -320,36 +382,15 @@
                 order: -1;
                 margin-bottom: 20px;
             }
-        }
-        /* استایل های شما (همانند قبل) */
-        :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #388E3C;
-            --accent-color: #2E7D32;
-            --text-color: #2c3e50;
-            --light-bg: #f9f9f9;
-            --border-color: #ddd;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --red-color: #f44336;
-            --orange-color: #FF9800;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Vazirmatn', sans-serif;
-        }
+            .results-container {
+                max-height: 300px;
+            }
 
-        body {
-            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
-            min-height: 100vh;
-            padding: 20px;
-            color: var(--text-color);
-            direction: rtl;
+            .selected-list {
+                max-height: 200px;
+            }
         }
-
-        /* سایر استایل ها مانند قبل */
     </style>
 </head>
 <body>
@@ -402,15 +443,17 @@
             </div>
             
             <div class="selected-list" id="selected-list">
-                <!-- آیتم‌های انتخاب شده اینجا نمایش داده می‌شوند -->
-                <p style="text-align: center; color: #999; padding: 20px;">هیچ آیتمی انتخاب نشده است</p>
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>هیچ آیتمی انتخاب نشده است</p>
+                </div>
             </div>
             
             <div class="actions">
-                <button class="btn btn-primary" id="print-btn">
+                <button class="btn btn-primary" id="print-btn" disabled>
                     <i class="fas fa-print"></i> ادامه و چاپ لیبل
                 </button>
-                <button class="btn btn-secondary" id="clear-btn">
+                <button class="btn btn-secondary" id="clear-btn" disabled>
                     <i class="fas fa-trash"></i> پاک کردن همه
                 </button>
             </div>
@@ -423,26 +466,11 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // بررسی بارگذاری jQuery
-        if (typeof jQuery === 'undefined') {
-            console.error('jQuery is not loaded!');
-            alert('خطا: کتابخانه jQuery بارگذاری نشده است');
-        } else {
-            console.log('jQuery version:', jQuery.fn.jquery);
-        }
-
         $(document).ready(function() {
             console.log("Document ready - JavaScript loaded successfully");
             
             let searchTimeout;
             let selectedItems = {};
-            
-            // بررسی وجود دکمه چاپ
-            if ($('#print-btn').length === 0) {
-                console.error("Print button not found with selector #print-btn");
-            } else {
-                console.log("Print button found");
-            }
             
             // تابع برای نمایش پیام
             function showMessage(message, type) {
@@ -452,19 +480,36 @@
                 
                 setTimeout(() => {
                     $message.fadeOut();
-                }, 3000);
+                }, 4000);
             }
             
             // تابع برای به‌روزرسانی لیست انتخاب‌ها
             function updateSelectedList() {
-                console.log("Updating selected list");
+                console.log("Updating selected list, items count:", Object.keys(selectedItems).length);
                 const $selectedList = $('#selected-list');
                 const $selectedCount = $('#selected-count');
+                const $printBtn = $('#print-btn');
+                const $clearBtn = $('#clear-btn');
                 
-                $selectedCount.text(Object.keys(selectedItems).length);
+                const selectedCount = Object.keys(selectedItems).length;
+                $selectedCount.text(selectedCount);
                 
-                if (Object.keys(selectedItems).length === 0) {
-                    $selectedList.html('<p style="text-align: center; color: #999; padding: 20px;">هیچ آیتمی انتخاب نشده است</p>');
+                // فعال/غیرفعال کردن دکمه‌ها
+                if (selectedCount > 0) {
+                    $printBtn.prop('disabled', false);
+                    $clearBtn.prop('disabled', false);
+                } else {
+                    $printBtn.prop('disabled', true);
+                    $clearBtn.prop('disabled', true);
+                }
+                
+                if (selectedCount === 0) {
+                    $selectedList.html(`
+                        <div class="empty-state">
+                            <i class="fas fa-clipboard-list"></i>
+                            <p>هیچ آیتمی انتخاب نشده است</p>
+                        </div>
+                    `);
                     return;
                 }
                 
@@ -473,9 +518,9 @@
                     const item = selectedItems[id];
                     html += `
                         <div class="selected-item">
-                            <div>
-                                <div style="font-weight: bold; font-size: 13px;">${item.product_name}</div>
-                                <div style="font-size: 11px; color: #666;">${item.branch_name}</div>
+                            <div class="product-info">
+                                <div class="product-name">${item.product_name}</div>
+                                <div class="branch-name">${item.branch_name}</div>
                             </div>
                             <div class="remove-btn" data-id="${id}">
                                 <i class="fas fa-times"></i>
@@ -490,6 +535,13 @@
                 $('.remove-btn').click(function() {
                     const itemId = $(this).data('id');
                     console.log("Removing item:", itemId);
+                    removeItemFromSelection(itemId);
+                });
+            }
+            
+            // تابع برای حذف آیتم از انتخاب
+            function removeItemFromSelection(itemId) {
+                if (selectedItems[itemId]) {
                     delete selectedItems[itemId];
                     updateSelectedList();
                     
@@ -501,7 +553,12 @@
                             'X-CSRFToken': getCookie('csrftoken')
                         }
                     });
-                });
+                    
+                    // به‌روزرسانی وضعیت در نتایج جستجو
+                    $(`.result-item[data-id="${itemId}"]`).removeClass('selected');
+                    
+                    showMessage('آیتم از لیست حذف شد', 'success');
+                }
             }
             
             // تابع جستجو
@@ -526,90 +583,103 @@
                     },
                     dataType: 'json',
                     success: function(data) {
-                        console.log("Search results:", data);
+                        console.log("Search completed. Total results:", data.results ? data.results.length : 0);
                         $('#loading').hide();
                         
                         if (data.results && data.results.length > 0) {
                             displayResults(data.results);
                         } else {
                             $('#no-results').show();
+                            console.log("No results found for query:", query);
                         }
                     },
                     error: function(xhr, status, error) {
                         console.error('Error in search:', error);
+                        console.error('XHR status:', xhr.status);
                         $('#loading').hide();
                         $('#no-results').show();
-                        showMessage('خطا در جستجو', 'error');
+                        showMessage('خطا در جستجو: ' + error, 'error');
                     }
                 });
             }
             
             // تابع نمایش نتایج
             function displayResults(results) {
-                console.log("Displaying results:", results);
+                console.log("Displaying results:", results.length, "items");
                 const $resultsContainer = $('#results-container');
                 $resultsContainer.empty();
                 
+                if (results.length === 0) {
+                    $('#no-results').show();
+                    $resultsContainer.hide();
+                    return;
+                }
+                
                 results.forEach(function(item) {
                     const isSelected = selectedItems.hasOwnProperty(item.id);
-                    const $resultItem = $('<div class="result-item"></div>');
+                    const $resultItem = $(`
+                        <div class="result-item" data-id="${item.id}">
+                            <div class="product-info">
+                                <div class="product-name">${item.product_name || 'نام نامشخص'}</div>
+                                <div class="branch-name">${item.branch_name || 'شعبه نامشخص'}</div>
+                            </div>
+                            <div class="quantity-info">${item.quantity || 0} عدد</div>
+                        </div>
+                    `);
                     
                     if (isSelected) {
                         $resultItem.addClass('selected');
                     }
                     
-                    $resultItem.html(`
-                        <div class="product-info">
-                            <div class="product-name">${item.product_name}</div>
-                            <div class="branch-name">${item.branch_name}</div>
-                        </div>
-                        <div class="quantity-info">${item.quantity} عدد</div>
-                    `);
-                    
                     $resultItem.click(function() {
                         console.log("Item clicked:", item.id);
-                        if (!selectedItems.hasOwnProperty(item.id)) {
-                            // افزودن به لیست انتخاب‌ها
-                            $.ajax({
-                                url: '{% url "add_to_print_list" %}',
-                                method: 'POST',
-                                contentType: 'application/json',
-                                data: JSON.stringify({
-                                    item_id: item.id
-                                }),
-                                headers: {
-                                    'X-CSRFToken': getCookie('csrftoken')
-                                },
-                                success: function(response) {
-                                    console.log("Add to list response:", response);
-                                    if (response.success) {
-                                        selectedItems[item.id] = item;
-                                        $resultItem.addClass('selected');
-                                        updateSelectedList();
-                                        showMessage(response.message, 'success');
-                                    } else {
-                                        showMessage(response.message, 'error');
-                                    }
-                                },
-                                error: function(xhr, status, error) {
-                                    console.error("Error adding item:", error);
-                                    showMessage('خطا در افزودن آیتم', 'error');
-                                }
-                            });
-                        } else {
-                            // حذف از لیست انتخاب‌ها
-                            console.log("Removing item from selection:", item.id);
-                            delete selectedItems[item.id];
-                            $resultItem.removeClass('selected');
-                            updateSelectedList();
-                            showMessage('آیتم از لیست حذف شد', 'success');
-                        }
+                        handleItemSelection(item, $resultItem);
                     });
                     
                     $resultsContainer.append($resultItem);
                 });
                 
                 $resultsContainer.show();
+                $('#no-results').hide();
+                
+                // لاگ برای دیباگ
+                console.log("Results container children:", $resultsContainer.children().length);
+            }
+            
+            // تابع مدیریت انتخاب آیتم
+            function handleItemSelection(item, $resultItem) {
+                if (!selectedItems.hasOwnProperty(item.id)) {
+                    // افزودن به لیست انتخاب‌ها
+                    $.ajax({
+                        url: '{% url "add_to_print_list" %}',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            item_id: item.id
+                        }),
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        success: function(response) {
+                            console.log("Add to list response:", response);
+                            if (response.success) {
+                                selectedItems[item.id] = item;
+                                $resultItem.addClass('selected');
+                                updateSelectedList();
+                                showMessage(response.message, 'success');
+                            } else {
+                                showMessage(response.message, 'error');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error adding item:", error);
+                            showMessage('خطا در افزودن آیتم', 'error');
+                        }
+                    });
+                } else {
+                    // حذف از لیست انتخاب‌ها
+                    removeItemFromSelection(item.id);
+                }
             }
             
             // تابع برای دریافت cookie
@@ -636,14 +706,22 @@
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function() {
                     searchProducts(query);
-                }, 300);
+                }, 500);
             });
             
             // دکمه پاک کردن همه
             $('#clear-btn').click(function() {
                 console.log("Clear button clicked");
+                if (Object.keys(selectedItems).length === 0) {
+                    showMessage('لیست انتخاب‌ها از قبل خالی است', 'error');
+                    return;
+                }
+                
                 selectedItems = {};
                 updateSelectedList();
+                
+                // حذف تمام انتخاب‌ها از نتایج
+                $('.result-item').removeClass('selected');
                 
                 $.ajax({
                     url: '{% url "clear_print_list" %}',
@@ -661,7 +739,7 @@
                 });
             });
             
-            // دکمه چاپ - بازنویسی شده
+            // دکمه چاپ
             $('#print-btn').click(function() {
                 console.log("Print button clicked - Starting process");
                 
@@ -671,10 +749,13 @@
                     return;
                 }
 
-                console.log("Selected items for printing:", selectedItems);
+                console.log("Selected items for printing:", Object.keys(selectedItems).length);
                 
                 // نمایش پیام در حال پردازش
                 showMessage('در حال پردازش درخواست چاپ...', 'success');
+                
+                // غیرفعال کردن دکمه جهت جلوگیری از کلیک‌های مکرر
+                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال پردازش...');
                 
                 // هدایت به صفحه تنظیمات چاپ
                 $.ajax({
@@ -684,16 +765,17 @@
                         console.log("Server response for print:", response);
                         if (response.success) {
                             console.log("Redirecting to:", response.redirect_url);
-                            // استفاده از window.location.replace برای اطمینان از redirect
-                            window.location.replace(response.redirect_url);
+                            window.location.href = response.redirect_url;
                         } else {
                             console.log("Server error:", response.message);
                             showMessage(response.message, 'error');
+                            $('#print-btn').prop('disabled', false).html('<i class="fas fa-print"></i> ادامه و چاپ لیبل');
                         }
                     },
                     error: function(xhr, status, error) {
                         console.error("AJAX error:", status, error);
                         showMessage('خطا در ارتباط با سرور: ' + error, 'error');
+                        $('#print-btn').prop('disabled', false).html('<i class="fas fa-print"></i> ادامه و چاپ لیبل');
                         
                         // تلاش جایگزین برای redirect در صورت خطا
                         try {
@@ -703,7 +785,7 @@
                                 'type': 'inventory',
                                 'items': items
                             }, true);
-                            window.location.replace(`${baseUrl}?${queryString}`);
+                            window.location.href = `${baseUrl}?${queryString}`;
                         } catch (fallbackError) {
                             console.error("Fallback redirect also failed:", fallbackError);
                         }
@@ -715,22 +797,27 @@
             $('#product-search').focus();
             
             // بارگذاری اولیه لیست انتخاب‌ها از session
-            $.ajax({
-                url: '{% url "get_print_list" %}',
-                method: 'GET',
-                success: function(response) {
-                    console.log("Initial print list:", response);
-                    if (response.items && response.items.length > 0) {
-                        response.items.forEach(function(item) {
-                            selectedItems[item.id] = item;
-                        });
-                        updateSelectedList();
+            function loadInitialSelection() {
+                $.ajax({
+                    url: '{% url "get_print_list" %}',
+                    method: 'GET',
+                    success: function(response) {
+                        console.log("Initial print list:", response);
+                        if (response.items && response.items.length > 0) {
+                            response.items.forEach(function(item) {
+                                selectedItems[item.id] = item;
+                            });
+                            updateSelectedList();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error loading print list:", error);
                     }
-                },
-                error: function(xhr, status, error) {
-                    console.error("Error loading print list:", error);
-                }
-            });
+                });
+            }
+            
+            // بارگذاری اولیه
+            loadInitialSelection();
             
             console.log("All event handlers attached successfully");
         });

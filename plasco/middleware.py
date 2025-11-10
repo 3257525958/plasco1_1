@@ -1,50 +1,41 @@
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from .offline_ip_manager import is_allowed_offline_ip, get_client_ip
-import logging
+# در فایل plasco/middleware.py این کد را اضافه کنید:
 
-logger = logging.getLogger(__name__)
+import hashlib
+from django.utils.deprecation import MiddlewareMixin
 
-class ControlPanelMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
 
-    def __call__(self, request):
-        client_ip = get_client_ip(request)
+class StrictSessionMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        # اگر کاربر لاگین کرده است
+        if request.user.is_authenticated:
+            # ایجاد fingerprint از کاربر و مرورگر
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+            fingerprint_source = f"{request.user.id}-{user_agent}-{accept_language}"
+            expected_fingerprint = hashlib.md5(fingerprint_source.encode()).hexdigest()
 
-        # لاگ برای دیباگ
-        logger.info(f"🔄 Middleware - IP: {client_ip}, Path: {request.path}")
-        logger.info(f"🔄 Session operation_mode: {request.session.get('operation_mode', 'NOT_SET')}")
-        logger.info(f"🔄 Is allowed IP: {is_allowed_offline_ip(request)}")
+            # بررسی fingerprint در session
+            session_fingerprint = request.session.get('user_fingerprint')
 
-        # اگر کاربر در حال دسترسی به کنترل پنل، نصب آفلاین یا فایل‌های استاتیک هست، اجازه بده
-        if (request.path.startswith('/control-panel/') or
-                request.path.startswith('/offline/') or
-                request.path.startswith('/static/') or
-                request.path.startswith('/media/') or
-                request.path.startswith('/admin/') or
-                request.path.startswith('/api/')):
-            logger.info(f"✅ اجازه دسترسی مستقیم به: {request.path}")
-            return self.get_response(request)
+            if session_fingerprint != expected_fingerprint:
+                # اگر fingerprint مطابقت ندارد، کاربر را logout کن
+                from django.contrib.auth import logout
+                logout(request)
+                request.session.flush()
 
-        # اگر کاربر به صفحه اصلی میاد (/) و IP مجاز هست و هنوز حالت انتخاب نکرده
-        # اگر کاربر به صفحه اصلی میاد (/) و IP مجاز هست
-        # اگر کاربر به صفحه اصلی میاد (/) و IP مجاز هست و هنوز آفلاین نصب نکرده
-        if (request.path == '/' and
-                is_allowed_offline_ip(request) and
-                not request.session.get('offline_installed', False)):
+                # ایجاد session جدید
+                request.session.create()
+                request.session['user_fingerprint'] = expected_fingerprint
 
-            logger.info("🔄 هدایت به کنترل پنل از صفحه اصلی")
-            # کاربر رو به کنترل پنل هدایت کن
-            return HttpResponseRedirect(reverse('control_panel'))
+    def process_response(self, request, response):
+        # بعد از login، fingerprint را ذخیره کن
+        if request.user.is_authenticated and not request.session.get('user_fingerprint'):
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+            fingerprint_source = f"{request.user.id}-{user_agent}-{accept_language}"
+            expected_fingerprint = hashlib.md5(fingerprint_source.encode()).hexdigest()
 
-        response = self.get_response(request)
+            request.session['user_fingerprint'] = expected_fingerprint
+            request.session.modified = True
+
         return response
-
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
