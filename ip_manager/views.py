@@ -2,12 +2,30 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import AllowedIP
+import json
 
 
 def manage_ips(request):
     """صفحه مدیریت IPها"""
+    return render(request, 'ip_manager/manage_ips.html')
+
+
+@csrf_exempt
+def list_ips(request):
+    """دریافت لیست IPها (API)"""
     ips = AllowedIP.objects.all().order_by('-created_at')
-    return render(request, 'ip_manager/manage_ips.html', {'ips': ips})
+    ip_list = []
+
+    for ip in ips:
+        ip_list.append({
+            'id': ip.id,
+            'ip_address': ip.ip_address,
+            'description': ip.description,
+            'is_active': ip.is_active,
+            'created_at': ip.created_at.strftime('%Y/%m/%d %H:%M')
+        })
+
+    return JsonResponse({'status': 'success', 'ips': ip_list})
 
 
 @csrf_exempt
