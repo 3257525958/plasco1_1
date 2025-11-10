@@ -189,6 +189,8 @@ def quick_label_print_page(request):
     if 'selected_items' in request.session:
         del request.session['selected_items']
     return render(request, 'quick_label_print.html')
+
+
 def search_inventory_for_label(request):
     """جستجوی موجودی بر اساس نام کالا (API)"""
     query = request.GET.get('q', '')
@@ -198,20 +200,21 @@ def search_inventory_for_label(request):
         return JsonResponse({'results': []})
 
     try:
-        # جستجو در فیلد product_name
+        # جستجو در فیلد product_name - بدون محدودیت
         inventory_items = InventoryCount.objects.filter(
             product_name__icontains=query
-        ).select_related('branch')[:10]  # محدودیت نتایج
+        ).select_related('branch').order_by('product_name')
 
         results = []
         for item in inventory_items:
             results.append({
                 'id': item.id,
                 'product_name': item.product_name,
-                'branch_name': item.branch.name,
+                'branch_name': item.branch.name if item.branch else 'نامشخص',
                 'quantity': item.quantity
             })
 
+        logger.info(f"جستجوی '{query}': {len(results)} نتیجه یافت شد")
         return JsonResponse({'results': results})
 
     except Exception as e:
