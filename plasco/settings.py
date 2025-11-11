@@ -211,7 +211,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'plasco.middleware.StrictSessionMiddleware',  # این خط را اضافه کنید
+    # 'plasco.middleware.StrictSessionMiddleware',  # این خط را اضافه کنید
+    'cantact_app.middleware.AdvancedSessionMiddleware',
 ]
 
 ROOT_URLCONF = 'plasco.urls'

@@ -19,4 +19,9 @@ urlpatterns = [
     path('branch/<int:pk>/edit/', views.branch_edit, name='branch_edit'),
     path('branch/<int:pk>/delete/', views.branch_delete, name='branch_delete'),
     path('branch/search-sellers/', views.search_sellers, name='search_sellers'),
+
+    # -------------------------برسی لاگین------------------------------------------------------------
+    path('sessions/', views.session_management_view, name='session_management'),
+    path('sessions/terminate/', views.terminate_other_sessions_view, name='terminate_other_sessions'),
+
     ]

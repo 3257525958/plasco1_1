@@ -1,0 +1,433 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت دستگاه‌های متصل</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2E7D32;
+            --secondary-color: #388E3C;
+            --accent-color: #1B5E20;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --gradient-primary: linear-gradient(135deg, #2E7D32, #4CAF50);
+            --gradient-success: linear-gradient(135deg, #4CAF50, #66BB6A);
+            --gradient-warning: linear-gradient(135deg, #FF9800, #FFB74D);
+            --gradient-danger: linear-gradient(135deg, #F44336, #EF5350);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 10px;
+            color: var(--text-color);
+            direction: rtl;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8f5e9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+
+        .table th {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .table td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .table tr:hover td {
+            background-color: #f8f9fa;
+        }
+
+        .table-success {
+            background-color: #e8f5e9 !important;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-warning {
+            background: var(--gradient-warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #FFB74D, #FFCC80);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #EF5350, #E57373);
+            transform: translateY(-2px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .bg-success {
+            background: var(--success-color) !important;
+        }
+
+        .bg-warning {
+            background: var(--warning-color) !important;
+        }
+
+        .bg-secondary {
+            background: #78909c !important;
+        }
+
+        .alert {
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: var(--accent-color);
+            border-right: 4px solid var(--success-color);
+        }
+
+        .alert-warning {
+            background: #fff3e0;
+            color: #e65100;
+            border-right: 4px solid var(--warning-color);
+        }
+
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border-right: 4px solid var(--danger-color);
+        }
+
+        .text-muted {
+            color: #78909c !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+
+            .table {
+                font-size: 0.8rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 8px 5px;
+            }
+
+            .section-card {
+                padding: 12px;
+            }
+        }
+
+        .device-icon {
+            font-size: 1.2rem;
+            margin-left: 5px;
+        }
+
+        .current-session-indicator {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border: 2px solid var(--success-color);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-laptop"></i> مدیریت دستگاه‌های متصل</h1>
+        </div>
+
+        <div class="current-session-indicator">
+            <i class="fas fa-info-circle"></i>
+            <strong>دستگاه فعلی:</strong> این دستگاه در حال حاضر فعال است
+        </div>
+
+        <div class="section-card">
+            <h3 class="section-title"><i class="fas fa-mobile-alt"></i> دستگاه‌های متصل به حساب شما</h3>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>دستگاه</th>
+                            <th>آدرس IP</th>
+                            <th>زمان لاگین</th>
+                            <th>آخرین فعالیت</th>
+                            <th>وضعیت</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in user_sessions %}
+                        <tr {% if session.session_key == current_session_key %}class="table-success"{% endif %}>
+                            <td>
+                                {% if session.device_type == 'mobile' %}
+                                    <i class="fas fa-mobile-alt device-icon"></i>
+                                {% elif session.device_type == 'tablet' %}
+                                    <i class="fas fa-tablet-alt device-icon"></i>
+                                {% elif session.device_type == 'desktop' %}
+                                    <i class="fas fa-desktop device-icon"></i>
+                                {% else %}
+                                    <i class="fas fa-laptop device-icon"></i>
+                                {% endif %}
+                                {{ session.get_device_type_display }}
+                                <br>
+                                <small class="text-muted">{{ session.device_info.browser }}</small>
+                            </td>
+                            <td>{{ session.ip_address }}</td>
+                            <td>{{ session.login_time|date:"Y/m/d H:i" }}</td>
+                            <td>{{ session.last_activity|date:"Y/m/d H:i" }}</td>
+                            <td>
+                                {% if session.session_key == current_session_key %}
+                                    <span class="badge bg-success">دستگاه فعلی</span>
+                                {% elif session.is_active %}
+                                    <span class="badge bg-warning">فعال</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">غیرفعال</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.session_key != current_session_key and session.is_active %}
+                                <form method="post" action="{% url 'terminate_other_sessions' %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="session_key" value="{{ session.session_key }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" 
+                                            onclick="return confirm('آیا می‌خواهید این دستگاه را قطع کنید؟')">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        قطع ارتباط
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">
+                                <i class="fas fa-info-circle"></i>
+                                هیچ دستگاه فعالی یافت نشد
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4">
+                <form method="post" action="{% url 'terminate_other_sessions' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning" 
+                            onclick="return confirm('آیا می‌خواهید از تمام دستگاه‌های دیگر خارج شوید؟')">
+                        <i class="fas fa-sign-out-alt"></i>
+                        خروج از تمام دستگاه‌های دیگر
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 class="section-title"><i class="fas fa-shield-alt"></i> نکات امنیتی</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>دستگاه‌های معتبر:</strong> فقط دستگاه‌هایی که می‌شناسید باید به حساب شما متصل باشند.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>دستگاه‌های ناشناس:</strong> در صورت مشاهده دستگاه ناشناس، بلافاصله آن را قطع کنید.
+                    </div>
+                </div>
+            </div>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <i class="fas fa-lock text-success"></i>
+                    پس از اتمام کار از حساب خود خارج شوید
+                </li>
+                <li class="list-group-item">
+                    <i class="fas fa-key text-warning"></i>
+                    رمز عبور خود را به صورت دوره‌ای تغییر دهید
+                </li>
+                <li class="list-group-item">
+                    <i class="fas fa-mobile text-info"></i>
+                    دستگاه‌های عمومی را برای ورود انتخاب نکنید
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            console.log("صفحه مدیریت دستگاه‌های متصل بارگذاری شد");
+            
+            // نمایش پیام‌های toast در صورت وجود
+            {% if messages %}
+                {% for message in messages %}
+                    showToast('{{ message }}', '{{ message.tags }}');
+                {% endfor %}
+            {% endif %}
+        });
+
+        function showToast(message, type = 'info') {
+            // ایجاد یک المان ساده برای نمایش پیام
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} mt-2`;
+            toast.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>${message}</span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            
+            // اضافه کردن toast به صفحه
+            document.body.appendChild(toast);
+            
+            // حذف خودکار پس از 5 ثانیه
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // تأیید قبل از قطع کردن تمام sessions
+        document.querySelector('form[action="{% url 'terminate_other_sessions' %}"]:not([style])')?.addEventListener('submit', function(e) {
+            if (!confirm('آیا مطمئن هستید که می‌خواهید از تمام دستگاه‌های دیگر خارج شوید؟ این عمل غیرقابل برگشت است.')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
