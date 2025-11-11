@@ -13,6 +13,7 @@ urlpatterns = [
 
     path('edit-profile/', views.edit_profile, name='edit_profile'),
     # -----------------ثبت شعب------------------------------------------------
+
     path('branch/create/', views.BranchCreateView.as_view(), name='branch_create'),
     path('branch/list/', views.branch_list, name='branch_list'),
     path('branch/<int:pk>/', views.branch_detail, name='branch_detail'),
@@ -21,6 +22,8 @@ urlpatterns = [
     path('branch/search-sellers/', views.search_sellers, name='search_sellers'),
 
     # -------------------------برسی لاگین------------------------------------------------------------
+
     path('sessions/', views.session_management_view, name='session_management'),
     path('sessions/terminate/', views.terminate_other_sessions_view, name='terminate_other_sessions'),
-    ]
+
+]
