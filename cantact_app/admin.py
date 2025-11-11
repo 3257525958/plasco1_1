@@ -44,7 +44,7 @@ class BranchAdminModelAdmin(admin.ModelAdmin):
 # در admin.py اپ مربوطه
 
 from django.contrib import admin
-from account_app.models import UserSessionLog
+from cantact_app.models import UserSessionLog
 
 
 @admin.register(UserSessionLog)
