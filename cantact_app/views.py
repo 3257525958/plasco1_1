@@ -1163,7 +1163,7 @@ def search_sellers(request):
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from account_app.models import UserSessionLog
+from cantact_app.models import UserSessionLog
 
 
 @login_required
