@@ -1,3 +1,4 @@
+# sync_api/signals.py - نسخه اصلاح شده
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.conf import settings
@@ -5,20 +6,53 @@ from .models import ChangeTracker
 
 print("🔧 [SIGNALS] ماژول signals.py برای sync_api بارگذاری شد")
 
+# لیست مدل‌های مستثنی شده
+EXCLUDED_MODELS = [
+    'Session', 'ContentType', 'LogEntry', 'Permission',
+    'Group', 'Migration', 'Token', 'DataSyncLog',
+    'ServerSyncLog', 'SyncToken', 'SyncSession',
+    'TokenProxy', 'ChangeTracker'
+]
+
+EXCLUDED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',  # ✅ اضافه شد
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
+    'sync_app',
+    'sync_api'
+]
+
+
+def should_track_changes(sender, instance):
+    """بررسی آیا باید تغییرات این مدل را ردیابی کرد"""
+    # فقط در حالت آنلاین پردازش کن
+    if getattr(settings, 'OFFLINE_MODE', False):
+        return False
+
+    # بررسی اپ و مدل
+    if sender._meta.app_label in EXCLUDED_APPS:
+        return False
+
+    if sender.__name__ in EXCLUDED_MODELS:
+        return False
+
+    # بررسی وجود فیلد id
+    if not hasattr(instance, 'id'):
+        return False
+
+    return True
+
 
 @receiver(post_save)
 def handle_model_save(sender, instance, created, **kwargs):
-    """ردیابی ایجاد و آپدیت برای سیستم آنلاین"""
-    # فقط در حالت آنلاین پردازش کن
-    if getattr(settings, 'OFFLINE_MODE', False):
-        return
-
-    # فقط مدل‌های syncable را ردیابی کن
-    if sender._meta.app_label in ['django.contrib.admin', 'django.contrib.auth',
-                                  'django.contrib.contenttypes', 'django.contrib.sessions',
-                                  'django.contrib.messages', 'django.contrib.staticfiles',
-                                  'rest_framework', 'rest_framework.authtoken',
-                                  'corsheaders', 'sync_app', 'sync_api']:
+    """ردیابی ایجاد و آپدیت - نسخه اصلاح شده"""
+    if not should_track_changes(sender, instance):
         return
 
     try:
@@ -54,7 +88,7 @@ def handle_model_save(sender, instance, created, **kwargs):
             record_id=instance.id,
             action=action,
             data=data,
-            sync_direction='server_to_local',  # در آنلاین جهت به سمت لوکال‌ها است
+            sync_direction='server_to_local',
             app_name=app_label,
             model_name=model_name
         )
@@ -67,17 +101,8 @@ def handle_model_save(sender, instance, created, **kwargs):
 
 @receiver(post_delete)
 def handle_model_delete(sender, instance, **kwargs):
-    """ردیابی حذف برای سیستم آنلاین"""
-    # فقط در حالت آنلاین پردازش کن
-    if getattr(settings, 'OFFLINE_MODE', False):
-        return
-
-    # فقط مدل‌های syncable را ردیابی کن
-    if sender._meta.app_label in ['django.contrib.admin', 'django.contrib.auth',
-                                  'django.contrib.contenttypes', 'django.contrib.sessions',
-                                  'django.contrib.messages', 'django.contrib.staticfiles',
-                                  'rest_framework', 'rest_framework.authtoken',
-                                  'corsheaders', 'sync_app', 'sync_api']:
+    """ردیابی حذف - نسخه اصلاح شده"""
+    if not should_track_changes(sender, instance):
         return
 
     try:
@@ -91,7 +116,7 @@ def handle_model_delete(sender, instance, **kwargs):
             record_id=instance.id,
             action='delete',
             data={'id': instance.id, 'model': full_model_name},
-            sync_direction='server_to_local',  # در آنلاین جهت به سمت لوکال‌ها است
+            sync_direction='server_to_local',
             app_name=app_label,
             model_name=model_name
         )

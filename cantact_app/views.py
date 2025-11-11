@@ -1157,4 +1157,48 @@ def search_sellers(request):
 
     return JsonResponse({'results': results})
 
+#
+# -----------------------------------------------لاگین ها---------------------------------------
+# در views.py
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from account_app.models import UserSessionLog
+
+
+@login_required
+def session_management_view(request):
+    """صفحه مدیریت سشن‌های کاربر"""
+    user_sessions = UserSessionLog.get_user_sessions(request.user)
+    current_session_key = request.session.session_key
+
+    context = {
+        'user_sessions': user_sessions,
+        'current_session_key': current_session_key,
+        'max_sessions': 1,  # یا از تنظیمات middleware بخوانید
+    }
+
+    return render(request, 'session_management.html', context)
+
+
+@login_required
+def terminate_other_sessions_view(request):
+    """خاتمه دادن به سایر سشن‌های کاربر"""
+    if request.method == 'POST':
+        current_session_key = request.session.session_key
+
+        # خاتمه تمام سشن‌های دیگر
+        other_sessions = UserSessionLog.objects.filter(
+            user=request.user,
+            is_active=True
+        ).exclude(session_key=current_session_key)
+
+        terminated_count = 0
+        for session_log in other_sessions:
+            session_log.terminate()
+            terminated_count += 1
+
+        from django.contrib import messages
+        messages.success(request, f"{terminated_count} سشن دیگر خاتمه یافت.")
+
+    return redirect('session_management')

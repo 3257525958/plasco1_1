@@ -95,3 +95,69 @@ class BranchAdmin(models.Model):
         return f"{self.admin_user.firstname} {self.admin_user.lastname} - {self.branch.name}"
 
 
+# ----------------------------------------سرور لاگین رو چک میکنه--------------------------------------
+
+
+# در models.py یکی از اپ‌ها (مثلاً account_app/models.py)
+
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+import json
+
+
+class UserSessionLog(models.Model):
+    SESSION_TYPES = [
+        ('web', 'مرورگر وب'),
+        ('mobile', 'موبایل'),
+        ('tablet', 'تبلت'),
+        ('desktop', 'دسکتاپ'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='کاربر')
+    session_key = models.CharField(max_length=40, unique=True, verbose_name='کلید سشن')
+    ip_address = models.GenericIPAddressField(verbose_name='آدرس IP')
+    user_agent = models.TextField(verbose_name='مرورگر کاربر')
+    device_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='web', verbose_name='نوع دستگاه')
+    device_info = models.JSONField(default=dict, verbose_name='اطلاعات دستگاه')
+    location = models.CharField(max_length=100, blank=True, verbose_name='موقعیت')
+    is_active = models.BooleanField(default=True, verbose_name='فعال')
+    login_time = models.DateTimeField(auto_now_add=True, verbose_name='زمان لاگین')
+    last_activity = models.DateTimeField(auto_now=True, verbose_name='آخرین فعالیت')
+    forced_logout = models.BooleanField(default=False, verbose_name='خروج اجباری')
+
+    class Meta:
+        verbose_name = 'لاگ سشن کاربر'
+        verbose_name_plural = 'لاگ‌های سشن کاربران'
+        ordering = ['-last_activity']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['session_key']),
+            models.Index(fields=['last_activity']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.device_type} - {self.login_time}"
+
+    def terminate(self):
+        """خاتمه دادن به این سشن"""
+        self.is_active = False
+        self.forced_logout = True
+        self.save()
+
+        # پاک کردن سشن از دیتابیس Django
+        from django.contrib.sessions.models import Session
+        try:
+            Session.objects.filter(session_key=self.session_key).delete()
+        except:
+            pass
+
+    @classmethod
+    def get_active_sessions_count(cls, user):
+        """تعداد سشن‌های فعال کاربر"""
+        return cls.objects.filter(user=user, is_active=True).count()
+
+    @classmethod
+    def get_user_sessions(cls, user):
+        """دریافت تمام سشن‌های کاربر"""
+        return cls.objects.filter(user=user).order_by('-last_activity')

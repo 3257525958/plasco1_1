@@ -1,41 +1,276 @@
-# در فایل plasco/middleware.py این کد را اضافه کنید:
+# در plasco/middleware.py
 
+from django.contrib.sessions.models import Session
+from django.contrib.auth import logout
+from django.utils import timezone
+from django.core.cache import cache
 import hashlib
-from django.utils.deprecation import MiddlewareMixin
+import user_agents
+import requests
+from account_app.models import UserSessionLog  # مطمئن شوید مسیر درست است
 
 
-class StrictSessionMiddleware(MiddlewareMixin):
+class AdvancedSessionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # تنظیمات قابل تنظیم
+        self.max_sessions_per_user = 1  # حداکثر تعداد سشن فعال
+        self.allow_multiple_admin_sessions = False  # آیا ادمین‌ها چند سشن داشته باشند؟
+        self.session_timeout = 3600  # 1 ساعت
+
+    def __call__(self, request):
+        # پردازش درخواست
+        response = self.process_request(request)
+
+        if not response:
+            response = self.get_response(request)
+
+        # پردازش پاسخ
+        return self.process_response(request, response)
+
     def process_request(self, request):
-        # اگر کاربر لاگین کرده است
+        """پردازش هر درخواست قبل از رسیدن به view"""
+
+        # اگر کاربر لاگین شده است
         if request.user.is_authenticated:
-            # ایجاد fingerprint از کاربر و مرورگر
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
-            accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
-            fingerprint_source = f"{request.user.id}-{user_agent}-{accept_language}"
-            expected_fingerprint = hashlib.md5(fingerprint_source.encode()).hexdigest()
+            current_session_key = request.session.session_key
 
-            # بررسی fingerprint در session
-            session_fingerprint = request.session.get('user_fingerprint')
+            # بررسی آیا سشن معتبر است
+            if not self.is_session_valid(request):
+                self.force_logout(request)
+                return self.create_logout_response(request)
 
-            if session_fingerprint != expected_fingerprint:
-                # اگر fingerprint مطابقت ندارد، کاربر را logout کن
-                from django.contrib.auth import logout
-                logout(request)
-                request.session.flush()
+            # بروزرسانی آخرین فعالیت
+            self.update_last_activity(request)
 
-                # ایجاد session جدید
-                request.session.create()
-                request.session['user_fingerprint'] = expected_fingerprint
+            # بررسی و مدیریت سشن‌های متعدد
+            self.manage_user_sessions(request)
 
     def process_response(self, request, response):
-        # بعد از login، fingerprint را ذخیره کن
-        if request.user.is_authenticated and not request.session.get('user_fingerprint'):
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
-            accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
-            fingerprint_source = f"{request.user.id}-{user_agent}-{accept_language}"
-            expected_fingerprint = hashlib.md5(fingerprint_source.encode()).hexdigest()
+        """پردازش هر پاسخ قبل از ارسال به کاربر"""
 
-            request.session['user_fingerprint'] = expected_fingerprint
-            request.session.modified = True
+        # بعد از لاگین موفق
+        if (request.user.is_authenticated and
+                self.is_login_successful(request, response)):
+            self.handle_successful_login(request)
 
         return response
+
+    def is_login_successful(self, request, response):
+        """بررسی آیا لاگین موفق بوده است"""
+        login_urls = ['/login/', '/cantact/login/', '/admin/login/']
+        is_login_url = any(request.path.startswith(url) for url in login_urls)
+        is_successful = response.status_code in [200, 302]
+
+        return is_login_url and is_successful
+
+    def handle_successful_login(self, request):
+        """مدیریت لاگین موفق"""
+        user = request.user
+        session_key = request.session.session_key
+
+        # ایجاد fingerprint برای امنیت بیشتر
+        security_fingerprint = self.create_security_fingerprint(request)
+        request.session['security_fingerprint'] = security_fingerprint
+
+        # تشخیص نوع دستگاه
+        device_info = self.detect_device_info(request)
+
+        # ذخیره اطلاعات سشن
+        UserSessionLog.objects.create(
+            user=user,
+            session_key=session_key,
+            ip_address=self.get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            device_type=device_info['type'],
+            device_info=device_info,
+            location=self.get_estimated_location(request),
+            is_active=True
+        )
+
+        # مدیریت سشن‌های قدیمی
+        self.cleanup_old_sessions(user, session_key)
+
+        print(f"✅ لاگین موفق: {user.username} از {device_info['type']}")
+
+    def create_security_fingerprint(self, request):
+        """ایجاد fingerprint امنیتی"""
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+        ip = self.get_client_ip(request)
+
+        fingerprint_string = f"{request.user.id}-{user_agent}-{accept_language}-{ip}"
+        return hashlib.sha256(fingerprint_string.encode()).hexdigest()
+
+    def detect_device_info(self, request):
+        """تشخیص اطلاعات دستگاه"""
+        user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+        ua = user_agents.parse(user_agent_string)
+
+        return {
+            'type': self.get_device_type(ua),
+            'browser': f"{ua.browser.family} {ua.browser.version_string}",
+            'os': f"{ua.os.family} {ua.os.version_string}",
+            'device': ua.device.family,
+            'is_mobile': ua.is_mobile,
+            'is_tablet': ua.is_tablet,
+            'is_pc': ua.is_pc,
+            'is_bot': ua.is_bot
+        }
+
+    def get_device_type(self, ua):
+        """تعیین نوع دستگاه"""
+        if ua.is_mobile:
+            return 'mobile'
+        elif ua.is_tablet:
+            return 'tablet'
+        elif ua.is_pc:
+            return 'desktop'
+        else:
+            return 'web'
+
+    def get_client_ip(self, request):
+        """دریافت IP واقعی کاربر"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+    def get_estimated_location(self, request):
+        """تخمین موقعیت جغرافیایی (ساده)"""
+        ip = self.get_client_ip(request)
+
+        # برای IPهای داخلی
+        if ip.startswith('192.168.') or ip.startswith('10.') or ip == '127.0.0.1':
+            return 'شبکه داخلی'
+
+        # می‌توانید از سرویس‌های Geolocation استفاده کنید
+        return 'نامشخص'
+
+    def cleanup_old_sessions(self, user, current_session_key):
+        """پاکسازی سشن‌های قدیمی"""
+        active_sessions = UserSessionLog.objects.filter(
+            user=user,
+            is_active=True
+        ).exclude(session_key=current_session_key)
+
+        # اگر کاربر ادمین است و اجازه سشن‌های متعدد دارد
+        if user.is_staff and self.allow_multiple_admin_sessions:
+            # فقط سشن‌های قدیمی‌تر از timeout را پاک کن
+            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
+            old_sessions = active_sessions.filter(last_activity__lt=timeout_time)
+        else:
+            # برای کاربران عادی، تمام سشن‌های دیگر را پاک کن
+            old_sessions = active_sessions
+
+        for session_log in old_sessions:
+            session_log.terminate()
+            print(f"🗑️ سشن قدیمی پاک شد: {user.username} - {session_log.session_key}")
+
+    def is_session_valid(self, request):
+        """بررسی معتبر بودن سشن"""
+        if not request.user.is_authenticated:
+            return True
+
+        # بررسی fingerprint امنیتی
+        current_fingerprint = self.create_security_fingerprint(request)
+        stored_fingerprint = request.session.get('security_fingerprint')
+
+        if stored_fingerprint and current_fingerprint != stored_fingerprint:
+            print(f"🚨 خطای امنیتی: fingerprint مطابقت ندارد - {request.user.username}")
+            return False
+
+        # بررسی وجود سشن در لاگ
+        try:
+            session_log = UserSessionLog.objects.get(
+                session_key=request.session.session_key,
+                user=request.user,
+                is_active=True
+            )
+
+            # بررسی timeout
+            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
+            if session_log.last_activity < timeout_time:
+                print(f"⏰ سشن منقضی شده: {request.user.username}")
+                return False
+
+        except UserSessionLog.DoesNotExist:
+            print(f"🔍 سشن در لاگ پیدا نشد: {request.user.username}")
+            return False
+
+        return True
+
+    def update_last_activity(self, request):
+        """بروزرسانی زمان آخرین فعالیت"""
+        if request.user.is_authenticated:
+            try:
+                session_log = UserSessionLog.objects.get(
+                    session_key=request.session.session_key,
+                    user=request.user
+                )
+                session_log.last_activity = timezone.now()
+                session_log.save()
+            except UserSessionLog.DoesNotExist:
+                pass
+
+    def manage_user_sessions(self, request):
+        """مدیریت سشن‌های کاربر"""
+        user = request.user
+        current_session_key = request.session.session_key
+
+        # تعداد سشن‌های فعال
+        active_count = UserSessionLog.get_active_sessions_count(user)
+
+        # اگر بیشتر از حد مجاز سشن فعال دارد
+        if active_count > self.max_sessions_per_user:
+            # پیدا کردن سشن‌های قدیمی‌تر
+            old_sessions = UserSessionLog.objects.filter(
+                user=user,
+                is_active=True
+            ).exclude(session_key=current_session_key).order_by('last_activity')
+
+            # پاک کردن سشن‌های اضافی
+            sessions_to_remove = old_sessions[:active_count - self.max_sessions_per_user]
+            for session_log in sessions_to_remove:
+                session_log.terminate()
+                print(f"🔒 حذف سشن اضافی: {user.username}")
+
+    def force_logout(self, request):
+        """اجباری کردن خروج"""
+        if request.user.is_authenticated:
+            print(f"🔐 خروج اجباری: {request.user.username}")
+
+            # غیرفعال کردن سشن در لاگ
+            try:
+                session_log = UserSessionLog.objects.get(
+                    session_key=request.session.session_key,
+                    user=request.user
+                )
+                session_log.is_active = False
+                session_log.forced_logout = True
+                session_log.save()
+            except UserSessionLog.DoesNotExist:
+                pass
+
+            # logout کاربر
+            logout(request)
+            request.session.flush()
+
+    def create_logout_response(self, request):
+        """ایجاد پاسخ برای خروج اجباری"""
+        from django.http import HttpResponseRedirect
+        from django.urls import reverse
+        from django.contrib import messages
+
+        # اضافه کردن پیام
+        storage = messages.get_messages(request)
+        storage.used = True  # پاک کردن پیام‌های قبلی
+
+        messages.warning(
+            request,
+            "دسترسی شما به دلیل فعالیت از دستگاه دیگر یا مشکل امنیتی قطع شد. لطفاً مجدداً وارد شوید."
+        )
+
+        return HttpResponseRedirect(reverse('login'))  # به صفحه لاگین هدایت شود

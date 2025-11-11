@@ -36,3 +36,36 @@ class BranchAdminModelAdmin(admin.ModelAdmin):
         return f"{obj.admin_user.firstname} {obj.admin_user.lastname}"
 
     get_admin_name.short_description = 'نام مدیر'
+
+
+    # ---------------------------برسی لاگین ها------------------------------------------
+
+
+# در admin.py اپ مربوطه
+
+from django.contrib import admin
+from account_app.models import UserSessionLog
+
+
+@admin.register(UserSessionLog)
+class UserSessionLogAdmin(admin.ModelAdmin):
+    list_display = [
+        'user',
+        'device_type',
+        'ip_address',
+        'login_time',
+        'last_activity',
+        'is_active'
+    ]
+    list_filter = ['device_type', 'is_active', 'login_time']
+    search_fields = ['user__username', 'ip_address', 'user_agent']
+    readonly_fields = ['login_time', 'last_activity']
+    actions = ['terminate_sessions']
+
+    def terminate_sessions(self, request, queryset):
+        """اکشن برای خاتمه دادن به سشن‌های انتخاب شده"""
+        for session_log in queryset:
+            session_log.terminate()
+        self.message_user(request, f"{queryset.count()} سشن با موفقیت خاتمه یافت.")
+
+    terminate_sessions.short_description = "خاتمه دادن به سشن‌های انتخاب شده"
