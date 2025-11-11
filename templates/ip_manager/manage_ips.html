@@ -481,205 +481,410 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- فقط بخش JavaScript را با این جایگزین کنید: -->
-<script>
-    // متغیرهای global
-    let selectedIPs = new Set();
+    <script>
+        // متغیرهای global
+        let selectedIPs = new Set();
 
-    // وقتی صفحه لود شد
-    $(document).ready(function() {
-        loadIPs();
+        // وقتی صفحه لود شد
+        $(document).ready(function() {
+            loadIPs();
 
-        // افزودن IP جدید
-        $('#addIpForm').on('submit', function(e) {
-            e.preventDefault();
-            addNewIP();
+            // افزودن IP جدید
+            $('#addIpForm').on('submit', function(e) {
+                e.preventDefault();
+                addNewIP();
+            });
+
+            // ذخیره ویرایش
+            $('#saveEditBtn').on('click', function() {
+                saveEditIP();
+            });
         });
 
-        // ذخیره ویرایش
-        $('#saveEditBtn').on('click', function() {
-            saveEditIP();
-        });
-    });
+        // بارگذاری لیست IPها
+        function loadIPs() {
+            showLoading(true);
 
-    // بارگذاری لیست IPها
-    function loadIPs() {
-        showLoading(true);
-
-        $.ajax({
-            url: '/ip/ip_manager/api/list/',  // مسیر قدیمی
-            method: 'GET',
-            success: function(response) {
-                showLoading(false);
-                if (response.status === 'success') {
-                    updateIPsTable(response.ips);
-                    updateStats(response.ips);
-                } else {
-                    showError('خطا در دریافت اطلاعات از سرور');
+            $.ajax({
+                url: '/ip/ip_manager/api/list/',
+                method: 'GET',
+                success: function(response) {
+                    showLoading(false);
+                    if (response.status === 'success') {
+                        updateIPsTable(response.ips);
+                        updateStats(response.ips);
+                    } else {
+                        showError('خطا در دریافت اطلاعات از سرور: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showLoading(false);
+                    showError('خطا در ارتباط با سرور: ' + error);
+                    console.error('خطای AJAX:', error);
                 }
-            },
-            error: function(xhr, status, error) {
-                showLoading(false);
-                showError('خطا در ارتباط با سرور: ' + error);
-            }
-        });
-    }
-
-    // بروزرسانی جدول IPها
-    function updateIPsTable(ips) {
-        const tbody = $('#ipTableBody');
-        const emptyState = $('#emptyState');
-
-        if (ips.length === 0) {
-            tbody.html('');
-            emptyState.removeClass('d-none');
-            $('#installationCard').hide();
-            return;
+            });
         }
 
-        emptyState.addClass('d-none');
+        // بروزرسانی جدول IPها
+        function updateIPsTable(ips) {
+            const tbody = $('#ipTableBody');
+            const emptyState = $('#emptyState');
 
-        let html = '';
-        ips.forEach((ip, index) => {
-            const statusBadge = ip.is_active ?
-                '<span class="badge bg-success badge-custom">فعال</span>' :
-                '<span class="badge bg-danger badge-custom">غیرفعال</span>';
-
-            const toggleButton = ip.is_active ?
-                `<button class="btn btn-outline-warning btn-action toggle-ip"
-                        data-id="${ip.id}" data-action="deactivate" title="غیرفعال کردن">
-                    <i class="fas fa-ban"></i>
-                </button>` :
-                `<button class="btn btn-outline-success btn-action toggle-ip"
-                        data-id="${ip.id}" data-action="activate" title="فعال کردن">
-                    <i class="fas fa-check"></i>
-                </button>`;
-
-            const isChecked = selectedIPs.has(ip.ip_address) ? 'checked' : '';
-
-            html += `
-                <tr id="ip-row-${ip.id}">
-                    <td class="checkbox-cell">
-                        <input type="checkbox" class="ip-checkbox" value="${ip.ip_address}"
-                               onchange="toggleIPSelection('${ip.ip_address}')" ${isChecked}>
-                    </td>
-                    <td class="fw-bold">${index + 1}</td>
-                    <td>
-                        <span class="fw-bold text-primary">
-                            <i class="fas fa-desktop me-2"></i> ${ip.ip_address}
-                        </span>
-                    </td>
-                    <td>${ip.description || '<span class="text-muted">بدون توضیح</span>'}</td>
-                    <td><small class="text-muted">${ip.created_at}</small></td>
-                    <td>${statusBadge}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-outline-primary btn-action edit-ip"
-                                    data-id="${ip.id}" data-ip="${ip.ip_address}"
-                                    data-desc="${ip.description}" title="ویرایش">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            ${toggleButton}
-                            <button class="btn btn-outline-danger btn-action delete-ip"
-                                    data-id="${ip.id}" title="حذف">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-
-        tbody.html(html);
-        attachEventHandlers();
-        updateInstallationCard();
-    }
-
-    // انتخاب/لغو انتخاب همه
-    function toggleSelectAll(checkbox) {
-        const ipCheckboxes = document.querySelectorAll('.ip-checkbox');
-        ipCheckboxes.forEach(cb => {
-            cb.checked = checkbox.checked;
-            if (checkbox.checked) {
-                selectedIPs.add(cb.value);
-            } else {
-                selectedIPs.delete(cb.value);
+            if (ips.length === 0) {
+                tbody.html('');
+                emptyState.removeClass('d-none');
+                $('#installationCard').hide();
+                return;
             }
-        });
-        updateInstallationCard();
-    }
 
-    // انتخاب/لغو انتخاب یک IP
-    function toggleIPSelection(ip) {
-        if (selectedIPs.has(ip)) {
-            selectedIPs.delete(ip);
-        } else {
-            selectedIPs.add(ip);
-        }
-        updateInstallationCard();
-    }
-
-    // بروزرسانی کارت نصب
-    function updateInstallationCard() {
-        const installationCard = $('#installationCard');
-        const selectedIpsList = $('#selectedIpsList');
-
-        if (selectedIPs.size > 0) {
-            installationCard.show();
+            emptyState.addClass('d-none');
 
             let html = '';
-            selectedIPs.forEach(ip => {
-                html += `<span class="selected-ips-badge">${ip}</span>`;
+            ips.forEach((ip, index) => {
+                const statusBadge = ip.is_active ?
+                    '<span class="badge bg-success badge-custom">فعال</span>' :
+                    '<span class="badge bg-danger badge-custom">غیرفعال</span>';
+
+                const toggleButton = ip.is_active ?
+                    `<button class="btn btn-outline-warning btn-action toggle-ip"
+                            data-id="${ip.id}" data-action="deactivate" title="غیرفعال کردن">
+                        <i class="fas fa-ban"></i>
+                    </button>` :
+                    `<button class="btn btn-outline-success btn-action toggle-ip"
+                            data-id="${ip.id}" data-action="activate" title="فعال کردن">
+                        <i class="fas fa-check"></i>
+                    </button>`;
+
+                const isChecked = selectedIPs.has(ip.ip_address) ? 'checked' : '';
+
+                html += `
+                    <tr id="ip-row-${ip.id}">
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="ip-checkbox" value="${ip.ip_address}"
+                                   onchange="toggleIPSelection('${ip.ip_address}')" ${isChecked}>
+                        </td>
+                        <td class="fw-bold">${index + 1}</td>
+                        <td>
+                            <span class="fw-bold text-primary">
+                                <i class="fas fa-desktop me-2"></i> ${ip.ip_address}
+                            </span>
+                        </td>
+                        <td>${ip.description || '<span class="text-muted">بدون توضیح</span>'}</td>
+                        <td><small class="text-muted">${ip.created_at}</small></td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-outline-primary btn-action edit-ip"
+                                        data-id="${ip.id}" data-ip="${ip.ip_address}"
+                                        data-desc="${ip.description || ''}" title="ویرایش">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${toggleButton}
+                                <button class="btn btn-outline-danger btn-action delete-ip"
+                                        data-id="${ip.id}" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
             });
-            selectedIpsList.html(html);
-        } else {
-            installationCard.hide();
-        }
-    }
 
-    // ایجاد فایل نصب آفلاین
-    function createOfflineInstaller() {
-        if (selectedIPs.size === 0) {
-            showError('لطفاً حداقل یک IP انتخاب کنید');
-            return;
+            tbody.html(html);
+            attachEventHandlers();
+            updateInstallationCard();
         }
 
-        const selectedIPsArray = Array.from(selectedIPs);
-        const csrf = $('[name=csrfmiddlewaretoken]').val();
-
-        // غیرفعال کردن دکمه
-        $('#createInstallBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>در حال ایجاد...');
-
-        $.ajax({
-            url: '/ip/ip_manager/api/create-offline-installer/',  // مسیر قدیمی
-            method: 'POST',
-            data: {
-                selected_ips: JSON.stringify(selectedIPsArray),
-                csrfmiddlewaretoken: csrf
-            },
-            success: function(response) {
-                $('#createInstallBtn').prop('disabled', false).html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
-
-                if (response.status === 'success') {
-                    showSuccess(response.message);
-                    // نمایش لینک دانلود
-                    if (response.download_url) {
-                        showSuccess(`فایل نصب ایجاد شد! <a href="${response.download_url}" class="alert-link">برای دانلود کلیک کنید</a>`);
-                    }
+        // انتخاب/لغو انتخاب همه
+        function toggleSelectAll(checkbox) {
+            const ipCheckboxes = document.querySelectorAll('.ip-checkbox');
+            ipCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+                if (checkbox.checked) {
+                    selectedIPs.add(cb.value);
                 } else {
-                    showError(response.message);
+                    selectedIPs.delete(cb.value);
                 }
-            },
-            error: function(xhr, status, error) {
-                $('#createInstallBtn').prop('disabled', false).html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
-                showError('خطا در ارتباط با سرور: ' + error);
+            });
+            updateInstallationCard();
+        }
+
+        // انتخاب/لغو انتخاب یک IP
+        function toggleIPSelection(ip) {
+            if (selectedIPs.has(ip)) {
+                selectedIPs.delete(ip);
+            } else {
+                selectedIPs.add(ip);
             }
-        });
-    }
+            updateInstallationCard();
+        }
 
-    // بقیه توابع بدون تغییر (addNewIP, deleteIP, saveEditIP, toggleIP, etc.)
-    // ...
-</script>
+        // بروزرسانی کارت نصب
+        function updateInstallationCard() {
+            const installationCard = $('#installationCard');
+            const selectedIpsList = $('#selectedIpsList');
 
+            if (selectedIPs.size > 0) {
+                installationCard.show();
+
+                let html = '';
+                selectedIPs.forEach(ip => {
+                    html += `<span class="selected-ips-badge">${ip}</span>`;
+                });
+                selectedIpsList.html(html);
+            } else {
+                installationCard.hide();
+            }
+        }
+
+        // ایجاد فایل نصب آفلاین
+        function createOfflineInstaller() {
+            if (selectedIPs.size === 0) {
+                showError('لطفاً حداقل یک IP انتخاب کنید');
+                return;
+            }
+
+            const selectedIPsArray = Array.from(selectedIPs);
+            const csrf = $('[name=csrfmiddlewaretoken]').val();
+
+            $('#createInstallBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>در حال ایجاد...');
+
+            $.ajax({
+                url: '/ip/ip_manager/api/create-offline-installer/',
+                method: 'POST',
+                data: {
+                    selected_ips: JSON.stringify(selectedIPsArray),
+                    csrfmiddlewaretoken: csrf
+                },
+                success: function(response) {
+                    $('#createInstallBtn').prop('disabled', false).html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
+                    
+                    if (response.status === 'success') {
+                        showSuccess(response.message);
+                        if (response.download_url) {
+                            // نمایش لینک دانلود
+                            $('#downloadLink').attr('href', response.download_url);
+                            $('#downloadSection').show();
+                            showSuccess(`فایل نصب ایجاد شد! <a href="${response.download_url}" class="alert-link">برای دانلود کلیک کنید</a>`);
+                        }
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#createInstallBtn').prop('disabled', false).html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
+                    showError('خطا در ارتباط با سرور: ' + error);
+                    console.error('خطای AJAX:', error);
+                }
+            });
+        }
+
+        // افزودن IP جدید
+        function addNewIP() {
+            const ipAddress = $('#ip_address').val();
+            const description = $('#description').val();
+            const csrf = $('[name=csrfmiddlewaretoken]').val();
+
+            // اعتبارسنجی IP
+            if (!ipAddress.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
+                showError('فرمت IP نامعتبر است. مثال صحیح: 192.168.1.100');
+                return;
+            }
+
+            $.ajax({
+                url: '/ip/ip_manager/api/add/',
+                method: 'POST',
+                data: {
+                    ip_address: ipAddress,
+                    description: description,
+                    csrfmiddlewaretoken: csrf
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showSuccess(response.message);
+                        $('#addIpForm')[0].reset();
+                        loadIPs(); // بارگذاری مجدد لیست
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showError('خطا در ارتباط با سرور: ' + error);
+                }
+            });
+        }
+
+        // حذف IP
+        function deleteIP(ipId) {
+            if (!confirm('آیا از حذف این IP اطمینان دارید؟')) return;
+
+            $.ajax({
+                url: `/ip/ip_manager/api/delete/${ipId}/`,
+                method: 'POST',
+                data: {
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showSuccess(response.message);
+                        loadIPs(); // بارگذاری مجدد لیست
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showError('خطا در ارتباط با سرور: ' + error);
+                }
+            });
+        }
+
+        // ویرایش IP
+        function editIP(ipId, currentIp, currentDesc) {
+            $('#edit_ip_id').val(ipId);
+            $('#edit_ip_address').val(currentIp);
+            $('#edit_description').val(currentDesc || '');
+            $('#editIpModal').modal('show');
+        }
+
+        // ذخیره ویرایش IP
+        function saveEditIP() {
+            const ipId = $('#edit_ip_id').val();
+            const ipAddress = $('#edit_ip_address').val();
+            const description = $('#edit_description').val();
+            const csrf = $('[name=csrfmiddlewaretoken]').val();
+
+            // اعتبارسنجی IP
+            if (!ipAddress.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
+                showError('فرمت IP نامعتبر است. مثال صحیح: 192.168.1.100');
+                return;
+            }
+
+            $.ajax({
+                url: `/ip/ip_manager/api/update/${ipId}/`,
+                method: 'POST',
+                data: {
+                    ip_address: ipAddress,
+                    description: description,
+                    csrfmiddlewaretoken: csrf
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showSuccess(response.message);
+                        $('#editIpModal').modal('hide');
+                        loadIPs(); // بارگذاری مجدد لیست
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showError('خطا در ارتباط با سرور: ' + error);
+                }
+            });
+        }
+
+        // فعال/غیرفعال کردن IP
+        function toggleIP(ipId, action) {
+            $.ajax({
+                url: `/ip/ip_manager/api/toggle/${ipId}/`,
+                method: 'POST',
+                data: {
+                    action: action,
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showSuccess(response.message);
+                        loadIPs(); // بارگذاری مجدد لیست
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showError('خطا در ارتباط با سرور: ' + error);
+                }
+            });
+        }
+
+        // اتصال event handlers
+        function attachEventHandlers() {
+            // حذف IP
+            $('.delete-ip').on('click', function() {
+                const ipId = $(this).data('id');
+                deleteIP(ipId);
+            });
+
+            // ویرایش IP
+            $('.edit-ip').on('click', function() {
+                const ipId = $(this).data('id');
+                const ipAddress = $(this).data('ip');
+                const description = $(this).data('desc');
+                editIP(ipId, ipAddress, description);
+            });
+
+            // فعال/غیرفعال کردن IP
+            $('.toggle-ip').on('click', function() {
+                const ipId = $(this).data('id');
+                const action = $(this).data('action');
+                toggleIP(ipId, action);
+            });
+        }
+
+        // بروزرسانی آمار
+        function updateStats(ips) {
+            const totalIps = ips.length;
+            const activeIps = ips.filter(ip => ip.is_active).length;
+            
+            $('#totalIps').text(totalIps);
+            $('#activeIps').text(activeIps);
+        }
+
+        // بروزرسانی لیست
+        function refreshIPs() {
+            loadIPs();
+            showSuccess('لیست IPها بروزرسانی شد');
+        }
+
+        // نمایش/پنهان کردن اسپینر بارگذاری
+        function showLoading(show) {
+            if (show) {
+                $('#loadingSpinner').show();
+                $('#ipTableBody').hide();
+            } else {
+                $('#loadingSpinner').hide();
+                $('#ipTableBody').show();
+            }
+        }
+
+        // نمایش پیام موفقیت
+        function showSuccess(message) {
+            $('#alertContainer').html(`
+                <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+        }
+
+        // نمایش پیام خطا
+        function showError(message) {
+            $('#alertContainer').html(`
+                <div class="alert alert-danger alert-custom alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+        }
+
+        // ریست فرآیند نصب
+        function resetInstallation() {
+            $('#progressCard').hide();
+            $('#downloadSection').hide();
+            selectedIPs.clear();
+            updateInstallationCard();
+            showSuccess('فرآیند نصب ریست شد');
+        }
+    </script>
 </body>
 </html>
