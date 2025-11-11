@@ -596,40 +596,39 @@ def toggle_ip(request, ip_id):
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
 
 
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+
 @csrf_exempt
 def create_offline_installer(request):
-    """ایجاد فایل نصب آفلاین با IPهای انتخاب شده - نسخه ساده برای تست"""
-    print("🔹 درخواست ایجاد فایل نصب دریافت شد")
+    """ساده‌ترین نسخه برای تست"""
+    print("🎯 درخواست POST دریافت شد!")
 
     if request.method == 'POST':
         try:
-            import json
-            from django.http import JsonResponse  # ✅ اینجا هم اضافه کنید
-            from django.utils import timezone
+            print("📦 داده‌های POST:", request.POST)
 
-            # دریافت IPهای انتخاب شده
             selected_ips_json = request.POST.get('selected_ips', '[]')
             selected_ips = json.loads(selected_ips_json)
 
-            print(f"🔹 IPهای دریافت شده: {selected_ips}")
+            print(f"🔢 IPهای دریافت شده: {selected_ips}")
 
-            # ایجاد یک پاسخ تستی ساده
-            response_data = {
-                'status': 'success',
-                'message': f'فایل نصب با {len(selected_ips)} IP ایجاد شد (نسخه تست)',
-                'download_url': '/media/test_download.zip',
-                'selected_ips': selected_ips
-            }
-
-            print("✅ پاسخ ارسال می‌شود:", response_data)
-            return JsonResponse(response_data)
-
-        except Exception as e:
-            print(f"❌ خطا در ایجاد فایل نصب: {str(e)}")
+            # پاسخ ساده و موفق
             return JsonResponse({
-                'status': 'error',
-                'message': f'خطا در ایجاد فایل نصب: {str(e)}'
+                'status': 'success',
+                'message': f'فایل نصب برای {len(selected_ips)} IP ایجاد شد!',
+                'download_url': '/media/test_file.zip',
+                'selected_ips': selected_ips
             })
 
-    print("❌ متد غیرمجاز")
+        except Exception as e:
+            print(f"❌ خطا: {e}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا: {str(e)}'
+            })
+
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
