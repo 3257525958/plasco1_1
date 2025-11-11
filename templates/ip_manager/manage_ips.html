@@ -7,14 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* استایل‌ها مانند قبل */
         :root {
             --primary-color: #667eea;
             --secondary-color: #764ba2;
             --success-color: #28a745;
             --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #17a2b8;
         }
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -35,14 +32,6 @@
             color: white;
             padding: 2rem;
         }
-        .stat-card {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 1.5rem;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
         .content-section { padding: 2rem; }
         .form-card, .table-card, .action-card {
             border: none;
@@ -56,68 +45,24 @@
         .btn-custom {
             border-radius: 8px;
             font-weight: 600;
-            transition: all 0.3s ease;
             padding: 0.5rem 1.5rem;
-        }
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         .table-custom th {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
-            border: none;
-            font-weight: 600;
             padding: 1rem;
         }
         .table-custom td { padding: 1rem; vertical-align: middle; }
-        .badge-custom {
-            border-radius: 6px;
-            font-size: 0.8rem;
-            padding: 0.4rem 0.8rem;
-            font-weight: 500;
-        }
         .action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .btn-action {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
+        .empty-state { text-align: center; padding: 3rem; color: #6c757d; }
         .loading-spinner { display: none; text-align: center; padding: 2rem; }
-        .alert-custom {
-            border-radius: 10px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
         .checkbox-cell { width: 50px; text-align: center; }
         .selected-ips-badge {
             background: var(--info-color);
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 20px;
-            font-size: 0.9rem;
             margin: 0.25rem;
-        }
-        .debug-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1rem;
-            font-family: monospace;
-            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -130,7 +75,6 @@
                         <i class="fas fa-shield-alt me-3"></i>
                         مدیریت IPهای مجاز سیستم آفلاین
                     </h1>
-                    <p class="mb-0 opacity-75">مدیریت دسترسی کامپیوترها به کنترل پنل آفلاین</p>
                 </div>
                 <div class="col-md-4">
                     <div class="row text-center">
@@ -156,63 +100,31 @@
         <div class="content-section">
             <div id="alertContainer"></div>
 
-            <!-- بخش دیباگ -->
-            <div class="card action-card">
-                <div class="card-header bg-warning text-dark py-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-bug me-2"></i>
-                        تست و دیباگ
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <button class="btn btn-info btn-custom mb-2" onclick="testConnection()">
-                                <i class="fas fa-network-wired me-2"></i> تست ارتباط با سرور
-                            </button>
-                            <button class="btn btn-secondary btn-custom mb-2" onclick="testCSRF()">
-                                <i class="fas fa-shield-alt me-2"></i> تست CSRF Token
-                            </button>
-                        </div>
-                        <div class="col-md-6">
-                            <button class="btn btn-primary btn-custom mb-2" onclick="testAPI()">
-                                <i class="fas fa-api me-2"></i> تست API مستقیم
-                            </button>
-                            <button class="btn btn-success btn-custom mb-2" onclick="showDebugInfo()">
-                                <i class="fas fa-info-circle me-2"></i> نمایش اطلاعات دیباگ
-                            </button>
-                        </div>
-                    </div>
-                    <div class="debug-section mt-3" id="debugInfo" style="display: none;">
-                        <div id="debugContent"></div>
-                    </div>
-                </div>
-            </div>
-
+            <!-- کارت ایجاد فایل نصب -->
             <div class="card action-card" id="installationCard" style="display: none;">
-                <div class="card-header bg-info text-white py-3">
+                <div class="card-header bg-success text-white py-3">
                     <h5 class="mb-0">
-                        <i class="fas fa-download me-2"></i>
+                        <i class="fas fa-rocket me-2"></i>
                         ایجاد فایل نصب آفلاین
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h6>IPهای انتخاب شده:</h6>
+                            <h6>IPهای انتخاب شده برای فایل نصب:</h6>
                             <div id="selectedIpsList" class="mb-3"></div>
-                            <small class="text-muted">این IPها به ALLOWED_HOSTS در فایل تنظیمات اضافه خواهند شد</small>
+                            <small class="text-muted">این IPها به فایل تنظیمات آفلاین اضافه خواهند شد</small>
                         </div>
                         <div class="col-md-4 text-end">
                             <button class="btn btn-success btn-custom" onclick="createOfflineInstaller()" id="createInstallBtn">
-                                <i class="fas fa-rocket me-2"></i> ایجاد فایل نصب
+                                <i class="fas fa-download me-2"></i> ایجاد و دانلود فایل
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- بقیه کدهای فرم و جدول مانند قبل -->
+            <!-- فرم افزودن IP -->
             <div class="card form-card">
                 <div class="card-header bg-primary text-white py-3">
                     <h5 class="mb-0">
@@ -226,16 +138,14 @@
                         <div class="row g-3 align-items-end">
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">آدرس IP</label>
-                                <input type="text" class="form-control" id="ip_address"
-                                       placeholder="مثال: 192.168.1.100" required
+                                <input type="text" class="form-control" id="ip_address" 
+                                       placeholder="192.168.1.100" required
                                        pattern="^(\d{1,3}\.){3}\d{1,3}$">
-                                <div class="form-text text-muted">فرمت IP باید صحیح باشد</div>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label fw-bold">توضیحات</label>
                                 <input type="text" class="form-control" id="description"
-                                       placeholder="مثال: کامپیوتر اتاق مالی - کاربر: علی">
-                                <div class="form-text text-muted">توضیح اختیاری درباره این IP</div>
+                                       placeholder="کامپیوتر اتاق مالی">
                             </div>
                             <div class="col-md-3">
                                 <button type="submit" class="btn btn-success btn-custom w-100">
@@ -247,20 +157,13 @@
                 </div>
             </div>
 
+            <!-- لیست IPها -->
             <div class="card table-card">
-                <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-success text-white py-3">
                     <h5 class="mb-0">
                         <i class="fas fa-list me-2"></i>
                         لیست IPهای مجاز
                     </h5>
-                    <div>
-                        <button class="btn btn-light btn-sm" onclick="refreshIPs()">
-                            <i class="fas fa-sync-alt me-1"></i> بروزرسانی
-                        </button>
-                        <a href="/" class="btn btn-light btn-sm ms-2">
-                            <i class="fas fa-home me-1"></i> صفحه اصلی
-                        </a>
-                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="loading-spinner" id="loadingSpinner">
@@ -274,15 +177,15 @@
                         <table class="table table-hover table-custom mb-0">
                             <thead>
                                 <tr>
-                                    <th width="5%" class="checkbox-cell">
+                                    <th class="checkbox-cell">
                                         <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
                                     </th>
-                                    <th width="5%">#</th>
-                                    <th width="18%">آدرس IP</th>
-                                    <th width="27%">توضیحات</th>
-                                    <th width="15%">تاریخ ثبت</th>
-                                    <th width="15%">وضعیت</th>
-                                    <th width="15%">عملیات</th>
+                                    <th>#</th>
+                                    <th>آدرس IP</th>
+                                    <th>توضیحات</th>
+                                    <th>تاریخ ثبت</th>
+                                    <th>وضعیت</th>
+                                    <th>عملیات</th>
                                 </tr>
                             </thead>
                             <tbody id="ipTableBody"></tbody>
@@ -292,7 +195,7 @@
                     <div id="emptyState" class="empty-state d-none">
                         <i class="fas fa-inbox"></i>
                         <h4>هیچ IPی ثبت نشده است</h4>
-                        <p class="text-muted">برای شروع، اولین IP را با استفاده از فرم بالا اضافه کنید</p>
+                        <p class="text-muted">اولین IP را اضافه کنید</p>
                     </div>
                 </div>
             </div>
@@ -306,114 +209,37 @@
         let selectedIPs = new Set();
 
         $(document).ready(function() {
-            console.log('🔹 صفحه بارگذاری شد');
+            console.log('🚀 صفحه مدیریت IPها بارگذاری شد');
             loadIPs();
-
+            
             $('#addIpForm').on('submit', function(e) {
                 e.preventDefault();
                 addNewIP();
             });
         });
 
-        // ==================== توابع تست و دیباگ ====================
-        
-        function testConnection() {
-            alert('🔹 شروع تست ارتباط با سرور');
-            const testUrls = [
-                '/ip/ip_manager/api/list/',
-                '/ip/ip_manager/api/create-offline-installer/'
-            ];
-
-            testUrls.forEach(url => {
-                $.ajax({
-                    url: url,
-                    method: 'GET',
-                    success: function(response) {
-                        alert(`✅ ${url} - پاسخ: ${response.status}`);
-                        console.log(`✅ ${url}:`, response);
-                    },
-                    error: function(xhr, status, error) {
-                        alert(`❌ ${url} - خطا: ${xhr.status} - ${error}`);
-                        console.error(`❌ ${url}:`, xhr.status, error);
-                    }
-                });
-            });
-        }
-
-        function testCSRF() {
-            const csrfToken = $('[name=csrfmiddlewaretoken]').val();
-            if (csrfToken) {
-                alert(`✅ CSRF Token موجود است (${csrfToken.length} کاراکتر)`);
-                console.log('CSRF Token:', csrfToken);
-            } else {
-                alert('❌ CSRF Token یافت نشد!');
-            }
-        }
-
-        function testAPI() {
-            alert('🔹 تست مستقیم API ایجاد فایل نصب');
-            const csrfToken = $('[name=csrfmiddlewaretoken]').val();
-            
-            // استفاده از fetch برای تست مستقیم
-            fetch('/ip/ip_manager/api/create-offline-installer/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
-                },
-                body: 'selected_ips=' + JSON.stringify(['192.168.1.100']) + '&csrfmiddlewaretoken=' + csrfToken
-            })
-            .then(response => {
-                alert(`🔹 وضعیت پاسخ: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                alert(`✅ پاسخ سرور: ${data.status} - ${data.message}`);
-                console.log('پاسخ سرور:', data);
-            })
-            .catch(error => {
-                alert(`❌ خطا در تست: ${error}`);
-                console.error('خطای تست:', error);
-            });
-        }
-
-        function showDebugInfo() {
-            const debugInfo = `
-                <strong>اطلاعات دیباگ:</strong><br>
-                - URL کامل: ${window.location.href}<br>
-                - Origin: ${window.location.origin}<br>
-                - CSRF Token: ${$('[name=csrfmiddlewaretoken]').val() ? 'موجود' : 'مفقود'}<br>
-                - تعداد IPهای انتخاب شده: ${selectedIPs.size}<br>
-                - API URL: ${window.location.origin}/ip/ip_manager/api/create-offline-installer/<br>
-                - User Agent: ${navigator.userAgent}
-            `;
-            $('#debugContent').html(debugInfo);
-            $('#debugInfo').show();
-        }
-
-        // ==================== توابع اصلی ====================
-
+        // ==================== ایجاد فایل نصب ====================
         function createOfflineInstaller() {
-            console.log('🔹 شروع ایجاد فایل نصب');
+            console.log('🎯 شروع ایجاد فایل نصب...');
             
             if (selectedIPs.size === 0) {
-                alert('❌ هیچ IPی انتخاب نشده است');
-                showError('لطفاً حداقل یک IP انتخاب کنید');
+                alert('⚠️ لطفاً حداقل یک IP انتخاب کنید');
                 return;
             }
 
             const selectedIPsArray = Array.from(selectedIPs);
             const csrfToken = $('[name=csrfmiddlewaretoken]').val();
 
-            console.log('🔸 ارسال داده:', {
-                selected_ips: selectedIPsArray,
-                csrf_token_length: csrfToken ? csrfToken.length : 0
+            console.log('📨 ارسال داده:', {
+                ips: selectedIPsArray,
+                csrf_exists: !!csrfToken
             });
 
+            // غیرفعال کردن دکمه
             $('#createInstallBtn').prop('disabled', true)
                                  .html('<i class="fas fa-spinner fa-spin me-2"></i>در حال ایجاد...');
 
-            // روش 1: استفاده از jQuery AJAX
+            // ارسال درخواست POST
             $.ajax({
                 url: '/ip/ip_manager/api/create-offline-installer/',
                 method: 'POST',
@@ -422,79 +248,41 @@
                     csrfmiddlewaretoken: csrfToken
                 },
                 success: function(response) {
-                    console.log('✅ پاسخ سرور دریافت شد:', response);
+                    console.log('✅ پاسخ سرور:', response);
                     $('#createInstallBtn').prop('disabled', false)
-                                         .html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
+                                         .html('<i class="fas fa-download me-2"></i> ایجاد و دانلود فایل');
                     
                     if (response.status === 'success') {
-                        alert(`✅ ${response.message}`);
-                        showSuccess(response.message);
+                        showSuccess('🎉 ' + response.message);
+                        alert('✅ فایل نصب با موفقیت ایجاد شد!');
                         
+                        // اگر لینک دانلود وجود دارد
                         if (response.download_url) {
-                            // ایجاد لینک دانلود و کلیک خودکار
+                            // ایجاد لینک دانلود پویا
                             const downloadLink = document.createElement('a');
                             downloadLink.href = response.download_url;
                             downloadLink.download = 'plasco_offline_installer.zip';
                             document.body.appendChild(downloadLink);
                             downloadLink.click();
                             document.body.removeChild(downloadLink);
-                            alert('🚀 دانلود شروع شد!');
                         }
                     } else {
-                        alert(`❌ ${response.message}`);
-                        showError(response.message);
+                        showError('❌ ' + response.message);
+                        alert('❌ خطا: ' + response.message);
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('❌ خطای AJAX:', {
-                        status: xhr.status,
-                        statusText: xhr.statusText,
-                        responseText: xhr.responseText,
-                        error: error
-                    });
-                    
+                    console.error('❌ خطای AJAX:', xhr.status, error);
                     $('#createInstallBtn').prop('disabled', false)
-                                         .html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
+                                         .html('<i class="fas fa-download me-2"></i> ایجاد و دانلود فایل');
                     
-                    alert(`❌ خطا در ارسال درخواست: ${xhr.status} - ${error}`);
-                    showError(`خطا در ارتباط با سرور: ${xhr.status} - ${error}`);
-                    
-                    // تست جایگزین
-                    testAlternativeMethod(selectedIPsArray, csrfToken);
+                    showError('❌ خطا در ارتباط با سرور: ' + xhr.status);
+                    alert('❌ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
                 }
             });
         }
 
-        function testAlternativeMethod(selectedIPsArray, csrfToken) {
-            console.log('🔹 تست روش جایگزین...');
-            
-            // روش جایگزین: استفاده از FormData
-            const formData = new FormData();
-            formData.append('selected_ips', JSON.stringify(selectedIPsArray));
-            formData.append('csrfmiddlewaretoken', csrfToken);
-
-            fetch('/ip/ip_manager/api/create-offline-installer/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                console.log('🔹 وضعیت پاسخ جایگزین:', response.status);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('✅ پاسخ جایگزین:', data);
-                alert(`✅ (جایگزین) ${data.message}`);
-            })
-            .catch(error => {
-                console.error('❌ خطای جایگزین:', error);
-                alert(`❌ خطای جایگزین: ${error}`);
-            });
-        }
-
-        // بقیه توابع بدون تغییر...
+        // ==================== توابع مدیریت IPها ====================
         function loadIPs() {
             showLoading(true);
             $.ajax({
@@ -506,12 +294,12 @@
                         updateIPsTable(response.ips);
                         updateStats(response.ips);
                     } else {
-                        showError('خطا در دریافت اطلاعات: ' + response.message);
+                        showError('خطا در دریافت لیست IPها');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function(xhr) {
                     showLoading(false);
-                    showError('خطا در ارتباط با سرور: ' + error);
+                    showError('خطا در ارتباط با سرور');
                 }
             });
         }
@@ -531,66 +319,52 @@
             let html = '';
             
             ips.forEach((ip, index) => {
-                const statusBadge = ip.is_active ?
-                    '<span class="badge bg-success badge-custom">فعال</span>' :
-                    '<span class="badge bg-danger badge-custom">غیرفعال</span>';
-
-                const toggleButton = ip.is_active ?
-                    `<button class="btn btn-outline-warning btn-action toggle-ip"
-                            data-id="${ip.id}" data-action="deactivate">
-                        <i class="fas fa-ban"></i>
-                    </button>` :
-                    `<button class="btn btn-outline-success btn-action toggle-ip"
-                            data-id="${ip.id}" data-action="activate">
-                        <i class="fas fa-check"></i>
-                    </button>`;
-
                 const isChecked = selectedIPs.has(ip.ip_address) ? 'checked' : '';
-
                 html += `
-                    <tr id="ip-row-${ip.id}">
+                    <tr>
                         <td class="checkbox-cell">
-                            <input type="checkbox" class="ip-checkbox" value="${ip.ip_address}"
-                                   onchange="toggleIPSelection('${ip.ip_address}')" ${isChecked}>
+                            <input type="checkbox" class="ip-checkbox" value="${ip.ip_address}" 
+                                   ${isChecked} onchange="toggleIPSelection('${ip.ip_address}')">
                         </td>
                         <td class="fw-bold">${index + 1}</td>
-                        <td><span class="fw-bold text-primary">${ip.ip_address}</span></td>
+                        <td>
+                            <i class="fas fa-desktop text-primary me-2"></i>
+                            <span class="fw-bold">${ip.ip_address}</span>
+                        </td>
                         <td>${ip.description || '<span class="text-muted">بدون توضیح</span>'}</td>
                         <td><small class="text-muted">${ip.created_at}</small></td>
-                        <td>${statusBadge}</td>
                         <td>
-                            <div class="action-buttons">
-                                <button class="btn btn-outline-primary btn-action edit-ip"
-                                        data-id="${ip.id}" data-ip="${ip.ip_address}"
-                                        data-desc="${ip.description || ''}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                ${toggleButton}
-                                <button class="btn btn-outline-danger btn-action delete-ip"
-                                        data-id="${ip.id}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            ${ip.is_active ? 
+                                '<span class="badge bg-success">فعال</span>' : 
+                                '<span class="badge bg-danger">غیرفعال</span>'}
+                        </td>
+                        <td>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteIP(${ip.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
             });
 
             tbody.html(html);
-            attachEventHandlers();
             updateInstallationCard();
         }
 
         function toggleSelectAll(checkbox) {
             const ipCheckboxes = document.querySelectorAll('.ip-checkbox');
+            const isChecked = checkbox.checked;
+            
             ipCheckboxes.forEach(cb => {
-                cb.checked = checkbox.checked;
-                if (checkbox.checked) {
-                    selectedIPs.add(cb.value);
+                cb.checked = isChecked;
+                const ip = cb.value;
+                if (isChecked) {
+                    selectedIPs.add(ip);
                 } else {
-                    selectedIPs.delete(cb.value);
+                    selectedIPs.delete(ip);
                 }
             });
+            
             updateInstallationCard();
         }
 
@@ -619,6 +393,59 @@
             }
         }
 
+        function addNewIP() {
+            const ipAddress = $('#ip_address').val();
+            const description = $('#description').val();
+            const csrf = $('[name=csrfmiddlewaretoken]').val();
+
+            if (!ipAddress.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
+                showError('فرمت IP نامعتبر است');
+                return;
+            }
+
+            $.ajax({
+                url: '/ip/ip_manager/api/add/',
+                method: 'POST',
+                data: {
+                    ip_address: ipAddress,
+                    description: description,
+                    csrfmiddlewaretoken: csrf
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showSuccess(response.message);
+                        $('#addIpForm')[0].reset();
+                        loadIPs();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function() {
+                    showError('خطا در ارتباط با سرور');
+                }
+            });
+        }
+
+        function deleteIP(ipId) {
+            if (confirm('آیا از حذف این IP اطمینان دارید؟')) {
+                $.ajax({
+                    url: `/ip/ip_manager/api/delete/${ipId}/`,
+                    method: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            showSuccess(response.message);
+                            loadIPs();
+                        } else {
+                            showError(response.message);
+                        }
+                    }
+                });
+            }
+        }
+
         function showLoading(show) {
             if (show) {
                 $('#loadingSpinner').show();
@@ -631,8 +458,9 @@
 
         function showSuccess(message) {
             $('#alertContainer').html(`
-                <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i>${message}
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle me-2"></i>
+                    ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `);
@@ -640,90 +468,17 @@
 
         function showError(message) {
             $('#alertContainer').html(`
-                <div class="alert alert-danger alert-custom alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-2"></i>${message}
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `);
         }
 
-        // توابع مدیریت IPها (مانند قبل)
-        function addNewIP() {
-            const ipAddress = $('#ip_address').val();
-            const description = $('#description').val();
-            const csrf = $('[name=csrfmiddlewaretoken]').val();
-
-            if (!ipAddress.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
-                showError('فرمت IP نامعتبر است.');
-                return;
-            }
-
-            $.ajax({
-                url: '/ip/ip_manager/api/add/',
-                method: 'POST',
-                data: { ip_address: ipAddress, description: description, csrfmiddlewaretoken: csrf },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        showSuccess(response.message);
-                        $('#addIpForm')[0].reset();
-                        loadIPs();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showError('خطا در ارتباط با سرور: ' + error);
-                }
-            });
-        }
-
-        function attachEventHandlers() {
-            $('.delete-ip').on('click', function() {
-                const ipId = $(this).data('id');
-                if (confirm('آیا از حذف این IP اطمینان دارید؟')) {
-                    $.ajax({
-                        url: `/ip/ip_manager/api/delete/${ipId}/`,
-                        method: 'POST',
-                        data: { csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val() },
-                        success: function(response) {
-                            if (response.status === 'success') {
-                                showSuccess(response.message);
-                                loadIPs();
-                            } else {
-                                showError(response.message);
-                            }
-                        }
-                    });
-                }
-            });
-
-            $('.toggle-ip').on('click', function() {
-                const ipId = $(this).data('id');
-                const action = $(this).data('action');
-                $.ajax({
-                    url: `/ip/ip_manager/api/toggle/${ipId}/`,
-                    method: 'POST',
-                    data: { action: action, csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val() },
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            showSuccess(response.message);
-                            loadIPs();
-                        } else {
-                            showError(response.message);
-                        }
-                    }
-                });
-            });
-        }
-
         function updateStats(ips) {
             $('#totalIps').text(ips.length);
             $('#activeIps').text(ips.filter(ip => ip.is_active).length);
-        }
-
-        function refreshIPs() {
-            loadIPs();
-            showSuccess('لیست IPها بروزرسانی شد');
         }
     </script>
 </body>
