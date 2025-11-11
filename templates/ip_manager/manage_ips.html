@@ -219,7 +219,7 @@
                             </button>
                         </div>
                         <div class="col-md-6">
-                            <button class="btn btn-primary btn-custom mb-2" onclick="testAPI()">
+                            <button class="btn btn-primary btn-custom mb-2" onclick="testAPIDirect()">
                                 <i class="fas fa-api me-2"></i> تست API مستقیم
                             </button>
                             <button class="btn btn-success btn-custom mb-2" onclick="showDebugInfo()">
@@ -387,7 +387,6 @@
         </div>
     </div>
 
-    <!-- اسکریپت‌ها -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -421,19 +420,17 @@
                 '/ip/ip_manager/api/create-offline-installer/'
             ];
 
-            let results = '';
-
             testUrls.forEach(url => {
                 $.ajax({
                     url: url,
                     method: 'GET',
                     success: function(response) {
-                        results += `✅ ${url} - پاسخ: ${response.status || 'OK'}\n`;
                         alert(`✅ ${url} - پاسخ: ${response.status || 'OK'}`);
+                        console.log(`✅ ${url}:`, response);
                     },
                     error: function(xhr, status, error) {
-                        results += `❌ ${url} - خطا: ${xhr.status} - ${error}\n`;
                         alert(`❌ ${url} - خطا: ${xhr.status} - ${error}`);
+                        console.error(`❌ ${url}:`, xhr.status, error);
                     }
                 });
             });
@@ -449,11 +446,10 @@
             }
         }
 
-        function testAPI() {
-            alert('🔹 تست مستقیم API ایجاد فایل نصب');
+        function testAPIDirect() {
+            alert('🔹 تست مستقیم API با fetch');
             const csrfToken = $('[name=csrfmiddlewaretoken]').val();
             
-            // استفاده از fetch برای تست مستقیم
             fetch('/ip/ip_manager/api/create-offline-installer/', {
                 method: 'POST',
                 headers: {
@@ -463,16 +459,26 @@
                 body: 'selected_ips=' + JSON.stringify(['192.168.1.100']) + '&csrfmiddlewaretoken=' + csrfToken
             })
             .then(response => {
-                alert(`🔹 وضعیت پاسخ: ${response.status}`);
-                return response.json();
+                if (!response.ok) {
+                    throw new Error(`خطای HTTP: ${response.status}`);
+                }
+                return response.blob();
             })
-            .then(data => {
-                alert(`✅ پاسخ سرور: ${data.status} - ${data.message}`);
-                console.log('پاسخ سرور:', data);
+            .then(blob => {
+                // ایجاد لینک دانلود
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test_direct_download.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                alert('✅ تست موفق! فایل دانلود شد.');
             })
             .catch(error => {
-                alert(`❌ خطا در تست: ${error}`);
-                console.error('خطای تست:', error);
+                alert(`❌ خطا در تست: ${error.message}`);
             });
         }
 
@@ -511,68 +517,54 @@
             $('#createInstallBtn').prop('disabled', true)
                                  .html('<i class="fas fa-spinner fa-spin me-2"></i>در حال ایجاد...');
 
-            // استفاده از jQuery AJAX
-            $.ajax({
-                url: '/ip/ip_manager/api/create-offline-installer/',
+            // استفاده از fetch برای دانلود مستقیم
+            fetch('/ip/ip_manager/api/create-offline-installer/', {
                 method: 'POST',
-                dataType: 'json',
-                data: {
-                    selected_ips: JSON.stringify(selectedIPsArray),
-                    csrfmiddlewaretoken: csrfToken
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
                 },
-                success: function(response) {
-                    console.log('✅ پاسخ سرور دریافت شد:', response);
-                    $('#createInstallBtn').prop('disabled', false)
-                                         .html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
-                    
-                    if (response && response.status === 'success') {
-                        showSuccess(response.message);
-                        
-                        if (response.download_url) {
-                            // ایجاد لینک دانلود و کلیک خودکار
-                            const downloadLink = document.createElement('a');
-                            downloadLink.href = response.download_url;
-                            downloadLink.download = 'plasco_offline_installer.zip';
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                            document.body.removeChild(downloadLink);
-                            
-                            alert('🚀 فایل نصب ایجاد و دانلود شد!');
-                        } else {
-                            alert('⚠️ فایل ایجاد شد اما لینک دانلود موجود نیست');
-                        }
-                    } else {
-                        const errorMsg = response && response.message ? response.message : 'خطای ناشناخته از سرور';
-                        alert('❌ ' + errorMsg);
-                        showError(errorMsg);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('❌ خطای AJAX:', {
-                        status: xhr.status,
-                        statusText: xhr.statusText,
-                        responseText: xhr.responseText,
-                        error: error
-                    });
-                    
-                    $('#createInstallBtn').prop('disabled', false)
-                                         .html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
-                    
-                    let errorMessage = 'خطا در ارتباط با سرور: ';
-                    
-                    if (xhr.status === 0) {
-                        errorMessage += 'اتصال برقرار نشد';
-                    } else if (xhr.status === 404) {
-                        errorMessage += 'آدرس API پیدا نشد (404)';
-                    } else if (xhr.status === 500) {
-                        errorMessage += 'خطای داخلی سرور (500)';
-                    } else {
-                        errorMessage += xhr.status + ' - ' + error;
-                    }
-                    
-                    alert('❌ ' + errorMessage);
-                    showError(errorMessage);
+                body: 'selected_ips=' + JSON.stringify(selectedIPsArray) + '&csrfmiddlewaretoken=' + csrfToken
+            })
+            .then(response => {
+                console.log('🔹 وضعیت پاسخ:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`خطای سرور: ${response.status} - ${response.statusText}`);
                 }
+                
+                return response.blob();
+            })
+            .then(blob => {
+                console.log('✅ فایل دریافت شد، حجم:', blob.size, 'بایت');
+                
+                // ایجاد لینک دانلود
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `plasco_offline_${Date.now()}.zip`;
+                a.style.display = 'none';
+                
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                $('#createInstallBtn').prop('disabled', false)
+                                     .html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
+                
+                showSuccess('فایل نصب با موفقیت ایجاد و دانلود شد!');
+                alert('✅ فایل نصب با موفقیت دانلود شد!\n\nفایل در پوشه Downloads شما ذخیره شده است.');
+                
+            })
+            .catch(error => {
+                console.error('❌ خطا در ایجاد فایل:', error);
+                
+                $('#createInstallBtn').prop('disabled', false)
+                                     .html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
+                
+                showError(error.message);
+                alert('❌ ' + error.message);
             });
         }
 
@@ -738,7 +730,7 @@
                     if (response.status === 'success') {
                         showSuccess(response.message);
                         $('#addIpForm')[0].reset();
-                        loadIPs(); // بارگذاری مجدد لیست
+                        loadIPs();
                     } else {
                         showError(response.message);
                     }
@@ -762,7 +754,7 @@
                 success: function(response) {
                     if (response.status === 'success') {
                         showSuccess(response.message);
-                        loadIPs(); // بارگذاری مجدد لیست
+                        loadIPs();
                     } else {
                         showError(response.message);
                     }
@@ -806,7 +798,7 @@
                     if (response.status === 'success') {
                         showSuccess(response.message);
                         $('#editIpModal').modal('hide');
-                        loadIPs(); // بارگذاری مجدد لیست
+                        loadIPs();
                     } else {
                         showError(response.message);
                     }
@@ -829,7 +821,7 @@
                 success: function(response) {
                     if (response.status === 'success') {
                         showSuccess(response.message);
-                        loadIPs(); // بارگذاری مجدد لیست
+                        loadIPs();
                     } else {
                         showError(response.message);
                     }
