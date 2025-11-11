@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import manage_ips, list_ips, add_ip, delete_ip, update_ip, toggle_ip
+from .views import manage_ips, list_ips, add_ip, delete_ip, update_ip, toggle_ip ,create_offline_installer
 
 urlpatterns = [
     path('', manage_ips, name='manage_ips'),  # حذف ip_manager/ از ابتدا
