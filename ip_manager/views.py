@@ -127,6 +127,7 @@ def toggle_ip(request, ip_id):
 
 # در ip_manager/views.py این تابع را اضافه کنید
 
+
 @csrf_exempt
 def create_offline_installer(request):
     """ایجاد فایل نصب آفلاین با IPهای انتخاب شده"""
@@ -137,16 +138,21 @@ def create_offline_installer(request):
             import os
             import zipfile
             import shutil
+            from django.utils import timezone
+
+            print("🔹 مرحله 1: شروع ایجاد فایل نصب آفلاین")
 
             # دریافت IPهای انتخاب شده
             selected_ips_json = request.POST.get('selected_ips', '[]')
             selected_ips = json.loads(selected_ips_json)
 
-            BASE_DIR = Path(__file__).resolve().parent.parent
+            print(f"🔹 مرحله 2: دریافت {len(selected_ips)} IP: {selected_ips}")
 
-            print(f"🚀 ایجاد فایل نصب برای {len(selected_ips)} IP: {selected_ips}")
+            BASE_DIR = Path(__file__).resolve().parent.parent.parent
+            print(f"🔹 مرحله 3: مسیر BASE_DIR: {BASE_DIR}")
 
             # ایجاد فایل settings_offline.py با IPهای انتخاب شده
+            print("🔹 مرحله 4: ایجاد محتوای فایل settings_offline.py")
             settings_content = f'''
 """
 Django settings for plasco project.
@@ -164,7 +170,7 @@ IS_OFFLINE_MODE = True
 SECRET_KEY = 'django-insecure-offline-{int(timezone.now().timestamp())}'
 DEBUG = True
 
-ALLOWED_HOSTS = {selected_ips}  # IPهای انتخاب شده توسط کاربر
+ALLOWED_HOSTS = {selected_ips}
 
 print("🟢 اجرا در حالت آفلاین - ديتابيس محلي (Slave)")
 print("🔐 IPهای مجاز: {', '.join(selected_ips)}")
@@ -194,15 +200,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',  # این خط مهم
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',  # این خط مهم
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'cantact_app.middleware.AdvancedSessionMiddleware',
 ]
 
 ROOT_URLCONF = 'plasco.urls'
@@ -265,6 +269,7 @@ SYNC_DISABLED = True
 '''
 
             # ایجاد فایل start_windows.bat
+            print("🔹 مرحله 5: ایجاد فایل start_windows.bat")
             bat_content = f'''@echo off
 chcp 65001
 echo.
@@ -302,6 +307,7 @@ pause
 '''
 
             # ایجاد فایل requirements_offline.txt
+            print("🔹 مرحله 6: ایجاد فایل requirements_offline.txt")
             requirements_content = '''Django==5.2.4
 django-cors-headers==4.4.0
 djangorestframework==3.15.2
@@ -311,17 +317,22 @@ requests==2.31.0
 '''
 
             # ایجاد پوشه خروجی
+            print("🔹 مرحله 7: ایجاد پوشه خروجی")
             output_dir = BASE_DIR / 'media' / 'offline_installers'
             output_dir.mkdir(parents=True, exist_ok=True)
+            print(f"✅ پوشه خروجی ایجاد شد: {output_dir}")
 
             # نام فایل با timestamp
             timestamp = int(timezone.now().timestamp())
             zip_filename = f'plasco_offline_installer_{timestamp}.zip'
             zip_path = output_dir / zip_filename
 
+            print("🔹 مرحله 8: شروع ایجاد فایل ZIP...")
+
             # ایجاد فایل ZIP
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 # اضافه کردن فایل‌های اصلی
+                print("🔹 مرحله 9: اضافه کردن فایل‌های اصلی")
                 essential_files = {
                     'manage.py': BASE_DIR / 'manage.py',
                     'plasco/__init__.py': BASE_DIR / 'plasco' / '__init__.py',
@@ -332,13 +343,20 @@ requests==2.31.0
                 for arcname, filepath in essential_files.items():
                     if filepath.exists():
                         zipf.write(filepath, arcname)
+                        print(f"✅ اضافه شد: {arcname}")
+                    else:
+                        print(f"⚠️ فایل یافت نشد: {filepath}")
 
                 # اضافه کردن فایل‌های ایجاد شده
+                print("🔹 مرحله 10: اضافه کردن فایل‌های ایجاد شده")
                 zipf.writestr('plasco/settings_offline.py', settings_content)
                 zipf.writestr('start_windows.bat', bat_content)
                 zipf.writestr('requirements_offline.txt', requirements_content)
 
+                print("✅ فایل‌های تنظیمات اضافه شدند")
+
                 # اضافه کردن پوشه اپ‌ها
+                print("🔹 مرحله 11: اضافه کردن پوشه اپ‌ها")
                 app_folders = [
                     'account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
                     'it_app', 'pos_payment', 'sync_app', 'sync_api',
@@ -348,32 +366,54 @@ requests==2.31.0
                 for app in app_folders:
                     app_path = BASE_DIR / app
                     if app_path.exists():
+                        file_count = 0
                         for root, dirs, files in os.walk(app_path):
                             for file in files:
-                                if file.endswith('.py'):
+                                if file.endswith('.py') or file.endswith('.html') or file in ['apps.py', 'models.py',
+                                                                                              'views.py', 'urls.py']:
                                     file_path = os.path.join(root, file)
                                     arcname = os.path.relpath(file_path, BASE_DIR)
                                     zipf.write(file_path, arcname)
+                                    file_count += 1
+                        print(f"✅ اپ {app} اضافه شد ({file_count} فایل)")
+                    else:
+                        print(f"⚠️ پوشه اپ یافت نشد: {app_path}")
 
                 # اضافه کردن پوشه templates
+                print("🔹 مرحله 12: اضافه کردن پوشه templates")
                 templates_path = BASE_DIR / 'templates'
                 if templates_path.exists():
+                    template_count = 0
                     for root, dirs, files in os.walk(templates_path):
                         for file in files:
                             file_path = os.path.join(root, file)
                             arcname = os.path.relpath(file_path, BASE_DIR)
                             zipf.write(file_path, arcname)
+                            template_count += 1
+                    print(f"✅ پوشه templates اضافه شد ({template_count} فایل)")
+                else:
+                    print("⚠️ پوشه templates یافت نشد")
+
+            print(f"✅ فایل نصب ایجاد شد: {zip_path}")
+            print(f"📦 سایز فایل: {zip_path.stat().st_size} بایت")
 
             download_url = f'/media/offline_installers/{zip_filename}'
+            print(f"🔗 لینک دانلود: {download_url}")
 
             return JsonResponse({
                 'status': 'success',
                 'message': f'فایل نصب با {len(selected_ips)} IP ایجاد شد',
                 'download_url': download_url,
+                'file_size': zip_path.stat().st_size,
                 'selected_ips': selected_ips
             })
 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"❌ خطا در ایجاد فایل نصب: {str(e)}")
+            print(f"❌ جزئیات خطا: {error_details}")
+
             return JsonResponse({
                 'status': 'error',
                 'message': f'خطا در ایجاد فایل نصب: {str(e)}'
