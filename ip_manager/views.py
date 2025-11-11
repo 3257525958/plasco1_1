@@ -123,49 +123,88 @@ import json
 
 @csrf_exempt
 def create_offline_installer(request):
-    """دانلود مستقیم فایل - مشابه حالت قبلی که کار می‌کرد"""
+    """ایجاد فایل نصب - نسخه اصلاح شده"""
+    print("🎯 تابع create_offline_installer فراخوانی شد!")
+
     if request.method == 'POST':
         try:
+            # دریافت IPهای انتخاب شده
             selected_ips_json = request.POST.get('selected_ips', '[]')
             selected_ips = json.loads(selected_ips_json)
 
-            # ایجاد فایل ZIP در memory
-            zip_buffer = io.BytesIO()
+            print(f"🔢 IPهای دریافت شده: {selected_ips}")
 
-            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # محتوای اصلی
-                content = f'''
+            # مسیر اصلی پروژه
+            BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+            # ایجاد پوشه‌های لازم
+            media_dir = BASE_DIR / 'media'
+            media_dir.mkdir(exist_ok=True)
+
+            output_dir = BASE_DIR / 'media' / 'offline_installers'
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # نام فایل
+            timestamp = int(timezone.now().timestamp())
+            zip_filename = f'plasco_offline_{timestamp}.zip'
+            zip_path = output_dir / zip_filename
+
+            # ایجاد فایل ZIP ساده
+            print("🔨 ایجاد فایل ZIP...")
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # محتوای فایل
+                readme_content = f'''
                 Plasco Offline Installer
                 ========================
 
                 ایجاد شده در: {timezone.now().strftime("%Y/%m/%d %H:%M")}
                 IPهای مجاز: {', '.join(selected_ips)}
 
-                این فایل نصب برای اجرای سیستم پلاسکو در حالت آفلاین است.
+                دستورالعمل:
+                1. فایل را extract کنید
+                2. فایل start.bat را اجرا کنید
+                3. به آدرس http://localhost:8000 بروید
                 '''
 
-                zipf.writestr('README.txt', content)
+                zipf.writestr('README.txt', readme_content)
                 zipf.writestr('start.bat', '@echo off\necho Plasco Offline System\npause')
 
-            # برگرداندن مستقیم فایل
-            zip_buffer.seek(0)
-            response = HttpResponse(
-                zip_buffer.getvalue(),
-                content_type='application/zip'
-            )
-            response['Content-Disposition'] = 'attachment; filename="plasco_offline.zip"'
-            response['Content-Length'] = len(zip_buffer.getvalue())
+                print("✅ فایل ZIP ایجاد شد")
 
-            return response
+            # بررسی وجود فایل
+            if zip_path.exists():
+                file_size = zip_path.stat().st_size
+                print(f"✅ فایل فیزیکی ایجاد شد: {file_size} بایت")
+
+                # ایجاد لینک دانلود
+                download_url = f'/media/offline_installers/{zip_filename}'
+                print(f"🔗 لینک دانلود: {download_url}")
+
+                return JsonResponse({
+                    'status': 'success',
+                    'message': f'فایل نصب با موفقیت ایجاد شد! ({len(selected_ips)} IP)',
+                    'download_url': download_url,
+                    'file_size': file_size,
+                    'selected_ips': selected_ips
+                })
+            else:
+                print("❌ فایل فیزیکی ایجاد نشد!")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'فایل فیزیکی ایجاد نشد'
+                })
 
         except Exception as e:
+            print(f"❌ خطا: {str(e)}")
+            import traceback
+            print(f"❌ جزئیات خطا: {traceback.format_exc()}")
+
             return JsonResponse({
                 'status': 'error',
-                'message': f'خطا: {str(e)}'
+                'message': f'خطا در ایجاد فایل: {str(e)}'
             })
 
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
-
 # @csrf_exempt
 # def create_offline_installer(request):
 #     """ایجاد فایل نصب آفلاین - نسخه کامل"""
