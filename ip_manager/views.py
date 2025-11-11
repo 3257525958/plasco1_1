@@ -1,3 +1,5 @@
+[file name]: ip_manager / views.py
+[file content begin]
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -6,7 +8,9 @@ from .models import AllowedIP
 import json
 import zipfile
 import io
+import os
 from pathlib import Path
+import shutil
 
 
 # توابع مدیریت IPها
@@ -126,127 +130,80 @@ def toggle_ip(request, ip_id):
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
 
 
-@csrf_exempt
-def create_offline_installer(request):
-    """ایجاد و دانلود مستقیم فایل نصب - بدون نیاز به media serving"""
-    print("🎯 درخواست ایجاد فایل نصب دریافت شد")
+def create_complete_install_package(selected_ips):
+    """ایجاد پکیج نصب کامل - مشابه offline_ins اما با IPهای پویا"""
+    try:
+        BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-    if request.method == 'POST':
-        try:
-            # دریافت IPهای انتخاب شده
-            selected_ips_json = request.POST.get('selected_ips', '[]')
-            selected_ips = json.loads(selected_ips_json)
+        # ایجاد بافر ZIP در حافظه
+        zip_buffer = io.BytesIO()
 
-            print(f"🔢 IPهای دریافت شده: {selected_ips}")
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            print("📦 ایجاد پکیج نصب کامل...")
 
-            # ایجاد فایل ZIP در memory
-            zip_buffer = io.BytesIO()
+            # فایل‌های اصلی
+            essential_files = [
+                'manage.py',
+                'requirements_offline.txt',
+                'start_windows.bat',
+                'plasco/__init__.py',
+                'plasco/urls.py',
+                'plasco/wsgi.py'
+            ]
 
-            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # فایل README
-                readme_content = f'''
-Plasco Offline Installer
-========================
+            # اضافه کردن فایل‌های اصلی
+            for file in essential_files:
+                file_path = BASE_DIR / file
+                if file_path.exists():
+                    zipf.write(file_path, file)
+                    print(f"✅ اضافه شد: {file}")
 
-ایجاد شده در: {timezone.now().strftime("%Y/%m/%d %H:%M")}
-IPهای مجاز: {', '.join(selected_ips)}
+            # اضافه کردن پوشه اپ‌ها
+            app_folders = [
+                'account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
+                'it_app', 'pos_payment', 'sync_app', 'sync_api',
+                'control_panel', 'offline_ins', 'home_app', 'ip_manager'
+            ]
 
-📋 دستورالعمل نصب:
+            for app in app_folders:
+                app_path = BASE_DIR / app
+                if app_path.exists():
+                    for root, dirs, files in os.walk(app_path):
+                        for file in files:
+                            # فقط فایل‌های پایتون، تمپلیت و استاتیک
+                            if file.endswith(('.py', '.html', '.css', '.js', '.json', '.txt')):
+                                file_path = os.path.join(root, file)
+                                arcname = os.path.relpath(file_path, BASE_DIR)
+                                zipf.write(file_path, arcname)
+                    print(f"✅ اپ {app} اضافه شد")
 
-1. تمام فایل‌ها را در یک پوشه Extract کنید
-2. فایل start_windows.bat را اجرا کنید
-3. سیستم به صورت خودکار راه‌اندازی می‌شود
-4. مرورگر را باز کرده و به آدرس زیر بروید:
-   http://localhost:8000
+            # اضافه کردن پوشه templates
+            templates_path = BASE_DIR / 'templates'
+            if templates_path.exists():
+                for root, dirs, files in os.walk(templates_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, BASE_DIR)
+                        zipf.write(file_path, arcname)
+                print("✅ پوشه templates اضافه شد")
 
-⚙️ نیازمندی‌ها:
-- Python 3.8 یا بالاتر
-- دسترسی به اینترنت برای نصب اولیه کتابخانه‌ها
+            # اضافه کردن پوشه static
+            static_path = BASE_DIR / 'static'
+            if static_path.exists():
+                for root, dirs, files in os.walk(static_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, BASE_DIR)
+                        zipf.write(file_path, arcname)
+                print("✅ پوشه static اضافه شد")
 
-📞 پشتیبانی:
-در صورت بروز مشکل با واحد فناوری اطلاعات تماس بگیرید.
-
-🔐 اطلاعات امنیتی:
-این نسخه فقط برای IPهای زیر قابل دسترسی است:
-{', '.join(selected_ips)}
-'''
-
-                # فایل start_windows.bat
-                bat_content = f'''@echo off
-chcp 65001
-title Plasco Offline System - Installer
-
-echo.
-echo ========================================
-echo    Plasco Offline System Installer
-echo ========================================
-echo.
-echo 📅 تاریخ ایجاد: {timezone.now().strftime("%Y/%m/%d")}
-echo 🔐 IPهای مجاز: {', '.join(selected_ips)}
-echo.
-
-echo 🔍 در حال بررسی نصب Python...
-python --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo.
-    echo ❌ خطا: Python بر روی سیستم یافت نشد!
-    echo.
-    echo 📥 لطفا Python 3.8 یا بالاتر را از آدرس زیر دانلود و نصب کنید:
-    echo https://www.python.org/downloads/
-    echo.
-    echo 💡 هنگام نصب، گزینه "Add Python to PATH" را حتما انتخاب کنید.
-    echo.
-    pause
-    exit /b 1
-)
-
-for /f "tokens=*" %%i in ('python --version 2^>^&1') do set python_version=%%i
-echo ✅ %python_version% تشخیص داده شد
-echo.
-
-echo 📦 در حال نصب کتابخانه‌های مورد نیاز...
-pip install -r requirements_offline.txt
-
-if %errorlevel% neq 0 (
-    echo.
-    echo ⚠️ خطا در نصب کتابخانه‌ها
-    echo 🔧 در حال تلاش مجدد با upgrade pip...
-    python -m pip install --upgrade pip
-    pip install -r requirements_offline.txt
-)
-
-echo.
-echo 🚀 در حال راه‌اندازی سرور آفلاین پلاسکو...
-echo.
-echo 🌐 آدرس دسترسی: http://localhost:8000
-echo 🌐 آدرس شبکه: http://192.168.1.172:8000
-echo 🔐 IPهای مجاز: {', '.join(selected_ips)}
-echo.
-echo ⏰ لطفا منتظر بمانید...
-echo.
-
-python manage.py runserver 0.0.0.0:8000 --settings=plasco.settings_offline
-
-echo.
-echo ⚠️ سرور متوقف شد
-pause
-'''
-
-                # فایل requirements_offline.txt
-                requirements_content = '''Django==4.2.7
-django-cors-headers==4.3.1
-djangorestframework==3.14.0
-Pillow==10.0.1
-requests==2.31.0
-mysqlclient==2.1.1
-'''
-
-                # فایل settings_offline.py
-                settings_content = f'''
+            # ایجاد فایل settings_offline.py با IPهای انتخابی
+            settings_content = f'''
 """
-Django settings for plasco project - OFFLINE MODE
-Generated: {timezone.now().strftime("%Y/%m/%d %H:%M")}
-Allowed IPs: {selected_ips}
+Django settings for plasco project.
+برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
+ایجاد شده توسط سیستم مدیریت IP
+IPهای مجاز: {', '.join(selected_ips)}
 """
 
 from pathlib import Path
@@ -254,11 +211,13 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-offline-{int(timezone.now().timestamp())}'
+IS_OFFLINE_MODE = True
+SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
 DEBUG = True
+
 ALLOWED_HOSTS = {selected_ips}
 
-print("🟢 اجرا در حالت آفلاین")
+print("🟢 اجرا در حالت آفلاین - ديتابيس محلي (Slave)")
 print("🔐 IPهای مجاز: {', '.join(selected_ips)}")
 
 INSTALLED_APPS = [
@@ -268,12 +227,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
-
-    # Local apps
     'account_app',
     'dashbord_app',
     'cantact_app',
@@ -285,10 +241,11 @@ INSTALLED_APPS = [
     'control_panel',
     'offline_ins',
     'ip_manager',
-    'home_app',
+    'home_app'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -296,7 +253,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'plasco.urls'
@@ -352,15 +308,13 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# تنظیمات اختصاصی
 OFFLINE_MODE = True
-SYNC_DISABLED = True
 
 # تنظیمات REST Framework
 REST_FRAMEWORK = {{
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -371,81 +325,165 @@ REST_FRAMEWORK = {{
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://192.168.1.172:8000",
-]
+] + [f"http://{ip}:8000" for ip in selected_ips]
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 '''
 
-                # فایل manage.py
-                manage_content = '''#!/usr/bin/env python
-"""Django's command-line utility for administrative tasks."""
-import os
-import sys
+            zipf.writestr('plasco/settings_offline.py', settings_content.strip())
+            print("✅ فایل settings_offline.py با IPهای انتخابی ایجاد شد")
 
+            # ایجاد فایل start_windows.bat
+            bat_content = f'''@echo off
+chcp 65001
+echo 🟢 در حال راه‌اندازی سیستم آفلاین پلاسکو...
+echo.
+echo 📅 ایجاد شده در: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+echo 🔐 IPهای مجاز: {', '.join(selected_ips)}
+echo.
 
-def main():
-    """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'plasco.settings_offline')
-    try:
-        from django.core.management import execute_from_command_line
-    except ImportError as exc:
-        raise ImportError(
-            "Couldn't import Django. Are you sure it's installed and "
-            "available on your PYTHONPATH environment variable? Did you "
-            "forget to activate a virtual environment?"
-        ) from exc
-    execute_from_command_line(sys.argv)
+# بررسی وجود Python
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ Python نصب نیست. لطفا Python 3.8+ را نصب کنید.
+    echo از آدرس: https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
 
+echo ✅ Python تشخیص داده شد
+echo.
 
-if __name__ == '__main__':
-    main()
+# نصب requirements
+echo 📦 در حال نصب کتابخانه‌های مورد نیاز...
+pip install -r requirements_offline.txt
+
+if %errorlevel% neq 0 (
+    echo ⚠️ خطا در نصب کتابخانه‌ها
+    echo 🔧 در حال تلاش مجدد با upgrade pip...
+    python -m pip install --upgrade pip
+    pip install -r requirements_offline.txt
+)
+
+echo.
+echo 🗃️ در حال ایجاد دیتابیس و اجرای migrations...
+python manage.py migrate --settings=plasco.settings_offline
+
+echo.
+echo 🚀 در حال راه‌اندازی سرور آفلاین...
+echo 🔗 آدرس‌های دسترسی:
+echo    http://localhost:8000
+echo    http://127.0.0.1:8000
 '''
 
-                # فایل __init__.py برای پوشه plasco
-                init_content = '''# Plasco Offline Package'''
+            for ip in selected_ips:
+                bat_content += f'echo    http://{ip}:8000\n'
 
-                # فایل urls.py اصلی
-                urls_content = '''
-from django.contrib import admin
-from django.urls import path, include
-from django.conf.urls.static import static
-from django.conf import settings
+            bat_content += f'''echo.
+echo ⏰ لطفا منتظر بمانید...
+echo.
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('home_app.urls')),
-    path('control-panel/', include('control_panel.urls')),
-    path('offline/install/', include('offline_ins.urls')),
-    path('cantact/', include('cantact_app.urls')),
-    path('dashbord/', include('dashbord_app.urls')),
-    path('account/', include('account_app.urls')),
-    path('invoice/', include('invoice_app.urls')),
-    path('it/', include('it_app.urls')),
-    path('pos-payment/', include('pos_payment.urls')),
-    path('api/sync/', include('sync_api.urls')),
-    path('sync_app/', include('sync_app.urls')),
-    path('ip/', include('ip_manager.urls')),
-]
+# اجرای سرور
+python manage.py runserver 0.0.0.0:8000 --settings=plasco.settings_offline
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+echo.
+echo ⚠️ سرور متوقف شد
+pause
 '''
 
-                # اضافه کردن تمام فایل‌ها به ZIP
-                zipf.writestr('README.txt', readme_content)
-                zipf.writestr('start_windows.bat', bat_content)
-                zipf.writestr('requirements_offline.txt', requirements_content)
-                zipf.writestr('plasco/__init__.py', init_content)
-                zipf.writestr('plasco/settings_offline.py', settings_content)
-                zipf.writestr('plasco/urls.py', urls_content)
-                zipf.writestr('plasco/wsgi.py',
-                              '"""\nWSGI config for plasco project.\n"""\nimport os\nfrom django.core.wsgi import get_wsgi_application\nos.environ.setdefault("DJANGO_SETTINGS_MODULE", "plasco.settings_offline")\napplication = get_wsgi_application()')
-                zipf.writestr('manage.py', manage_content)
+            zipf.writestr('start_windows.bat', bat_content)
+            print("✅ فایل start_windows.bat ایجاد شد")
 
-                print("✅ تمام فایل‌ها به ZIP اضافه شدند")
+            # ایجاد فایل requirements_offline.txt
+            requirements_content = '''Django==4.2.7
+django-cors-headers==4.3.1
+djangorestframework==3.14.0
+Pillow==10.0.1
+requests==2.31.0
+mysqlclient==2.1.1
+'''
+            zipf.writestr('requirements_offline.txt', requirements_content)
+            print("✅ فایل requirements_offline.txt ایجاد شد")
+
+            # فایل README
+            readme_content = f'''
+Plasco Offline Installer - نسخه کامل
+=====================================
+
+📅 ایجاد شده در: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+🔐 IPهای مجاز: {', '.join(selected_ips)}
+
+📋 دستورالعمل نصب:
+
+1. تمام فایل‌ها را در یک پوشه Extract کنید
+2. فایل start_windows.bat را اجرا کنید
+3. سیستم به صورت خودکار راه‌اندازی می‌شود
+4. به آدرس‌های زیر دسترسی داشته باشید:
+
+   http://localhost:8000
+   http://127.0.0.1:8000
+'''
+
+            for ip in selected_ips:
+                readme_content += f'   http://{ip}:8000\n'
+
+            readme_content += '''
+
+⚙️ نیازمندی‌ها:
+- Python 3.8 یا بالاتر
+- دسترسی به اینترنت برای نصب اولیه کتابخانه‌ها
+
+🛠️ ویژگی‌ها:
+- سیستم کامل پلاسکو با تمام ماژول‌ها
+- دیتابیس SQLite محلی
+- تنظیمات خودکار
+- پشتیبانی از IPهای انتخابی
+
+📞 پشتیبانی:
+در صورت بروز مشکل با واحد فناوری اطلاعات تماس بگیرید.
+'''
+
+            zipf.writestr('README.txt', readme_content.strip())
+            print("✅ فایل README.txt ایجاد شد")
+
+        print("✅ پکیج نصب کامل ایجاد شد")
+        return zip_buffer
+
+    except Exception as e:
+        print(f"❌ خطا در ایجاد پکیج کامل: {str(e)}")
+        import traceback
+        print(f"❌ جزئیات خطا: {traceback.format_exc()}")
+        return None
+
+
+@csrf_exempt
+def create_offline_installer(request):
+    """ایجاد و دانلود مستقیم فایل نصب کامل"""
+    print("🎯 درخواست ایجاد فایل نصب کامل دریافت شد")
+
+    if request.method == 'POST':
+        try:
+            # دریافت IPهای انتخاب شده
+            selected_ips_json = request.POST.get('selected_ips', '[]')
+            selected_ips = json.loads(selected_ips_json)
+
+            print(f"🔢 IPهای دریافت شده: {selected_ips}")
+
+            if not selected_ips:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'هیچ IPی انتخاب نشده است'
+                })
+
+            # ایجاد پکیج نصب کامل
+            zip_buffer = create_complete_install_package(selected_ips)
+
+            if not zip_buffer:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'خطا در ایجاد فایل نصب'
+                })
 
             # برگرداندن فایل به عنوان response
             zip_buffer.seek(0)
@@ -454,10 +492,10 @@ if settings.DEBUG:
                 content_type='application/zip'
             )
             response[
-                'Content-Disposition'] = f'attachment; filename="plasco_offline_installer_{int(timezone.now().timestamp())}.zip"'
+                'Content-Disposition'] = f'attachment; filename="plasco_complete_offline_{int(timezone.now().timestamp())}.zip"'
 
             file_size = len(zip_buffer.getvalue())
-            print(f"🚀 فایل برای دانلود ارسال شد - حجم: {file_size} بایت")
+            print(f"🚀 فایل کامل برای دانلود ارسال شد - حجم: {file_size} بایت")
 
             return response
 
@@ -472,3 +510,6 @@ if settings.DEBUG:
             })
 
     return JsonResponse({'status': 'error', 'message': 'لطفاً از POST استفاده کنید'})
+
+
+[file content end]
