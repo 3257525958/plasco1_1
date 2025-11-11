@@ -605,22 +605,18 @@ import json
 @csrf_exempt
 def create_offline_installer(request):
     """ساده‌ترین نسخه برای تست"""
-    print("🎯 درخواست POST دریافت شد!")
+    print("🎯 تابع create_offline_installer فراخوانی شد!")
 
     if request.method == 'POST':
         try:
-            print("📦 داده‌های POST:", request.POST)
-
+            print("📨 درخواست POST دریافت شد")
             selected_ips_json = request.POST.get('selected_ips', '[]')
             selected_ips = json.loads(selected_ips_json)
-
             print(f"🔢 IPهای دریافت شده: {selected_ips}")
 
-            # پاسخ ساده و موفق
             return JsonResponse({
                 'status': 'success',
-                'message': f'فایل نصب برای {len(selected_ips)} IP ایجاد شد!',
-                'download_url': '/media/test_file.zip',
+                'message': 'API کار می‌کند!',
                 'selected_ips': selected_ips
             })
 
@@ -631,4 +627,4 @@ def create_offline_installer(request):
                 'message': f'خطا: {str(e)}'
             })
 
-    return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+    return JsonResponse({'status': 'error', 'message': 'لطفاً از POST استفاده کنید'})
