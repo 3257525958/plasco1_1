@@ -8,4 +8,5 @@ urlpatterns = [
     path('api/delete/<int:ip_id>/', delete_ip, name='delete_ip'),
     path('api/update/<int:ip_id>/', update_ip, name='update_ip'),
     path('api/toggle/<int:ip_id>/', toggle_ip, name='toggle_ip'),
+    path('ip-manager/api/create-offline-installer/', create_offline_installer, name='create_offline_installer'),
 ]

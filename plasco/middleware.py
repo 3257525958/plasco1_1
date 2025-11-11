@@ -7,7 +7,7 @@ from django.core.cache import cache
 import hashlib
 import user_agents
 import requests
-from account_app.models import UserSessionLog  # مطمئن شوید مسیر درست است
+from cantact_app.models import UserSessionLog # مطمئن شوید مسیر درست است
 
 
 class AdvancedSessionMiddleware:

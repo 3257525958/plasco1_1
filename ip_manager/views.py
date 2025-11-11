@@ -124,3 +124,260 @@ def toggle_ip(request, ip_id):
             return JsonResponse({'status': 'error', 'message': f'خطا در تغییر وضعیت IP: {str(e)}'})
     else:
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
+
+# در ip_manager/views.py این تابع را اضافه کنید
+
+@csrf_exempt
+def create_offline_installer(request):
+    """ایجاد فایل نصب آفلاین با IPهای انتخاب شده"""
+    if request.method == 'POST':
+        try:
+            import json
+            from pathlib import Path
+            import os
+            import zipfile
+            import shutil
+
+            # دریافت IPهای انتخاب شده
+            selected_ips_json = request.POST.get('selected_ips', '[]')
+            selected_ips = json.loads(selected_ips_json)
+
+            BASE_DIR = Path(__file__).resolve().parent.parent
+
+            print(f"🚀 ایجاد فایل نصب برای {len(selected_ips)} IP: {selected_ips}")
+
+            # ایجاد فایل settings_offline.py با IPهای انتخاب شده
+            settings_content = f'''
+"""
+Django settings for plasco project.
+برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
+ساخته شده در: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+IPهای مجاز: {', '.join(selected_ips)}
+"""
+
+from pathlib import Path
+import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+IS_OFFLINE_MODE = True
+SECRET_KEY = 'django-insecure-offline-{int(timezone.now().timestamp())}'
+DEBUG = True
+
+ALLOWED_HOSTS = {selected_ips}  # IPهای انتخاب شده توسط کاربر
+
+print("🟢 اجرا در حالت آفلاین - ديتابيس محلي (Slave)")
+print("🔐 IPهای مجاز: {', '.join(selected_ips)}")
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
+    'account_app',
+    'dashbord_app',
+    'cantact_app',
+    'invoice_app',
+    'it_app',
+    'pos_payment',
+    'sync_app',
+    'sync_api',
+    'control_panel',
+    'offline_ins',
+    'ip_manager'
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',  # این خط مهم
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # این خط مهم
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'cantact_app.middleware.AdvancedSessionMiddleware',
+]
+
+ROOT_URLCONF = 'plasco.urls'
+
+TEMPLATES = [
+    {{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {{
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        }},
+    }},
+]
+
+WSGI_APPLICATION = 'plasco.wsgi.application'
+
+DATABASES = {{
+    'default': {{
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db_offline.sqlite3',
+    }}
+}}
+
+AUTH_PASSWORD_VALIDATORS = [
+    {{
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    }},
+    {{
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    }},
+    {{
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    }},
+    {{
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    }},
+]
+
+LANGUAGE_CODE = 'fa-ir'
+TIME_ZONE = 'Asia/Tehran'
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+OFFLINE_MODE = True
+
+# غیرفعال کردن سیگنال‌های سینک در حالت آفلاین
+SYNC_DISABLED = True
+'''
+
+            # ایجاد فایل start_windows.bat
+            bat_content = f'''@echo off
+chcp 65001
+echo.
+echo 🟢 در حال راه‌اندازی سیستم آفلاین پلاسکو...
+echo 📅 تاریخ ایجاد: {timezone.now().strftime("%Y/%m/%d")}
+echo 🔐 IPهای مجاز: {', '.join(selected_ips)}
+echo.
+
+REM بررسی وجود Python
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ Python نصب نیست. لطفا Python 3.8+ را نصب کنید.
+    echo از آدرس: https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
+
+echo ✅ Python تشخیص داده شد
+echo.
+
+REM نصب requirements
+echo 📦 در حال نصب کتابخانه‌های مورد نیاز...
+pip install -r requirements_offline.txt
+
+echo.
+echo 🚀 در حال راه‌اندازی سرور آفلاین...
+echo 🔗 آدرس دسترسی: http://localhost:8000
+echo 🔐 IPهای مجاز: {', '.join(selected_ips)}
+echo.
+
+REM اجرای سرور
+python manage.py runserver 0.0.0.0:8000 --settings=plasco.settings_offline
+
+pause
+'''
+
+            # ایجاد فایل requirements_offline.txt
+            requirements_content = '''Django==5.2.4
+django-cors-headers==4.4.0
+djangorestframework==3.15.2
+mysqlclient==2.2.4
+Pillow==10.3.0
+requests==2.31.0
+'''
+
+            # ایجاد پوشه خروجی
+            output_dir = BASE_DIR / 'media' / 'offline_installers'
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # نام فایل با timestamp
+            timestamp = int(timezone.now().timestamp())
+            zip_filename = f'plasco_offline_installer_{timestamp}.zip'
+            zip_path = output_dir / zip_filename
+
+            # ایجاد فایل ZIP
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # اضافه کردن فایل‌های اصلی
+                essential_files = {
+                    'manage.py': BASE_DIR / 'manage.py',
+                    'plasco/__init__.py': BASE_DIR / 'plasco' / '__init__.py',
+                    'plasco/urls.py': BASE_DIR / 'plasco' / 'urls.py',
+                    'plasco/wsgi.py': BASE_DIR / 'plasco' / 'wsgi.py'
+                }
+
+                for arcname, filepath in essential_files.items():
+                    if filepath.exists():
+                        zipf.write(filepath, arcname)
+
+                # اضافه کردن فایل‌های ایجاد شده
+                zipf.writestr('plasco/settings_offline.py', settings_content)
+                zipf.writestr('start_windows.bat', bat_content)
+                zipf.writestr('requirements_offline.txt', requirements_content)
+
+                # اضافه کردن پوشه اپ‌ها
+                app_folders = [
+                    'account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
+                    'it_app', 'pos_payment', 'sync_app', 'sync_api',
+                    'control_panel', 'offline_ins', 'ip_manager', 'home_app'
+                ]
+
+                for app in app_folders:
+                    app_path = BASE_DIR / app
+                    if app_path.exists():
+                        for root, dirs, files in os.walk(app_path):
+                            for file in files:
+                                if file.endswith('.py'):
+                                    file_path = os.path.join(root, file)
+                                    arcname = os.path.relpath(file_path, BASE_DIR)
+                                    zipf.write(file_path, arcname)
+
+                # اضافه کردن پوشه templates
+                templates_path = BASE_DIR / 'templates'
+                if templates_path.exists():
+                    for root, dirs, files in os.walk(templates_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, BASE_DIR)
+                            zipf.write(file_path, arcname)
+
+            download_url = f'/media/offline_installers/{zip_filename}'
+
+            return JsonResponse({
+                'status': 'success',
+                'message': f'فایل نصب با {len(selected_ips)} IP ایجاد شد',
+                'download_url': download_url,
+                'selected_ips': selected_ips
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در ایجاد فایل نصب: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})

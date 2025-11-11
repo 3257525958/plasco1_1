@@ -106,6 +106,7 @@ def create_install_package():
 
 
 def offline_install(request):
+
     """صفحه نصب آفلاین"""
     if not is_allowed_offline_ip(request):
         return redirect('/')
