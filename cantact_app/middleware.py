@@ -3,14 +3,12 @@ from django.contrib.sessions.models import Session
 from django.contrib.auth import logout
 from django.utils import timezone
 from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.contrib import messages
 import hashlib
 import json
 
 try:
     import user_agents
-
     USER_AGENTS_AVAILABLE = True
 except ImportError:
     USER_AGENTS_AVAILABLE = False
@@ -21,7 +19,7 @@ class AdvancedSessionMiddleware:
         self.get_response = get_response
         # تنظیمات قابل تنظیم
         self.max_sessions_per_user = 1  # حداکثر تعداد سشن فعال
-        self.allow_multiple_admin_sessions = False  # آیا ادمین‌ها چند سشن داشته باشند؟
+        self.allow_multiple_admin_sessions = False
         self.session_timeout = 3600  # 1 ساعت
 
     def __call__(self, request):
@@ -89,14 +87,14 @@ class AdvancedSessionMiddleware:
                 user=user,
                 session_key=session_key,
                 ip_address=self.get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],  # محدود کردن طول
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
                 device_type=device_info['type'],
                 device_info=device_info,
                 location=self.get_estimated_location(request),
                 is_active=True
             )
 
-            # مدیریت سشن‌های قدیمی
+            # مدیریت سشن‌های قدیمی - اینجا سشن‌های قبلی را terminate می‌کنیم
             self.cleanup_old_sessions(user, session_key)
 
             print(f"✅ لاگین موفق: {user.username} از {device_info['type']}")
@@ -124,7 +122,6 @@ class AdvancedSessionMiddleware:
             os = f"{ua.os.family} {ua.os.version_string}"
             device = ua.device.family
         else:
-            # اگر user_agents نصب نیست، تشخیص ساده
             user_agent_lower = user_agent_string.lower()
             if 'mobile' in user_agent_lower:
                 device_type = 'mobile'
@@ -166,15 +163,12 @@ class AdvancedSessionMiddleware:
     def get_estimated_location(self, request):
         """تخمین موقعیت جغرافیایی (ساده)"""
         ip = self.get_client_ip(request)
-
-        # برای IPهای داخلی
         if ip.startswith('192.168.') or ip.startswith('10.') or ip == '127.0.0.1':
             return 'شبکه داخلی'
-
         return 'نامشخص'
 
     def cleanup_old_sessions(self, user, current_session_key):
-        """پاکسازی سشن‌های قدیمی"""
+        """پاکسازی سشن‌های قدیمی - این تابع سشن‌های قبلی را terminate می‌کند"""
         try:
             from .models import UserSessionLog
 
@@ -183,18 +177,14 @@ class AdvancedSessionMiddleware:
                 is_active=True
             ).exclude(session_key=current_session_key)
 
-            # اگر کاربر ادمین است و اجازه سشن‌های متعدد دارد
-            if user.is_staff and self.allow_multiple_admin_sessions:
-                # فقط سشن‌های قدیمی‌تر از timeout را پاک کن
-                timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
-                old_sessions = active_sessions.filter(last_activity__lt=timeout_time)
-            else:
-                # برای کاربران عادی، تمام سشن‌های دیگر را پاک کن
-                old_sessions = active_sessions
-
-            for session_log in old_sessions:
+            terminated_count = 0
+            for session_log in active_sessions:
                 session_log.terminate()
-                print(f"🗑️ سشن قدیمی پاک شد: {user.username} - {session_log.session_key}")
+                terminated_count += 1
+                print(f"🔒 سشن قدیمی حذف شد: {user.username} - {session_log.device_type}")
+
+            if terminated_count > 0:
+                print(f"✅ {terminated_count} سشن قبلی terminate شدند")
 
         except Exception as e:
             print(f"⚠️ خطا در پاکسازی سشن‌های قدیمی: {e}")
@@ -233,7 +223,7 @@ class AdvancedSessionMiddleware:
             return False
         except Exception as e:
             print(f"⚠️ خطا در بررسی سشن: {e}")
-            return True  # در صورت خطا، اجازه ادامه بده
+            return True
 
         return True
 
@@ -265,13 +255,11 @@ class AdvancedSessionMiddleware:
 
             # اگر بیشتر از حد مجاز سشن فعال دارد
             if active_count > self.max_sessions_per_user:
-                # پیدا کردن سشن‌های قدیمی‌تر
                 old_sessions = UserSessionLog.objects.filter(
                     user=user,
                     is_active=True
                 ).exclude(session_key=current_session_key).order_by('last_activity')
 
-                # پاک کردن سشن‌های اضافی
                 sessions_to_remove = old_sessions[:active_count - self.max_sessions_per_user]
                 for session_log in sessions_to_remove:
                     session_log.terminate()
@@ -306,14 +294,15 @@ class AdvancedSessionMiddleware:
 
                 # اضافه کردن پیام
                 storage = messages.get_messages(request)
-                storage.used = True  # پاک کردن پیام‌های قبلی
+                storage.used = True
 
                 messages.warning(
                     request,
-                    "دسترسی شما به دلیل فعالیت از دستگاه دیگر یا مشکل امنیتی قطع شد. لطفاً مجدداً وارد شوید."
+                    "🔐 از دستگاه دیگری با حساب شما وارد شده است. برای امنیت، از این دستگاه خارج شدید."
                 )
 
-                return HttpResponseRedirect(reverse('login'))
+                # 🔥 تغییر مهم: استفاده از آدرس لاگین خودتان
+                return HttpResponseRedirect('/cantact/login/')
 
         except Exception as e:
             print(f"⚠️ خطا در خروج اجباری: {e}")
