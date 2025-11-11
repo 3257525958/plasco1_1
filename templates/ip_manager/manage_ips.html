@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدیریت IPهای مجاز سیستم آفلاین</title>
-    
+
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --primary-color: #667eea;
@@ -19,14 +19,14 @@
             --warning-color: #ffc107;
             --info-color: #17a2b8;
         }
-        
+
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             font-family: 'Tahoma', 'Segoe UI', sans-serif;
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .main-container {
             background: white;
             border-radius: 15px;
@@ -35,13 +35,13 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-        
+
         .header-section {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             padding: 2rem;
         }
-        
+
         .stat-card {
             background: rgba(255, 255, 255, 0.2);
             border-radius: 10px;
@@ -50,11 +50,11 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        
+
         .content-section {
             padding: 2rem;
         }
-        
+
         .form-card {
             border: none;
             border-radius: 10px;
@@ -62,14 +62,14 @@
             margin-bottom: 2rem;
             border-left: 4px solid var(--primary-color);
         }
-        
+
         .table-card {
             border: none;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             border-left: 4px solid var(--success-color);
         }
-        
+
         .action-card {
             border: none;
             border-radius: 10px;
@@ -77,19 +77,19 @@
             border-left: 4px solid var(--info-color);
             margin-bottom: 2rem;
         }
-        
+
         .btn-custom {
             border-radius: 8px;
             font-weight: 600;
             transition: all 0.3s ease;
             padding: 0.5rem 1.5rem;
         }
-        
+
         .btn-custom:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-        
+
         .table-custom th {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
@@ -97,25 +97,25 @@
             font-weight: 600;
             padding: 1rem;
         }
-        
+
         .table-custom td {
             padding: 1rem;
             vertical-align: middle;
         }
-        
+
         .badge-custom {
             border-radius: 6px;
             font-size: 0.8rem;
             padding: 0.4rem 0.8rem;
             font-weight: 500;
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-        
+
         .btn-action {
             width: 36px;
             height: 36px;
@@ -124,38 +124,38 @@
             justify-content: center;
             border-radius: 6px;
         }
-        
+
         .empty-state {
             text-align: center;
             padding: 3rem;
             color: #6c757d;
         }
-        
+
         .empty-state i {
             font-size: 4rem;
             margin-bottom: 1rem;
             opacity: 0.5;
         }
-        
+
         .loading-spinner {
             display: none;
             text-align: center;
             padding: 2rem;
         }
-        
+
         .alert-custom {
             border-radius: 10px;
             border: none;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        
+
         .progress-container {
             background: #f8f9fa;
             border-radius: 10px;
             padding: 1.5rem;
             margin: 1rem 0;
         }
-        
+
         .progress-step {
             display: flex;
             align-items: center;
@@ -165,7 +165,7 @@
             background: white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        
+
         .step-icon {
             width: 40px;
             height: 40px;
@@ -177,38 +177,38 @@
             font-weight: bold;
             color: white;
         }
-        
+
         .step-pending .step-icon {
             background: #6c757d;
         }
-        
+
         .step-active .step-icon {
             background: var(--info-color);
             animation: pulse 1.5s infinite;
         }
-        
+
         .step-completed .step-icon {
             background: var(--success-color);
         }
-        
+
         .step-error .step-icon {
             background: var(--danger-color);
         }
-        
+
         .step-content {
             flex: 1;
         }
-        
+
         .step-title {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-        
+
         .step-description {
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .progress-bar-custom {
             height: 8px;
             border-radius: 4px;
@@ -216,7 +216,7 @@
             overflow: hidden;
             margin: 0.5rem 0;
         }
-        
+
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
@@ -224,18 +224,18 @@
             transition: width 0.5s ease;
             width: 0%;
         }
-        
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        
+
         .checkbox-cell {
             width: 50px;
             text-align: center;
         }
-        
+
         .selected-ips-badge {
             background: var(--info-color);
             color: white;
@@ -328,13 +328,13 @@
                         <div class="progress-bar-custom">
                             <div class="progress-fill" id="overallProgressBar"></div>
                         </div>
-                        
+
                         <!-- مراحل نصب -->
                         <div id="installationSteps">
                             <!-- مراحل اینجا dynamically ساخته می‌شوند -->
                         </div>
                     </div>
-                    
+
                     <!-- دکمه دانلود -->
                     <div class="text-center mt-3" id="downloadSection" style="display: none;">
                         <a href="#" class="btn btn-success btn-custom" id="downloadLink">
@@ -361,14 +361,14 @@
                         <div class="row g-3 align-items-end">
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">آدرس IP</label>
-                                <input type="text" class="form-control" id="ip_address" 
+                                <input type="text" class="form-control" id="ip_address"
                                        placeholder="مثال: 192.168.1.100" required
                                        pattern="^(\d{1,3}\.){3}\d{1,3}$">
                                 <div class="form-text text-muted">فرمت IP باید صحیح باشد (مثال: 192.168.1.100)</div>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label fw-bold">توضیحات</label>
-                                <input type="text" class="form-control" id="description" 
+                                <input type="text" class="form-control" id="description"
                                        placeholder="مثال: کامپیوتر اتاق مالی - کاربر: علی">
                                 <div class="form-text text-muted">توضیح اختیاری درباره این IP</div>
                             </div>
@@ -428,7 +428,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- وضعیت خالی -->
                     <div id="emptyState" class="empty-state d-none">
                         <i class="fas fa-inbox"></i>
@@ -480,7 +480,7 @@
     <!-- اسکریپت‌ها -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
 <!-- فقط بخش JavaScript را با این جایگزین کنید: -->
 <script>
     // متغیرهای global
@@ -489,13 +489,13 @@
     // وقتی صفحه لود شد
     $(document).ready(function() {
         loadIPs();
-        
+
         // افزودن IP جدید
         $('#addIpForm').on('submit', function(e) {
             e.preventDefault();
             addNewIP();
         });
-        
+
         // ذخیره ویرایش
         $('#saveEditBtn').on('click', function() {
             saveEditIP();
@@ -505,7 +505,7 @@
     // بارگذاری لیست IPها
     function loadIPs() {
         showLoading(true);
-        
+
         $.ajax({
             url: '/ip/ip_manager/api/list/',  // مسیر قدیمی
             method: 'GET',
@@ -529,38 +529,38 @@
     function updateIPsTable(ips) {
         const tbody = $('#ipTableBody');
         const emptyState = $('#emptyState');
-        
+
         if (ips.length === 0) {
             tbody.html('');
             emptyState.removeClass('d-none');
             $('#installationCard').hide();
             return;
         }
-        
+
         emptyState.addClass('d-none');
-        
+
         let html = '';
         ips.forEach((ip, index) => {
-            const statusBadge = ip.is_active ? 
-                '<span class="badge bg-success badge-custom">فعال</span>' : 
+            const statusBadge = ip.is_active ?
+                '<span class="badge bg-success badge-custom">فعال</span>' :
                 '<span class="badge bg-danger badge-custom">غیرفعال</span>';
-            
-            const toggleButton = ip.is_active ? 
-                `<button class="btn btn-outline-warning btn-action toggle-ip" 
+
+            const toggleButton = ip.is_active ?
+                `<button class="btn btn-outline-warning btn-action toggle-ip"
                         data-id="${ip.id}" data-action="deactivate" title="غیرفعال کردن">
                     <i class="fas fa-ban"></i>
                 </button>` :
-                `<button class="btn btn-outline-success btn-action toggle-ip" 
+                `<button class="btn btn-outline-success btn-action toggle-ip"
                         data-id="${ip.id}" data-action="activate" title="فعال کردن">
                     <i class="fas fa-check"></i>
                 </button>`;
-            
+
             const isChecked = selectedIPs.has(ip.ip_address) ? 'checked' : '';
-            
+
             html += `
                 <tr id="ip-row-${ip.id}">
                     <td class="checkbox-cell">
-                        <input type="checkbox" class="ip-checkbox" value="${ip.ip_address}" 
+                        <input type="checkbox" class="ip-checkbox" value="${ip.ip_address}"
                                onchange="toggleIPSelection('${ip.ip_address}')" ${isChecked}>
                     </td>
                     <td class="fw-bold">${index + 1}</td>
@@ -574,13 +574,13 @@
                     <td>${statusBadge}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-outline-primary btn-action edit-ip" 
-                                    data-id="${ip.id}" data-ip="${ip.ip_address}" 
+                            <button class="btn btn-outline-primary btn-action edit-ip"
+                                    data-id="${ip.id}" data-ip="${ip.ip_address}"
                                     data-desc="${ip.description}" title="ویرایش">
                                 <i class="fas fa-edit"></i>
                             </button>
                             ${toggleButton}
-                            <button class="btn btn-outline-danger btn-action delete-ip" 
+                            <button class="btn btn-outline-danger btn-action delete-ip"
                                     data-id="${ip.id}" title="حذف">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -589,7 +589,7 @@
                 </tr>
             `;
         });
-        
+
         tbody.html(html);
         attachEventHandlers();
         updateInstallationCard();
@@ -623,10 +623,10 @@
     function updateInstallationCard() {
         const installationCard = $('#installationCard');
         const selectedIpsList = $('#selectedIpsList');
-        
+
         if (selectedIPs.size > 0) {
             installationCard.show();
-            
+
             let html = '';
             selectedIPs.forEach(ip => {
                 html += `<span class="selected-ips-badge">${ip}</span>`;
@@ -646,10 +646,10 @@
 
         const selectedIPsArray = Array.from(selectedIPs);
         const csrf = $('[name=csrfmiddlewaretoken]').val();
-        
+
         // غیرفعال کردن دکمه
         $('#createInstallBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>در حال ایجاد...');
-        
+
         $.ajax({
             url: '/ip/ip_manager/api/create-offline-installer/',  // مسیر قدیمی
             method: 'POST',
@@ -659,7 +659,7 @@
             },
             success: function(response) {
                 $('#createInstallBtn').prop('disabled', false).html('<i class="fas fa-rocket me-2"></i> ایجاد فایل نصب');
-                
+
                 if (response.status === 'success') {
                     showSuccess(response.message);
                     // نمایش لینک دانلود

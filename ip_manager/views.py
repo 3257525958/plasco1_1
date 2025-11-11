@@ -100,7 +100,6 @@ def update_ip(request, ip_id):
     else:
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
 
-
 @csrf_exempt
 def toggle_ip(request, ip_id):
     """فعال/غیرفعال کردن IP (API)"""
