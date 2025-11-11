@@ -1159,14 +1159,12 @@ def search_sellers(request):
 
 #
 # -----------------------------------------------لاگین ها---------------------------------------
-# در فایل views.py، بخش مدیریت سشن را اینگونه اصلاح کنید:
-
+# ------------------------------- مدیریت سشن‌ها ---------------------------------
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from cantact_app.models import UserSessionLog
 
-# 🔥 تغییر مهم: اضافه کردن login_url به دکوراتورها
 @login_required(login_url='/cantact/login/')
 def session_management_view(request):
     """صفحه مدیریت سشن‌های کاربر"""
@@ -1198,6 +1196,6 @@ def terminate_other_sessions_view(request):
             session_log.terminate()
             terminated_count += 1
 
-        messages.success(request, f"✅ {terminated_count} سشن دیگر خاتمه یافت.")
+        messages.success(request, f"{terminated_count} سشن دیگر خاتمه یافت.")
 
     return redirect('cantact_app:session_management')

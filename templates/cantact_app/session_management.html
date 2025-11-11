@@ -316,7 +316,7 @@
                             </td>
                             <td>
                                 {% if session.session_key != current_session_key and session.is_active %}
-                                <form method="post" action="{% url 'terminate_other_sessions' %}" style="display: inline;">
+                                <form method="post" action="{% url 'cantact_app:terminate_other_sessions' %}" style="display: inline;">
                                     {% csrf_token %}
                                     <input type="hidden" name="session_key" value="{{ session.session_key }}">
                                     <button type="submit" class="btn btn-sm btn-danger" 
@@ -341,7 +341,7 @@
             </div>
             
             <div class="mt-4">
-                <form method="post" action="{% url 'terminate_other_sessions' %}">
+                <form method="post" action="{% url 'cantact_app:terminate_other_sessions' %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-warning" 
                             onclick="return confirm('آیا می‌خواهید از تمام دستگاه‌های دیگر خارج شوید؟')">
@@ -423,7 +423,7 @@
         }
 
         // تأیید قبل از قطع کردن تمام sessions
-        document.querySelector('form[action="{% url 'terminate_other_sessions' %}"]:not([style])')?.addEventListener('submit', function(e) {
+        document.querySelector('form[action="{% url 'cantact_app:terminate_other_sessions' %}"]:not([style])')?.addEventListener('submit', function(e) {
             if (!confirm('آیا مطمئن هستید که می‌خواهید از تمام دستگاه‌های دیگر خارج شوید؟ این عمل غیرقابل برگشت است.')) {
                 e.preventDefault();
             }
