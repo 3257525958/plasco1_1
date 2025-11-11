@@ -1,5 +1,3 @@
-[file name]: ip_manager / views.py
-[file content begin]
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -510,6 +508,3 @@ def create_offline_installer(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'لطفاً از POST استفاده کنید'})
-
-
-[file content end]
