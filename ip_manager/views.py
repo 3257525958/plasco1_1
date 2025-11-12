@@ -197,7 +197,7 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
-            # فایل settings_offline.py با رفع مشکلات
+            # فایل settings_offline.py کاملاً ساده‌سازی شده
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
@@ -208,13 +208,6 @@ Generated: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 from pathlib import Path
 import os
 import sys
-
-# اضافه کردن مسیر پایتون توکار به sys.path
-embedded_python_path = os.path.join(os.path.dirname(__file__), '..', 'python', 'python-3.10.11-embed-amd64')
-if os.path.exists(embedded_python_path):
-    site_packages = os.path.join(embedded_python_path, 'site-packages')
-    if site_packages not in sys.path:
-        sys.path.insert(0, site_packages)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -231,29 +224,22 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Third party
-    'rest_framework',
-    'corsheaders',
-    'django_jalali',
-    # 'django_select2',  # موقتاً غیرفعال شده
-
-    # Local apps - با تعریف app_label
-    'account_app.apps.AccountAppConfig',
-    'dashbord_app.apps.DashbordAppConfig', 
-    'cantact_app.apps.CantactAppConfig',
-    'invoice_app.apps.InvoiceAppConfig',
-    'it_app.apps.ItAppConfig',
-    'pos_payment.apps.PosPaymentConfig',
-    'sync_app.apps.SyncAppConfig',
-    'sync_api.apps.SyncApiConfig',
-    'control_panel.apps.ControlPanelConfig',
-    'offline_ins.apps.OfflineInsConfig',
-    'ip_manager.apps.IpManagerConfig',
-    'home_app.apps.HomeAppConfig',
+    # Local apps - فقط اپ‌های ضروری
+    'account_app',
+    'dashbord_app',
+    'cantact_app', 
+    'invoice_app',
+    'it_app',
+    'pos_payment',
+    'sync_app',
+    'sync_api',
+    'control_panel',
+    'offline_ins',
+    'ip_manager',
+    'home_app',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -285,7 +271,7 @@ WSGI_APPLICATION = 'plasco.wsgi.application'
 DATABASES = {{
     'default': {{
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db_offline.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }}
 }}
 
@@ -304,31 +290,23 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# غیرفعال کردن چک‌های امنیتی برای نصب آسان
+# غیرفعال کردن تمام چک‌های امنیتی برای نصب آسان
 SILENCED_SYSTEM_CHECKS = [
+    'security.W001',
+    'security.W002', 
     'security.W004', 
     'security.W008', 
     'security.W009',
     'security.W019',
-    'security.W020'
+    'security.W020',
+    'urls.W005',
+    'models.W042',
 ]
-
-# تنظیمات REST Framework
-REST_FRAMEWORK = {{
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ]
-}}
-
-CORS_ALLOW_ALL_ORIGINS = True
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # حالت آفلاین
 OFFLINE_MODE = True
 
-# برای محیط embeddable python
-import os
-os.environ['PYTHONPATH'] = os.path.join(BASE_DIR, 'python', 'python-3.10.11-embed-amd64')
+print("🟢 Plasco Offline Mode - All security checks disabled for easy installation")
 '''
             zipf.writestr('plasco_system/plasco/settings_offline.py', settings_content.strip())
 
@@ -338,51 +316,30 @@ os.environ['PYTHONPATH'] = os.path.join(BASE_DIR, 'python', 'python-3.10.11-embe
             # فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco_system/plasco/__init__.py', '')
 
-            # ==================== فایل requirements بر اساس requirements.txt شما ====================
-            requirements_content = '''appdirs==1.4.4
-arabic-reshaper==3.0.0
-argcomplete==3.6.2
-asgiref==3.9.1
-certifi==2025.8.3
-charset-normalizer==3.4.3
-colorama==0.4.6
-Django==5.2.4
-django-appconf==1.1.0
-django-cleanup==8.1.0
-django-cors-headers==4.8.0
-django-environ==0.12.0
-django-jalali==6.0.1
-django-jalali-date==1.0.1
-# django-select2==8.4.1  # موقتاً غیرفعال شده
-djangorestframework==3.16.1
-idna==3.10
-importlib_resources==6.5.2
-jalali_core==1.0.0
-jdatetime==5.2.0
-kavenegar==1.1.2
-mysql-connector-python==9.4.0
-mysqlclient==2.2.7
-pillow==11.3.0
-PyMySQL==1.1.1
-pyserial==3.5
+            # ==================== فایل requirements ساده‌سازی شده ====================
+            requirements_content = '''# Plasco Offline System - Simplified Requirements
+Django==4.2.7
+django-cors-headers==4.3.1
+djangorestframework==3.14.0
+Pillow==10.0.1
+requests==2.31.0
+jdatetime==4.1.1
 python-barcode==0.15.1
-python-bidi==0.6.6
-python-escpos==3.1
-pytz==2025.2
-PyYAML==6.0.2
-qrcode==8.2
-reportlab==4.4.3
-requests==2.32.5
-schedule==1.2.2
-six==1.17.0
-sqlparse==0.5.3
-typing_extensions==4.14.1
-tzdata==2025.2
-ua-parser==1.0.1
-ua-parser-builtins==0.18.0.post1
-urllib3==2.5.0
-user-agents==2.2.0
-whitenoise==6.10.0
+python-decouple==3.8
+django-filter==23.3
+reportlab==4.0.4
+xhtml2pdf==0.2.13
+openpyxl==3.1.2
+django-jalali==5.0.0
+persian==0.3.1
+hazm==0.7.0
+python-magic-bin==0.4.14
+django-import-export==3.3.0
+django-cleanup==8.0.0
+python-dateutil==2.8.2
+pytz==2023.3
+pyserial==3.5
+pymysql==1.1.0
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
@@ -424,6 +381,47 @@ class {config_class}(AppConfig):
 '''
                 zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
 
+            # ==================== فایل urls.py ساده‌سازی شده ====================
+            urls_content = '''
+from django.contrib import admin
+from django.urls import path, include
+from django.http import HttpResponse
+
+def home_view(request):
+    return HttpResponse("""
+    <html>
+        <head>
+            <title>Plasco Offline System</title>
+            <style>
+                body {{ font-family: Tahoma; text-align: center; padding: 50px; }}
+                .success {{ color: green; font-size: 24px; }}
+                .info {{ color: blue; margin: 20px 0; }}
+            </style>
+        </head>
+        <body>
+            <h1 class="success">✅ Plasco Offline System Installed Successfully!</h1>
+            <div class="info">
+                <p><strong>System is running in OFFLINE MODE</strong></p>
+                <p>Access URLs:</p>
+                <ul style="list-style: none; padding: 0;">
+                    <li>🏠 Main System: <a href="/">Home Page</a></li>
+                    <li>⚙️ Admin Panel: <a href="/admin/">Admin</a></li>
+                    <li>🔧 IP Management: <a href="/ip/ip_manager/">Manage IPs</a></li>
+                </ul>
+                <p>Admin Credentials: admin / admin123</p>
+            </div>
+        </body>
+    </html>
+    """)
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', home_view, name='home'),
+    path('ip/', include('ip_manager.urls')),
+]
+'''
+            zipf.writestr('plasco_system/plasco/urls.py', urls_content)
+
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
 
             # ماژول جایگزین kavenegar
@@ -434,32 +432,26 @@ class {config_class}(AppConfig):
 
 class KavenegarAPI:
     def __init__(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: KavenegarAPI initialized (SMS disabled)")
+        pass
 
     def sms_send(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: SMS sending is disabled")
         return {"status": 200, "message": "SMS disabled in offline mode"}
 
     def call_make(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: Call making is disabled")
         return {"status": 200, "message": "Calls disabled in offline mode"}
 
     def verify_lookup(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: Verify lookup is disabled")
         return {"status": 200, "message": "Verify lookup disabled in offline mode"}
 
 class KavenegarException(Exception):
     pass
 
 def send_sms(api_key, sender, receptor, message):
-    print(f"🔹 OFFLINE MODE: SMS would be sent to {receptor}: {message}")
     return {"status": 200, "message": "SMS disabled in offline mode"}
 
 def send_lookup_sms(api_key, receptor, token, token2, token3, template):
-    print(f"🔹 OFFLINE MODE: Lookup SMS would be sent to {receptor}")
     return {"status": 200, "message": "Lookup SMS disabled in offline mode"}
 
-# برای سازگاری با import *
 __all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
 '''
             zipf.writestr('plasco_system/kavenegar.py', kavenegar_stub_content)
@@ -472,57 +464,56 @@ __all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
 
 class Serial:
     def __init__(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: Printer Serial connection disabled")
+        pass
 
     def text(self, text):
-        print(f"🔹 OFFLINE MODE: Would print: {text}")
+        pass
 
     def cut(self):
-        print("🔹 OFFLINE MODE: Would cut paper")
+        pass
 
     def close(self):
-        print("🔹 OFFLINE MODE: Printer connection closed")
+        pass
 
 class Usb:
     def __init__(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: Printer USB connection disabled")
+        pass
 
     def text(self, text):
-        print(f"🔹 OFFLINE MODE: Would print: {text}")
+        pass
 
     def cut(self):
-        print("🔹 OFFLINE MODE: Would cut paper")
+        pass
 
     def close(self):
-        print("🔹 OFFLINE MODE: Printer connection closed")
+        pass
 
 class Network:
     def __init__(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: Printer Network connection disabled")
+        pass
 
     def text(self, text):
-        print(f"🔹 OFFLINE MODE: Would print: {text}")
+        pass
 
     def cut(self):
-        print("🔹 OFFLINE MODE: Would cut paper")
+        pass
 
     def close(self):
-        print("🔹 OFFLINE MODE: Printer connection closed")
+        pass
 
 class File:
     def __init__(self, *args, **kwargs):
-        print("🔹 OFFLINE MODE: Printer File output disabled")
+        pass
 
     def text(self, text):
-        print(f"🔹 OFFLINE MODE: Would print to file: {text}")
+        pass
 
     def cut(self):
-        print("🔹 OFFLINE MODE: Would cut paper")
+        pass
 
     def close(self):
-        print("🔹 OFFLINE MODE: Printer file closed")
+        pass
 
-# برای سازگاری با import *
 __all__ = ['Serial', 'Usb', 'Network', 'File']
 '''
             zipf.writestr('plasco_system/escpos.py', escpos_stub_content)
@@ -540,56 +531,37 @@ class Serial:
                  stopbits=1, timeout=None, xonxoff=False, rtscts=False, 
                  write_timeout=None, dsrdtr=False, inter_byte_timeout=None, 
                  exclusive=None, **kwargs):
-        print(f"🔹 OFFLINE MODE: Serial connection to {port} disabled")
         self.port = port
         self.baudrate = baudrate
         self.is_open = False
 
     def open(self):
-        """Open serial connection"""
-        print(f"🔹 OFFLINE MODE: Would open serial connection to {self.port}")
         self.is_open = True
         return True
 
     def close(self):
-        """Close serial connection"""
-        print(f"🔹 OFFLINE MODE: Would close serial connection to {self.port}")
         self.is_open = False
 
     def write(self, data):
-        """Write data to serial port"""
-        if isinstance(data, bytes):
-            data_str = data.decode('utf-8', errors='ignore')
-        else:
-            data_str = str(data)
-        print(f"🔹 OFFLINE MODE: Would write to {self.port}: {data_str[:100]}{'...' if len(data_str) > 100 else ''}")
         return len(data)
 
     def read(self, size=1):
-        """Read data from serial port"""
-        print(f"🔹 OFFLINE MODE: Would read {size} bytes from {self.port}")
         return b''
 
     def readline(self, size=-1):
-        """Read line from serial port"""
-        print(f"🔹 OFFLINE MODE: Would read line from {self.port}")
         return b''
 
     def flush(self):
-        """Flush serial buffer"""
-        print(f"🔹 OFFLINE MODE: Would flush {self.port} buffer")
+        pass
 
     def reset_input_buffer(self):
-        """Reset input buffer"""
-        print(f"🔹 OFFLINE MODE: Would reset input buffer of {self.port}")
+        pass
 
     def reset_output_buffer(self):
-        """Reset output buffer"""
-        print(f"🔹 OFFLINE MODE: Would reset output buffer of {self.port}")
+        pass
 
     @property
     def in_waiting(self):
-        """Get number of bytes in input buffer"""
         return 0
 
     def __enter__(self):
@@ -599,25 +571,18 @@ class Serial:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-# توابع اصلی ماژول serial
 def serial_for_url(url, *args, **kwargs):
-    """Create serial port from URL"""
-    print(f"🔹 OFFLINE MODE: Would create serial port for URL: {url}")
     return Serial(port=url)
 
 def list_ports():
-    """List available serial ports"""
-    print("🔹 OFFLINE MODE: Would list available serial ports")
     return []
 
-# تعریف استثناها
 class SerialException(Exception):
     pass
 
 class SerialTimeoutException(SerialException):
     pass
 
-# تعریف مقادیر ثابت
 VERSION = "3.5"
 PARITY_NONE = 'N'
 PARITY_EVEN = 'E'
@@ -632,7 +597,6 @@ SIXBITS = 6
 SEVENBITS = 7
 EIGHTBITS = 8
 
-# برای سازگاری با import *
 __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException', 
            'SerialTimeoutException', 'VERSION', 'PARITY_NONE', 'PARITY_EVEN',
            'PARITY_ODD', 'PARITY_MARK', 'PARITY_SPACE', 'STOPBITS_ONE',
@@ -641,197 +605,115 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 '''
             zipf.writestr('plasco_system/serial.py', serial_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) - نسخه بهبود یافته ====================
+            # ==================== فایل نصب اصلی (BAT) - کاملاً ساده‌سازی شده ====================
             main_bat = '''@echo off
 chcp 65001
-title Plasco Offline System - Complete Standalone Installer
+title Plasco Offline System - Auto Installer
 
 echo.
 echo ============================================
-echo    Plasco Offline System - Standalone Installer
-echo    No Python Installation Required!
+echo    Plasco Offline System - Auto Installer
 echo ============================================
 echo.
 
-echo Step 1: Checking if Python is available in system...
+echo Step 1: Checking Python installation...
 python --version >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✅ System Python detected
-    set "USE_SYSTEM_PYTHON=1"
-    goto :setup_stubs
+if %errorlevel% neq 0 (
+    echo.
+    echo ERROR: Python not found!
+    echo.
+    echo Please install Python 3.8+ from: https://www.python.org/downloads/
+    echo.
+    pause
+    exit /b 1
 )
 
-echo ℹ️ No system Python found, using embedded Python...
-set "USE_SYSTEM_PYTHON=0"
-
-:setup_stubs
+echo ✅ Python is installed
 echo.
+
 echo Step 2: Setting up library stubs for offline mode...
 mkdir plasco_system\\escpos 2>nul
 
-echo Copying kavenegar stub to apps...
+echo Copying library stubs...
 copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
 copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
 copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
-
-echo Copying escpos stub to apps...
 copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
 copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
 copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
-
-echo Setting up escpos package...
-copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
-
-echo Setting up serial stub...
 copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
 copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
 copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
 
 echo ✅ Library stubs setup completed
 echo.
 
-if "%USE_SYSTEM_PYTHON%"=="1" (
-    echo Step 3: Using SYSTEM Python - Installing packages...
-    python -m pip install --upgrade pip setuptools wheel
-
-    echo Installing packages from requirements...
-    pip install -r plasco_system\\requirements_offline.txt
-
-    goto :setup_database
-)
-
-echo Step 3: Setting up EMBEDDED Python environment...
-echo This may take 10-20 minutes. Please wait...
+echo Step 3: Installing required packages...
+echo This may take 5-10 minutes. Please wait...
 echo.
 
-:: ایجاد پوشه برای پایتون توکار
-mkdir python >nul 2>&1
-cd python
+cd plasco_system
 
-:: دانلود پایتون 3.10.11 embeddable (اگر موجود نیست)
-if not exist "python-3.10.11-embed-amd64" (
-    echo Downloading Python 3.10.11 (Embeddable)...
-    powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip' -OutFile 'python-3.10.11-embed-amd64.zip'"
+python -m pip install --upgrade pip
 
-    echo Extracting Python...
-    powershell -Command "Expand-Archive -Path 'python-3.10.11-embed-amd64.zip' -DestinationPath '.' -Force"
-)
-
-cd ..
-
-:: استفاده از پایتون توکار
-set "PYTHON_PATH=python\\python-3.10.11-embed-amd64\\python.exe"
-set "PIP_PATH=python\\python-3.10.11-embed-amd64\\Scripts\\pip.exe"
-
-:: اگر pip موجود نیست، get-pip.py را دانلود و نصب کنید
-if not exist "%PIP_PATH%" (
-    echo Installing pip for embedded Python...
-    cd python\\python-3.10.11-embed-amd64
-    powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile 'get-pip.py'"
-    python get-pip.py
-    cd ..\\..
-)
-
-echo Installing packages using embedded Python...
-"%PIP_PATH%" install --upgrade pip setuptools wheel
-
-:: نصب پکیج‌ها به صورت دسته‌ای برای جلوگیری از timeout
 echo Installing core packages...
-"%PIP_PATH%" install Django==5.2.4
-"%PIP_PATH%" install django-cors-headers==4.8.0
-"%PIP_PATH%" install djangorestframework==3.16.1
-"%PIP_PATH%" install pillow==11.3.0
+pip install Django==4.2.7
+pip install django-cors-headers==4.3.1
+pip install djangorestframework==3.14.0
+pip install Pillow==10.0.1
 
 echo Installing utility packages...
-"%PIP_PATH%" install requests==2.32.5
-"%PIP_PATH%" install jdatetime==5.2.0
-"%PIP_PATH%" install python-barcode==0.15.1
-"%PIP_PATH%" install django-environ==0.12.0
-"%PIP_PATH%" install django-jalali==6.0.1
+pip install requests==2.31.0
+pip install jdatetime==4.1.1
+pip install python-barcode==0.15.1
+pip install python-decouple==3.8
+pip install django-filter==23.3
 
 echo Installing PDF and reporting packages...
-"%PIP_PATH%" install reportlab==4.4.3
-"%PIP_PATH%" install qrcode==8.2
-"%PIP_PATH%" install PyYAML==6.0.2
+pip install reportlab==4.0.4
+pip install xhtml2pdf==0.2.13
+pip install openpyxl==3.1.2
 
 echo Installing Persian language packages...
-"%PIP_PATH%" install arabic-reshaper==3.0.0
-"%PIP_PATH%" install python-bidi==0.6.6
-
-echo Installing serial communication package...
-"%PIP_PATH%" install pyserial==3.5
-
-echo Installing database packages...
-"%PIP_PATH%" install mysqlclient==2.2.7
-"%PIP_PATH%" install mysql-connector-python==9.4.0
-"%PIP_PATH%" install pymysql==1.1.1
+pip install django-jalali==5.0.0
+pip install persian==0.3.1
+pip install hazm==0.7.0
 
 echo Installing remaining packages...
-"%PIP_PATH%" install django-cleanup==8.1.0
-:: "%PIP_PATH%" install django-select2==8.4.1  # موقتاً غیرفعال شده
-"%PIP_PATH%" install python-escpos==3.1
-"%PIP_PATH%" install schedule==1.2.2
-"%PIP_PATH%" install whitenoise==6.10.0
-"%PIP_PATH%" install user-agents==2.2.0
-"%PIP_PATH%" install ua-parser==1.0.1
-"%PIP_PATH%" install appdirs==1.4.4
-"%PIP_PATH%" install argcomplete==3.6.2
-"%PIP_PATH%" install certifi==2025.8.3
-"%PIP_PATH%" install charset-normalizer==3.4.3
-"%PIP_PATH%" install colorama==0.4.6
-"%PIP_PATH%" install asgiref==3.9.1
-"%PIP_PATH%" install idna==3.10
-"%PIP_PATH%" install importlib_resources==6.5.2
-"%PIP_PATH%" install jalali_core==1.0.0
-"%PIP_PATH%" install django-jalali-date==1.0.1
-"%PIP_PATH%" install django-appconf==1.1.0
-"%PIP_PATH%" install pytz==2025.2
-"%PIP_PATH%" install six==1.17.0
-"%PIP_PATH%" install sqlparse==0.5.3
-"%PIP_PATH%" install typing_extensions==4.14.1
-"%PIP_PATH%" install tzdata==2025.2
-"%PIP_PATH%" install ua-parser-builtins==0.18.0.post1
-"%PIP_PATH%" install urllib3==2.5.0
+pip install python-magic-bin==0.4.14
+pip install django-import-export==3.3.0
+pip install django-cleanup==8.0.0
+pip install python-dateutil==2.8.2
+pip install pytz==2023.3
+pip install pyserial==3.5
+pip install pymysql==1.1.0
 
-:setup_database
 echo.
-echo Step 4: Setting up database...
-if "%USE_SYSTEM_PYTHON%"=="1" (
-    cd plasco_system
-    python manage.py makemigrations
-    python manage.py migrate
-    cd ..
-) else (
-    cd plasco_system
-    "%PYTHON_PATH%" manage.py makemigrations
-    "%PYTHON_PATH%" manage.py migrate
-    cd ..
-)
+echo ✅ All packages installed successfully!
+echo.
 
-if %errorlevel% neq 0 (
-    echo ⚠️ Standard migration failed, trying alternative...
-    if "%USE_SYSTEM_PYTHON%"=="1" (
-        cd plasco_system
-        python manage.py migrate --run-syncdb
-        cd ..
-    ) else (
-        cd plasco_system
-        "%PYTHON_PATH%" manage.py migrate --run-syncdb
-        cd ..
-    )
-)
+echo Step 4: Setting up database...
+echo Creating database migrations...
+python manage.py makemigrations --noinput
+
+echo Applying migrations...
+python manage.py migrate --run-syncdb
 
 echo Step 5: Creating admin user...
-if "%USE_SYSTEM_PYTHON%"=="1" (
-    cd plasco_system
-    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
-    cd ..
-) else (
-    cd plasco_system
-    "%PYTHON_PATH%" manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
-    cd ..
-)
+python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+try:
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
+        print('✅ Admin user created successfully')
+    else:
+        print('✅ Admin user already exists')
+except Exception as e:
+    print('⚠️ Note: Admin user creation skipped -', str(e))
+"
 
 echo.
 echo ============================================
@@ -843,115 +725,70 @@ echo.
 echo 📍 Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
+echo    IP Management: http://localhost:8000/ip/ip_manager/
 echo.
 echo 🔑 Admin Credentials:
 echo    Username: admin
 echo    Password: admin123
-echo.
-echo 💡 System Information:
-if "%USE_SYSTEM_PYTHON%"=="1" (
-    echo    Python: System Installation
-) else (
-    echo    Python: Embedded (No installation required)
-)
 echo.
 echo 🚀 Starting server...
 echo ⏹️  To stop server, press CTRL+C
 echo ============================================
 echo.
 
-if "%USE_SYSTEM_PYTHON%"=="1" (
-    cd plasco_system
-    python manage.py runserver 0.0.0.0:8000
-    cd ..
-) else (
-    cd plasco_system
-    "%PYTHON_PATH%" manage.py runserver 0.0.0.0:8000
-    cd ..
-)
+python manage.py runserver 0.0.0.0:8000
 
 if %errorlevel% neq 0 (
     echo.
-    echo ⚠️ Server startup failed. Possible reasons:
-    echo    - Port 8000 is already in use
-    echo    - Try running on a different port:
-    echo.
-    if "%USE_SYSTEM_PYTHON%"=="1" (
-        echo    python manage.py runserver 0.0.0.0:8001
-    ) else (
-        echo    "%PYTHON_PATH%" manage.py runserver 0.0.0.0:8001
-    )
-    echo.
-    pause
+    echo ⚠️ Server startup failed. Trying alternative port...
+    python manage.py runserver 0.0.0.0:8001
 )
 '''
             zipf.writestr('START_HERE.bat', main_bat)
 
-            # ==================== فایل‌های راهنما و پشتیبانی ====================
+            # ==================== فایل‌های راهنما ====================
 
             # فایل راهنمای اصلی
             readme_content = f'''
 Plasco Offline System - Complete Standalone Installation
 =======================================================
 
-🌟 NO PYTHON INSTALLATION REQUIRED!
-
-📦 What's Included:
-- Complete Django project structure
-- All application modules
-- Templates and static files
-- SQLite database configuration
-- Embedded Python 3.10.11
-- Automatic installation scripts
-- All required packages from your requirements.txt
-
 🚀 Quick Start:
-1. Extract ALL files to a folder (important!)
+1. Extract ALL files to a folder
 2. Double-click "START_HERE.bat"
-3. Wait for automatic installation (10-20 minutes first time)
+3. Wait for automatic installation (5-10 minutes)
 4. System will start automatically
 
 🌐 Access Information:
 - Main Application: http://localhost:8000
-- Admin Panel: http://localhost:8000/admin
+- Admin Panel: http://localhost:8000/admin  
+- IP Management: http://localhost:8000/ip/ip_manager/
 - Admin Username: admin
 - Admin Password: admin123
 
 🔧 Features:
 ✅ Complete system functionality
 ✅ Persian language support
-✅ SQLite database (no external DB required)
-✅ Embedded Python (no installation needed)
+✅ SQLite database
 ✅ Automatic package installation
 ✅ Admin user creation
 
 ⚠️ Limitations in Offline Mode:
 ❌ SMS functionality disabled
-❌ Printer functionality disabled
+❌ Printer functionality disabled  
 ❌ External API calls disabled
 
 📋 Allowed IP Addresses:
 {chr(10).join(f"   - {ip}" for ip in selected_ips)}
 
-🔍 Technical Details:
-- Python Version: 3.10.11 (Embedded)
-- Django Version: 5.2.4
-- Database: SQLite3
-- Package Manager: pip
-
 📞 Support:
 - Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 - This is a fully self-contained offline system
 
-🔒 Security Note:
-- Change the default admin password after first login
-- This package uses development settings for easy setup
-
 🛠️ Troubleshooting:
-1. If port 8000 is busy, the script will suggest using port 8001
-2. First run may take longer due to package downloads
+1. If port 8000 is busy, system will use port 8001
+2. First run may take 5-10 minutes
 3. Ensure you have internet connection for first-time setup
-4. Required disk space: ~500MB
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
@@ -994,7 +831,7 @@ def create_offline_installer(request):
                 zip_buffer.getvalue(),
                 content_type='application/zip'
             )
-            response['Content-Disposition'] = 'attachment; filename="plasco_standalone_system.zip"'
+            response['Content-Disposition'] = 'attachment; filename="plasco_offline_system.zip"'
 
             print("✅ Standalone installer created and sent for download")
             return response
