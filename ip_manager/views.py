@@ -323,7 +323,6 @@ Pillow==10.0.1
 requests==2.31.0
 jdatetime==4.1.1
 python-barcode==0.15.1
-kavenegar==1.1.5
 mysqlclient==2.1.1
 python-decouple==3.8
 django-filter==23.3
@@ -361,6 +360,41 @@ idna==3.6
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
+            # ایجاد فایل جایگزین برای kavenegar
+            kavenegar_stub_content = '''
+"""
+ماژول جایگزین برای kavenegar - برای حالت آفلاین
+"""
+
+class KavenegarAPI:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def sms_send(self, *args, **kwargs):
+        print("SMS sending is disabled in offline mode")
+        return {"status": 200, "message": "SMS disabled in offline mode"}
+
+    def call_make(self, *args, **kwargs):
+        print("Call making is disabled in offline mode")
+        return {"status": 200, "message": "Calls disabled in offline mode"}
+
+def KavenegarException(Exception):
+    pass
+
+# توابع اصلی که در کد استفاده می‌شوند
+def send_sms(api_key, sender, receptor, message):
+    print(f"OFFLINE MODE: SMS would be sent to {receptor}: {message}")
+    return {"status": 200, "message": "SMS disabled in offline mode"}
+
+def send_lookup_sms(api_key, receptor, token, token2, token3, template):
+    print(f"OFFLINE MODE: Lookup SMS would be sent to {receptor}")
+    return {"status": 200, "message": "Lookup SMS disabled in offline mode"}
+
+# توابعی که با import * استفاده می‌شوند
+__all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
+'''
+            zipf.writestr('kavenegar.py', kavenegar_stub_content)
+
             # ایجاد فایل offline_ip_manager.py
             offline_ip_manager_content = '''
 """
@@ -386,7 +420,7 @@ def add_allowed_ip(ip_address):
 '''
             zipf.writestr('plasco/offline_ip_manager.py', offline_ip_manager_content)
 
-            # فایل BAT اصلی با نصب کامل و مطمئن
+            # فایل BAT اصلی با نصب کامل و جایگزینی kavenegar
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System
@@ -415,10 +449,15 @@ if %errorlevel% neq 0 (
 echo OK: Python is installed
 echo.
 
-echo Step 2: Upgrading pip and setuptools...
+echo Step 2: Creating kavenegar stub for offline mode...
+copy kavenegar.py cantact_app\kavenegar.py >nul 2>&1
+copy kavenegar.py account_app\kavenegar.py >nul 2>&1
+copy kavenegar.py invoice_app\kavenegar.py >nul 2>&1
+
+echo Step 3: Upgrading pip and setuptools...
 python -m pip install --upgrade pip setuptools wheel
 
-echo Step 3: Installing ALL required packages...
+echo Step 4: Installing ALL required packages (except kavenegar)...
 echo This may take 5-10 minutes. Please wait...
 echo.
 
@@ -432,7 +471,6 @@ echo Installing utility packages...
 pip install requests==2.31.0
 pip install jdatetime==4.1.1
 pip install python-barcode==0.15.1
-pip install kavenegar==1.1.5
 pip install mysqlclient==2.1.1
 pip install python-decouple==3.8
 
@@ -478,7 +516,7 @@ pip install charset-normalizer==3.3.2
 pip install idna==3.6
 
 echo.
-echo Step 4: Setting up database...
+echo Step 5: Setting up database...
 python manage.py migrate
 if %errorlevel% neq 0 (
     echo.
@@ -486,11 +524,11 @@ if %errorlevel% neq 0 (
     python manage.py migrate --run-syncdb
 )
 
-echo Step 5: Creating admin user...
+echo Step 6: Creating admin user...
 python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
 
 echo.
-echo Step 6: Starting Plasco Offline System...
+echo Step 7: Starting Plasco Offline System...
 echo.
 echo ============================================
 echo    SYSTEM IS READY!
@@ -503,6 +541,8 @@ echo.
 echo ADMIN CREDENTIALS:
 echo    Username: admin
 echo    Password: admin123
+echo.
+echo NOTE: SMS features are disabled in offline mode
 echo.
 echo Server is starting...
 echo To stop server, press CTRL+C
@@ -534,9 +574,9 @@ Access URLs:
 - Password: admin123
 
 IMPORTANT: 
-- Make sure you have internet connection for first-time installation
-- The installer will download about 50 packages (around 200MB)
-- This may take 5-10 minutes depending on your internet speed
+- SMS features are DISABLED in offline mode
+- The system will work without kavenegar library
+- All other features will work normally
 
 Allowed IPs: {', '.join(selected_ips)}
 Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
