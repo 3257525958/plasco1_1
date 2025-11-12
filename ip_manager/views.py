@@ -136,7 +136,7 @@ def create_complete_install_package(selected_ips):
         zip_buffer = io.BytesIO()
 
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            print("📦 ایجاد پکیج نصب کامل و خودکار...")
+            print("Creating complete installation package...")
 
             # فایل‌های اصلی
             essential_files = [
@@ -151,7 +151,7 @@ def create_complete_install_package(selected_ips):
                 file_path = BASE_DIR / file
                 if file_path.exists():
                     zipf.write(file_path, file)
-                    print(f"✅ اضافه شد: {file}")
+                    print(f"Added: {file}")
 
             # اضافه کردن پوشه اپ‌ها
             app_folders = [
@@ -169,7 +169,7 @@ def create_complete_install_package(selected_ips):
                                 file_path = os.path.join(root, file)
                                 arcname = os.path.relpath(file_path, BASE_DIR)
                                 zipf.write(file_path, arcname)
-                    print(f"✅ اپ {app} اضافه شد")
+                    print(f"Added app: {app}")
 
             # اضافه کردن پوشه templates
             templates_path = BASE_DIR / 'templates'
@@ -179,7 +179,7 @@ def create_complete_install_package(selected_ips):
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, BASE_DIR)
                         zipf.write(file_path, arcname)
-                print("✅ پوشه templates اضافه شد")
+                print("Added templates folder")
 
             # اضافه کردن پوشه static
             static_path = BASE_DIR / 'static'
@@ -189,7 +189,7 @@ def create_complete_install_package(selected_ips):
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, BASE_DIR)
                         zipf.write(file_path, arcname)
-                print("✅ پوشه static اضافه شد")
+                print("Added static folder")
 
             # ==================== فایل‌های ضروری برای نصب آسان ====================
 
@@ -197,7 +197,7 @@ def create_complete_install_package(selected_ips):
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
-IPهای مجاز: {selected_ips}
+Allowed IPs: {selected_ips}
 """
 
 from pathlib import Path
@@ -307,12 +307,12 @@ python-barcode==0.15.1
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
-            # فایل BAT اصلی - کاملاً اصلاح شده
+            # فایل BAT اصلی - کاملاً به انگلیسی و بدون کاراکترهای خاص
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System - Auto Installer
 
-REM تغییر به مسیر فایل جاری
+REM Change to current directory
 cd /d "%~dp0"
 
 echo.
@@ -321,69 +321,69 @@ echo    Plasco Offline System - Auto Installer
 echo ============================================
 echo.
 
-echo 📍 Current directory:
+echo Current directory:
 cd
 echo.
 
-echo 🔍 Step 1: Checking Python installation...
+echo Step 1: Checking Python installation...
 python --version
 if %errorlevel% neq 0 (
     echo.
-    echo ❌ ERROR: Python not found or not in PATH!
+    echo ERROR: Python not found or not in PATH!
     echo.
-    echo 📥 Please install Python from:
+    echo Please install Python from:
     echo https://www.python.org/downloads/
     echo.
-    echo 💡 IMPORTANT: During installation, check "Add Python to PATH"
+    echo IMPORTANT: During installation, check "Add Python to PATH"
     echo.
     echo Press any key to exit...
     pause >nul
     exit /b 1
 )
 
-echo ✅ Python is installed
+echo OK: Python is installed
 echo.
 
-echo 📦 Step 2: Installing required packages...
+echo Step 2: Installing required packages...
 pip install -r requirements_offline.txt
 if %errorlevel% neq 0 (
     echo.
-    echo ⚠️ WARNING: Some packages failed to install
+    echo WARNING: Some packages failed to install
     echo Trying to continue anyway...
     echo.
 )
 
-echo 🗃️ Step 3: Setting up database...
+echo Step 3: Setting up database...
 python manage.py migrate
 if %errorlevel% neq 0 (
     echo.
-    echo ❌ ERROR: Database setup failed!
+    echo ERROR: Database setup failed!
     echo.
     echo Press any key to exit...
     pause >nul
     exit /b 1
 )
 
-echo 👤 Step 4: Creating admin user...
+echo Step 4: Creating admin user...
 python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
 
 echo.
-echo 🚀 Step 5: Starting Plasco Offline System...
+echo Step 5: Starting Plasco Offline System...
 echo.
 echo ============================================
 echo    SYSTEM IS READY!
 echo ============================================
 echo.
-echo 🌐 ACCESS URLs:
+echo ACCESS URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
 echo.
-echo 🔐 ADMIN CREDENTIALS:
+echo ADMIN CREDENTIALS:
 echo    Username: admin
 echo    Password: admin123
 echo.
-echo ⏰ Server is starting...
-echo ⏹️  To stop server, press CTRL+C
+echo Server is starting...
+echo To stop server, press CTRL+C
 echo ============================================
 echo.
 
@@ -404,51 +404,51 @@ cd /d "%~dp0"
 
 echo.
 echo ============================================
-echo    Plasco Debug Mode - خطایابی
+echo    Plasco Debug Mode
 echo ============================================
 echo.
 
-echo 📍 مسیر جاری:
+echo Current directory:
 cd
 echo.
 
-echo 🔍 بررسی پایتون:
+echo Checking Python:
 python --version
 if %errorlevel% neq 0 (
-    echo ❌ پایتون پیدا نشد!
+    echo ERROR: Python not found!
     goto :error
 )
 
-echo ✅ پایتون نصب است
+echo OK: Python is installed
 echo.
 
-echo 📦 بررسی pip:
+echo Checking pip:
 pip --version
 if %errorlevel% neq 0 (
-    echo ❌ pip پیدا نشد!
+    echo ERROR: pip not found!
     goto :error
 )
 
-echo ✅ pip نصب است
+echo OK: pip is installed
 echo.
 
-echo 🗂️ لیست فایل‌ها:
+echo File list:
 dir
 echo.
 
-echo 🚀 اجرای سیستم...
+echo Starting system...
 echo.
 START_HERE.bat
 goto :end
 
 :error
 echo.
-echo ❌ مشکل تشخیص داده شد!
+echo PROBLEM DETECTED!
 echo.
-echo 📝 راه‌حل:
-echo 1. پایتون را از python.org دانلود کنید
-echo 2. هنگام نصب، تیک "Add Python to PATH" را بزنید
-echo 3. دوباره تلاش کنید
+echo SOLUTION:
+echo 1. Download Python from python.org
+echo 2. During install, check "Add Python to PATH"
+echo 3. Try again
 echo.
 pause
 
@@ -458,44 +458,44 @@ pause
 
             # فایل راهنمای کامل
             readme_content = f'''
-Plasco Offline System - راهنمای نصب
-===================================
+Plasco Offline System - Installation Guide
+==========================================
 
-📋 روش نصب (ساده):
-1. تمام فایل‌ها را در یک پوشه Extract کنید
-2. روی فایل "START_HERE.bat" دابل کلیک کنید
-3. منتظر بمانید تا سیستم راه‌اندازی شود
+Quick Start:
+1. Extract ALL files to a folder
+2. Double click "START_HERE.bat"
+3. Wait for system to start
 
-🔧 اگر مشکل داشتید:
-- فایل "DEBUG_MODE.bat" را اجرا کنید
-- یا دستی این دستورات را در CMD اجرا کنید:
+If you have problems:
+- Run "DEBUG_MODE.bat" for troubleshooting
+- Or run these commands manually in CMD:
   1. python --version
   2. pip install -r requirements_offline.txt
   3. python manage.py migrate
   4. python manage.py runserver 0.0.0.0:8000
 
-🌐 آدرس‌های دسترسی:
-- سیستم اصلی: http://localhost:8000
-- پنل مدیریت: http://localhost:8000/admin
-- کاربر: admin
-- رمز: admin123
+Access URLs:
+- Main System: http://localhost:8000
+- Admin Panel: http://localhost:8000/admin
+- Username: admin
+- Password: admin123
 
-📞 پشتیبانی:
-در صورت مشکل، اطلاعات خطا را ذخیره کرده و با پشتیبانی تماس بگیرید.
+Support:
+If you have issues, save the error message and contact support.
 
-🖥️ IPهای مجاز: {', '.join(selected_ips)}
-📅 ایجاد شده: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+Allowed IPs: {', '.join(selected_ips)}
+Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
         zip_buffer.seek(0)
-        print("✅ پکیج نصب کامل و خودکار ایجاد شد")
+        print("Complete installation package created")
         return zip_buffer
 
     except Exception as e:
-        print(f"❌ خطا در ایجاد پکیج: {str(e)}")
+        print(f"Error creating package: {str(e)}")
         import traceback
-        print(f"❌ جزئیات: {traceback.format_exc()}")
+        print(f"Details: {traceback.format_exc()}")
         return None
 
 
@@ -536,5 +536,4 @@ def create_offline_installer(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
-
 
