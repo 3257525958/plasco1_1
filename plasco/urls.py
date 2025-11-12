@@ -10,11 +10,6 @@ from home_app.views import home_def  # تابع home شما
 from offline_ins.views import switch_to_offline
 
 urlpatterns = [
-    # ... سایر URLها
-    path('offline-system/', switch_to_offline, name='offline_system'),
-]
-
-urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_def, name='home'),  # صفحه اصلی با تابع home_def شما
     path('control-panel/', control_panel, name='control_panel'),
