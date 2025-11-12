@@ -9,6 +9,8 @@ import zipfile
 import io
 import os
 from pathlib import Path
+import requests
+from django.core.files.base import ContentFile
 
 
 def manage_ips(request):
@@ -128,20 +130,20 @@ def toggle_ip(request, ip_id):
 
 
 def create_complete_install_package(selected_ips):
-    """ایجاد پکیج نصب کامل و کاملاً خودکار"""
+    """ایجاد پکیج نصب کامل با پایتون توکار"""
     try:
         BASE_DIR = settings.BASE_DIR
         zip_buffer = io.BytesIO()
 
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            print("📦 Creating complete installation package...")
+            print("📦 Creating complete installation package with embedded Python...")
 
             # ==================== فایل‌های اصلی پروژه ====================
 
             # فایل manage.py
             manage_path = BASE_DIR / 'manage.py'
             if manage_path.exists():
-                zipf.write(manage_path, 'manage.py')
+                zipf.write(manage_path, 'plasco_system/manage.py')
                 print("✅ Added: manage.py")
 
             # پوشه اصلی پروژه (plasco)
@@ -151,7 +153,7 @@ def create_complete_install_package(selected_ips):
                     for file in files:
                         if file.endswith(('.py', '.html', '.css', '.js', '.json', '.txt')):
                             file_path = os.path.join(root, file)
-                            arcname = os.path.relpath(file_path, BASE_DIR)
+                            arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                             zipf.write(file_path, arcname)
                 print("✅ Added plasco folder completely")
 
@@ -167,10 +169,9 @@ def create_complete_install_package(selected_ips):
                 if app_path.exists():
                     for root, dirs, files in os.walk(app_path):
                         for file in files:
-                            # شامل تمام فایل‌های ضروری
                             if file.endswith(('.py', '.html', '.css', '.js', '.json', '.txt', '.md')):
                                 file_path = os.path.join(root, file)
-                                arcname = os.path.relpath(file_path, BASE_DIR)
+                                arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                                 zipf.write(file_path, arcname)
                     print(f"✅ Added app: {app}")
 
@@ -182,7 +183,7 @@ def create_complete_install_package(selected_ips):
                 for root, dirs, files in os.walk(templates_path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, BASE_DIR)
+                        arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                         zipf.write(file_path, arcname)
                 print("✅ Added templates folder")
 
@@ -192,20 +193,9 @@ def create_complete_install_package(selected_ips):
                 for root, dirs, files in os.walk(static_path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, BASE_DIR)
+                        arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                         zipf.write(file_path, arcname)
                 print("✅ Added static folder")
-
-            # پوشه media (اگر وجود دارد)
-            media_path = BASE_DIR / 'media'
-            if media_path.exists():
-                for root, dirs, files in os.walk(media_path):
-                    for file in files:
-                        if file.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg')):
-                            file_path = os.path.join(root, file)
-                            arcname = os.path.relpath(file_path, BASE_DIR)
-                            zipf.write(file_path, arcname)
-                print("✅ Added media folder")
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
@@ -219,6 +209,14 @@ Generated: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 
 from pathlib import Path
 import os
+import sys
+
+# اضافه کردن مسیر پایتون توکار به sys.path
+embedded_python_path = os.path.join(os.path.dirname(__file__), '..', 'python', 'python-3.10.11-embed-amd64')
+if os.path.exists(embedded_python_path):
+    site_packages = os.path.join(embedded_python_path, 'site-packages')
+    if site_packages not in sys.path:
+        sys.path.insert(0, site_packages)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -302,6 +300,7 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -326,14 +325,18 @@ CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # حالت آفلاین
 OFFLINE_MODE = True
+
+# برای محیط embeddable python
+import os
+os.environ['PYTHONPATH'] = os.path.join(BASE_DIR, 'python', 'python-3.10.11-embed-amd64')
 '''
-            zipf.writestr('plasco/settings_offline.py', settings_content.strip())
+            zipf.writestr('plasco_system/plasco/settings_offline.py', settings_content.strip())
 
             # فایل settings.py اصلی که از آفلاین ایمپورت می‌کند
-            zipf.writestr('plasco/settings.py', 'from .settings_offline import *\n')
+            zipf.writestr('plasco_system/plasco/settings.py', 'from .settings_offline import *\n')
 
             # فایل __init__.py برای پوشه plasco
-            zipf.writestr('plasco/__init__.py', '')
+            zipf.writestr('plasco_system/plasco/__init__.py', '')
 
             # ==================== فایل requirements بهبود یافته ====================
             requirements_content = '''# Plasco Offline System - Complete Requirements
@@ -342,9 +345,6 @@ Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
 Pillow==10.0.1
-
-# Database - SQLite (no need for mysqlclient in offline mode)
-# mysqlclient will be handled by fallback
 
 # Utilities
 requests==2.31.0
@@ -363,17 +363,12 @@ django-jalali==5.0.0
 persian==0.3.1
 hazm==0.7.0
 
-# Async and Tasks (optional for offline)
-channels==4.0.0
-channels-redis==4.1.0
-celery==5.3.4
-redis==5.0.1
-django-celery-results==2.5.1
-django-celery-beat==2.5.0
-
-# Additional utilities
+# File handling
+python-magic-bin==0.4.14
 django-import-export==3.3.0
 django-cleanup==8.0.0
+
+# Additional utilities
 python-dateutil==2.8.2
 pytz==2023.3
 
@@ -388,13 +383,10 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
 
-# File type detection (Windows compatible)
-python-magic-bin==0.4.14
-
-# Fallback for MySQL (if needed)
+# MySQL fallback
 pymysql==1.1.0
 '''
-            zipf.writestr('requirements_offline.txt', requirements_content)
+            zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
 
@@ -434,7 +426,7 @@ def send_lookup_sms(api_key, receptor, token, token2, token3, template):
 # برای سازگاری با import *
 __all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
 '''
-            zipf.writestr('kavenegar.py', kavenegar_stub_content)
+            zipf.writestr('plasco_system/kavenegar.py', kavenegar_stub_content)
 
             # ماژول جایگزین escpos
             escpos_stub_content = '''
@@ -497,146 +489,170 @@ class File:
 # برای سازگاری با import *
 __all__ = ['Serial', 'Usb', 'Network', 'File']
 '''
-            zipf.writestr('escpos.py', escpos_stub_content)
-            zipf.writestr('escpos/__init__.py', escpos_stub_content)
-            zipf.writestr('escpos/printer.py', escpos_stub_content)
+            zipf.writestr('plasco_system/escpos.py', escpos_stub_content)
+            zipf.writestr('plasco_system/escpos/__init__.py', escpos_stub_content)
+            zipf.writestr('plasco_system/escpos/printer.py', escpos_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) ====================
+            # ==================== فایل نصب اصلی (BAT) - نسخه پیشرفته ====================
             main_bat = '''@echo off
 chcp 65001
-title Plasco Offline System - Complete Installer
+title Plasco Offline System - Complete Standalone Installer
 
 echo.
 echo ============================================
-echo    Plasco Offline System - Complete Installer
+echo    Plasco Offline System - Standalone Installer
+echo    No Python Installation Required!
 echo ============================================
 echo.
 
-echo Step 1: Checking Python installation...
-python --version
-if %errorlevel% neq 0 (
-    echo.
-    echo ERROR: Python not found!
-    echo.
-    echo Please install Python 3.8+ from: https://www.python.org/downloads/
-    echo Make sure to check "Add Python to PATH" during installation.
-    echo.
-    echo Press any key to exit...
-    pause >nul
-    exit /b 1
+echo Step 1: Checking if Python is available in system...
+python --version >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ System Python detected
+    set "USE_SYSTEM_PYTHON=1"
+    goto :install_packages
 )
 
-echo ✅ Python is installed
-echo.
+echo ℹ️ No system Python found, using embedded Python...
+set "USE_SYSTEM_PYTHON=0"
 
+:install_packages
+echo.
 echo Step 2: Setting up library stubs for offline mode...
-mkdir escpos 2>nul
+mkdir plasco_system\\escpos 2>nul
 
 echo Copying kavenegar stub to apps...
-copy kavenegar.py account_app\\kavenegar.py >nul 2>&1
-copy kavenegar.py cantact_app\\kavenegar.py >nul 2>&1
-copy kavenegar.py invoice_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
 
 echo Copying escpos stub to apps...
-copy escpos.py dashbord_app\\escpos.py >nul 2>&1
-copy escpos.py pos_payment\\escpos.py >nul 2>&1
-copy escpos.py invoice_app\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
 
 echo Setting up escpos package...
-copy escpos.py escpos\\__init__.py >nul 2>&1
-copy escpos.py escpos\\printer.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
 
 echo ✅ Library stubs setup completed
 echo.
 
-echo Step 3: Upgrading pip and setuptools...
-python -m pip install --upgrade pip setuptools wheel
+if "%USE_SYSTEM_PYTHON%"=="1" (
+    echo Step 3: Using SYSTEM Python - Installing packages...
+    python -m pip install --upgrade pip setuptools wheel
 
-echo Step 4: Installing required packages...
-echo This may take 5-15 minutes. Please wait...
+    echo Installing packages from requirements...
+    pip install -r plasco_system\\requirements_offline.txt
+
+    goto :setup_database
+)
+
+echo Step 3: Setting up EMBEDDED Python environment...
+echo This may take 10-20 minutes. Please wait...
 echo.
 
+:: ایجاد پوشه برای پایتون توکار
+mkdir python >nul 2>&1
+cd python
+
+:: دانلود پایتون 3.10.11 embeddable (اگر موجود نیست)
+if not exist "python-3.10.11-embed-amd64" (
+    echo Downloading Python 3.10.11 (Embeddable)...
+    powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip' -OutFile 'python-3.10.11-embed-amd64.zip'"
+
+    echo Extracting Python...
+    powershell -Command "Expand-Archive -Path 'python-3.10.11-embed-amd64.zip' -DestinationPath '.' -Force"
+)
+
+cd ..
+
+:: استفاده از پایتون توکار
+set "PYTHON_PATH=python\\python-3.10.11-embed-amd64\\python.exe"
+set "PIP_PATH=python\\python-3.10.11-embed-amd64\\Scripts\\pip.exe"
+
+:: اگر pip موجود نیست، get-pip.py را دانلود و نصب کنید
+if not exist "%PIP_PATH%" (
+    echo Installing pip for embedded Python...
+    cd python\\python-3.10.11-embed-amd64
+    powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile 'get-pip.py'"
+    python get-pip.py
+    cd ..\\..
+)
+
+echo Installing packages using embedded Python...
+"%PIP_PATH%" install --upgrade pip setuptools wheel
+
+:: نصب پکیج‌ها به صورت دسته‌ای برای جلوگیری از timeout
 echo Installing core packages...
-pip install Django==4.2.7
-pip install django-cors-headers==4.3.1
-pip install djangorestframework==3.14.0
-pip install Pillow==10.0.1
+"%PIP_PATH%" install Django==4.2.7
+"%PIP_PATH%" install django-cors-headers==4.3.1
+"%PIP_PATH%" install djangorestframework==3.14.0
+"%PIP_PATH%" install Pillow==10.0.1
 
 echo Installing utility packages...
-pip install requests==2.31.0
-pip install jdatetime==4.1.1
-pip install python-barcode==0.15.1
-pip install python-decouple==3.8
-pip install django-filter==23.3
+"%PIP_PATH%" install requests==2.31.0
+"%PIP_PATH%" install jdatetime==4.1.1
+"%PIP_PATH%" install python-barcode==0.15.1
+"%PIP_PATH%" install python-decouple==3.8
+"%PIP_PATH%" install django-filter==23.3
 
 echo Installing PDF and reporting packages...
-pip install reportlab==4.0.4
-pip install xhtml2pdf==0.2.13
-pip install openpyxl==3.1.2
+"%PIP_PATH%" install reportlab==4.0.4
+"%PIP_PATH%" install xhtml2pdf==0.2.13
+"%PIP_PATH%" install openpyxl==3.1.2
 
 echo Installing Persian language packages...
-pip install django-jalali==5.0.0
-pip install persian==0.3.1
-pip install hazm==0.7.0
+"%PIP_PATH%" install django-jalali==5.0.0
+"%PIP_PATH%" install persian==0.3.1
+"%PIP_PATH%" install hazm==0.7.0
 
-echo Installing file handling packages...
-pip install python-magic-bin==0.4.14
-pip install django-import-export==3.3.0
-pip install django-cleanup==8.0.0
+echo Installing remaining packages...
+"%PIP_PATH%" install python-magic-bin==0.4.14
+"%PIP_PATH%" install django-import-export==3.3.0
+"%PIP_PATH%" install django-cleanup==8.0.0
+"%PIP_PATH%" install python-dateutil==2.8.2
+"%PIP_PATH%" install pytz==2023.3
+"%PIP_PATH%" install pymysql==1.1.0
 
-echo Installing async and task packages (optional)...
-pip install channels==4.0.0
-pip install channels-redis==4.1.0
-pip install celery==5.3.4
-pip install redis==5.0.1
-pip install django-celery-results==2.5.1
-pip install django-celery-beat==2.5.0
-
-echo Installing remaining utility packages...
-pip install python-dateutil==2.8.2
-pip install pytz==2023.3
-pip install asgiref==3.7.2
-pip install sqlparse==0.4.4
-pip install tzdata==2023.3
-pip install urllib3==1.26.18
-pip install certifi==2023.11.17
-pip install charset-normalizer==3.3.2
-pip install idna==3.6
-
-echo Installing MySQL fallback...
-pip install pymysql==1.1.0
-
+:setup_database
 echo.
-echo ✅ All packages installed successfully!
-echo.
-
-echo Step 5: Setting up database...
-echo Creating database migrations...
-python manage.py makemigrations
-
-echo Applying migrations...
-python manage.py migrate
+echo Step 4: Setting up database...
+if "%USE_SYSTEM_PYTHON%"=="1" (
+    cd plasco_system
+    python manage.py makemigrations
+    python manage.py migrate
+    cd ..
+) else (
+    cd plasco_system
+    "%PYTHON_PATH%" manage.py makemigrations
+    "%PYTHON_PATH%" manage.py migrate
+    cd ..
+)
 
 if %errorlevel% neq 0 (
     echo ⚠️ Standard migration failed, trying alternative...
-    python manage.py migrate --run-syncdb
+    if "%USE_SYSTEM_PYTHON%"=="1" (
+        cd plasco_system
+        python manage.py migrate --run-syncdb
+        cd ..
+    ) else (
+        cd plasco_system
+        "%PYTHON_PATH%" manage.py migrate --run-syncdb
+        cd ..
+    )
 )
 
-echo Step 6: Creating admin user...
-python manage.py shell -c "
-from django.contrib.auth import get_user_model
-User = get_user_model()
-try:
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
-        print('✅ Admin user created successfully')
-    else:
-        print('ℹ️ Admin user already exists')
-except Exception as e:
-    print('⚠️ Error creating admin user:', str(e))
-    print('⚠️ You can create admin user manually later with:')
-    print('⚠️ python manage.py createsuperuser')
-"
+echo Step 5: Creating admin user...
+if "%USE_SYSTEM_PYTHON%"=="1" (
+    cd plasco_system
+    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+    cd ..
+) else (
+    cd plasco_system
+    "%PYTHON_PATH%" manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+    cd ..
+)
 
 echo.
 echo ============================================
@@ -653,27 +669,39 @@ echo 🔑 Admin Credentials:
 echo    Username: admin
 echo    Password: admin123
 echo.
-echo 💡 Important Notes:
-echo    - SMS features are disabled in offline mode
-echo    - Printer features are disabled in offline mode
-echo    - All other features work normally
+echo 💡 System Information:
+if "%USE_SYSTEM_PYTHON%"=="1" (
+    echo    Python: System Installation
+) else (
+    echo    Python: Embedded (No installation required)
+)
 echo.
 echo 🚀 Starting server...
 echo ⏹️  To stop server, press CTRL+C
 echo ============================================
 echo.
 
-python manage.py runserver 0.0.0.0:8000
+if "%USE_SYSTEM_PYTHON%"=="1" (
+    cd plasco_system
+    python manage.py runserver 0.0.0.0:8000
+    cd ..
+) else (
+    cd plasco_system
+    "%PYTHON_PATH%" manage.py runserver 0.0.0.0:8000
+    cd ..
+)
 
 if %errorlevel% neq 0 (
     echo.
     echo ⚠️ Server startup failed. Possible reasons:
     echo    - Port 8000 is already in use
-    echo    - Database configuration issue
+    echo    - Try running on a different port:
     echo.
-    echo 🔧 Troubleshooting:
-    echo    - Try: python manage.py runserver 0.0.0.0:8001
-    echo    - Check if another server is running
+    if "%USE_SYSTEM_PYTHON%"=="1" (
+        echo    python manage.py runserver 0.0.0.0:8001
+    ) else (
+        echo    "%PYTHON_PATH%" manage.py runserver 0.0.0.0:8001
+    )
     echo.
     pause
 )
@@ -684,21 +712,24 @@ if %errorlevel% neq 0 (
 
             # فایل راهنمای اصلی
             readme_content = f'''
-Plasco Offline System - Complete Installation Package
-===================================================
+Plasco Offline System - Complete Standalone Installation
+=======================================================
+
+🌟 NO PYTHON INSTALLATION REQUIRED!
 
 📦 What's Included:
 - Complete Django project structure
 - All application modules
 - Templates and static files
 - SQLite database configuration
-- Offline-compatible settings
+- Embedded Python 3.10.11
 - Automatic installation scripts
+- All required packages
 
 🚀 Quick Start:
 1. Extract ALL files to a folder (important!)
 2. Double-click "START_HERE.bat"
-3. Wait for automatic installation (5-15 minutes)
+3. Wait for automatic installation (10-20 minutes first time)
 4. System will start automatically
 
 🌐 Access Information:
@@ -711,6 +742,7 @@ Plasco Offline System - Complete Installation Package
 ✅ Complete system functionality
 ✅ Persian language support
 ✅ SQLite database (no external DB required)
+✅ Embedded Python (no installation needed)
 ✅ Automatic package installation
 ✅ Admin user creation
 
@@ -722,6 +754,12 @@ Plasco Offline System - Complete Installation Package
 📋 Allowed IP Addresses:
 {chr(10).join(f"   - {ip}" for ip in selected_ips)}
 
+🔍 Technical Details:
+- Python Version: 3.10.11 (Embedded)
+- Django Version: 4.2.7
+- Database: SQLite3
+- Package Manager: pip
+
 📞 Support:
 - Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 - This is a fully self-contained offline system
@@ -729,17 +767,35 @@ Plasco Offline System - Complete Installation Package
 🔒 Security Note:
 - Change the default admin password after first login
 - This package uses development settings for easy setup
+
+🛠️ Troubleshooting:
+1. If port 8000 is busy, the script will suggest using port 8001
+2. First run may take longer due to package downloads
+3. Ensure you have internet connection for first-time setup
+4. Required disk space: ~500MB
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
             # فایل fallback installer برای مواقع ضروری
             fallback_installer = '''
-# fallback_installer.py
-# This script can be run if the BAT file has issues
+# standalone_fallback.py
+# This script provides alternative installation methods
 
 import os
 import sys
 import subprocess
+import urllib.request
+import zipfile
+
+def download_file(url, filename):
+    """Download a file from URL"""
+    try:
+        print(f"Downloading {filename}...")
+        urllib.request.urlretrieve(url, filename)
+        return True
+    except Exception as e:
+        print(f"Download failed: {e}")
+        return False
 
 def run_command(command):
     """Run a command and return success status"""
@@ -751,40 +807,106 @@ def run_command(command):
         print(f"Error: {e}")
         return False
 
-def main():
-    print("Plasco Offline System - Fallback Installer")
-    print("=" * 50)
+def setup_embedded_python():
+    """Setup embedded Python if system Python is not available"""
+    python_dir = "python"
+    python_zip = "python-3.10.11-embed-amd64.zip"
+    python_url = "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
 
-    # Install packages in smaller batches
-    packages_batches = [
-        ["Django==4.2.7", "django-cors-headers==4.3.1", "djangorestframework==3.14.0"],
-        ["Pillow==10.0.1", "requests==2.31.0", "jdatetime==4.1.1"],
-        ["python-barcode==0.15.1", "python-decouple==3.8", "django-filter==23.3"],
-        ["reportlab==4.0.4", "xhtml2pdf==0.2.13", "openpyxl==3.1.2"],
-        ["django-jalali==5.0.0", "persian==0.3.1", "hazm==0.7.0"],
-        ["python-magic-bin==0.4.14", "django-import-export==3.3.0", "django-cleanup==8.0.0"],
+    if not os.path.exists(os.path.join(python_dir, "python-3.10.11-embed-amd64")):
+        print("Setting up embedded Python...")
+        os.makedirs(python_dir, exist_ok=True)
+        os.chdir(python_dir)
+
+        if download_file(python_url, python_zip):
+            with zipfile.ZipFile(python_zip, 'r') as zip_ref:
+                zip_ref.extractall(".")
+            os.remove(python_zip)
+            print("✅ Embedded Python setup completed")
+        else:
+            print("❌ Failed to setup embedded Python")
+            return False
+
+        os.chdir("..")
+    return True
+
+def install_packages_embedded():
+    """Install packages using embedded Python"""
+    python_exe = "python\\\\python-3.10.11-embed-amd64\\\\python.exe"
+    pip_exe = "python\\\\python-3.10.11-embed-amd64\\\\Scripts\\\\pip.exe"
+
+    # Install get-pip if not available
+    if not os.path.exists(pip_exe):
+        print("Installing pip for embedded Python...")
+        get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+        if download_file(get_pip_url, "get-pip.py"):
+            run_command(f'"{python_exe}" get-pip.py')
+            os.remove("get-pip.py")
+
+    # Install packages in batches
+    packages = [
+        "Django==4.2.7", "django-cors-headers==4.3.1", "djangorestframework==3.14.0",
+        "Pillow==10.0.1", "requests==2.31.0", "jdatetime==4.1.1",
+        "python-barcode==0.15.1", "python-decouple==3.8", "django-filter==23.3",
+        "reportlab==4.0.4", "xhtml2pdf==0.2.13", "openpyxl==3.1.2",
+        "django-jalali==5.0.0", "persian==0.3.1", "hazm==0.7.0",
+        "python-magic-bin==0.4.14", "django-import-export==3.3.0", "django-cleanup==8.0.0",
+        "python-dateutil==2.8.2", "pytz==2023.3", "pymysql==1.1.0"
     ]
 
-    for i, batch in enumerate(packages_batches, 1):
-        print(f"Installing batch {i}/6...")
-        for package in batch:
-            if run_command(f"pip install {package}"):
-                print(f"✅ {package}")
-            else:
-                print(f"❌ {package}")
+    for package in packages:
+        print(f"Installing {package}...")
+        run_command(f'"{pip_exe}" install {package}')
 
-    print("Installation completed!")
-    print("Run these commands manually if needed:")
-    print("  python manage.py migrate")
-    print("  python manage.py runserver 0.0.0.0:8000")
+    return True
+
+def main():
+    print("Plasco Offline System - Alternative Installer")
+    print("=" * 50)
+
+    # Check system Python first
+    try:
+        subprocess.run([sys.executable, "--version"], check=True, capture_output=True)
+        print("✅ System Python detected")
+        use_system_python = True
+    except:
+        print("ℹ️ No system Python found, using embedded Python")
+        use_system_python = False
+
+    if not use_system_python:
+        if not setup_embedded_python():
+            print("❌ Failed to setup embedded Python")
+            return
+
+        if not install_packages_embedded():
+            print("❌ Failed to install packages")
+            return
+
+    print("✅ Installation completed!")
+    print("Run the system with:")
+    if use_system_python:
+        print("  python manage.py runserver 0.0.0.0:8000")
+    else:
+        print('  "python\\\\python-3.10.11-embed-amd64\\\\python.exe" manage.py runserver 0.0.0.0:8000')
 
 if __name__ == "__main__":
     main()
 '''
-            zipf.writestr('fallback_installer.py', fallback_installer)
+            zipf.writestr('standalone_fallback.py', fallback_installer)
+
+            # ==================== فایل پیکربندی پایتون توکار ====================
+
+            # فایل _pth برای پایتون embeddable
+            python_pth_content = '''
+python310.zip
+.
+# Uncomment to run site.main() automatically
+#import site
+'''
+            zipf.writestr('python/python-3.10.11-embed-amd64/python310._pth', python_pth_content)
 
         zip_buffer.seek(0)
-        print("✅ Complete installation package created successfully!")
+        print("✅ Complete standalone installation package created successfully!")
         return zip_buffer
 
     except Exception as e:
@@ -808,7 +930,7 @@ def create_offline_installer(request):
                     'message': 'لطفاً حداقل یک IP انتخاب کنید'
                 })
 
-            print(f"🔹 Creating installer for IPs: {selected_ips}")
+            print(f"🔹 Creating standalone installer for IPs: {selected_ips}")
             zip_buffer = create_complete_install_package(selected_ips)
 
             if not zip_buffer:
@@ -817,15 +939,18 @@ def create_offline_installer(request):
                     'message': 'خطا در ایجاد فایل نصب'
                 })
 
+            # ایجاد پاسخ با فایل ZIP
             response = HttpResponse(
                 zip_buffer.getvalue(),
                 content_type='application/zip'
             )
-            response['Content-Disposition'] = 'attachment; filename="plasco_offline_complete_system.zip"'
+            response['Content-Disposition'] = 'attachment; filename="plasco_standalone_system.zip"'
 
+            print("✅ Standalone installer created and sent for download")
             return response
 
         except Exception as e:
+            print(f"❌ Error in create_offline_installer: {str(e)}")
             return JsonResponse({
                 'status': 'error',
                 'message': f'خطا در ایجاد فایل نصب: {str(e)}'
