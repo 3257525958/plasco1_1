@@ -9,6 +9,7 @@ import zipfile
 import io
 import os
 from pathlib import Path
+import tempfile
 
 
 def manage_ips(request):
@@ -131,10 +132,16 @@ def create_complete_install_package(selected_ips):
     """ایجاد پکیج نصب کامل با پایتون توکار"""
     try:
         BASE_DIR = settings.BASE_DIR
-        zip_buffer = io.BytesIO()
 
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            print("📦 Creating complete installation package with embedded Python...")
+        # ایجاد یک فایل موقت برای ZIP
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        temp_path = temp_file.name
+        temp_file.close()
+
+        print(f"🔹 Creating ZIP file at: {temp_path}")
+
+        with zipfile.ZipFile(temp_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            print("📦 Creating complete installation package...")
 
             # ==================== فایل‌های اصلی پروژه ====================
 
@@ -197,7 +204,7 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
-            # فایل settings_offline.py کاملاً ساده‌سازی شده
+            # فایل settings_offline.py
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
@@ -207,7 +214,6 @@ Generated: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 
 from pathlib import Path
 import os
-import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -224,7 +230,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Local apps - فقط اپ‌های ضروری
+    # Local apps
     'account_app',
     'dashbord_app',
     'cantact_app', 
@@ -290,7 +296,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# غیرفعال کردن تمام چک‌های امنیتی برای نصب آسان
+# غیرفعال کردن چک‌های امنیتی برای نصب آسان
 SILENCED_SYSTEM_CHECKS = [
     'security.W001',
     'security.W002', 
@@ -316,8 +322,8 @@ print("🟢 Plasco Offline Mode - All security checks disabled for easy installa
             # فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco_system/plasco/__init__.py', '')
 
-            # ==================== فایل requirements ساده‌سازی شده ====================
-            requirements_content = '''# Plasco Offline System - Simplified Requirements
+            # ==================== فایل requirements ====================
+            requirements_content = '''# Plasco Offline System - Requirements
 Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
@@ -607,7 +613,6 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 
             # ==================== فایل نصب اصلی (BAT) - کاملاً بهبود یافته ====================
             main_bat = '''@echo off
-@echo off
 chcp 65001
 title Plasco Offline System - Complete Installer
 setlocal enabledelayedexpansion
@@ -637,26 +642,26 @@ echo ✅ !PYTHON_VERSION! detected
 echo.
 
 echo Step 2: Setting up library stubs for offline mode...
-mkdir plasco_system\escpos 2>nul
+mkdir plasco_system\\escpos 2>nul
 
 echo Copying kavenegar stub...
-copy plasco_system\kavenegar.py plasco_system\account_app\kavenegar.py >nul 2>&1
-copy plasco_system\kavenegar.py plasco_system\cantact_app\kavenegar.py >nul 2>&1
-copy plasco_system\kavenegar.py plasco_system\invoice_app\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
 
 echo Copying escpos stub...
-copy plasco_system\escpos.py plasco_system\dashbord_app\escpos.py >nul 2>&1
-copy plasco_system\escpos.py plasco_system\pos_payment\escpos.py >nul 2>&1
-copy plasco_system\escpos.py plasco_system\invoice_app\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
 
 echo Setting up escpos package...
-copy plasco_system\escpos.py plasco_system\escpos\__init__.py >nul 2>&1
-copy plasco_system\escpos.py plasco_system\escpos\printer.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
 
 echo Setting up serial stub...
-copy plasco_system\serial.py plasco_system\dashbord_app\serial.py >nul 2>&1
-copy plasco_system\serial.py plasco_system\pos_payment\serial.py >nul 2>&1
-copy plasco_system\serial.py plasco_system\invoice_app\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
 
 echo ✅ Library stubs setup completed
 echo.
@@ -795,6 +800,7 @@ if !errorlevel! neq 0 (
     echo Press any key to close...
     pause >nul
 )
+'''
             zipf.writestr('START_HERE.bat', main_bat)
 
             # ==================== فایل راهنمای عیب‌یابی ====================
@@ -802,104 +808,104 @@ if !errorlevel! neq 0 (
 Plasco Offline System - Troubleshooting Guide
 ============================================
 
-اگر اسکریپت با مشکل مواجه شد:
+If the script fails:
 
-1. مشکل: صفحه سریع بسته می‌شود
-   راه حل: فایل START_HERE.bat را با راست کلیک و "Edit" باز کنید
-   سپس خط آخر را پیدا کرده و قبل از آن "pause" اضافه کنید
+1. Problem: Window closes quickly
+   Solution: Right-click START_HERE.bat and select "Edit"
+   Add "pause" at the end to see the error
 
-2. مشکل: پایتون پیدا نمی‌شود
-   راه حل: 
-   - پایتون 3.8 یا بالاتر نصب کنید
-   - در حین نصب، گزینه "Add Python to PATH" را انتخاب کنید
-   - از آدرس: https://www.python.org/downloads/
+2. Problem: Python not found
+   Solution: 
+   - Install Python 3.8+ from: https://python.org/downloads/
+   - Check "Add Python to PATH" during installation
 
-3. مشکل: خطا در نصب پکیج‌ها
-   راه حل:
-   - دستور زیر را در cmd اجرا کنید:
+3. Problem: Package installation fails
+   Solution:
+   - Run manually in cmd:
      cd plasco_system
      pip install -r requirements_offline.txt
 
-4. مشکل: پورت 8000 مشغول است
-   راه حل:
-   - دستور زیر را اجرا کنید:
+4. Problem: Port 8000 busy
+   Solution:
+   - Run manually:
      python manage.py runserver 0.0.0.0:8001
 
-5. مشکل: دیتابیس ایجاد نمی‌شود
-   راه حل:
-   - فایل db.sqlite3 را حذف کنید
-   - سپس دستورات زیر را اجرا کنید:
-     python manage.py migrate --run-syncdb
-
-دستورات مفید:
-- راه‌اندازی سرور: python manage.py runserver 0.0.0.0:8000
-- ایجاد کاربر ادمین: python manage.py createsuperuser
-- بررسی migrations: python manage.py showmigrations
-
-برای پشتیبانی بیشتر، لاگ خطاها را بررسی کنید.
+Useful Commands:
+- Start server: python manage.py runserver 0.0.0.0:8000
+- Create admin: python manage.py createsuperuser
+- Check migrations: python manage.py showmigrations
 '''
             zipf.writestr('TROUBLESHOOTING.txt', troubleshooting_content)
 
-            # ==================== فایل‌های راهنما ====================
-
-            # فایل راهنمای اصلی
+            # ==================== فایل راهنما ====================
             readme_content = f'''
 Plasco Offline System - Complete Standalone Installation
 =======================================================
 
-🚀 Quick Start:
+Quick Start:
 1. Extract ALL files to a folder
 2. Double-click "START_HERE.bat"
 3. Wait for automatic installation (5-15 minutes)
 4. System will start automatically
 
-🌐 Access Information:
+Access Information:
 - Main Application: http://localhost:8000
-- Admin Panel: http://localhost:8000/admin  
+- Admin Panel: http://localhost:8000/admin
 - IP Management: http://localhost:8000/ip/ip_manager/
 - Admin Username: admin
 - Admin Password: admin123
 
-🔧 Features:
+Features:
 ✅ Complete system functionality
 ✅ Persian language support
 ✅ SQLite database
 ✅ Automatic package installation
 ✅ Admin user creation
 
-⚠️ Limitations in Offline Mode:
+Limitations in Offline Mode:
 ❌ SMS functionality disabled
-❌ Printer functionality disabled  
+❌ Printer functionality disabled
 ❌ External API calls disabled
 
-📋 Allowed IP Addresses:
+Allowed IP Addresses:
 {chr(10).join(f"   - {ip}" for ip in selected_ips)}
 
-📞 Support:
+Support:
 - Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 - This is a fully self-contained offline system
 
-🛠️ Troubleshooting:
+Troubleshooting:
 - If installation fails, see TROUBLESHOOTING.txt
 - If port 8000 is busy, system will use port 8001
 - First run may take 5-15 minutes
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
-        zip_buffer.seek(0)
-        print("✅ Complete standalone installation package created successfully!")
-        return zip_buffer
+        print(f"✅ ZIP file created successfully: {temp_path}")
+
+        # خواندن محتوای فایل ZIP
+        with open(temp_path, 'rb') as f:
+            zip_content = f.read()
+
+        # حذف فایل موقت
+        os.unlink(temp_path)
+
+        return zip_content
 
     except Exception as e:
-        print(f"❌ Error creating package: {str(e)}")
-        import traceback
-        print(f"🔍 Details: {traceback.format_exc()}")
+        print(f"❌ Error in create_complete_install_package: {str(e)}")
+        # تمیزکاری فایل موقت در صورت خطا
+        try:
+            if 'temp_path' in locals():
+                os.unlink(temp_path)
+        except:
+            pass
         return None
 
 
 @csrf_exempt
 def create_offline_installer(request):
-    """ایجاد و دانلود فایل نصب کامل"""
+    """ایجاد و دانلود فایل نصب"""
     if request.method == 'POST':
         try:
             selected_ips_json = request.POST.get('selected_ips', '[]')
@@ -911,23 +917,22 @@ def create_offline_installer(request):
                     'message': 'لطفاً حداقل یک IP انتخاب کنید'
                 })
 
-            print(f"🔹 Creating standalone installer for IPs: {selected_ips}")
-            zip_buffer = create_complete_install_package(selected_ips)
+            print(f"🔹 Creating installer for IPs: {selected_ips}")
 
-            if not zip_buffer:
+            # ایجاد پکیج
+            zip_content = create_complete_install_package(selected_ips)
+
+            if not zip_content:
                 return JsonResponse({
                     'status': 'error',
                     'message': 'خطا در ایجاد فایل نصب'
                 })
 
-            # ایجاد پاسخ با فایل ZIP
-            response = HttpResponse(
-                zip_buffer.getvalue(),
-                content_type='application/zip'
-            )
+            # ایجاد پاسخ
+            response = HttpResponse(zip_content, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="plasco_offline_system.zip"'
 
-            print("✅ Standalone installer created and sent for download")
+            print("✅ Installer created and sent successfully")
             return response
 
         except Exception as e:
