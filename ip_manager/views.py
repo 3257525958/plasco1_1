@@ -307,251 +307,186 @@ python-barcode==0.15.1
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
-            # فایل راه‌انداز پایتون (اصلی)
-            launcher_content = '''import os
-import sys
-import subprocess
-import webbrowser
-import time
-from pathlib import Path
-
-def print_step(step, message):
-    """چاپ مرحله با فرمت زیبا"""
-    print(f"\\n{'='*50}")
-    print(f"📍 {step}: {message}")
-    print(f"{'='*50}")
-
-def run_command(command, success_msg, error_msg):
-    """اجرای دستور و مدیریت خطا"""
-    try:
-        print(f"   🔧 اجرای دستور: {command}")
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=300)
-
-        if result.returncode == 0:
-            print(f"   ✅ {success_msg}")
-            if result.stdout.strip():
-                print(f"   📝 خروجی: {result.stdout.strip()}")
-            return True
-        else:
-            print(f"   ❌ {error_msg}")
-            if result.stderr.strip():
-                print(f"   💥 خطا: {result.stderr.strip()}")
-            return False
-    except subprocess.TimeoutExpired:
-        print(f"   ⏰ زمان اجرای دستور به پایان رسید: {command}")
-        return False
-    except Exception as e:
-        print(f"   💥 خطای غیرمنتظره: {e}")
-        return False
-
-def check_python():
-    """بررسی نصب پایتون"""
-    print_step(1, "بررسی نصب پایتون")
-    try:
-        result = subprocess.run(["python", "--version"], capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"   ✅ پایتون پیدا شد: {result.stdout.strip()}")
-            return True
-        else:
-            print("   ❌ پایتون پیدا نشد!")
-            return False
-    except:
-        print("   ❌ پایتون پیدا نشد!")
-        return False
-
-def install_requirements():
-    """نصب کتابخانه‌های مورد نیاز"""
-    print_step(2, "نصب کتابخانه‌های مورد نیاز")
-
-    commands = [
-        ("python -m pip install --upgrade pip", "بروزرسانی pip", "خطا در بروزرسانی pip"),
-        ("pip install -r requirements_offline.txt", "نصب کتابخانه‌ها از فایل requirements", "خطا در نصب کتابخانه‌ها")
-    ]
-
-    all_success = True
-    for cmd, success_msg, error_msg in commands:
-        if not run_command(cmd, success_msg, error_msg):
-            all_success = False
-
-    return all_success
-
-def setup_database():
-    """راه‌اندازی دیتابیس"""
-    print_step(3, "راه‌اندازی دیتابیس")
-
-    commands = [
-        ("python manage.py migrate", "اجرای migrations", "خطا در اجرای migrations"),
-        ("python manage.py shell -c \""
-         "from django.contrib.auth import get_user_model; "
-         "User = get_user_model(); "
-         "if not User.objects.filter(username='admin').exists(): "
-         "User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123'); "
-         "print('کاربر ادمین ایجاد شد: admin / admin123'); "
-         "else: print('کاربر ادمین از قبل وجود دارد')\"", 
-         "ایجاد کاربر ادمین", "خطا در ایجاد کاربر ادمین")
-    ]
-
-    all_success = True
-    for cmd, success_msg, error_msg in commands:
-        if not run_command(cmd, success_msg, error_msg):
-            all_success = False
-
-    return all_success
-
-def start_server():
-    """راه‌اندازی سرور"""
-    print_step(4, "راه‌اندازی سرور")
-
-    print("\\n🎉 سیستم آماده راه‌اندازی است!")
-    print("\\n🌐 آدرس‌های دسترسی:")
-    print("   📍 سیستم اصلی: http://localhost:8000")
-    print("   🔧 پنل مدیریت: http://localhost:8000/admin")
-    print("   👤 کاربر: admin")
-    print("   🔑 رمز: admin123")
-    print("\\n⏰ در حال راه‌اندازی سرور...")
-
-    # باز کردن مرورگر
-    try:
-        time.sleep(2)
-        webbrowser.open("http://localhost:8000")
-        print("   🌐 مرورگر در حال باز شدن...")
-    except:
-        print("   ℹ️ امکان باز کردن خودکار مرورگر وجود ندارد")
-
-    print("\\n⏹️ برای توقف سرور، کلیدهای Ctrl+C را فشار دهید")
-    print("-" * 50)
-
-    # راه‌اندازی سرور
-    try:
-        os.system("python manage.py runserver 0.0.0.0:8000")
-    except KeyboardInterrupt:
-        print("\\n⏹️ سرور متوقف شد")
-    except Exception as e:
-        print(f"💥 خطا در راه‌اندازی سرور: {e}")
-
-def main():
-    """تابع اصلی"""
-    print("🚀 راه‌انداز خودکار سیستم پلاسکو")
-    print("📅 ایجاد شده برای کاربران غیرفنی")
-    print("=" * 60)
-
-    # تغییر مسیر به پوشه فعلی
-    os.chdir(Path(__file__).parent)
-
-    try:
-        # بررسی پایتون
-        if not check_python():
-            print("\\n❌ لطفا پایتون را از سایت python.org دانلود و نصب کنید")
-            input("\\n📝 Enter برای خروج...")
-            return
-
-        # نصب requirements
-        if not install_requirements():
-            print("\\n⚠️ برخی کتابخانه‌ها با مشکل مواجه شدند، ادامه می‌دهیم...")
-
-        # راه‌اندازی دیتابیس
-        if not setup_database():
-            print("\\n⚠️ خطا در راه‌اندازی دیتابیس، ادامه می‌دهیم...")
-
-        # راه‌اندازی سرور
-        start_server()
-
-    except Exception as e:
-        print(f"\\n💥 خطای غیرمنتظره: {e}")
-
-    input("\\n📝 Enter برای بستن پنجره...")
-
-if __name__ == "__main__":
-    main()
-'''
-            zipf.writestr('plasco_launcher.py', launcher_content)
-
-            # فایل BAT اصلی - بسیار ساده
+            # فایل BAT اصلی - کاملاً اصلاح شده
             main_bat = '''@echo off
 chcp 65001
-title Plasco Auto Installer
+title Plasco Offline System - Auto Installer
+
+REM تغییر به مسیر فایل جاری
+cd /d "%~dp0"
+
 echo.
-echo ========================================
-echo    Plasco Offline System - Auto Setup
-echo ========================================
+echo ============================================
+echo    Plasco Offline System - Auto Installer
+echo ============================================
 echo.
-echo 🚀 Starting automatic installation...
-echo 📝 This may take a few minutes...
+
+echo 📍 Current directory:
+cd
 echo.
-echo Please wait...
-python plasco_launcher.py
+
+echo 🔍 Step 1: Checking Python installation...
+python --version
+if %errorlevel% neq 0 (
+    echo.
+    echo ❌ ERROR: Python not found or not in PATH!
+    echo.
+    echo 📥 Please install Python from:
+    echo https://www.python.org/downloads/
+    echo.
+    echo 💡 IMPORTANT: During installation, check "Add Python to PATH"
+    echo.
+    echo Press any key to exit...
+    pause >nul
+    exit /b 1
+)
+
+echo ✅ Python is installed
+echo.
+
+echo 📦 Step 2: Installing required packages...
+pip install -r requirements_offline.txt
+if %errorlevel% neq 0 (
+    echo.
+    echo ⚠️ WARNING: Some packages failed to install
+    echo Trying to continue anyway...
+    echo.
+)
+
+echo 🗃️ Step 3: Setting up database...
+python manage.py migrate
+if %errorlevel% neq 0 (
+    echo.
+    echo ❌ ERROR: Database setup failed!
+    echo.
+    echo Press any key to exit...
+    pause >nul
+    exit /b 1
+)
+
+echo 👤 Step 4: Creating admin user...
+python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+
+echo.
+echo 🚀 Step 5: Starting Plasco Offline System...
+echo.
+echo ============================================
+echo    SYSTEM IS READY!
+echo ============================================
+echo.
+echo 🌐 ACCESS URLs:
+echo    Main System: http://localhost:8000
+echo    Admin Panel: http://localhost:8000/admin
+echo.
+echo 🔐 ADMIN CREDENTIALS:
+echo    Username: admin
+echo    Password: admin123
+echo.
+echo ⏰ Server is starting...
+echo ⏹️  To stop server, press CTRL+C
+echo ============================================
+echo.
+
+python manage.py runserver 0.0.0.0:8000
+
+echo.
+echo Server stopped. Press any key to close...
+pause >nul
 '''
             zipf.writestr('START_HERE.bat', main_bat)
 
-            # فایل BAT جایگزین
-            simple_bat = '''@echo off
+            # فایل BAT جایگزین برای خطایابی
+            debug_bat = '''@echo off
 chcp 65001
-title Plasco Quick Start
+title Plasco Debug Mode
+
+cd /d "%~dp0"
+
 echo.
-echo Plasco Offline System
+echo ============================================
+echo    Plasco Debug Mode - خطایابی
+echo ============================================
 echo.
-echo If you see errors, please:
-echo 1. Install Python from python.org
-echo 2. Run START_HERE.bat again
+
+echo 📍 مسیر جاری:
+cd
 echo.
-python plasco_launcher.py
+
+echo 🔍 بررسی پایتون:
+python --version
+if %errorlevel% neq 0 (
+    echo ❌ پایتون پیدا نشد!
+    goto :error
+)
+
+echo ✅ پایتون نصب است
+echo.
+
+echo 📦 بررسی pip:
+pip --version
+if %errorlevel% neq 0 (
+    echo ❌ pip پیدا نشد!
+    goto :error
+)
+
+echo ✅ pip نصب است
+echo.
+
+echo 🗂️ لیست فایل‌ها:
+dir
+echo.
+
+echo 🚀 اجرای سیستم...
+echo.
+START_HERE.bat
+goto :end
+
+:error
+echo.
+echo ❌ مشکل تشخیص داده شد!
+echo.
+echo 📝 راه‌حل:
+echo 1. پایتون را از python.org دانلود کنید
+echo 2. هنگام نصب، تیک "Add Python to PATH" را بزنید
+echo 3. دوباره تلاش کنید
+echo.
 pause
+
+:end
 '''
-            zipf.writestr('Run_Plasco.bat', simple_bat)
+            zipf.writestr('DEBUG_MODE.bat', debug_bat)
 
             # فایل راهنمای کامل
             readme_content = f'''
-Plasco Offline System - Complete Installation
-=============================================
+Plasco Offline System - راهنمای نصب
+===================================
 
-📋 QUICK START (برای کاربران غیرفنی):
+📋 روش نصب (ساده):
 1. تمام فایل‌ها را در یک پوشه Extract کنید
-2. فایل "START_HERE.bat" را اجرا کنید
-3. منتظر بمانید تا سیستم به طور خودکار راه‌اندازی شود
-4. مرورگر به طور خودکار باز می‌شود
+2. روی فایل "START_HERE.bat" دابل کلیک کنید
+3. منتظر بمانید تا سیستم راه‌اندازی شود
 
-🔧 DETAILED INSTRUCTIONS:
+🔧 اگر مشکل داشتید:
+- فایل "DEBUG_MODE.bat" را اجرا کنید
+- یا دستی این دستورات را در CMD اجرا کنید:
+  1. python --version
+  2. pip install -r requirements_offline.txt
+  3. python manage.py migrate
+  4. python manage.py runserver 0.0.0.0:8000
 
-WHAT HAPPENS AUTOMATICALLY:
-- ✅ بررسی نصب پایتون
-- ✅ نصب خودکار کتابخانه‌ها
-- ✅ ایجاد دیتابیس
-- ✅ ایجاد کاربر ادمین
-- ✅ راه‌اندازی سرور
-- ✅ باز کردن مرورگر
-
-🌐 ACCESS INFORMATION:
+🌐 آدرس‌های دسترسی:
 - سیستم اصلی: http://localhost:8000
 - پنل مدیریت: http://localhost:8000/admin
 - کاربر: admin
 - رمز: admin123
 
-📞 IF YOU HAVE PROBLEMS:
-1. مطمئن شوید همه فایل‌ها Extract شده‌اند
-2. فایل BAT را با راست کلیک → Run as Administrator اجرا کنید
-3. اگر پایتون نصب نیست، از python.org دانلود کنید
-4. با پشتیبانی تماس بگیرید
+📞 پشتیبانی:
+در صورت مشکل، اطلاعات خطا را ذخیره کرده و با پشتیبانی تماس بگیرید.
 
-⚙️ TECHNICAL INFO:
-- Python 3.8+ required
-- IPهای مجاز: {', '.join(selected_ips)}
-- Database: SQLite (db_offline.sqlite3)
-- Port: 8000
-
-📝 Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+🖥️ IPهای مجاز: {', '.join(selected_ips)}
+📅 ایجاد شده: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
-
-            # فایل پیکربندی
-            config_content = f'''[Plasco_Auto_Installer]
-version=2.0
-created={timezone.now().isoformat()}
-allowed_ips={','.join(selected_ips)}
-auto_install=true
-admin_user=admin
-admin_pass=admin123
-'''
-            zipf.writestr('config.ini', config_content)
 
         zip_buffer.seek(0)
         print("✅ پکیج نصب کامل و خودکار ایجاد شد")
@@ -590,7 +525,7 @@ def create_offline_installer(request):
                 zip_buffer.getvalue(),
                 content_type='application/zip'
             )
-            response['Content-Disposition'] = 'attachment; filename="plasco_auto_install.zip"'
+            response['Content-Disposition'] = 'attachment; filename="plasco_offline_system.zip"'
 
             return response
 
