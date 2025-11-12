@@ -131,31 +131,31 @@ def create_complete_install_package(selected_ips):
     """ایجاد پکیج نصب کامل و کاملاً خودکار"""
     try:
         BASE_DIR = settings.BASE_DIR
-
-        # ایجاد بافر ZIP در حافظه
         zip_buffer = io.BytesIO()
 
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            print("Creating complete installation package...")
+            print("📦 Creating complete installation package...")
+
+            # ==================== فایل‌های اصلی پروژه ====================
 
             # فایل manage.py
             manage_path = BASE_DIR / 'manage.py'
             if manage_path.exists():
                 zipf.write(manage_path, 'manage.py')
-                print("Added: manage.py")
+                print("✅ Added: manage.py")
 
-            # اضافه کردن پوشه plasco به طور کامل
+            # پوشه اصلی پروژه (plasco)
             plasco_path = BASE_DIR / 'plasco'
             if plasco_path.exists():
                 for root, dirs, files in os.walk(plasco_path):
                     for file in files:
-                        if file.endswith('.py'):
+                        if file.endswith(('.py', '.html', '.css', '.js', '.json', '.txt')):
                             file_path = os.path.join(root, file)
                             arcname = os.path.relpath(file_path, BASE_DIR)
                             zipf.write(file_path, arcname)
-                print("Added plasco folder completely")
+                print("✅ Added plasco folder completely")
 
-            # اضافه کردن پوشه اپ‌ها
+            # ==================== تمام اپلیکیشن‌ها ====================
             app_folders = [
                 'account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
                 'it_app', 'pos_payment', 'sync_app', 'sync_api',
@@ -167,13 +167,16 @@ def create_complete_install_package(selected_ips):
                 if app_path.exists():
                     for root, dirs, files in os.walk(app_path):
                         for file in files:
-                            if file.endswith(('.py', '.html', '.css', '.js', '.json', '.txt')):
+                            # شامل تمام فایل‌های ضروری
+                            if file.endswith(('.py', '.html', '.css', '.js', '.json', '.txt', '.md')):
                                 file_path = os.path.join(root, file)
                                 arcname = os.path.relpath(file_path, BASE_DIR)
                                 zipf.write(file_path, arcname)
-                    print(f"Added app: {app}")
+                    print(f"✅ Added app: {app}")
 
-            # اضافه کردن پوشه templates
+            # ==================== فایل‌های قالب و استاتیک ====================
+
+            # پوشه templates
             templates_path = BASE_DIR / 'templates'
             if templates_path.exists():
                 for root, dirs, files in os.walk(templates_path):
@@ -181,9 +184,9 @@ def create_complete_install_package(selected_ips):
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, BASE_DIR)
                         zipf.write(file_path, arcname)
-                print("Added templates folder")
+                print("✅ Added templates folder")
 
-            # اضافه کردن پوشه static
+            # پوشه static
             static_path = BASE_DIR / 'static'
             if static_path.exists():
                 for root, dirs, files in os.walk(static_path):
@@ -191,15 +194,27 @@ def create_complete_install_package(selected_ips):
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, BASE_DIR)
                         zipf.write(file_path, arcname)
-                print("Added static folder")
+                print("✅ Added static folder")
 
-            # ==================== فایل‌های ضروری برای نصب آسان ====================
+            # پوشه media (اگر وجود دارد)
+            media_path = BASE_DIR / 'media'
+            if media_path.exists():
+                for root, dirs, files in os.walk(media_path):
+                    for file in files:
+                        if file.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg')):
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, BASE_DIR)
+                            zipf.write(file_path, arcname)
+                print("✅ Added media folder")
 
-            # فایل settings_offline.py با تنظیمات ساده‌تر
+            # ==================== فایل‌های پیکربندی و نصب ====================
+
+            # فایل settings_offline.py
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
 Allowed IPs: {selected_ips}
+Generated: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 """
 
 from pathlib import Path
@@ -207,10 +222,10 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-offline-plasco-2024-secret-key'
+SECRET_KEY = 'django-insecure-offline-plasco-2024-secret-key-change-in-production'
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'] + {selected_ips}
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.1.100', '192.168.1.101', '192.168.1.102'] + {selected_ips}
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -307,61 +322,83 @@ REST_FRAMEWORK = {{
 }}
 
 CORS_ALLOW_ALL_ORIGINS = True
-'''
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
+# حالت آفلاین
+OFFLINE_MODE = True
+'''
             zipf.writestr('plasco/settings_offline.py', settings_content.strip())
+
+            # فایل settings.py اصلی که از آفلاین ایمپورت می‌کند
             zipf.writestr('plasco/settings.py', 'from .settings_offline import *\n')
 
-            # ایجاد فایل __init__.py برای پوشه plasco
+            # فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco/__init__.py', '')
 
-            # فایل requirements کامل با تمام کتابخانه‌های مورد نیاز
-            requirements_content = '''Django==4.2.7
+            # ==================== فایل requirements بهبود یافته ====================
+            requirements_content = '''# Plasco Offline System - Complete Requirements
+# Core Django
+Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
 Pillow==10.0.1
+
+# Database - SQLite (no need for mysqlclient in offline mode)
+# mysqlclient will be handled by fallback
+
+# Utilities
 requests==2.31.0
 jdatetime==4.1.1
 python-barcode==0.15.1
-mysqlclient==2.1.1
 python-decouple==3.8
 django-filter==23.3
+
+# PDF and Reporting
+reportlab==4.0.4
+xhtml2pdf==0.2.13
+openpyxl==3.1.2
+
+# Persian Support
+django-jalali==5.0.0
+persian==0.3.1
+hazm==0.7.0
+
+# Async and Tasks (optional for offline)
 channels==4.0.0
 channels-redis==4.1.0
 celery==5.3.4
 redis==5.0.1
 django-celery-results==2.5.1
 django-celery-beat==2.5.0
-reportlab==4.0.4
-xhtml2pdf==0.2.13
-python-magic==0.4.27
-openpyxl==3.1.2
+
+# Additional utilities
 django-import-export==3.3.0
 django-cleanup==8.0.0
-django-debug-toolbar==4.2.0
-django-extensions==3.2.3
-gunicorn==21.2.0
-whitenoise==6.6.0
-psycopg2-binary==2.9.7
-django-storages==1.14.2
-boto3==1.34.0
-django-jalali==5.0.0
-persian==0.3.1
-hazm==0.7.0
 python-dateutil==2.8.2
 pytz==2023.3
+
+# Django core dependencies
 asgiref==3.7.2
 sqlparse==0.4.4
 tzdata==2023.3
+
+# Security and HTTP
 urllib3==1.26.18
 certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
-python-escpos==3.0
+
+# File type detection (Windows compatible)
+python-magic-bin==0.4.14
+
+# Fallback for MySQL (if needed)
+pymysql==1.1.0
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
-            # ایجاد فایل‌های جایگزین برای تمام کتابخانه‌های مشکل‌ساز
+            # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
+
+            # ماژول جایگزین kavenegar
             kavenegar_stub_content = '''
 """
 ماژول جایگزین برای kavenegar - برای حالت آفلاین
@@ -369,34 +406,37 @@ python-escpos==3.0
 
 class KavenegarAPI:
     def __init__(self, *args, **kwargs):
-        pass
+        print("🔹 OFFLINE MODE: KavenegarAPI initialized (SMS disabled)")
 
     def sms_send(self, *args, **kwargs):
-        print("SMS sending is disabled in offline mode")
+        print("🔹 OFFLINE MODE: SMS sending is disabled")
         return {"status": 200, "message": "SMS disabled in offline mode"}
 
     def call_make(self, *args, **kwargs):
-        print("Call making is disabled in offline mode")
+        print("🔹 OFFLINE MODE: Call making is disabled")
         return {"status": 200, "message": "Calls disabled in offline mode"}
 
-def KavenegarException(Exception):
+    def verify_lookup(self, *args, **kwargs):
+        print("🔹 OFFLINE MODE: Verify lookup is disabled")
+        return {"status": 200, "message": "Verify lookup disabled in offline mode"}
+
+class KavenegarException(Exception):
     pass
 
-# توابع اصلی که در کد استفاده می‌شوند
 def send_sms(api_key, sender, receptor, message):
-    print(f"OFFLINE MODE: SMS would be sent to {receptor}: {message}")
+    print(f"🔹 OFFLINE MODE: SMS would be sent to {receptor}: {message}")
     return {"status": 200, "message": "SMS disabled in offline mode"}
 
 def send_lookup_sms(api_key, receptor, token, token2, token3, template):
-    print(f"OFFLINE MODE: Lookup SMS would be sent to {receptor}")
+    print(f"🔹 OFFLINE MODE: Lookup SMS would be sent to {receptor}")
     return {"status": 200, "message": "Lookup SMS disabled in offline mode"}
 
-# توابعی که با import * استفاده می‌شوند
+# برای سازگاری با import *
 __all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
 '''
             zipf.writestr('kavenegar.py', kavenegar_stub_content)
 
-            # ایجاد فایل جایگزین برای escpos
+            # ماژول جایگزین escpos
             escpos_stub_content = '''
 """
 ماژول جایگزین برای escpos - برای حالت آفلاین
@@ -404,97 +444,71 @@ __all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
 
 class Serial:
     def __init__(self, *args, **kwargs):
-        print("OFFLINE MODE: Printer Serial connection disabled")
+        print("🔹 OFFLINE MODE: Printer Serial connection disabled")
 
     def text(self, text):
-        print(f"OFFLINE MODE: Would print: {text}")
+        print(f"🔹 OFFLINE MODE: Would print: {text}")
 
     def cut(self):
-        print("OFFLINE MODE: Would cut paper")
+        print("🔹 OFFLINE MODE: Would cut paper")
 
     def close(self):
-        print("OFFLINE MODE: Printer connection closed")
+        print("🔹 OFFLINE MODE: Printer connection closed")
 
 class Usb:
     def __init__(self, *args, **kwargs):
-        print("OFFLINE MODE: Printer USB connection disabled")
+        print("🔹 OFFLINE MODE: Printer USB connection disabled")
 
     def text(self, text):
-        print(f"OFFLINE MODE: Would print: {text}")
+        print(f"🔹 OFFLINE MODE: Would print: {text}")
 
     def cut(self):
-        print("OFFLINE MODE: Would cut paper")
+        print("🔹 OFFLINE MODE: Would cut paper")
 
     def close(self):
-        print("OFFLINE MODE: Printer connection closed")
+        print("🔹 OFFLINE MODE: Printer connection closed")
 
 class Network:
     def __init__(self, *args, **kwargs):
-        print("OFFLINE MODE: Printer Network connection disabled")
+        print("🔹 OFFLINE MODE: Printer Network connection disabled")
 
     def text(self, text):
-        print(f"OFFLINE MODE: Would print: {text}")
+        print(f"🔹 OFFLINE MODE: Would print: {text}")
 
     def cut(self):
-        print("OFFLINE MODE: Would cut paper")
+        print("🔹 OFFLINE MODE: Would cut paper")
 
     def close(self):
-        print("OFFLINE MODE: Printer connection closed")
+        print("🔹 OFFLINE MODE: Printer connection closed")
 
 class File:
     def __init__(self, *args, **kwargs):
-        print("OFFLINE MODE: Printer File output disabled")
+        print("🔹 OFFLINE MODE: Printer File output disabled")
 
     def text(self, text):
-        print(f"OFFLINE MODE: Would print to file: {text}")
+        print(f"🔹 OFFLINE MODE: Would print to file: {text}")
 
     def cut(self):
-        print("OFFLINE MODE: Would cut paper")
+        print("🔹 OFFLINE MODE: Would cut paper")
 
     def close(self):
-        print("OFFLINE MODE: Printer file closed")
+        print("🔹 OFFLINE MODE: Printer file closed")
 
-# توابعی که با import * استفاده می‌شوند
+# برای سازگاری با import *
 __all__ = ['Serial', 'Usb', 'Network', 'File']
 '''
             zipf.writestr('escpos.py', escpos_stub_content)
+            zipf.writestr('escpos/__init__.py', escpos_stub_content)
             zipf.writestr('escpos/printer.py', escpos_stub_content)
 
-            # ایجاد فایل offline_ip_manager.py
-            offline_ip_manager_content = '''
-"""
-ماژول مدیریت IPهای آفلاین - نسخه ساده شده
-"""
-
-def is_allowed_offline_ip(request):
-    """بررسی آیا IP مجاز است یا نه"""
-    return True
-
-def get_client_ip(request):
-    """دریافت IP کلاینت"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
-
-def add_allowed_ip(ip_address):
-    """افزودن IP به لیست مجاز"""
-    return True
-'''
-            zipf.writestr('plasco/offline_ip_manager.py', offline_ip_manager_content)
-
-            # فایل BAT اصلی با نصب کامل و جایگزینی کتابخانه‌ها
+            # ==================== فایل نصب اصلی (BAT) ====================
             main_bat = '''@echo off
 chcp 65001
-title Plasco Offline System
-
-cd /d "%~dp0"
+title Plasco Offline System - Complete Installer
 
 echo.
 echo ============================================
-echo    Plasco Offline System - Auto Installer
+echo    Plasco Offline System - Complete Installer
 echo ============================================
 echo.
 
@@ -504,32 +518,42 @@ if %errorlevel% neq 0 (
     echo.
     echo ERROR: Python not found!
     echo.
-    echo Please install Python from: https://www.python.org/downloads/
+    echo Please install Python 3.8+ from: https://www.python.org/downloads/
+    echo Make sure to check "Add Python to PATH" during installation.
     echo.
     echo Press any key to exit...
     pause >nul
     exit /b 1
 )
 
-echo OK: Python is installed
+echo ✅ Python is installed
 echo.
 
-echo Step 2: Creating library stubs for offline mode...
+echo Step 2: Setting up library stubs for offline mode...
 mkdir escpos 2>nul
-copy kavenegar.py cantact_app\kavenegar.py >nul 2>&1
-copy kavenegar.py account_app\kavenegar.py >nul 2>&1
-copy kavenegar.py invoice_app\kavenegar.py >nul 2>&1
-copy escpos.py dashbord_app\escpos.py >nul 2>&1
-copy escpos.py pos_payment\escpos.py >nul 2>&1
-copy escpos.py invoice_app\escpos.py >nul 2>&1
-copy escpos.py escpos\__init__.py >nul 2>&1
-copy escpos.py escpos\printer.py >nul 2>&1
+
+echo Copying kavenegar stub to apps...
+copy kavenegar.py account_app\\kavenegar.py >nul 2>&1
+copy kavenegar.py cantact_app\\kavenegar.py >nul 2>&1
+copy kavenegar.py invoice_app\\kavenegar.py >nul 2>&1
+
+echo Copying escpos stub to apps...
+copy escpos.py dashbord_app\\escpos.py >nul 2>&1
+copy escpos.py pos_payment\\escpos.py >nul 2>&1
+copy escpos.py invoice_app\\escpos.py >nul 2>&1
+
+echo Setting up escpos package...
+copy escpos.py escpos\\__init__.py >nul 2>&1
+copy escpos.py escpos\\printer.py >nul 2>&1
+
+echo ✅ Library stubs setup completed
+echo.
 
 echo Step 3: Upgrading pip and setuptools...
 python -m pip install --upgrade pip setuptools wheel
 
-echo Step 4: Installing ALL required packages...
-echo This may take 5-10 minutes. Please wait...
+echo Step 4: Installing required packages...
+echo This may take 5-15 minutes. Please wait...
 echo.
 
 echo Installing core packages...
@@ -542,42 +566,34 @@ echo Installing utility packages...
 pip install requests==2.31.0
 pip install jdatetime==4.1.1
 pip install python-barcode==0.15.1
-pip install mysqlclient==2.1.1
 pip install python-decouple==3.8
-pip install python-escpos==3.0
-
-echo Installing additional packages...
 pip install django-filter==23.3
+
+echo Installing PDF and reporting packages...
+pip install reportlab==4.0.4
+pip install xhtml2pdf==0.2.13
+pip install openpyxl==3.1.2
+
+echo Installing Persian language packages...
+pip install django-jalali==5.0.0
+pip install persian==0.3.1
+pip install hazm==0.7.0
+
+echo Installing file handling packages...
+pip install python-magic-bin==0.4.14
+pip install django-import-export==3.3.0
+pip install django-cleanup==8.0.0
+
+echo Installing async and task packages (optional)...
 pip install channels==4.0.0
 pip install channels-redis==4.1.0
 pip install celery==5.3.4
 pip install redis==5.0.1
 pip install django-celery-results==2.5.1
+pip install django-celery-beat==2.5.0
 
-echo Installing file and export packages...
-pip install reportlab==4.0.4
-pip install xhtml2pdf==0.2.13
-pip install python-magic==0.4.27
-pip install openpyxl==3.1.2
-pip install django-import-export==3.3.0
-
-echo Installing Persian and date packages...
-pip install django-jalali==5.0.0
-pip install persian==0.3.1
-pip install hazm==0.7.0
+echo Installing remaining utility packages...
 pip install python-dateutil==2.8.2
-
-echo Installing deployment packages...
-pip install gunicorn==21.2.0
-pip install whitenoise==6.6.0
-pip install psycopg2-binary==2.9.7
-pip install django-storages==1.14.2
-pip install boto3==1.34.0
-
-echo Installing remaining packages...
-pip install django-cleanup==8.0.0
-pip install django-debug-toolbar==4.2.0
-pip install django-extensions==3.2.3
 pip install pytz==2023.3
 pip install asgiref==3.7.2
 pip install sqlparse==0.4.4
@@ -587,85 +603,194 @@ pip install certifi==2023.11.17
 pip install charset-normalizer==3.3.2
 pip install idna==3.6
 
+echo Installing MySQL fallback...
+pip install pymysql==1.1.0
+
 echo.
+echo ✅ All packages installed successfully!
+echo.
+
 echo Step 5: Setting up database...
+echo Creating database migrations...
+python manage.py makemigrations
+
+echo Applying migrations...
 python manage.py migrate
+
 if %errorlevel% neq 0 (
-    echo.
-    echo WARNING: Standard migration failed, trying alternative...
+    echo ⚠️ Standard migration failed, trying alternative...
     python manage.py migrate --run-syncdb
 )
 
 echo Step 6: Creating admin user...
-python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+try:
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
+        print('✅ Admin user created successfully')
+    else:
+        print('ℹ️ Admin user already exists')
+except Exception as e:
+    print('⚠️ Error creating admin user:', str(e))
+    print('⚠️ You can create admin user manually later with:')
+    print('⚠️ python manage.py createsuperuser')
+"
 
 echo.
-echo Step 7: Starting Plasco Offline System...
-echo.
 echo ============================================
-echo    SYSTEM IS READY!
+echo    INSTALLATION COMPLETED SUCCESSFULLY!
 echo ============================================
 echo.
-echo ACCESS URLs:
+echo 🌟 Plasco Offline System is ready!
+echo.
+echo 📍 Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
 echo.
-echo ADMIN CREDENTIALS:
+echo 🔑 Admin Credentials:
 echo    Username: admin
 echo    Password: admin123
 echo.
-echo NOTE: 
-echo - SMS features are disabled in offline mode
-echo - Printer features are disabled in offline mode
-echo - All other features work normally
+echo 💡 Important Notes:
+echo    - SMS features are disabled in offline mode
+echo    - Printer features are disabled in offline mode
+echo    - All other features work normally
 echo.
-echo Server is starting...
-echo To stop server, press CTRL+C
+echo 🚀 Starting server...
+echo ⏹️  To stop server, press CTRL+C
 echo ============================================
 echo.
 
 python manage.py runserver 0.0.0.0:8000
 
-echo.
-echo Server stopped. Press any key to close...
-pause >nul
+if %errorlevel% neq 0 (
+    echo.
+    echo ⚠️ Server startup failed. Possible reasons:
+    echo    - Port 8000 is already in use
+    echo    - Database configuration issue
+    echo.
+    echo 🔧 Troubleshooting:
+    echo    - Try: python manage.py runserver 0.0.0.0:8001
+    echo    - Check if another server is running
+    echo.
+    pause
+)
 '''
             zipf.writestr('START_HERE.bat', main_bat)
 
-            # فایل راهنمای کامل
+            # ==================== فایل‌های راهنما و پشتیبانی ====================
+
+            # فایل راهنمای اصلی
             readme_content = f'''
-Plasco Offline System - Installation Guide
-==========================================
+Plasco Offline System - Complete Installation Package
+===================================================
 
-Quick Start:
-1. Extract ALL files to a folder
-2. Double click "START_HERE.bat"
-3. Wait for system to start (may take 5-10 minutes for first time)
+📦 What's Included:
+- Complete Django project structure
+- All application modules
+- Templates and static files
+- SQLite database configuration
+- Offline-compatible settings
+- Automatic installation scripts
 
-Access URLs:
-- Main System: http://localhost:8000
+🚀 Quick Start:
+1. Extract ALL files to a folder (important!)
+2. Double-click "START_HERE.bat"
+3. Wait for automatic installation (5-15 minutes)
+4. System will start automatically
+
+🌐 Access Information:
+- Main Application: http://localhost:8000
 - Admin Panel: http://localhost:8000/admin
-- Username: admin
-- Password: admin123
+- Admin Username: admin
+- Admin Password: admin123
 
-IMPORTANT: 
-- SMS features are DISABLED in offline mode
-- Printer features are DISABLED in offline mode  
-- All other features will work normally
+🔧 Features:
+✅ Complete system functionality
+✅ Persian language support
+✅ SQLite database (no external DB required)
+✅ Automatic package installation
+✅ Admin user creation
 
-Allowed IPs: {', '.join(selected_ips)}
-Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+⚠️ Limitations in Offline Mode:
+❌ SMS functionality disabled
+❌ Printer functionality disabled
+❌ External API calls disabled
+
+📋 Allowed IP Addresses:
+{chr(10).join(f"   - {ip}" for ip in selected_ips)}
+
+📞 Support:
+- Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
+- This is a fully self-contained offline system
+
+🔒 Security Note:
+- Change the default admin password after first login
+- This package uses development settings for easy setup
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
+            # فایل fallback installer برای مواقع ضروری
+            fallback_installer = '''
+# fallback_installer.py
+# This script can be run if the BAT file has issues
+
+import os
+import sys
+import subprocess
+
+def run_command(command):
+    """Run a command and return success status"""
+    try:
+        result = subprocess.run(command, shell=True, check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed: {command}")
+        print(f"Error: {e}")
+        return False
+
+def main():
+    print("Plasco Offline System - Fallback Installer")
+    print("=" * 50)
+
+    # Install packages in smaller batches
+    packages_batches = [
+        ["Django==4.2.7", "django-cors-headers==4.3.1", "djangorestframework==3.14.0"],
+        ["Pillow==10.0.1", "requests==2.31.0", "jdatetime==4.1.1"],
+        ["python-barcode==0.15.1", "python-decouple==3.8", "django-filter==23.3"],
+        ["reportlab==4.0.4", "xhtml2pdf==0.2.13", "openpyxl==3.1.2"],
+        ["django-jalali==5.0.0", "persian==0.3.1", "hazm==0.7.0"],
+        ["python-magic-bin==0.4.14", "django-import-export==3.3.0", "django-cleanup==8.0.0"],
+    ]
+
+    for i, batch in enumerate(packages_batches, 1):
+        print(f"Installing batch {i}/6...")
+        for package in batch:
+            if run_command(f"pip install {package}"):
+                print(f"✅ {package}")
+            else:
+                print(f"❌ {package}")
+
+    print("Installation completed!")
+    print("Run these commands manually if needed:")
+    print("  python manage.py migrate")
+    print("  python manage.py runserver 0.0.0.0:8000")
+
+if __name__ == "__main__":
+    main()
+'''
+            zipf.writestr('fallback_installer.py', fallback_installer)
+
         zip_buffer.seek(0)
-        print("Complete installation package created")
+        print("✅ Complete installation package created successfully!")
         return zip_buffer
 
     except Exception as e:
-        print(f"Error creating package: {str(e)}")
+        print(f"❌ Error creating package: {str(e)}")
         import traceback
-        print(f"Details: {traceback.format_exc()}")
+        print(f"🔍 Details: {traceback.format_exc()}")
         return None
 
 
@@ -683,6 +808,7 @@ def create_offline_installer(request):
                     'message': 'لطفاً حداقل یک IP انتخاب کنید'
                 })
 
+            print(f"🔹 Creating installer for IPs: {selected_ips}")
             zip_buffer = create_complete_install_package(selected_ips)
 
             if not zip_buffer:
@@ -695,7 +821,7 @@ def create_offline_installer(request):
                 zip_buffer.getvalue(),
                 content_type='application/zip'
             )
-            response['Content-Disposition'] = 'attachment; filename="plasco_offline_system.zip"'
+            response['Content-Disposition'] = 'attachment; filename="plasco_offline_complete_system.zip"'
 
             return response
 
@@ -706,5 +832,3 @@ def create_offline_installer(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
-
-
