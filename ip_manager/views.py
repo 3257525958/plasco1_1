@@ -607,21 +607,22 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 
             # ==================== فایل نصب اصلی (BAT) - کاملاً بهبود یافته ====================
             main_bat = '''@echo off
+@echo off
 chcp 65001
-title Plasco Offline System - Auto Installer
+title Plasco Offline System - Complete Installer
 setlocal enabledelayedexpansion
 
 echo.
 echo ============================================
-echo    Plasco Offline System - Auto Installer
+echo    Plasco Offline System - Complete Installer
 echo ============================================
 echo.
 
 echo Step 1: Checking Python installation...
-python --version >nul 2>&1
+python --version
 if !errorlevel! neq 0 (
     echo.
-    echo ❌ ERROR: Python not found!
+    echo ❌ ERROR: Python not found or not in PATH!
     echo.
     echo Please install Python 3.8+ from: https://www.python.org/downloads/
     echo Make sure to check "Add Python to PATH" during installation.
@@ -636,23 +637,26 @@ echo ✅ !PYTHON_VERSION! detected
 echo.
 
 echo Step 2: Setting up library stubs for offline mode...
-mkdir plasco_system\\escpos 2>nul
+mkdir plasco_system\escpos 2>nul
 
-echo Copying library stubs...
-copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ kavenegar stub copied) else (echo ⚠️ kavenegar stub copy failed)
-copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
-copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ escpos stub copied) else (echo ⚠️ escpos stub copy failed)
-copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
-copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ serial stub copied) else (echo ⚠️ serial stub copy failed)
-copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
-copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
+echo Copying kavenegar stub...
+copy plasco_system\kavenegar.py plasco_system\account_app\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\cantact_app\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\invoice_app\kavenegar.py >nul 2>&1
+
+echo Copying escpos stub...
+copy plasco_system\escpos.py plasco_system\dashbord_app\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\pos_payment\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\invoice_app\escpos.py >nul 2>&1
+
+echo Setting up escpos package...
+copy plasco_system\escpos.py plasco_system\escpos\__init__.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\escpos\printer.py >nul 2>&1
+
+echo Setting up serial stub...
+copy plasco_system\serial.py plasco_system\dashbord_app\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\pos_payment\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\invoice_app\serial.py >nul 2>&1
 
 echo ✅ Library stubs setup completed
 echo.
@@ -664,70 +668,80 @@ echo.
 cd plasco_system
 
 echo Upgrading pip...
-python -m pip install --upgrade pip >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ pip upgraded) else (echo ⚠️ pip upgrade failed)
+python -m pip install --upgrade pip
+if !errorlevel! neq 0 (
+    echo ❌ Failed to upgrade pip
+    echo Press any key to exit...
+    pause >nul
+    exit /b 1
+)
+echo ✅ pip upgraded successfully
 
 echo Installing core packages...
-python -m pip install Django==4.2.7 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Django installed) else (echo ❌ Django installation failed)
+python -m pip install Django==4.2.7
+if !errorlevel! neq 0 (
+    echo ❌ Failed to install Django
+    echo Press any key to exit...
+    pause >nul
+    exit /b 1
+)
 
-python -m pip install django-cors-headers==4.3.1 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ django-cors-headers installed) else (echo ⚠️ django-cors-headers installation failed)
-
-python -m pip install djangorestframework==3.14.0 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ djangorestframework installed) else (echo ⚠️ djangorestframework installation failed)
-
-python -m pip install Pillow==10.0.1 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Pillow installed) else (echo ⚠️ Pillow installation failed)
+python -m pip install django-cors-headers==4.3.1
+python -m pip install djangorestframework==3.14.0
+python -m pip install Pillow==10.0.1
+echo ✅ Core packages installed
 
 echo Installing utility packages...
-python -m pip install requests==2.31.0 jdatetime==4.1.1 python-barcode==0.15.1 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Utility packages installed) else (echo ⚠️ Some utility packages failed)
-
-python -m pip install python-decouple==3.8 django-filter==23.3 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ More utilities installed) else (echo ⚠️ Some utilities failed)
+python -m pip install requests==2.31.0
+python -m pip install jdatetime==4.1.1
+python -m pip install python-barcode==0.15.1
+python -m pip install python-decouple==3.8
+python -m pip install django-filter==23.3
+echo ✅ Utility packages installed
 
 echo Installing PDF and reporting packages...
-python -m pip install reportlab==4.0.4 xhtml2pdf==0.2.13 openpyxl==3.1.2 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ PDF packages installed) else (echo ⚠️ Some PDF packages failed)
+python -m pip install reportlab==4.0.4
+python -m pip install xhtml2pdf==0.2.13
+python -m pip install openpyxl==3.1.2
+echo ✅ PDF packages installed
 
 echo Installing Persian language packages...
-python -m pip install django-jalali==5.0.0 persian==0.3.1 hazm==0.7.0 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Persian packages installed) else (echo ⚠️ Some Persian packages failed)
+python -m pip install django-jalali==5.0.0
+python -m pip install persian==0.3.1
+python -m pip install hazm==0.7.0
+echo ✅ Persian packages installed
 
 echo Installing remaining packages...
-python -m pip install python-magic-bin==0.4.14 django-import-export==3.3.0 >nul 2>&1
-python -m pip install django-cleanup==8.0.0 python-dateutil==2.8.2 pytz==2023.3 >nul 2>&1
-python -m pip install pyserial==3.5 pymysql==1.1.0 >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Remaining packages installed) else (echo ⚠️ Some packages failed)
+python -m pip install python-magic-bin==0.4.14
+python -m pip install django-import-export==3.3.0
+python -m pip install django-cleanup==8.0.0
+python -m pip install python-dateutil==2.8.2
+python -m pip install pytz==2023.3
+python -m pip install pyserial==3.5
+python -m pip install pymysql==1.1.0
+echo ✅ All packages installed successfully
 
 echo.
-echo ✅ Package installation completed!
-echo.
-
 echo Step 4: Setting up database...
 echo Creating database migrations...
-python manage.py makemigrations --noinput >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Migrations created) else (echo ⚠️ Migrations creation failed)
+python manage.py makemigrations --noinput
+if !errorlevel! neq 0 (
+    echo ⚠️ Migrations creation had issues, continuing anyway...
+)
 
 echo Applying migrations...
-python manage.py migrate --run-syncdb >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Database migrated) else (echo ❌ Database migration failed)
+python manage.py migrate --run-syncdb
+if !errorlevel! neq 0 (
+    echo ❌ Database migration failed!
+    echo Press any key to exit...
+    pause >nul
+    exit /b 1
+)
+echo ✅ Database setup completed
 
 echo Step 5: Creating admin user...
-python manage.py shell -c "
-from django.contrib.auth import get_user_model
-User = get_user_model()
-try:
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
-        print('✅ Admin user created successfully')
-    else:
-        print('✅ Admin user already exists')
-except Exception as e:
-    print('⚠️ Note: Admin user creation skipped -', str(e))
-" >nul 2>&1
-if !errorlevel! equ 0 (echo ✅ Admin user setup completed) else (echo ⚠️ Admin user setup had issues)
+python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+echo ✅ Admin user setup completed
 
 echo.
 echo ============================================
@@ -754,20 +768,23 @@ echo 🚀 Starting server...
 echo ⏹️  To stop server, press CTRL+C
 echo ============================================
 echo.
-timeout /t 3 /nobreak >nul
+echo Waiting 5 seconds before starting server...
+timeout /t 5 /nobreak >nul
 
 :start_server
+echo Starting server on port 8000...
 python manage.py runserver 0.0.0.0:8000
 if !errorlevel! neq 0 (
     echo.
     echo ⚠️ Port 8000 is busy, trying port 8001...
     echo.
+    timeout /t 3 /nobreak >nul
     python manage.py runserver 0.0.0.0:8001
 )
 
 if !errorlevel! neq 0 (
     echo.
-    echo ❌ Server startup failed!
+    echo ❌ Server startup failed on both ports 8000 and 8001!
     echo.
     echo 🔧 Troubleshooting steps:
     echo 1. Check if another server is running
@@ -778,7 +795,6 @@ if !errorlevel! neq 0 (
     echo Press any key to close...
     pause >nul
 )
-'''
             zipf.writestr('START_HERE.bat', main_bat)
 
             # ==================== فایل راهنمای عیب‌یابی ====================
