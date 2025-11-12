@@ -315,7 +315,7 @@ CORS_ALLOW_ALL_ORIGINS = True
             # ایجاد فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco/__init__.py', '')
 
-            # فایل requirements کامل با تمام کتابخانه‌های مورد نیاز - نسخه مطمئن
+            # فایل requirements کامل با تمام کتابخانه‌های مورد نیاز
             requirements_content = '''Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
@@ -357,10 +357,11 @@ urllib3==1.26.18
 certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
+python-escpos==3.0
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
-            # ایجاد فایل جایگزین برای kavenegar
+            # ایجاد فایل‌های جایگزین برای تمام کتابخانه‌های مشکل‌ساز
             kavenegar_stub_content = '''
 """
 ماژول جایگزین برای kavenegar - برای حالت آفلاین
@@ -395,6 +396,70 @@ __all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
 '''
             zipf.writestr('kavenegar.py', kavenegar_stub_content)
 
+            # ایجاد فایل جایگزین برای escpos
+            escpos_stub_content = '''
+"""
+ماژول جایگزین برای escpos - برای حالت آفلاین
+"""
+
+class Serial:
+    def __init__(self, *args, **kwargs):
+        print("OFFLINE MODE: Printer Serial connection disabled")
+
+    def text(self, text):
+        print(f"OFFLINE MODE: Would print: {text}")
+
+    def cut(self):
+        print("OFFLINE MODE: Would cut paper")
+
+    def close(self):
+        print("OFFLINE MODE: Printer connection closed")
+
+class Usb:
+    def __init__(self, *args, **kwargs):
+        print("OFFLINE MODE: Printer USB connection disabled")
+
+    def text(self, text):
+        print(f"OFFLINE MODE: Would print: {text}")
+
+    def cut(self):
+        print("OFFLINE MODE: Would cut paper")
+
+    def close(self):
+        print("OFFLINE MODE: Printer connection closed")
+
+class Network:
+    def __init__(self, *args, **kwargs):
+        print("OFFLINE MODE: Printer Network connection disabled")
+
+    def text(self, text):
+        print(f"OFFLINE MODE: Would print: {text}")
+
+    def cut(self):
+        print("OFFLINE MODE: Would cut paper")
+
+    def close(self):
+        print("OFFLINE MODE: Printer connection closed")
+
+class File:
+    def __init__(self, *args, **kwargs):
+        print("OFFLINE MODE: Printer File output disabled")
+
+    def text(self, text):
+        print(f"OFFLINE MODE: Would print to file: {text}")
+
+    def cut(self):
+        print("OFFLINE MODE: Would cut paper")
+
+    def close(self):
+        print("OFFLINE MODE: Printer file closed")
+
+# توابعی که با import * استفاده می‌شوند
+__all__ = ['Serial', 'Usb', 'Network', 'File']
+'''
+            zipf.writestr('escpos.py', escpos_stub_content)
+            zipf.writestr('escpos/printer.py', escpos_stub_content)
+
             # ایجاد فایل offline_ip_manager.py
             offline_ip_manager_content = '''
 """
@@ -420,7 +485,7 @@ def add_allowed_ip(ip_address):
 '''
             zipf.writestr('plasco/offline_ip_manager.py', offline_ip_manager_content)
 
-            # فایل BAT اصلی با نصب کامل و جایگزینی kavenegar
+            # فایل BAT اصلی با نصب کامل و جایگزینی کتابخانه‌ها
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System
@@ -449,15 +514,21 @@ if %errorlevel% neq 0 (
 echo OK: Python is installed
 echo.
 
-echo Step 2: Creating kavenegar stub for offline mode...
+echo Step 2: Creating library stubs for offline mode...
+mkdir escpos 2>nul
 copy kavenegar.py cantact_app\kavenegar.py >nul 2>&1
 copy kavenegar.py account_app\kavenegar.py >nul 2>&1
 copy kavenegar.py invoice_app\kavenegar.py >nul 2>&1
+copy escpos.py dashbord_app\escpos.py >nul 2>&1
+copy escpos.py pos_payment\escpos.py >nul 2>&1
+copy escpos.py invoice_app\escpos.py >nul 2>&1
+copy escpos.py escpos\__init__.py >nul 2>&1
+copy escpos.py escpos\printer.py >nul 2>&1
 
 echo Step 3: Upgrading pip and setuptools...
 python -m pip install --upgrade pip setuptools wheel
 
-echo Step 4: Installing ALL required packages (except kavenegar)...
+echo Step 4: Installing ALL required packages...
 echo This may take 5-10 minutes. Please wait...
 echo.
 
@@ -473,6 +544,7 @@ pip install jdatetime==4.1.1
 pip install python-barcode==0.15.1
 pip install mysqlclient==2.1.1
 pip install python-decouple==3.8
+pip install python-escpos==3.0
 
 echo Installing additional packages...
 pip install django-filter==23.3
@@ -542,7 +614,10 @@ echo ADMIN CREDENTIALS:
 echo    Username: admin
 echo    Password: admin123
 echo.
-echo NOTE: SMS features are disabled in offline mode
+echo NOTE: 
+echo - SMS features are disabled in offline mode
+echo - Printer features are disabled in offline mode
+echo - All other features work normally
 echo.
 echo Server is starting...
 echo To stop server, press CTRL+C
@@ -575,7 +650,7 @@ Access URLs:
 
 IMPORTANT: 
 - SMS features are DISABLED in offline mode
-- The system will work without kavenegar library
+- Printer features are DISABLED in offline mode  
 - All other features will work normally
 
 Allowed IPs: {', '.join(selected_ips)}
