@@ -315,7 +315,7 @@ CORS_ALLOW_ALL_ORIGINS = True
             # ایجاد فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco/__init__.py', '')
 
-            # فایل requirements کامل با تمام کتابخانه‌های مورد نیاز
+            # فایل requirements کامل با تمام کتابخانه‌های مورد نیاز - نسخه مطمئن
             requirements_content = '''Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
@@ -323,8 +323,6 @@ Pillow==10.0.1
 requests==2.31.0
 jdatetime==4.1.1
 python-barcode==0.15.1
-jalali-date==2.0.0
-django-jalali-date==2.0.0
 kavenegar==1.1.5
 mysqlclient==2.1.1
 python-decouple==3.8
@@ -348,6 +346,18 @@ whitenoise==6.6.0
 psycopg2-binary==2.9.7
 django-storages==1.14.2
 boto3==1.34.0
+django-jalali==5.0.0
+persian==0.3.1
+hazm==0.7.0
+python-dateutil==2.8.2
+pytz==2023.3
+asgiref==3.7.2
+sqlparse==0.4.4
+tzdata==2023.3
+urllib3==1.26.18
+certifi==2023.11.17
+charset-normalizer==3.3.2
+idna==3.6
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
@@ -376,7 +386,7 @@ def add_allowed_ip(ip_address):
 '''
             zipf.writestr('plasco/offline_ip_manager.py', offline_ip_manager_content)
 
-            # فایل BAT اصلی با نصب کامل تمام کتابخانه‌ها
+            # فایل BAT اصلی با نصب کامل و مطمئن
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System
@@ -405,12 +415,67 @@ if %errorlevel% neq 0 (
 echo OK: Python is installed
 echo.
 
-echo Step 2: Upgrading pip...
-python -m pip install --upgrade pip
+echo Step 2: Upgrading pip and setuptools...
+python -m pip install --upgrade pip setuptools wheel
 
 echo Step 3: Installing ALL required packages...
-echo This may take several minutes. Please wait...
-pip install -r requirements_offline.txt
+echo This may take 5-10 minutes. Please wait...
+echo.
+
+echo Installing core packages...
+pip install Django==4.2.7
+pip install django-cors-headers==4.3.1
+pip install djangorestframework==3.14.0
+pip install Pillow==10.0.1
+
+echo Installing utility packages...
+pip install requests==2.31.0
+pip install jdatetime==4.1.1
+pip install python-barcode==0.15.1
+pip install kavenegar==1.1.5
+pip install mysqlclient==2.1.1
+pip install python-decouple==3.8
+
+echo Installing additional packages...
+pip install django-filter==23.3
+pip install channels==4.0.0
+pip install channels-redis==4.1.0
+pip install celery==5.3.4
+pip install redis==5.0.1
+pip install django-celery-results==2.5.1
+
+echo Installing file and export packages...
+pip install reportlab==4.0.4
+pip install xhtml2pdf==0.2.13
+pip install python-magic==0.4.27
+pip install openpyxl==3.1.2
+pip install django-import-export==3.3.0
+
+echo Installing Persian and date packages...
+pip install django-jalali==5.0.0
+pip install persian==0.3.1
+pip install hazm==0.7.0
+pip install python-dateutil==2.8.2
+
+echo Installing deployment packages...
+pip install gunicorn==21.2.0
+pip install whitenoise==6.6.0
+pip install psycopg2-binary==2.9.7
+pip install django-storages==1.14.2
+pip install boto3==1.34.0
+
+echo Installing remaining packages...
+pip install django-cleanup==8.0.0
+pip install django-debug-toolbar==4.2.0
+pip install django-extensions==3.2.3
+pip install pytz==2023.3
+pip install asgiref==3.7.2
+pip install sqlparse==0.4.4
+pip install tzdata==2023.3
+pip install urllib3==1.26.18
+pip install certifi==2023.11.17
+pip install charset-normalizer==3.3.2
+pip install idna==3.6
 
 echo.
 echo Step 4: Setting up database...
@@ -468,8 +533,10 @@ Access URLs:
 - Username: admin
 - Password: admin123
 
-Note: First time installation will download all required packages.
-This may take several minutes depending on your internet speed.
+IMPORTANT: 
+- Make sure you have internet connection for first-time installation
+- The installer will download about 50 packages (around 200MB)
+- This may take 5-10 minutes depending on your internet speed
 
 Allowed IPs: {', '.join(selected_ips)}
 Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
