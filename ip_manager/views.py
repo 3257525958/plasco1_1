@@ -393,9 +393,9 @@ def home_view(request):
         <head>
             <title>Plasco Offline System</title>
             <style>
-                body {{ font-family: Tahoma; text-align: center; padding: 50px; }}
-                .success {{ color: green; font-size: 24px; }}
-                .info {{ color: blue; margin: 20px 0; }}
+                body { font-family: Tahoma; text-align: center; padding: 50px; }
+                .success { color: green; font-size: 24px; }
+                .info { color: blue; margin: 20px 0; }
             </style>
         </head>
         <body>
@@ -605,10 +605,11 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 '''
             zipf.writestr('plasco_system/serial.py', serial_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) - کاملاً ساده‌سازی شده ====================
+            # ==================== فایل نصب اصلی (BAT) - کاملاً بهبود یافته ====================
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System - Auto Installer
+setlocal enabledelayedexpansion
 
 echo.
 echo ============================================
@@ -618,17 +619,20 @@ echo.
 
 echo Step 1: Checking Python installation...
 python --version >nul 2>&1
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo.
-    echo ERROR: Python not found!
+    echo ❌ ERROR: Python not found!
     echo.
     echo Please install Python 3.8+ from: https://www.python.org/downloads/
+    echo Make sure to check "Add Python to PATH" during installation.
     echo.
-    pause
+    echo Press any key to exit...
+    pause >nul
     exit /b 1
 )
 
-echo ✅ Python is installed
+for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
+echo ✅ !PYTHON_VERSION! detected
 echo.
 
 echo Step 2: Setting up library stubs for offline mode...
@@ -636,12 +640,15 @@ mkdir plasco_system\\escpos 2>nul
 
 echo Copying library stubs...
 copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ kavenegar stub copied) else (echo ⚠️ kavenegar stub copy failed)
 copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
 copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
 copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ escpos stub copied) else (echo ⚠️ escpos stub copy failed)
 copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
 copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
 copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ serial stub copied) else (echo ⚠️ serial stub copy failed)
 copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
 copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
 copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
@@ -651,55 +658,61 @@ echo ✅ Library stubs setup completed
 echo.
 
 echo Step 3: Installing required packages...
-echo This may take 5-10 minutes. Please wait...
+echo This may take 5-15 minutes. Please wait...
 echo.
 
 cd plasco_system
 
-python -m pip install --upgrade pip
+echo Upgrading pip...
+python -m pip install --upgrade pip >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ pip upgraded) else (echo ⚠️ pip upgrade failed)
 
 echo Installing core packages...
-pip install Django==4.2.7
-pip install django-cors-headers==4.3.1
-pip install djangorestframework==3.14.0
-pip install Pillow==10.0.1
+python -m pip install Django==4.2.7 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Django installed) else (echo ❌ Django installation failed)
+
+python -m pip install django-cors-headers==4.3.1 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ django-cors-headers installed) else (echo ⚠️ django-cors-headers installation failed)
+
+python -m pip install djangorestframework==3.14.0 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ djangorestframework installed) else (echo ⚠️ djangorestframework installation failed)
+
+python -m pip install Pillow==10.0.1 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Pillow installed) else (echo ⚠️ Pillow installation failed)
 
 echo Installing utility packages...
-pip install requests==2.31.0
-pip install jdatetime==4.1.1
-pip install python-barcode==0.15.1
-pip install python-decouple==3.8
-pip install django-filter==23.3
+python -m pip install requests==2.31.0 jdatetime==4.1.1 python-barcode==0.15.1 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Utility packages installed) else (echo ⚠️ Some utility packages failed)
+
+python -m pip install python-decouple==3.8 django-filter==23.3 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ More utilities installed) else (echo ⚠️ Some utilities failed)
 
 echo Installing PDF and reporting packages...
-pip install reportlab==4.0.4
-pip install xhtml2pdf==0.2.13
-pip install openpyxl==3.1.2
+python -m pip install reportlab==4.0.4 xhtml2pdf==0.2.13 openpyxl==3.1.2 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ PDF packages installed) else (echo ⚠️ Some PDF packages failed)
 
 echo Installing Persian language packages...
-pip install django-jalali==5.0.0
-pip install persian==0.3.1
-pip install hazm==0.7.0
+python -m pip install django-jalali==5.0.0 persian==0.3.1 hazm==0.7.0 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Persian packages installed) else (echo ⚠️ Some Persian packages failed)
 
 echo Installing remaining packages...
-pip install python-magic-bin==0.4.14
-pip install django-import-export==3.3.0
-pip install django-cleanup==8.0.0
-pip install python-dateutil==2.8.2
-pip install pytz==2023.3
-pip install pyserial==3.5
-pip install pymysql==1.1.0
+python -m pip install python-magic-bin==0.4.14 django-import-export==3.3.0 >nul 2>&1
+python -m pip install django-cleanup==8.0.0 python-dateutil==2.8.2 pytz==2023.3 >nul 2>&1
+python -m pip install pyserial==3.5 pymysql==1.1.0 >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Remaining packages installed) else (echo ⚠️ Some packages failed)
 
 echo.
-echo ✅ All packages installed successfully!
+echo ✅ Package installation completed!
 echo.
 
 echo Step 4: Setting up database...
 echo Creating database migrations...
-python manage.py makemigrations --noinput
+python manage.py makemigrations --noinput >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Migrations created) else (echo ⚠️ Migrations creation failed)
 
 echo Applying migrations...
-python manage.py migrate --run-syncdb
+python manage.py migrate --run-syncdb >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Database migrated) else (echo ❌ Database migration failed)
 
 echo Step 5: Creating admin user...
 python manage.py shell -c "
@@ -713,7 +726,8 @@ try:
         print('✅ Admin user already exists')
 except Exception as e:
     print('⚠️ Note: Admin user creation skipped -', str(e))
-"
+" >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Admin user setup completed) else (echo ⚠️ Admin user setup had issues)
 
 echo.
 echo ============================================
@@ -731,20 +745,84 @@ echo 🔑 Admin Credentials:
 echo    Username: admin
 echo    Password: admin123
 echo.
+echo 📝 Important Notes:
+echo    - SMS features are disabled in offline mode
+echo    - Printer features are disabled in offline mode
+echo    - All other features work normally
+echo.
 echo 🚀 Starting server...
 echo ⏹️  To stop server, press CTRL+C
 echo ============================================
 echo.
+timeout /t 3 /nobreak >nul
 
+:start_server
 python manage.py runserver 0.0.0.0:8000
-
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo.
-    echo ⚠️ Server startup failed. Trying alternative port...
+    echo ⚠️ Port 8000 is busy, trying port 8001...
+    echo.
     python manage.py runserver 0.0.0.0:8001
+)
+
+if !errorlevel! neq 0 (
+    echo.
+    echo ❌ Server startup failed!
+    echo.
+    echo 🔧 Troubleshooting steps:
+    echo 1. Check if another server is running
+    echo 2. Try manually: python manage.py runserver 0.0.0.0:8002
+    echo 3. Check firewall settings
+    echo 4. Ensure no other application is using ports 8000-8001
+    echo.
+    echo Press any key to close...
+    pause >nul
 )
 '''
             zipf.writestr('START_HERE.bat', main_bat)
+
+            # ==================== فایل راهنمای عیب‌یابی ====================
+            troubleshooting_content = '''
+Plasco Offline System - Troubleshooting Guide
+============================================
+
+اگر اسکریپت با مشکل مواجه شد:
+
+1. مشکل: صفحه سریع بسته می‌شود
+   راه حل: فایل START_HERE.bat را با راست کلیک و "Edit" باز کنید
+   سپس خط آخر را پیدا کرده و قبل از آن "pause" اضافه کنید
+
+2. مشکل: پایتون پیدا نمی‌شود
+   راه حل: 
+   - پایتون 3.8 یا بالاتر نصب کنید
+   - در حین نصب، گزینه "Add Python to PATH" را انتخاب کنید
+   - از آدرس: https://www.python.org/downloads/
+
+3. مشکل: خطا در نصب پکیج‌ها
+   راه حل:
+   - دستور زیر را در cmd اجرا کنید:
+     cd plasco_system
+     pip install -r requirements_offline.txt
+
+4. مشکل: پورت 8000 مشغول است
+   راه حل:
+   - دستور زیر را اجرا کنید:
+     python manage.py runserver 0.0.0.0:8001
+
+5. مشکل: دیتابیس ایجاد نمی‌شود
+   راه حل:
+   - فایل db.sqlite3 را حذف کنید
+   - سپس دستورات زیر را اجرا کنید:
+     python manage.py migrate --run-syncdb
+
+دستورات مفید:
+- راه‌اندازی سرور: python manage.py runserver 0.0.0.0:8000
+- ایجاد کاربر ادمین: python manage.py createsuperuser
+- بررسی migrations: python manage.py showmigrations
+
+برای پشتیبانی بیشتر، لاگ خطاها را بررسی کنید.
+'''
+            zipf.writestr('TROUBLESHOOTING.txt', troubleshooting_content)
 
             # ==================== فایل‌های راهنما ====================
 
@@ -756,7 +834,7 @@ Plasco Offline System - Complete Standalone Installation
 🚀 Quick Start:
 1. Extract ALL files to a folder
 2. Double-click "START_HERE.bat"
-3. Wait for automatic installation (5-10 minutes)
+3. Wait for automatic installation (5-15 minutes)
 4. System will start automatically
 
 🌐 Access Information:
@@ -786,9 +864,9 @@ Plasco Offline System - Complete Standalone Installation
 - This is a fully self-contained offline system
 
 🛠️ Troubleshooting:
-1. If port 8000 is busy, system will use port 8001
-2. First run may take 5-10 minutes
-3. Ensure you have internet connection for first-time setup
+- If installation fails, see TROUBLESHOOTING.txt
+- If port 8000 is busy, system will use port 8001
+- First run may take 5-15 minutes
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
