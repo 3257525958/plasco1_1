@@ -325,6 +325,29 @@ jdatetime==4.1.1
 python-barcode==0.15.1
 jalali-date==2.0.0
 django-jalali-date==2.0.0
+kavenegar==1.1.5
+mysqlclient==2.1.1
+python-decouple==3.8
+django-filter==23.3
+channels==4.0.0
+channels-redis==4.1.0
+celery==5.3.4
+redis==5.0.1
+django-celery-results==2.5.1
+django-celery-beat==2.5.0
+reportlab==4.0.4
+xhtml2pdf==0.2.13
+python-magic==0.4.27
+openpyxl==3.1.2
+django-import-export==3.3.0
+django-cleanup==8.0.0
+django-debug-toolbar==4.2.0
+django-extensions==3.2.3
+gunicorn==21.2.0
+whitenoise==6.6.0
+psycopg2-binary==2.9.7
+django-storages==1.14.2
+boto3==1.34.0
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
@@ -382,43 +405,27 @@ if %errorlevel% neq 0 (
 echo OK: Python is installed
 echo.
 
-echo Step 2: Installing required packages...
-echo Installing Django and basic packages...
-pip install Django==4.2.7
-pip install django-cors-headers==4.3.1
-pip install djangorestframework==3.14.0
-pip install Pillow==10.0.1
-pip install requests==2.31.0
-echo Installing Persian date libraries...
-pip install jdatetime==4.1.1
-pip install python-barcode==0.15.1
-pip install jalali-date==2.0.0
-pip install django-jalali-date==2.0.0
+echo Step 2: Upgrading pip...
+python -m pip install --upgrade pip
+
+echo Step 3: Installing ALL required packages...
+echo This may take several minutes. Please wait...
+pip install -r requirements_offline.txt
 
 echo.
-echo Step 3: Setting up database...
+echo Step 4: Setting up database...
 python manage.py migrate
 if %errorlevel% neq 0 (
     echo.
-    echo ERROR: Database setup failed!
-    echo.
-    echo Trying alternative approach...
+    echo WARNING: Standard migration failed, trying alternative...
     python manage.py migrate --run-syncdb
-    if %errorlevel% neq 0 (
-        echo.
-        echo ERROR: Database setup still failed!
-        echo.
-        echo Press any key to exit...
-        pause >nul
-        exit /b 1
-    )
 )
 
-echo Step 4: Creating admin user...
+echo Step 5: Creating admin user...
 python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
 
 echo.
-echo Step 5: Starting Plasco Offline System...
+echo Step 6: Starting Plasco Offline System...
 echo.
 echo ============================================
 echo    SYSTEM IS READY!
@@ -453,13 +460,16 @@ Plasco Offline System - Installation Guide
 Quick Start:
 1. Extract ALL files to a folder
 2. Double click "START_HERE.bat"
-3. Wait for system to start
+3. Wait for system to start (may take 5-10 minutes for first time)
 
 Access URLs:
 - Main System: http://localhost:8000
 - Admin Panel: http://localhost:8000/admin
 - Username: admin
 - Password: admin123
+
+Note: First time installation will download all required packages.
+This may take several minutes depending on your internet speed.
 
 Allowed IPs: {', '.join(selected_ips)}
 Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
