@@ -10,6 +10,10 @@ import io
 import os
 from pathlib import Path
 import tempfile
+import logging
+
+# تنظیم لاگر
+logger = logging.getLogger(__name__)
 
 
 def manage_ips(request):
@@ -35,6 +39,7 @@ def list_ips(request):
 
         return JsonResponse({'status': 'success', 'ips': ip_list})
     except Exception as e:
+        logger.error(f"Error in list_ips: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
@@ -48,6 +53,10 @@ def add_ip(request):
 
             if not ip_address:
                 return JsonResponse({'status': 'error', 'message': 'آدرس IP الزامی است'})
+
+            # اعتبارسنجی فرمت IP
+            if not validate_ip_address(ip_address):
+                return JsonResponse({'status': 'error', 'message': 'فرمت IP نامعتبر است'})
 
             if AllowedIP.objects.filter(ip_address=ip_address).exists():
                 return JsonResponse({'status': 'error', 'message': 'این IP قبلاً ثبت شده است'})
@@ -64,6 +73,7 @@ def add_ip(request):
             })
 
         except Exception as e:
+            logger.error(f"Error in add_ip: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'خطا در افزودن IP: {str(e)}'})
     else:
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
@@ -77,6 +87,7 @@ def delete_ip(request, ip_id):
         ip.delete()
         return JsonResponse({'status': 'success', 'message': 'IP با موفقیت حذف شد'})
     except Exception as e:
+        logger.error(f"Error in delete_ip: {str(e)}")
         return JsonResponse({'status': 'error', 'message': f'خطا در حذف IP: {str(e)}'})
 
 
@@ -89,6 +100,9 @@ def update_ip(request, ip_id):
             ip_address = request.POST.get('ip_address')
             description = request.POST.get('description', '')
 
+            if not validate_ip_address(ip_address):
+                return JsonResponse({'status': 'error', 'message': 'فرمت IP نامعتبر است'})
+
             if AllowedIP.objects.filter(ip_address=ip_address).exclude(id=ip_id).exists():
                 return JsonResponse({'status': 'error', 'message': 'این IP قبلاً ثبت شده است'})
 
@@ -98,6 +112,7 @@ def update_ip(request, ip_id):
 
             return JsonResponse({'status': 'success', 'message': 'IP با موفقیت ویرایش شد'})
         except Exception as e:
+            logger.error(f"Error in update_ip: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'خطا در ویرایش IP: {str(e)}'})
     else:
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
@@ -123,9 +138,26 @@ def toggle_ip(request, ip_id):
             ip.save()
             return JsonResponse({'status': 'success', 'message': message})
         except Exception as e:
+            logger.error(f"Error in toggle_ip: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'خطا در تغییر وضعیت IP: {str(e)}'})
     else:
         return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
+
+def validate_ip_address(ip_address):
+    """اعتبارسنجی آدرس IP"""
+    import re
+    pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    if not re.match(pattern, ip_address):
+        return False
+
+    # بررسی اینکه هر بخش بین 0-255 باشد
+    parts = ip_address.split('.')
+    for part in parts:
+        if not 0 <= int(part) <= 255:
+            return False
+
+    return True
 
 
 def create_complete_install_package(selected_ips):
@@ -138,10 +170,10 @@ def create_complete_install_package(selected_ips):
         temp_path = temp_file.name
         temp_file.close()
 
-        print(f"🔹 Creating ZIP file at: {temp_path}")
+        logger.info(f"Creating ZIP file at: {temp_path}")
 
         with zipfile.ZipFile(temp_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            print("📦 Creating complete installation package...")
+            logger.info("📦 Creating complete installation package...")
 
             # ==================== فایل‌های اصلی پروژه ====================
 
@@ -149,7 +181,7 @@ def create_complete_install_package(selected_ips):
             manage_path = BASE_DIR / 'manage.py'
             if manage_path.exists():
                 zipf.write(manage_path, 'plasco_system/manage.py')
-                print("✅ Added: manage.py")
+                logger.info("✅ Added: manage.py")
 
             # پوشه اصلی پروژه (plasco)
             plasco_path = BASE_DIR / 'plasco'
@@ -160,7 +192,7 @@ def create_complete_install_package(selected_ips):
                             file_path = os.path.join(root, file)
                             arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                             zipf.write(file_path, arcname)
-                print("✅ Added plasco folder completely")
+                logger.info("✅ Added plasco folder completely")
 
             # ==================== تمام اپلیکیشن‌ها ====================
             app_folders = [
@@ -178,7 +210,7 @@ def create_complete_install_package(selected_ips):
                                 file_path = os.path.join(root, file)
                                 arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                                 zipf.write(file_path, arcname)
-                    print(f"✅ Added app: {app}")
+                    logger.info(f"✅ Added app: {app}")
 
             # ==================== فایل‌های قالب و استاتیک ====================
 
@@ -190,7 +222,7 @@ def create_complete_install_package(selected_ips):
                         file_path = os.path.join(root, file)
                         arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                         zipf.write(file_path, arcname)
-                print("✅ Added templates folder")
+                logger.info("✅ Added templates folder")
 
             # پوشه static
             static_path = BASE_DIR / 'static'
@@ -200,22 +232,27 @@ def create_complete_install_package(selected_ips):
                         file_path = os.path.join(root, file)
                         arcname = os.path.join('plasco_system', os.path.relpath(file_path, BASE_DIR))
                         zipf.write(file_path, arcname)
-                print("✅ Added static folder")
+                logger.info("✅ Added static folder")
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
-            # فایل settings_offline.py
+            # فایل settings_offline.py - بهبود یافته برای پایتون 10
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
+Compatible with Python 3.8+
 Allowed IPs: {selected_ips}
 Generated: {timezone.now().strftime("%Y/%m/%d %H:%M")}
 """
 
 from pathlib import Path
 import os
+import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Add apps directory to Python path
+sys.path.append(os.path.join(BASE_DIR, 'apps'))
 
 SECRET_KEY = 'django-insecure-offline-plasco-2024-secret-key-change-in-production'
 DEBUG = True
@@ -230,10 +267,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Third party apps
+    'rest_framework',
+    'corsheaders',
+    'django_filters',
+    'import_export',
+    'django_cleanup',
+
     # Local apps
     'account_app',
     'dashbord_app',
-    'cantact_app', 
+    'cantact_app',
     'invoice_app',
     'it_app',
     'pos_payment',
@@ -248,6 +292,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -264,6 +309,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {{
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -296,23 +342,29 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# غیرفعال کردن چک‌های امنیتی برای نصب آسان
-SILENCED_SYSTEM_CHECKS = [
-    'security.W001',
-    'security.W002', 
-    'security.W004', 
-    'security.W008', 
-    'security.W009',
-    'security.W019',
-    'security.W020',
-    'urls.W005',
-    'models.W042',
-]
+# Security settings for offline mode
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
-# حالت آفلاین
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# REST Framework settings
+REST_FRAMEWORK = {{
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
+}}
+
+# Offline mode flag
 OFFLINE_MODE = True
 
-print("🟢 Plasco Offline Mode - All security checks disabled for easy installation")
+print("🟢 Plasco Offline Mode Activated - SQLite Database")
 '''
             zipf.writestr('plasco_system/plasco/settings_offline.py', settings_content.strip())
 
@@ -322,8 +374,8 @@ print("🟢 Plasco Offline Mode - All security checks disabled for easy installa
             # فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco_system/plasco/__init__.py', '')
 
-            # ==================== فایل requirements ====================
-            requirements_content = '''# Plasco Offline System - Requirements
+            # ==================== فایل requirements به‌روزرسانی شده ====================
+            requirements_content = '''# Plasco Offline System - Python 3.8+ Compatible
 Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
@@ -339,13 +391,15 @@ openpyxl==3.1.2
 django-jalali==5.0.0
 persian==0.3.1
 hazm==0.7.0
-python-magic-bin==0.4.14
+python-magic==0.4.27
 django-import-export==3.3.0
 django-cleanup==8.0.0
 python-dateutil==2.8.2
 pytz==2023.3
 pyserial==3.5
 pymysql==1.1.0
+sqlparse==0.4.4
+asgiref==3.7.2
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
@@ -384,6 +438,7 @@ from django.apps import AppConfig
 class {config_class}(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = '{app_name}'
+    verbose_name = '{app_name}'
 '''
                 zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
 
@@ -392,29 +447,86 @@ class {config_class}(AppConfig):
 from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
+from django.views.generic import RedirectView
 
 def home_view(request):
     return HttpResponse("""
     <html>
         <head>
             <title>Plasco Offline System</title>
+            <meta charset="utf-8">
             <style>
-                body { font-family: Tahoma; text-align: center; padding: 50px; }
-                .success { color: green; font-size: 24px; }
-                .info { color: blue; margin: 20px 0; }
+                body { 
+                    font-family: Tahoma, Arial, sans-serif; 
+                    text-align: center; 
+                    padding: 50px; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    min-height: 100vh;
+                    margin: 0;
+                }
+                .container { 
+                    background: rgba(255,255,255,0.1); 
+                    padding: 40px; 
+                    border-radius: 15px; 
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                .success { 
+                    color: #4CAF50; 
+                    font-size: 28px; 
+                    margin-bottom: 20px;
+                }
+                .info { 
+                    color: #E3F2FD; 
+                    margin: 20px 0; 
+                    line-height: 1.6;
+                }
+                ul { 
+                    list-style: none; 
+                    padding: 0; 
+                    margin: 20px 0;
+                }
+                li { 
+                    margin: 10px 0; 
+                    font-size: 18px;
+                }
+                a { 
+                    color: #FFD54F; 
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+                a:hover { 
+                    text-decoration: underline;
+                }
+                .credential-box {
+                    background: rgba(255,255,255,0.2);
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                }
             </style>
         </head>
         <body>
-            <h1 class="success">✅ Plasco Offline System Installed Successfully!</h1>
-            <div class="info">
-                <p><strong>System is running in OFFLINE MODE</strong></p>
-                <p>Access URLs:</p>
-                <ul style="list-style: none; padding: 0;">
-                    <li>🏠 Main System: <a href="/">Home Page</a></li>
-                    <li>⚙️ Admin Panel: <a href="/admin/">Admin</a></li>
-                    <li>🔧 IP Management: <a href="/ip/ip_manager/">Manage IPs</a></li>
-                </ul>
-                <p>Admin Credentials: admin / admin123</p>
+            <div class="container">
+                <h1 class="success">✅ Plasco Offline System Installed Successfully!</h1>
+                <div class="info">
+                    <p><strong>System is running in OFFLINE MODE</strong></p>
+                    <p>Access URLs:</p>
+                    <ul>
+                        <li>🏠 Main System: <a href="/">Home Page</a></li>
+                        <li>⚙️ Admin Panel: <a href="/admin/">Admin</a></li>
+                        <li>🔧 IP Management: <a href="/ip/ip_manager/">Manage IPs</a></li>
+                    </ul>
+                    <div class="credential-box">
+                        <p><strong>Admin Credentials:</strong></p>
+                        <p>Username: <strong>admin</strong></p>
+                        <p>Password: <strong>admin123</strong></p>
+                    </div>
+                    <p>First run may take a few minutes to complete setup.</p>
+                </div>
             </div>
         </body>
     </html>
@@ -424,6 +536,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_view, name='home'),
     path('ip/', include('ip_manager.urls')),
+    path('offline/', include('offline_ins.urls')),
 ]
 '''
             zipf.writestr('plasco_system/plasco/urls.py', urls_content)
@@ -473,10 +586,10 @@ class Serial:
         pass
 
     def text(self, text):
-        pass
+        print(f"[ESC/POS SIMULATION] Printing: {text}")
 
     def cut(self):
-        pass
+        print("[ESC/POS SIMULATION] Paper cut")
 
     def close(self):
         pass
@@ -486,10 +599,10 @@ class Usb:
         pass
 
     def text(self, text):
-        pass
+        print(f"[ESC/POS SIMULATION] USB Printing: {text}")
 
     def cut(self):
-        pass
+        print("[ESC/POS SIMULATION] USB Paper cut")
 
     def close(self):
         pass
@@ -499,10 +612,10 @@ class Network:
         pass
 
     def text(self, text):
-        pass
+        print(f"[ESC/POS SIMULATION] Network Printing: {text}")
 
     def cut(self):
-        pass
+        print("[ESC/POS SIMULATION] Network Paper cut")
 
     def close(self):
         pass
@@ -512,10 +625,10 @@ class File:
         pass
 
     def text(self, text):
-        pass
+        print(f"[ESC/POS SIMULATION] File Printing: {text}")
 
     def cut(self):
-        pass
+        print("[ESC/POS SIMULATION] File Paper cut")
 
     def close(self):
         pass
@@ -543,12 +656,15 @@ class Serial:
 
     def open(self):
         self.is_open = True
+        print(f"[SERIAL SIMULATION] Opened port: {self.port}")
         return True
 
     def close(self):
         self.is_open = False
+        print(f"[SERIAL SIMULATION] Closed port: {self.port}")
 
     def write(self, data):
+        print(f"[SERIAL SIMULATION] Writing data: {data}")
         return len(data)
 
     def read(self, size=1):
@@ -624,7 +740,7 @@ echo ============================================
 echo.
 
 echo Step 1: Checking Python installation...
-python --version
+python --version >nul 2>&1
 if !errorlevel! neq 0 (
     echo.
     echo ❌ ERROR: Python not found or not in PATH!
@@ -682,60 +798,89 @@ if !errorlevel! neq 0 (
 )
 echo ✅ pip upgraded successfully
 
-echo Installing core packages...
+echo Installing packages one by one for better error handling...
+
+:: Core Django packages
+echo Installing Django...
 python -m pip install Django==4.2.7
-if !errorlevel! neq 0 (
-    echo ❌ Failed to install Django
-    echo Press any key to exit...
-    pause >nul
-    exit /b 1
-)
+if !errorlevel! neq 0 goto :pip_fail
 
+echo Installing django-cors-headers...
 python -m pip install django-cors-headers==4.3.1
-python -m pip install djangorestframework==3.14.0
-python -m pip install Pillow==10.0.1
-echo ✅ Core packages installed
+if !errorlevel! neq 0 goto :pip_fail
 
+echo Installing djangorestframework...
+python -m pip install djangorestframework==3.14.0
+if !errorlevel! neq 0 goto :pip_fail
+
+echo Installing Pillow...
+python -m pip install Pillow==10.0.1
+if !errorlevel! neq 0 goto :pip_fail
+
+:: Utility packages
 echo Installing utility packages...
 python -m pip install requests==2.31.0
 python -m pip install jdatetime==4.1.1
 python -m pip install python-barcode==0.15.1
 python -m pip install python-decouple==3.8
 python -m pip install django-filter==23.3
-echo ✅ Utility packages installed
 
-echo Installing PDF and reporting packages...
+:: PDF and reporting
+echo Installing PDF packages...
 python -m pip install reportlab==4.0.4
 python -m pip install xhtml2pdf==0.2.13
 python -m pip install openpyxl==3.1.2
-echo ✅ PDF packages installed
 
-echo Installing Persian language packages...
+:: Persian language support
+echo Installing Persian packages...
 python -m pip install django-jalali==5.0.0
 python -m pip install persian==0.3.1
 python -m pip install hazm==0.7.0
-echo ✅ Persian packages installed
 
+:: Remaining packages
 echo Installing remaining packages...
-python -m pip install python-magic-bin==0.4.14
+python -m pip install python-magic==0.4.27
 python -m pip install django-import-export==3.3.0
 python -m pip install django-cleanup==8.0.0
 python -m pip install python-dateutil==2.8.2
 python -m pip install pytz==2023.3
 python -m pip install pyserial==3.5
 python -m pip install pymysql==1.1.0
-echo ✅ All packages installed successfully
+python -m pip install sqlparse==0.4.4
+python -m pip install asgiref==3.7.2
 
+echo ✅ All packages installed successfully
+goto :db_setup
+
+:pip_fail
+echo.
+echo ❌ Package installation failed!
+echo Please check your internet connection and try again.
+echo.
+echo Press any key to exit...
+pause >nul
+exit /b 1
+
+:db_setup
 echo.
 echo Step 4: Setting up database...
 echo Creating database migrations...
-python manage.py makemigrations --noinput
-if !errorlevel! neq 0 (
-    echo ⚠️ Migrations creation had issues, continuing anyway...
-)
+
+:: Create migrations for each app
+python manage.py makemigrations account_app --noinput
+python manage.py makemigrations dashbord_app --noinput
+python manage.py makemigrations cantact_app --noinput
+python manage.py makemigrations invoice_app --noinput
+python manage.py makemigrations it_app --noinput
+python manage.py makemigrations pos_payment --noinput
+python manage.py makemigrations sync_app --noinput
+python manage.py makemigrations control_panel --noinput
+python manage.py makemigrations offline_ins --noinput
+python manage.py makemigrations ip_manager --noinput
+python manage.py makemigrations home_app --noinput
 
 echo Applying migrations...
-python manage.py migrate --run-syncdb
+python manage.py migrate --noinput
 if !errorlevel! neq 0 (
     echo ❌ Database migration failed!
     echo Press any key to exit...
@@ -745,7 +890,15 @@ if !errorlevel! neq 0 (
 echo ✅ Database setup completed
 
 echo Step 5: Creating admin user...
-python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+if not User.objects.filter(username='admin').exists():
+    User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
+    print('✅ Admin user created successfully')
+else:
+    print('ℹ️ Admin user already exists')
+"
 echo ✅ Admin user setup completed
 
 echo.
@@ -763,11 +916,6 @@ echo.
 echo 🔑 Admin Credentials:
 echo    Username: admin
 echo    Password: admin123
-echo.
-echo 📝 Important Notes:
-echo    - SMS features are disabled in offline mode
-echo    - Printer features are disabled in offline mode
-echo    - All other features work normally
 echo.
 echo 🚀 Starting server...
 echo ⏹️  To stop server, press CTRL+C
@@ -789,13 +937,12 @@ if !errorlevel! neq 0 (
 
 if !errorlevel! neq 0 (
     echo.
-    echo ❌ Server startup failed on both ports 8000 and 8001!
+    echo ❌ Server startup failed!
     echo.
-    echo 🔧 Troubleshooting steps:
-    echo 1. Check if another server is running
-    echo 2. Try manually: python manage.py runserver 0.0.0.0:8002
+    echo 🔧 Troubleshooting:
+    echo 1. Check if port 8000 or 8001 are busy
+    echo 2. Try: python manage.py runserver 0.0.0.0:8002
     echo 3. Check firewall settings
-    echo 4. Ensure no other application is using ports 8000-8001
     echo.
     echo Press any key to close...
     pause >nul
@@ -830,10 +977,23 @@ If the script fails:
    - Run manually:
      python manage.py runserver 0.0.0.0:8001
 
+5. Problem: Database migration fails
+   Solution:
+   - Delete db.sqlite3 file
+   - Run: python manage.py migrate
+
 Useful Commands:
 - Start server: python manage.py runserver 0.0.0.0:8000
 - Create admin: python manage.py createsuperuser
 - Check migrations: python manage.py showmigrations
+- Make migrations: python manage.py makemigrations
+
+Common Issues:
+- If "python-magic" fails on Windows, install manually:
+  pip install python-magic-bin
+- If "hazm" fails, try:
+  pip install hazm --no-deps
+- For Persian text issues, ensure UTF-8 encoding
 '''
             zipf.writestr('TROUBLESHOOTING.txt', troubleshooting_content)
 
@@ -855,17 +1015,25 @@ Access Information:
 - Admin Username: admin
 - Admin Password: admin123
 
+System Requirements:
+- Windows 7/8/10/11
+- Python 3.8+ (automatically checked)
+- 2GB RAM minimum
+- 500MB free disk space
+
 Features:
 ✅ Complete system functionality
 ✅ Persian language support
 ✅ SQLite database
 ✅ Automatic package installation
 ✅ Admin user creation
+✅ IP access management
 
 Limitations in Offline Mode:
 ❌ SMS functionality disabled
-❌ Printer functionality disabled
+❌ Printer functionality disabled (simulated)
 ❌ External API calls disabled
+❌ Real serial communication disabled
 
 Allowed IP Addresses:
 {chr(10).join(f"   - {ip}" for ip in selected_ips)}
@@ -878,10 +1046,17 @@ Troubleshooting:
 - If installation fails, see TROUBLESHOOTING.txt
 - If port 8000 is busy, system will use port 8001
 - First run may take 5-15 minutes
+- Ensure no antivirus is blocking the installation
+
+Development Notes:
+- Database: SQLite (db.sqlite3)
+- Framework: Django 4.2.7
+- Python: 3.8+
+- All sensitive features are simulated in offline mode
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
 
-        print(f"✅ ZIP file created successfully: {temp_path}")
+        logger.info(f"✅ ZIP file created successfully: {temp_path}")
 
         # خواندن محتوای فایل ZIP
         with open(temp_path, 'rb') as f:
@@ -893,13 +1068,13 @@ Troubleshooting:
         return zip_content
 
     except Exception as e:
-        print(f"❌ Error in create_complete_install_package: {str(e)}")
+        logger.error(f"❌ Error in create_complete_install_package: {str(e)}")
         # تمیزکاری فایل موقت در صورت خطا
         try:
-            if 'temp_path' in locals():
+            if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.unlink(temp_path)
-        except:
-            pass
+        except Exception as cleanup_error:
+            logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
 
 
@@ -917,10 +1092,24 @@ def create_offline_installer(request):
                     'message': 'لطفاً حداقل یک IP انتخاب کنید'
                 })
 
-            print(f"🔹 Creating installer for IPs: {selected_ips}")
+            logger.info(f"Creating installer for IPs: {selected_ips}")
+
+            # اعتبارسنجی IPهای انتخاب شده
+            valid_ips = []
+            for ip in selected_ips:
+                if validate_ip_address(ip):
+                    valid_ips.append(ip)
+                else:
+                    logger.warning(f"Invalid IP address skipped: {ip}")
+
+            if not valid_ips:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'هیچ IP معتبری انتخاب نشده است'
+                })
 
             # ایجاد پکیج
-            zip_content = create_complete_install_package(selected_ips)
+            zip_content = create_complete_install_package(valid_ips)
 
             if not zip_content:
                 return JsonResponse({
@@ -931,15 +1120,84 @@ def create_offline_installer(request):
             # ایجاد پاسخ
             response = HttpResponse(zip_content, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="plasco_offline_system.zip"'
+            response['Content-Length'] = len(zip_content)
 
-            print("✅ Installer created and sent successfully")
+            logger.info("✅ Installer created and sent successfully")
             return response
 
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'message': 'خطا در پردازش داده‌های ارسالی'
+            })
         except Exception as e:
-            print(f"❌ Error in create_offline_installer: {str(e)}")
+            logger.error(f"Error in create_offline_installer: {str(e)}")
             return JsonResponse({
                 'status': 'error',
                 'message': f'خطا در ایجاد فایل نصب: {str(e)}'
             })
 
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
+
+def test_system_status(request):
+    """تست وضعیت سیستم"""
+    try:
+        # بررسی اتصال به دیتابیس
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+
+        # بررسی وجود مدل‌ها
+        ip_count = AllowedIP.objects.count()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'سیستم در وضعیت سالم قرار دارد',
+            'database': 'connected',
+            'ip_count': ip_count,
+            'timestamp': timezone.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"System status check failed: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در بررسی وضعیت سیستم: {str(e)}'
+        })
+
+
+def download_manual_install_guide(request):
+    """دانلود راهنمای نصب دستی"""
+    guide_content = '''
+Plasco Offline System - Manual Installation Guide
+================================================
+
+If the automatic installer fails, follow these steps:
+
+1. Extract the ZIP file to a folder
+2. Open Command Prompt as Administrator
+3. Navigate to the plasco_system folder
+4. Run these commands one by one:
+
+   pip install -r requirements_offline.txt
+   python manage.py makemigrations
+   python manage.py migrate
+   python manage.py createsuperuser
+   python manage.py runserver 0.0.0.0:8000
+
+5. Access the system at http://localhost:8000
+
+For specific errors:
+
+- Port already in use: Use different port (8001, 8002, etc.)
+- Database errors: Delete db.sqlite3 and run migrations again
+- Package errors: Install packages individually
+- Permission errors: Run as Administrator
+
+Contact support if issues persist.
+'''
+
+    response = HttpResponse(guide_content, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="manual_install_guide.txt"'
+    return response
