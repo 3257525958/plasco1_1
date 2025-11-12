@@ -730,7 +730,7 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
             # ==================== فایل نصب اصلی (BAT) - کاملاً بهبود یافته ====================
             main_bat = '''@echo off
 chcp 65001
-title Plasco Offline System - Complete Installer
+title Plasco Offline System Installer
 setlocal enabledelayedexpansion
 
 echo.
@@ -741,45 +741,42 @@ echo.
 
 echo Step 1: Checking Python installation...
 python --version >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo.
-    echo ❌ ERROR: Python not found or not in PATH!
+    echo [ERROR] Python not found or not in PATH!
     echo.
-    echo Please install Python 3.8+ from: https://www.python.org/downloads/
+    echo Please install Python 3.8+ from:
+    echo https://www.python.org/downloads/
+    echo.
     echo Make sure to check "Add Python to PATH" during installation.
     echo.
-    echo Press any key to exit...
-    pause >nul
+    pause
     exit /b 1
 )
 
 for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-echo ✅ !PYTHON_VERSION! detected
+echo [OK] !PYTHON_VERSION! detected
 echo.
 
 echo Step 2: Setting up library stubs for offline mode...
-mkdir plasco_system\\escpos 2>nul
+mkdir plasco_system\escpos 2>nul
 
-echo Copying kavenegar stub...
-copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
-copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
-copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\account_app\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\cantact_app\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\invoice_app\kavenegar.py >nul 2>&1
 
-echo Copying escpos stub...
-copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\dashbord_app\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\pos_payment\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\invoice_app\escpos.py >nul 2>&1
 
-echo Setting up escpos package...
-copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\escpos\__init__.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\escpos\printer.py >nul 2>&1
 
-echo Setting up serial stub...
-copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
-copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
-copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\dashbord_app\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\pos_payment\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\invoice_app\serial.py >nul 2>&1
 
-echo ✅ Library stubs setup completed
+echo [OK] Library stubs setup completed
 echo.
 
 echo Step 3: Installing required packages...
@@ -790,54 +787,46 @@ cd plasco_system
 
 echo Upgrading pip...
 python -m pip install --upgrade pip
-if !errorlevel! neq 0 (
-    echo ❌ Failed to upgrade pip
-    echo Press any key to exit...
-    pause >nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to upgrade pip
+    pause
     exit /b 1
 )
-echo ✅ pip upgraded successfully
+echo [OK] pip upgraded successfully
 
-echo Installing packages one by one for better error handling...
-
-:: Core Django packages
-echo Installing Django...
+echo Installing core packages...
 python -m pip install Django==4.2.7
-if !errorlevel! neq 0 goto :pip_fail
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to install Django
+    pause
+    exit /b 1
+)
 
-echo Installing django-cors-headers...
 python -m pip install django-cors-headers==4.3.1
-if !errorlevel! neq 0 goto :pip_fail
-
-echo Installing djangorestframework...
 python -m pip install djangorestframework==3.14.0
-if !errorlevel! neq 0 goto :pip_fail
-
-echo Installing Pillow...
 python -m pip install Pillow==10.0.1
-if !errorlevel! neq 0 goto :pip_fail
+echo [OK] Core packages installed
 
-:: Utility packages
 echo Installing utility packages...
 python -m pip install requests==2.31.0
 python -m pip install jdatetime==4.1.1
 python -m pip install python-barcode==0.15.1
 python -m pip install python-decouple==3.8
 python -m pip install django-filter==23.3
+echo [OK] Utility packages installed
 
-:: PDF and reporting
-echo Installing PDF packages...
+echo Installing PDF and reporting packages...
 python -m pip install reportlab==4.0.4
 python -m pip install xhtml2pdf==0.2.13
 python -m pip install openpyxl==3.1.2
+echo [OK] PDF packages installed
 
-:: Persian language support
-echo Installing Persian packages...
+echo Installing Persian language packages...
 python -m pip install django-jalali==5.0.0
 python -m pip install persian==0.3.1
 python -m pip install hazm==0.7.0
+echo [OK] Persian packages installed
 
-:: Remaining packages
 echo Installing remaining packages...
 python -m pip install python-magic==0.4.27
 python -m pip install django-import-export==3.3.0
@@ -848,77 +837,47 @@ python -m pip install pyserial==3.5
 python -m pip install pymysql==1.1.0
 python -m pip install sqlparse==0.4.4
 python -m pip install asgiref==3.7.2
+echo [OK] All packages installed successfully
 
-echo ✅ All packages installed successfully
-goto :db_setup
-
-:pip_fail
-echo.
-echo ❌ Package installation failed!
-echo Please check your internet connection and try again.
-echo.
-echo Press any key to exit...
-pause >nul
-exit /b 1
-
-:db_setup
 echo.
 echo Step 4: Setting up database...
 echo Creating database migrations...
-
-:: Create migrations for each app
-python manage.py makemigrations account_app --noinput
-python manage.py makemigrations dashbord_app --noinput
-python manage.py makemigrations cantact_app --noinput
-python manage.py makemigrations invoice_app --noinput
-python manage.py makemigrations it_app --noinput
-python manage.py makemigrations pos_payment --noinput
-python manage.py makemigrations sync_app --noinput
-python manage.py makemigrations control_panel --noinput
-python manage.py makemigrations offline_ins --noinput
-python manage.py makemigrations ip_manager --noinput
-python manage.py makemigrations home_app --noinput
+python manage.py makemigrations --noinput
+if %errorlevel% neq 0 (
+    echo [WARNING] Migrations creation had issues, continuing anyway...
+)
 
 echo Applying migrations...
-python manage.py migrate --noinput
-if !errorlevel! neq 0 (
-    echo ❌ Database migration failed!
-    echo Press any key to exit...
-    pause >nul
+python manage.py migrate --run-syncdb
+if %errorlevel% neq 0 (
+    echo [ERROR] Database migration failed!
+    pause
     exit /b 1
 )
-echo ✅ Database setup completed
+echo [OK] Database setup completed
 
 echo Step 5: Creating admin user...
-python manage.py shell -c "
-from django.contrib.auth import get_user_model
-User = get_user_model()
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
-    print('✅ Admin user created successfully')
-else:
-    print('ℹ️ Admin user already exists')
-"
-echo ✅ Admin user setup completed
+python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+echo [OK] Admin user setup completed
 
 echo.
 echo ============================================
 echo    INSTALLATION COMPLETED SUCCESSFULLY!
 echo ============================================
 echo.
-echo 🌟 Plasco Offline System is ready!
+echo [SUCCESS] Plasco Offline System is ready!
 echo.
-echo 📍 Access URLs:
+echo Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
 echo    IP Management: http://localhost:8000/ip/ip_manager/
 echo.
-echo 🔑 Admin Credentials:
+echo Admin Credentials:
 echo    Username: admin
 echo    Password: admin123
 echo.
-echo 🚀 Starting server...
-echo ⏹️  To stop server, press CTRL+C
+echo Starting server...
+echo To stop server, press CTRL+C
 echo ============================================
 echo.
 echo Waiting 5 seconds before starting server...
@@ -927,27 +886,26 @@ timeout /t 5 /nobreak >nul
 :start_server
 echo Starting server on port 8000...
 python manage.py runserver 0.0.0.0:8000
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo.
-    echo ⚠️ Port 8000 is busy, trying port 8001...
+    echo [WARNING] Port 8000 is busy, trying port 8001...
     echo.
     timeout /t 3 /nobreak >nul
     python manage.py runserver 0.0.0.0:8001
 )
 
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo.
-    echo ❌ Server startup failed!
+    echo [ERROR] Server startup failed on both ports 8000 and 8001!
     echo.
-    echo 🔧 Troubleshooting:
-    echo 1. Check if port 8000 or 8001 are busy
-    echo 2. Try: python manage.py runserver 0.0.0.0:8002
+    echo Troubleshooting steps:
+    echo 1. Check if another server is running
+    echo 2. Try manually: python manage.py runserver 0.0.0.0:8002
     echo 3. Check firewall settings
+    echo 4. Ensure no other application is using ports 8000-8001
     echo.
-    echo Press any key to close...
-    pause >nul
-)
-'''
+    pause
+)'''
             zipf.writestr('START_HERE.bat', main_bat)
 
             # ==================== فایل راهنمای عیب‌یابی ====================
