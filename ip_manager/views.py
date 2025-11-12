@@ -315,7 +315,7 @@ CORS_ALLOW_ALL_ORIGINS = True
             # ایجاد فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco/__init__.py', '')
 
-            # فایل requirements کامل
+            # فایل requirements کامل با تمام کتابخانه‌های مورد نیاز
             requirements_content = '''Django==4.2.7
 django-cors-headers==4.3.1
 djangorestframework==3.14.0
@@ -323,6 +323,8 @@ Pillow==10.0.1
 requests==2.31.0
 jdatetime==4.1.1
 python-barcode==0.15.1
+jalali-date==2.0.0
+django-jalali-date==2.0.0
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
@@ -351,7 +353,7 @@ def add_allowed_ip(ip_address):
 '''
             zipf.writestr('plasco/offline_ip_manager.py', offline_ip_manager_content)
 
-            # فایل BAT اصلی
+            # فایل BAT اصلی با نصب کامل تمام کتابخانه‌ها
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System
@@ -381,23 +383,35 @@ echo OK: Python is installed
 echo.
 
 echo Step 2: Installing required packages...
-pip install -r requirements_offline.txt
-if %errorlevel% neq 0 (
-    echo.
-    echo WARNING: Some packages failed to install
-    echo Trying to continue anyway...
-    echo.
-)
+echo Installing Django and basic packages...
+pip install Django==4.2.7
+pip install django-cors-headers==4.3.1
+pip install djangorestframework==3.14.0
+pip install Pillow==10.0.1
+pip install requests==2.31.0
+echo Installing Persian date libraries...
+pip install jdatetime==4.1.1
+pip install python-barcode==0.15.1
+pip install jalali-date==2.0.0
+pip install django-jalali-date==2.0.0
 
+echo.
 echo Step 3: Setting up database...
 python manage.py migrate
 if %errorlevel% neq 0 (
     echo.
     echo ERROR: Database setup failed!
     echo.
-    echo Press any key to exit...
-    pause >nul
-    exit /b 1
+    echo Trying alternative approach...
+    python manage.py migrate --run-syncdb
+    if %errorlevel% neq 0 (
+        echo.
+        echo ERROR: Database setup still failed!
+        echo.
+        echo Press any key to exit...
+        pause >nul
+        exit /b 1
+    )
 )
 
 echo Step 4: Creating admin user...
