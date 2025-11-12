@@ -9,8 +9,6 @@ import zipfile
 import io
 import os
 from pathlib import Path
-import requests
-from django.core.files.base import ContentFile
 
 
 def manage_ips(request):
@@ -199,7 +197,7 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
-            # فایل settings_offline.py
+            # فایل settings_offline.py با استفاده از requirements.txt شما
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
@@ -236,6 +234,8 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'corsheaders',
+    'django_jalali',
+    'django_select2',
 
     # Local apps
     'account_app',
@@ -338,53 +338,51 @@ os.environ['PYTHONPATH'] = os.path.join(BASE_DIR, 'python', 'python-3.10.11-embe
             # فایل __init__.py برای پوشه plasco
             zipf.writestr('plasco_system/plasco/__init__.py', '')
 
-            # ==================== فایل requirements بهبود یافته ====================
-            requirements_content = '''# Plasco Offline System - Complete Requirements
-# Core Django
-Django==4.2.7
-django-cors-headers==4.3.1
-djangorestframework==3.14.0
-Pillow==10.0.1
-
-# Utilities
-requests==2.31.0
-jdatetime==4.1.1
+            # ==================== فایل requirements بر اساس requirements.txt شما ====================
+            requirements_content = '''appdirs==1.4.4
+arabic-reshaper==3.0.0
+argcomplete==3.6.2
+asgiref==3.9.1
+certifi==2025.8.3
+charset-normalizer==3.4.3
+colorama==0.4.6
+Django==5.2.4
+django-appconf==1.1.0
+django-cleanup==8.1.0
+django-cors-headers==4.8.0
+django-environ==0.12.0
+django-jalali==6.0.1
+django-jalali-date==1.0.1
+django-select2==8.4.1
+djangorestframework==3.16.1
+idna==3.10
+importlib_resources==6.5.2
+jalali_core==1.0.0
+jdatetime==5.2.0
+kavenegar==1.1.2
+mysql-connector-python==9.4.0
+mysqlclient==2.2.7
+pillow==11.3.0
+PyMySQL==1.1.1
+pyserial==3.5
 python-barcode==0.15.1
-python-decouple==3.8
-django-filter==23.3
-
-# PDF and Reporting
-reportlab==4.0.4
-xhtml2pdf==0.2.13
-openpyxl==3.1.2
-
-# Persian Support
-django-jalali==5.0.0
-persian==0.3.1
-hazm==0.7.0
-
-# File handling
-python-magic-bin==0.4.14
-django-import-export==3.3.0
-django-cleanup==8.0.0
-
-# Additional utilities
-python-dateutil==2.8.2
-pytz==2023.3
-
-# Django core dependencies
-asgiref==3.7.2
-sqlparse==0.4.4
-tzdata==2023.3
-
-# Security and HTTP
-urllib3==1.26.18
-certifi==2023.11.17
-charset-normalizer==3.3.2
-idna==3.6
-
-# MySQL fallback
-pymysql==1.1.0
+python-bidi==0.6.6
+python-escpos==3.1
+pytz==2025.2
+PyYAML==6.0.2
+qrcode==8.2
+reportlab==4.4.3
+requests==2.32.5
+schedule==1.2.2
+six==1.17.0
+sqlparse==0.5.3
+typing_extensions==4.14.1
+tzdata==2025.2
+ua-parser==1.0.1
+ua-parser-builtins==0.18.0.post1
+urllib3==2.5.0
+user-agents==2.2.0
+whitenoise==6.10.0
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
@@ -493,7 +491,119 @@ __all__ = ['Serial', 'Usb', 'Network', 'File']
             zipf.writestr('plasco_system/escpos/__init__.py', escpos_stub_content)
             zipf.writestr('plasco_system/escpos/printer.py', escpos_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) - نسخه پیشرفته ====================
+            # ماژول جایگزین برای serial (pyserial)
+            serial_stub_content = '''
+"""
+ماژول جایگزین برای pyserial - برای حالت آفلاین
+"""
+
+class Serial:
+    def __init__(self, port=None, baudrate=9600, bytesize=8, parity='N', 
+                 stopbits=1, timeout=None, xonxoff=False, rtscts=False, 
+                 write_timeout=None, dsrdtr=False, inter_byte_timeout=None, 
+                 exclusive=None, **kwargs):
+        print(f"🔹 OFFLINE MODE: Serial connection to {port} disabled")
+        self.port = port
+        self.baudrate = baudrate
+        self.is_open = False
+
+    def open(self):
+        """Open serial connection"""
+        print(f"🔹 OFFLINE MODE: Would open serial connection to {self.port}")
+        self.is_open = True
+        return True
+
+    def close(self):
+        """Close serial connection"""
+        print(f"🔹 OFFLINE MODE: Would close serial connection to {self.port}")
+        self.is_open = False
+
+    def write(self, data):
+        """Write data to serial port"""
+        if isinstance(data, bytes):
+            data_str = data.decode('utf-8', errors='ignore')
+        else:
+            data_str = str(data)
+        print(f"🔹 OFFLINE MODE: Would write to {self.port}: {data_str[:100]}{'...' if len(data_str) > 100 else ''}")
+        return len(data)
+
+    def read(self, size=1):
+        """Read data from serial port"""
+        print(f"🔹 OFFLINE MODE: Would read {size} bytes from {self.port}")
+        return b''
+
+    def readline(self, size=-1):
+        """Read line from serial port"""
+        print(f"🔹 OFFLINE MODE: Would read line from {self.port}")
+        return b''
+
+    def flush(self):
+        """Flush serial buffer"""
+        print(f"🔹 OFFLINE MODE: Would flush {self.port} buffer")
+
+    def reset_input_buffer(self):
+        """Reset input buffer"""
+        print(f"🔹 OFFLINE MODE: Would reset input buffer of {self.port}")
+
+    def reset_output_buffer(self):
+        """Reset output buffer"""
+        print(f"🔹 OFFLINE MODE: Would reset output buffer of {self.port}")
+
+    @property
+    def in_waiting(self):
+        """Get number of bytes in input buffer"""
+        return 0
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+# توابع اصلی ماژول serial
+def serial_for_url(url, *args, **kwargs):
+    """Create serial port from URL"""
+    print(f"🔹 OFFLINE MODE: Would create serial port for URL: {url}")
+    return Serial(port=url)
+
+def list_ports():
+    """List available serial ports"""
+    print("🔹 OFFLINE MODE: Would list available serial ports")
+    return []
+
+# تعریف استثناها
+class SerialException(Exception):
+    pass
+
+class SerialTimeoutException(SerialException):
+    pass
+
+# تعریف مقادیر ثابت
+VERSION = "3.5"
+PARITY_NONE = 'N'
+PARITY_EVEN = 'E'
+PARITY_ODD = 'O'
+PARITY_MARK = 'M'
+PARITY_SPACE = 'S'
+STOPBITS_ONE = 1
+STOPBITS_ONE_POINT_FIVE = 1.5
+STOPBITS_TWO = 2
+FIVEBITS = 5
+SIXBITS = 6
+SEVENBITS = 7
+EIGHTBITS = 8
+
+# برای سازگاری با import *
+__all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException', 
+           'SerialTimeoutException', 'VERSION', 'PARITY_NONE', 'PARITY_EVEN',
+           'PARITY_ODD', 'PARITY_MARK', 'PARITY_SPACE', 'STOPBITS_ONE',
+           'STOPBITS_ONE_POINT_FIVE', 'STOPBITS_TWO', 'FIVEBITS', 'SIXBITS',
+           'SEVENBITS', 'EIGHTBITS']
+'''
+            zipf.writestr('plasco_system/serial.py', serial_stub_content)
+
+            # ==================== فایل نصب اصلی (BAT) - نسخه بهبود یافته ====================
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System - Complete Standalone Installer
@@ -510,13 +620,13 @@ python --version >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ System Python detected
     set "USE_SYSTEM_PYTHON=1"
-    goto :install_packages
+    goto :setup_stubs
 )
 
 echo ℹ️ No system Python found, using embedded Python...
 set "USE_SYSTEM_PYTHON=0"
 
-:install_packages
+:setup_stubs
 echo.
 echo Step 2: Setting up library stubs for offline mode...
 mkdir plasco_system\\escpos 2>nul
@@ -534,6 +644,11 @@ copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
 echo Setting up escpos package...
 copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
 copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
+
+echo Setting up serial stub...
+copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
 
 echo ✅ Library stubs setup completed
 echo.
@@ -585,35 +700,61 @@ echo Installing packages using embedded Python...
 
 :: نصب پکیج‌ها به صورت دسته‌ای برای جلوگیری از timeout
 echo Installing core packages...
-"%PIP_PATH%" install Django==4.2.7
-"%PIP_PATH%" install django-cors-headers==4.3.1
-"%PIP_PATH%" install djangorestframework==3.14.0
-"%PIP_PATH%" install Pillow==10.0.1
+"%PIP_PATH%" install Django==5.2.4
+"%PIP_PATH%" install django-cors-headers==4.8.0
+"%PIP_PATH%" install djangorestframework==3.16.1
+"%PIP_PATH%" install pillow==11.3.0
 
 echo Installing utility packages...
-"%PIP_PATH%" install requests==2.31.0
-"%PIP_PATH%" install jdatetime==4.1.1
+"%PIP_PATH%" install requests==2.32.5
+"%PIP_PATH%" install jdatetime==5.2.0
 "%PIP_PATH%" install python-barcode==0.15.1
-"%PIP_PATH%" install python-decouple==3.8
-"%PIP_PATH%" install django-filter==23.3
+"%PIP_PATH%" install django-environ==0.12.0
+"%PIP_PATH%" install django-jalali==6.0.1
 
 echo Installing PDF and reporting packages...
-"%PIP_PATH%" install reportlab==4.0.4
-"%PIP_PATH%" install xhtml2pdf==0.2.13
-"%PIP_PATH%" install openpyxl==3.1.2
+"%PIP_PATH%" install reportlab==4.4.3
+"%PIP_PATH%" install qrcode==8.2
+"%PIP_PATH%" install PyYAML==6.0.2
 
 echo Installing Persian language packages...
-"%PIP_PATH%" install django-jalali==5.0.0
-"%PIP_PATH%" install persian==0.3.1
-"%PIP_PATH%" install hazm==0.7.0
+"%PIP_PATH%" install arabic-reshaper==3.0.0
+"%PIP_PATH%" install python-bidi==0.6.6
+
+echo Installing serial communication package...
+"%PIP_PATH%" install pyserial==3.5
+
+echo Installing database packages...
+"%PIP_PATH%" install mysqlclient==2.2.7
+"%PIP_PATH%" install mysql-connector-python==9.4.0
+"%PIP_PATH%" install pymysql==1.1.1
 
 echo Installing remaining packages...
-"%PIP_PATH%" install python-magic-bin==0.4.14
-"%PIP_PATH%" install django-import-export==3.3.0
-"%PIP_PATH%" install django-cleanup==8.0.0
-"%PIP_PATH%" install python-dateutil==2.8.2
-"%PIP_PATH%" install pytz==2023.3
-"%PIP_PATH%" install pymysql==1.1.0
+"%PIP_PATH%" install django-cleanup==8.1.0
+"%PIP_PATH%" install django-select2==8.4.1
+"%PIP_PATH%" install python-escpos==3.1
+"%PIP_PATH%" install schedule==1.2.2
+"%PIP_PATH%" install whitenoise==6.10.0
+"%PIP_PATH%" install user-agents==2.2.0
+"%PIP_PATH%" install ua-parser==1.0.1
+"%PIP_PATH%" install appdirs==1.4.4
+"%PIP_PATH%" install argcomplete==3.6.2
+"%PIP_PATH%" install certifi==2025.8.3
+"%PIP_PATH%" install charset-normalizer==3.4.3
+"%PIP_PATH%" install colorama==0.4.6
+"%PIP_PATH%" install asgiref==3.9.1
+"%PIP_PATH%" install idna==3.10
+"%PIP_PATH%" install importlib_resources==6.5.2
+"%PIP_PATH%" install jalali_core==1.0.0
+"%PIP_PATH%" install django-jalali-date==1.0.1
+"%PIP_PATH%" install django-appconf==1.1.0
+"%PIP_PATH%" install pytz==2025.2
+"%PIP_PATH%" install six==1.17.0
+"%PIP_PATH%" install sqlparse==0.5.3
+"%PIP_PATH%" install typing_extensions==4.14.1
+"%PIP_PATH%" install tzdata==2025.2
+"%PIP_PATH%" install ua-parser-builtins==0.18.0.post1
+"%PIP_PATH%" install urllib3==2.5.0
 
 :setup_database
 echo.
@@ -724,7 +865,7 @@ Plasco Offline System - Complete Standalone Installation
 - SQLite database configuration
 - Embedded Python 3.10.11
 - Automatic installation scripts
-- All required packages
+- All required packages from your requirements.txt
 
 🚀 Quick Start:
 1. Extract ALL files to a folder (important!)
@@ -756,7 +897,7 @@ Plasco Offline System - Complete Standalone Installation
 
 🔍 Technical Details:
 - Python Version: 3.10.11 (Embedded)
-- Django Version: 4.2.7
+- Django Version: 5.2.4
 - Database: SQLite3
 - Package Manager: pip
 
@@ -775,135 +916,6 @@ Plasco Offline System - Complete Standalone Installation
 4. Required disk space: ~500MB
 '''
             zipf.writestr('README_FIRST.txt', readme_content)
-
-            # فایل fallback installer برای مواقع ضروری
-            fallback_installer = '''
-# standalone_fallback.py
-# This script provides alternative installation methods
-
-import os
-import sys
-import subprocess
-import urllib.request
-import zipfile
-
-def download_file(url, filename):
-    """Download a file from URL"""
-    try:
-        print(f"Downloading {filename}...")
-        urllib.request.urlretrieve(url, filename)
-        return True
-    except Exception as e:
-        print(f"Download failed: {e}")
-        return False
-
-def run_command(command):
-    """Run a command and return success status"""
-    try:
-        result = subprocess.run(command, shell=True, check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed: {command}")
-        print(f"Error: {e}")
-        return False
-
-def setup_embedded_python():
-    """Setup embedded Python if system Python is not available"""
-    python_dir = "python"
-    python_zip = "python-3.10.11-embed-amd64.zip"
-    python_url = "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
-
-    if not os.path.exists(os.path.join(python_dir, "python-3.10.11-embed-amd64")):
-        print("Setting up embedded Python...")
-        os.makedirs(python_dir, exist_ok=True)
-        os.chdir(python_dir)
-
-        if download_file(python_url, python_zip):
-            with zipfile.ZipFile(python_zip, 'r') as zip_ref:
-                zip_ref.extractall(".")
-            os.remove(python_zip)
-            print("✅ Embedded Python setup completed")
-        else:
-            print("❌ Failed to setup embedded Python")
-            return False
-
-        os.chdir("..")
-    return True
-
-def install_packages_embedded():
-    """Install packages using embedded Python"""
-    python_exe = "python\\\\python-3.10.11-embed-amd64\\\\python.exe"
-    pip_exe = "python\\\\python-3.10.11-embed-amd64\\\\Scripts\\\\pip.exe"
-
-    # Install get-pip if not available
-    if not os.path.exists(pip_exe):
-        print("Installing pip for embedded Python...")
-        get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
-        if download_file(get_pip_url, "get-pip.py"):
-            run_command(f'"{python_exe}" get-pip.py')
-            os.remove("get-pip.py")
-
-    # Install packages in batches
-    packages = [
-        "Django==4.2.7", "django-cors-headers==4.3.1", "djangorestframework==3.14.0",
-        "Pillow==10.0.1", "requests==2.31.0", "jdatetime==4.1.1",
-        "python-barcode==0.15.1", "python-decouple==3.8", "django-filter==23.3",
-        "reportlab==4.0.4", "xhtml2pdf==0.2.13", "openpyxl==3.1.2",
-        "django-jalali==5.0.0", "persian==0.3.1", "hazm==0.7.0",
-        "python-magic-bin==0.4.14", "django-import-export==3.3.0", "django-cleanup==8.0.0",
-        "python-dateutil==2.8.2", "pytz==2023.3", "pymysql==1.1.0"
-    ]
-
-    for package in packages:
-        print(f"Installing {package}...")
-        run_command(f'"{pip_exe}" install {package}')
-
-    return True
-
-def main():
-    print("Plasco Offline System - Alternative Installer")
-    print("=" * 50)
-
-    # Check system Python first
-    try:
-        subprocess.run([sys.executable, "--version"], check=True, capture_output=True)
-        print("✅ System Python detected")
-        use_system_python = True
-    except:
-        print("ℹ️ No system Python found, using embedded Python")
-        use_system_python = False
-
-    if not use_system_python:
-        if not setup_embedded_python():
-            print("❌ Failed to setup embedded Python")
-            return
-
-        if not install_packages_embedded():
-            print("❌ Failed to install packages")
-            return
-
-    print("✅ Installation completed!")
-    print("Run the system with:")
-    if use_system_python:
-        print("  python manage.py runserver 0.0.0.0:8000")
-    else:
-        print('  "python\\\\python-3.10.11-embed-amd64\\\\python.exe" manage.py runserver 0.0.0.0:8000')
-
-if __name__ == "__main__":
-    main()
-'''
-            zipf.writestr('standalone_fallback.py', fallback_installer)
-
-            # ==================== فایل پیکربندی پایتون توکار ====================
-
-            # فایل _pth برای پایتون embeddable
-            python_pth_content = '''
-python310.zip
-.
-# Uncomment to run site.main() automatically
-#import site
-'''
-            zipf.writestr('python/python-3.10.11-embed-amd64/python310._pth', python_pth_content)
 
         zip_buffer.seek(0)
         print("✅ Complete standalone installation package created successfully!")
