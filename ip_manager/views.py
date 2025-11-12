@@ -197,7 +197,7 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
-            # فایل settings_offline.py با استفاده از requirements.txt شما
+            # فایل settings_offline.py با رفع مشکلات
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
@@ -235,21 +235,21 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_jalali',
-    'django_select2',
+    # 'django_select2',  # موقتاً غیرفعال شده
 
-    # Local apps
-    'account_app',
-    'dashbord_app',
-    'cantact_app',
-    'invoice_app',
-    'it_app',
-    'pos_payment',
-    'sync_app',
-    'sync_api',
-    'control_panel',
-    'offline_ins',
-    'ip_manager',
-    'home_app',
+    # Local apps - با تعریف app_label
+    'account_app.apps.AccountAppConfig',
+    'dashbord_app.apps.DashbordAppConfig', 
+    'cantact_app.apps.CantactAppConfig',
+    'invoice_app.apps.InvoiceAppConfig',
+    'it_app.apps.ItAppConfig',
+    'pos_payment.apps.PosPaymentConfig',
+    'sync_app.apps.SyncAppConfig',
+    'sync_api.apps.SyncApiConfig',
+    'control_panel.apps.ControlPanelConfig',
+    'offline_ins.apps.OfflineInsConfig',
+    'ip_manager.apps.IpManagerConfig',
+    'home_app.apps.HomeAppConfig',
 ]
 
 MIDDLEWARE = [
@@ -353,7 +353,7 @@ django-cors-headers==4.8.0
 django-environ==0.12.0
 django-jalali==6.0.1
 django-jalali-date==1.0.1
-django-select2==8.4.1
+# django-select2==8.4.1  # موقتاً غیرفعال شده
 djangorestframework==3.16.1
 idna==3.10
 importlib_resources==6.5.2
@@ -385,6 +385,44 @@ user-agents==2.2.0
 whitenoise==6.10.0
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
+
+            # ==================== ایجاد فایل‌های apps.py برای اپلیکیشن‌ها ====================
+
+            # فایل apps.py برای ip_manager
+            ip_manager_apps_content = '''
+from django.apps import AppConfig
+
+class IpManagerConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'ip_manager'
+    verbose_name = 'مدیریت IPها'
+'''
+            zipf.writestr('plasco_system/ip_manager/apps.py', ip_manager_apps_content)
+
+            # فایل‌های apps.py برای سایر اپلیکیشن‌ها
+            apps_configs = {
+                'account_app': 'AccountAppConfig',
+                'dashbord_app': 'DashbordAppConfig',
+                'cantact_app': 'CantactAppConfig',
+                'invoice_app': 'InvoiceAppConfig',
+                'it_app': 'ItAppConfig',
+                'pos_payment': 'PosPaymentConfig',
+                'sync_app': 'SyncAppConfig',
+                'sync_api': 'SyncApiConfig',
+                'control_panel': 'ControlPanelConfig',
+                'offline_ins': 'OfflineInsConfig',
+                'home_app': 'HomeAppConfig'
+            }
+
+            for app_name, config_class in apps_configs.items():
+                apps_content = f'''
+from django.apps import AppConfig
+
+class {config_class}(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = '{app_name}'
+'''
+                zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
 
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
 
@@ -731,7 +769,7 @@ echo Installing database packages...
 
 echo Installing remaining packages...
 "%PIP_PATH%" install django-cleanup==8.1.0
-"%PIP_PATH%" install django-select2==8.4.1
+:: "%PIP_PATH%" install django-select2==8.4.1  # موقتاً غیرفعال شده
 "%PIP_PATH%" install python-escpos==3.1
 "%PIP_PATH%" install schedule==1.2.2
 "%PIP_PATH%" install whitenoise==6.10.0
