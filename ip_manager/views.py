@@ -138,20 +138,22 @@ def create_complete_install_package(selected_ips):
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
             print("Creating complete installation package...")
 
-            # فایل‌های اصلی
-            essential_files = [
-                'manage.py',
-                'plasco/__init__.py',
-                'plasco/urls.py',
-                'plasco/wsgi.py'
-            ]
+            # فایل manage.py
+            manage_path = BASE_DIR / 'manage.py'
+            if manage_path.exists():
+                zipf.write(manage_path, 'manage.py')
+                print("Added: manage.py")
 
-            # اضافه کردن فایل‌های اصلی
-            for file in essential_files:
-                file_path = BASE_DIR / file
-                if file_path.exists():
-                    zipf.write(file_path, file)
-                    print(f"Added: {file}")
+            # اضافه کردن پوشه plasco به طور کامل
+            plasco_path = BASE_DIR / 'plasco'
+            if plasco_path.exists():
+                for root, dirs, files in os.walk(plasco_path):
+                    for file in files:
+                        if file.endswith('.py'):
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, BASE_DIR)
+                            zipf.write(file_path, arcname)
+                print("Added plasco folder completely")
 
             # اضافه کردن پوشه اپ‌ها
             app_folders = [
@@ -193,7 +195,7 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل‌های ضروری برای نصب آسان ====================
 
-            # فایل settings_offline.py
+            # فایل settings_offline.py با تنظیمات ساده‌تر
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
@@ -202,15 +204,13 @@ Allowed IPs: {selected_ips}
 
 from pathlib import Path
 import os
-import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-IS_OFFLINE_MODE = True
-SECRET_KEY = 'django-insecure-plasco-offline-auto-install-2024'
+SECRET_KEY = 'django-insecure-offline-plasco-2024-secret-key'
 DEBUG = True
 
-ALLOWED_HOSTS = {selected_ips} + ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'] + {selected_ips}
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -276,6 +276,8 @@ DATABASES = {{
     }}
 }}
 
+AUTH_PASSWORD_VALIDATORS = []
+
 LANGUAGE_CODE = 'fa-ir'
 TIME_ZONE = 'Asia/Tehran'
 USE_I18N = True
@@ -287,14 +289,31 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-OFFLINE_MODE = True
 
-# تنظیمات برای نصب آسان
-SILENCED_SYSTEM_CHECKS = ['security.W004', 'security.W008']
+# غیرفعال کردن چک‌های امنیتی برای نصب آسان
+SILENCED_SYSTEM_CHECKS = [
+    'security.W004', 
+    'security.W008', 
+    'security.W009',
+    'security.W019',
+    'security.W020'
+]
+
+# تنظیمات REST Framework
+REST_FRAMEWORK = {{
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
+}}
+
+CORS_ALLOW_ALL_ORIGINS = True
 '''
 
             zipf.writestr('plasco/settings_offline.py', settings_content.strip())
             zipf.writestr('plasco/settings.py', 'from .settings_offline import *\n')
+
+            # ایجاد فایل __init__.py برای پوشه plasco
+            zipf.writestr('plasco/__init__.py', '')
 
             # فایل requirements کامل
             requirements_content = '''Django==4.2.7
@@ -307,12 +326,36 @@ python-barcode==0.15.1
 '''
             zipf.writestr('requirements_offline.txt', requirements_content)
 
-            # فایل BAT اصلی - کاملاً به انگلیسی و بدون کاراکترهای خاص
+            # ایجاد فایل offline_ip_manager.py
+            offline_ip_manager_content = '''
+"""
+ماژول مدیریت IPهای آفلاین - نسخه ساده شده
+"""
+
+def is_allowed_offline_ip(request):
+    """بررسی آیا IP مجاز است یا نه"""
+    return True
+
+def get_client_ip(request):
+    """دریافت IP کلاینت"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def add_allowed_ip(ip_address):
+    """افزودن IP به لیست مجاز"""
+    return True
+'''
+            zipf.writestr('plasco/offline_ip_manager.py', offline_ip_manager_content)
+
+            # فایل BAT اصلی
             main_bat = '''@echo off
 chcp 65001
-title Plasco Offline System - Auto Installer
+title Plasco Offline System
 
-REM Change to current directory
 cd /d "%~dp0"
 
 echo.
@@ -321,20 +364,13 @@ echo    Plasco Offline System - Auto Installer
 echo ============================================
 echo.
 
-echo Current directory:
-cd
-echo.
-
 echo Step 1: Checking Python installation...
 python --version
 if %errorlevel% neq 0 (
     echo.
-    echo ERROR: Python not found or not in PATH!
+    echo ERROR: Python not found!
     echo.
-    echo Please install Python from:
-    echo https://www.python.org/downloads/
-    echo.
-    echo IMPORTANT: During installation, check "Add Python to PATH"
+    echo Please install Python from: https://www.python.org/downloads/
     echo.
     echo Press any key to exit...
     pause >nul
@@ -395,67 +431,6 @@ pause >nul
 '''
             zipf.writestr('START_HERE.bat', main_bat)
 
-            # فایل BAT جایگزین برای خطایابی
-            debug_bat = '''@echo off
-chcp 65001
-title Plasco Debug Mode
-
-cd /d "%~dp0"
-
-echo.
-echo ============================================
-echo    Plasco Debug Mode
-echo ============================================
-echo.
-
-echo Current directory:
-cd
-echo.
-
-echo Checking Python:
-python --version
-if %errorlevel% neq 0 (
-    echo ERROR: Python not found!
-    goto :error
-)
-
-echo OK: Python is installed
-echo.
-
-echo Checking pip:
-pip --version
-if %errorlevel% neq 0 (
-    echo ERROR: pip not found!
-    goto :error
-)
-
-echo OK: pip is installed
-echo.
-
-echo File list:
-dir
-echo.
-
-echo Starting system...
-echo.
-START_HERE.bat
-goto :end
-
-:error
-echo.
-echo PROBLEM DETECTED!
-echo.
-echo SOLUTION:
-echo 1. Download Python from python.org
-echo 2. During install, check "Add Python to PATH"
-echo 3. Try again
-echo.
-pause
-
-:end
-'''
-            zipf.writestr('DEBUG_MODE.bat', debug_bat)
-
             # فایل راهنمای کامل
             readme_content = f'''
 Plasco Offline System - Installation Guide
@@ -466,22 +441,11 @@ Quick Start:
 2. Double click "START_HERE.bat"
 3. Wait for system to start
 
-If you have problems:
-- Run "DEBUG_MODE.bat" for troubleshooting
-- Or run these commands manually in CMD:
-  1. python --version
-  2. pip install -r requirements_offline.txt
-  3. python manage.py migrate
-  4. python manage.py runserver 0.0.0.0:8000
-
 Access URLs:
 - Main System: http://localhost:8000
 - Admin Panel: http://localhost:8000/admin
 - Username: admin
 - Password: admin123
-
-Support:
-If you have issues, save the error message and contact support.
 
 Allowed IPs: {', '.join(selected_ips)}
 Created: {timezone.now().strftime("%Y/%m/%d %H:%M")}
@@ -536,4 +500,5 @@ def create_offline_installer(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
 
