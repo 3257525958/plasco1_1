@@ -21,7 +21,6 @@ def invoice_list(request):
 
 @require_POST
 def reset_remaining_quantity(request):
-    print(22222222222222222222222222222222222222222222)
     """
     ریست کردن تعداد باقیمانده فاکتورهای انتخاب شده
     """
@@ -178,7 +177,7 @@ def distribute_inventory(request):
                                 'quantity': qty_for_branch,
                                 'counter': request.user,
                                 'selling_price': product['max_selling_price'],
-                                'profit_percentage': Decimal('30.00')
+                                'profit_percentage': Decimal('100.00')
                             }
                         )
 
@@ -236,7 +235,6 @@ from account_app.models import ProductPricing
 
 @require_http_methods(["GET", "POST"])
 def delete_all_product_pricing(request):
-    print(44444444444444444444444444444444444)
     """
     ویو برای حذف تمام رکوردهای ProductPricing با تأیید کاربر
     """
@@ -290,7 +288,6 @@ from account_app.models import InventoryCount
 
 @require_POST
 def clear_inventory(request):
-    print(33333333333333333333333333333333333333)
     """
     پاک کردن تمام رکوردهای مدل InventoryCount پس از تأیید کاربر
     """

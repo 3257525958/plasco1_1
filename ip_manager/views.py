@@ -443,53 +443,11 @@ class {config_class}(AppConfig):
             urls_content = '''
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import redirect
 
-def home_page(request):
-    """صفحه اصلی - مستقیم به new_home.html"""
-    try:
-        return render(request, 'new_home.html')
-    except Exception as e:
-        # اگر تمپلیت مشکل داشت
-        return HttpResponse(f"""
-        <!DOCTYPE html>
-        <html lang="fa" dir="rtl">
-        <head>
-            <meta charset="UTF-8">
-            <title>Plasco System</title>
-            <style>
-                body { 
-                    font-family: Tahoma; 
-                    text-align: center; 
-                    padding: 50px;
-                    background: linear-gradient(135deg, #667eea, #764ba2);
-                    color: white;
-                }
-                .container {
-                    background: rgba(255,255,255,0.1);
-                    padding: 40px;
-                    border-radius: 20px;
-                    backdrop-filter: blur(10px);
-                }
-                a { color: yellow; text-decoration: none; }
-                a:hover { text-decoration: underline; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🚀 سیستم پلاسکو</h1>
-                <p>این صفحه اصلی مستقیم است</p>
-                <p>خطا در تمپلیت: {e}</p>
-                <p><a href="/admin/">پنل مدیریت</a> | <a href="/ip/ip_manager/">مدیریت IP</a></p>
-            </div>
-        </body>
-        </html>
-        """)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home_page, name='home'),  # مهم: این خط باید باشد
     path('accounts/', include('account_app.urls')),
     path('dashboard/', include('dashbord_app.urls')),
     path('contact/', include('cantact_app.urls')),
@@ -501,7 +459,10 @@ urlpatterns = [
     path('control/', include('control_panel.urls')),
     path('offline/', include('offline_ins.urls')),
     path('ip/', include('ip_manager.urls')),
-]'''
+    path('', include('home_app.urls')),
+    
+]
+'''
             zipf.writestr('plasco_system/plasco/urls.py', urls_content)
 
             # ==================== ایجاد فایل‌های urls.py برای همه اپ‌ها ====================
