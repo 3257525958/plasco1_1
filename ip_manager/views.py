@@ -441,41 +441,26 @@ class {config_class}(AppConfig):
 
             # ==================== فایل urls.py اصلی ====================
             urls_content = '''
-from django.urls import path, include
 from django.contrib import admin
-from django.conf.urls.static import static
-from . import settings
+from django.urls import path, include
+from django.shortcuts import redirect
 
-# ایمپورت ویوها
-from control_panel.views import control_panel, set_mode
-from offline_ins.views import offline_install, install_step, offline_success
-from home_app.views import home_def  # تابع home شما
-from offline_ins.views import switch_to_offline
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home_def, name='home'),  # صفحه اصلی با تابع home_def شما
-    path('control-panel/', control_panel, name='control_panel'),
-    path('set-mode/', set_mode, name='set_mode'),
-
-    # سایر URLهای اپ‌های شما
-    path('cantact/', include('cantact_app.urls')),
-    path('dashbord/', include('dashbord_app.urls')),
-    path('account/', include('account_app.urls')),
+    path('accounts/', include('account_app.urls')),
+    path('dashboard/', include('dashbord_app.urls')),
+    path('contact/', include('cantact_app.urls')),
     path('invoice/', include('invoice_app.urls')),
     path('it/', include('it_app.urls')),
-    path('pos-payment/', include('pos_payment.urls')),
-    path('api/sync/', include('sync_api.urls')),
-    path('sync_app/', include('sync_app.urls')),
+    path('pos/', include('pos_payment.urls')),
     path('sync/', include('sync_app.urls')),
-    path('switch-to-offline/', switch_to_offline, name='switch_to_offline'),
+    path('api/sync/', include('sync_api.urls')),
+    path('control/', include('control_panel.urls')),
+    path('offline/', include('offline_ins.urls')),
     path('ip/', include('ip_manager.urls')),
-
+    path('', include('home_app.urls')),
 ]
-
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 '''
             zipf.writestr('plasco_system/plasco/urls.py', urls_content)
 
