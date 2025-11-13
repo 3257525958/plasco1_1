@@ -287,7 +287,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'plasco.middleware.ControlPanelMiddleware',  # این خط اضافه شد
 ]
 
 ROOT_URLCONF = 'plasco.urls'
