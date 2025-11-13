@@ -459,7 +459,7 @@ urlpatterns = [
     path('control/', include('control_panel.urls')),
     path('offline/', include('offline_ins.urls')),
     path('ip/', include('ip_manager.urls')),
-    path('', include('home_app.urls')),
+    path('', app_home, name='home'),
 ]
 '''
             zipf.writestr('plasco_system/plasco/urls.py', urls_content)
