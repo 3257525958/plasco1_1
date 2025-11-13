@@ -161,7 +161,7 @@ def validate_ip_address(ip_address):
 
 
 def create_complete_install_package(selected_ips):
-    """ایجاد پکیج نصب کامل - بدون offline_ins و شبیه نسخه آنلاین"""
+    """ایجاد پکیج نصب کامل با پایتون توکار - نسخه نهایی"""
     try:
         BASE_DIR = settings.BASE_DIR
 
@@ -194,12 +194,11 @@ def create_complete_install_package(selected_ips):
                             zipf.write(file_path, arcname)
                 logger.info("✅ Added plasco folder completely")
 
-            # ==================== تمام اپلیکیشن‌های اصلی (بدون offline_ins) ====================
+            # ==================== تمام اپلیکیشن‌ها ====================
             app_folders = [
                 'account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
                 'it_app', 'pos_payment', 'sync_app', 'sync_api',
                 'control_panel', 'home_app', 'ip_manager'
-                # offline_ins حذف شد
             ]
 
             for app in app_folders:
@@ -237,7 +236,7 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل‌های پیکربندی و نصب ====================
 
-            # فایل settings_offline.py - بدون offline_ins
+            # فایل settings_offline.py - بهبود یافته
             settings_content = f'''
 """
 Django settings for plasco project - OFFLINE MODE
@@ -257,7 +256,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.1.100', '192.168.1.101', '192.168.1.102'] + {selected_ips}
 
-# اپلیکیشن‌های اصلی سیستم - offline_ins حذف شد
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -273,7 +271,7 @@ INSTALLED_APPS = [
     'import_export',
     'django_cleanup',
 
-    # Local apps - اپ‌های اصلی سیستم
+    # Local apps - فقط اپ‌های ضروری
     'account_app',
     'dashbord_app',
     'cantact_app',
@@ -374,11 +372,11 @@ SILENCED_SYSTEM_CHECKS = [
 # Offline mode flag
 OFFLINE_MODE = True
 
-print("🟢 Plasco Offline Mode - Running exactly like online version")
+print("🟢 Plasco Offline Mode Activated - SQLite Database")
 '''
             zipf.writestr('plasco_system/plasco/settings_offline.py', settings_content.strip())
 
-            # فایل settings.py اصلی که از آفلاین ایمپورت می‌کند
+            # فایل settings.py اصلی
             zipf.writestr('plasco_system/plasco/settings.py', 'from .settings_offline import *\n')
 
             # فایل __init__.py برای پوشه plasco
@@ -451,69 +449,104 @@ class {config_class}(AppConfig):
 '''
                 zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
 
-            # ==================== فایل urls.py اصلی - دقیقاً مانند نسخه آنلاین ====================
+            # ==================== فایل urls.py اصلی - کاملاً اصلاح شده ====================
             urls_content = '''
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import redirect
 from django.http import HttpResponse
 
-def redirect_to_main(request):
-    """هدایت به صفحه اصلی واقعی سیستم"""
-    # ابتدا سعی کنید به صفحه اصلی سیستم هدایت کنید
-    return redirect('/admin/')  # یا به مسیر اصلی سیستم‌تان
-
-# صفحه موقت برای اپ‌هایی که هنوز تنظیم نشده‌اند
-def app_placeholder(request, app_name=""):
-    return HttpResponse(f"""
+def home_view(request):
+    return HttpResponse("""
     <html>
         <head>
-            <title>سیستم پلاسکو - {app_name}</title>
+            <title>Plasco Offline System</title>
+            <meta charset="utf-8">
             <style>
-                body {{ font-family: Tahoma; text-align: center; padding: 50px; }}
-                .container {{ max-width: 800px; margin: 0 auto; }}
-                .info {{ background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; }}
+                body { 
+                    font-family: Tahoma, Arial, sans-serif; 
+                    text-align: center; 
+                    padding: 50px; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    min-height: 100vh;
+                    margin: 0;
+                }
+                .container { 
+                    background: rgba(255,255,255,0.1); 
+                    padding: 40px; 
+                    border-radius: 15px; 
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                .success { 
+                    color: #4CAF50; 
+                    font-size: 28px; 
+                    margin-bottom: 20px;
+                }
+                .info { 
+                    color: #E3F2FD; 
+                    margin: 20px 0; 
+                    line-height: 1.6;
+                }
+                ul { 
+                    list-style: none; 
+                    padding: 0; 
+                    margin: 20px 0;
+                }
+                li { 
+                    margin: 10px 0; 
+                    font-size: 18px;
+                }
+                a { 
+                    color: #FFD54F; 
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+                a:hover { 
+                    text-decoration: underline;
+                }
+                .credential-box {
+                    background: rgba(255,255,255,0.2);
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                }
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>🚧 اپلیکیشن {app_name}</h1>
+                <h1 class="success">✅ Plasco Offline System Installed Successfully!</h1>
                 <div class="info">
-                    <p>این اپلیکیشن در حالت آفلاین در حال اجراست.</p>
-                    <p>تمامی قابلیت‌های اصلی سیستم در دسترس هستند.</p>
+                    <p><strong>System is running in OFFLINE MODE</strong></p>
+                    <p>Access URLs:</p>
+                    <ul>
+                        <li>🏠 Main System: <a href="/">Home Page</a></li>
+                        <li>⚙️ Admin Panel: <a href="/admin/">Admin</a></li>
+                        <li>🔧 IP Management: <a href="/ip/ip_manager/">Manage IPs</a></li>
+                    </ul>
+                    <div class="credential-box">
+                        <p><strong>Admin Credentials:</strong></p>
+                        <p>Username: <strong>admin</strong></p>
+                        <p>Password: <strong>admin123</strong></p>
+                    </div>
+                    <p>First run may take a few minutes to complete setup.</p>
                 </div>
-                <p><a href="/">بازگشت به صفحه اصلی</a></p>
             </div>
         </body>
     </html>
     """)
 
 urlpatterns = [
-    # پنل مدیریت
     path('admin/', admin.site.urls),
-
-    # صفحه اصلی - هدایت به پنل مدیریت
-    path('', redirect_to_main, name='home'),
-
-    # مسیرهای اصلی سیستم - دقیقاً مانند نسخه آنلاین
-    path('accounts/', include('account_app.urls')),
-    path('dashboard/', include('dashbord_app.urls')),
-    path('contact/', include('cantact_app.urls')),
-    path('invoice/', include('invoice_app.urls')),
-    path('it/', include('it_app.urls')),
-    path('pos/', include('pos_payment.urls')),
-    path('sync/', include('sync_app.urls')),
-    path('api/sync/', include('sync_api.urls')),
-    path('control/', include('control_panel.urls')),
+    path('', home_view, name='home'),
     path('ip/', include('ip_manager.urls')),
-    path('home/', include('home_app.urls')),
 ]
 '''
             zipf.writestr('plasco_system/plasco/urls.py', urls_content)
 
-            # ==================== ایجاد فایل‌های urls.py برای همه اپ‌ها ====================
-
-            # فایل urls.py برای ip_manager
+            # ==================== فایل urls.py برای ip_manager ====================
             ip_manager_urls_content = '''
 from django.urls import path
 from . import views
@@ -529,69 +562,6 @@ urlpatterns = [
 ]
 '''
             zipf.writestr('plasco_system/ip_manager/urls.py', ip_manager_urls_content)
-
-            # فایل‌های urls.py ساده برای سایر اپ‌ها
-            simple_urls_content = '''
-from django.urls import path
-from django.http import HttpResponse
-
-def app_home(request):
-    app_name = __name__.split('.')[0]
-    return HttpResponse(f"""
-    <html>
-        <head>
-            <title>سیستم پلاسکو - {app_name}</title>
-            <style>
-                body {{ 
-                    font-family: Tahoma, Arial, sans-serif; 
-                    text-align: center; 
-                    padding: 50px; 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    min-height: 100vh;
-                    margin: 0;
-                }}
-                .container {{ 
-                    background: rgba(255,255,255,0.1); 
-                    padding: 40px; 
-                    border-radius: 15px; 
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255,255,255,0.2);
-                    max-width: 600px;
-                    margin: 0 auto;
-                }}
-                .success {{ color: #4CAF50; font-size: 24px; margin-bottom: 20px; }}
-                .info {{ color: #E3F2FD; margin: 20px 0; line-height: 1.6; }}
-                a {{ color: #FFD54F; text-decoration: none; font-weight: bold; }}
-                a:hover {{ text-decoration: underline; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1 class="success">✅ اپلیکیشن {app_name}</h1>
-                <div class="info">
-                    <p>این اپلیکیشن در حالت آفلاین با موفقیت اجرا شده است.</p>
-                    <p>تمامی قابلیت‌های اصلی سیستم در دسترس هستند.</p>
-                    <p><strong>حالت:</strong> آفلاین</p>
-                </div>
-                <p><a href="/">بازگشت به صفحه اصلی</a> | <a href="/admin/">پنل مدیریت</a></p>
-            </div>
-        </body>
-    </html>
-    """.format(app_name=app_name))
-
-urlpatterns = [
-    path('', app_home, name='app_home'),
-]
-'''
-
-            # ایجاد فایل urls.py برای همه اپ‌های دیگر
-            other_apps = ['account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
-                          'it_app', 'pos_payment', 'sync_app', 'sync_api',
-                          'control_panel', 'home_app']
-
-            for app in other_apps:
-                zipf.writestr(f'plasco_system/{app}/urls.py', simple_urls_content)
 
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
 
@@ -811,22 +781,22 @@ echo [OK] !PYTHON_VERSION! detected
 echo.
 
 echo Step 2: Setting up library stubs for offline mode...
-mkdir plasco_system\\escpos 2>nul
+mkdir plasco_system\escpos 2>nul
 
-copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
-copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
-copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\account_app\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\cantact_app\kavenegar.py >nul 2>&1
+copy plasco_system\kavenegar.py plasco_system\invoice_app\kavenegar.py >nul 2>&1
 
-copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\dashbord_app\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\pos_payment\escpos.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\invoice_app\escpos.py >nul 2>&1
 
-copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
-copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\escpos\__init__.py >nul 2>&1
+copy plasco_system\escpos.py plasco_system\escpos\printer.py >nul 2>&1
 
-copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
-copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
-copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\dashbord_app\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\pos_payment\serial.py >nul 2>&1
+copy plasco_system\serial.py plasco_system\invoice_app\serial.py >nul 2>&1
 
 echo [OK] Library stubs setup completed
 echo.
@@ -1071,8 +1041,6 @@ Troubleshooting:
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
-
-
 @csrf_exempt
 def create_offline_installer(request):
     """ایجاد و دانلود فایل نصب"""

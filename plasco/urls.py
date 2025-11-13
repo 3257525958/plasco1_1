@@ -5,18 +5,18 @@ from . import settings
 
 # ایمپورت ویوها
 from control_panel.views import control_panel, set_mode
-# from offline_ins.views import offline_install, install_step, offline_success
+from offline_ins.views import offline_install, install_step, offline_success
 from home_app.views import home_def  # تابع home شما
-# from offline_ins.views import switch_to_offline
+from offline_ins.views import switch_to_offline
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_def, name='home'),  # صفحه اصلی با تابع home_def شما
     path('control-panel/', control_panel, name='control_panel'),
     path('set-mode/', set_mode, name='set_mode'),
-    # path('offline/install/', offline_install, name='offline_install'),
-    # path('offline/install-step/', install_step, name='install_step'),
-    # path('offline/success/', offline_success, name='offline_success'),
+    path('offline/install/', offline_install, name='offline_install'),
+    path('offline/install-step/', install_step, name='install_step'),
+    path('offline/success/', offline_success, name='offline_success'),
 
     # سایر URLهای اپ‌های شما
     path('cantact/', include('cantact_app.urls')),
