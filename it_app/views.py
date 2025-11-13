@@ -6,9 +6,10 @@ from decimal import Decimal
 import math
 from dashbord_app.models import Invoice, InvoiceItem
 from cantact_app.models import Branch
-from account_app.models import InventoryCount
-from django.db.models import Max
+from account_app.models import InventoryCount, ProductPricing
+from django.db.models import Max, Sum
 from decimal import Decimal
+from django.http import JsonResponse
 
 
 def invoice_list(request):
@@ -16,6 +17,19 @@ def invoice_list(request):
     نمایش لیست فاکتورها
     """
     invoices = Invoice.objects.all().prefetch_related('items')
+
+    # محاسبه مجموع remaining_quantity برای هر فاکتور
+    for invoice in invoices:
+        total_remaining = invoice.items.aggregate(
+            total_remaining=Sum('remaining_quantity')
+        )['total_remaining'] or 0
+        invoice.total_remaining = total_remaining
+
+        total_quantity = invoice.items.aggregate(
+            total_quantity=Sum('quantity')
+        )['total_quantity'] or 0
+        invoice.total_quantity = total_quantity
+
     return render(request, 'invoice_list.html', {'invoices': invoices})
 
 
@@ -177,7 +191,7 @@ def distribute_inventory(request):
                                 'quantity': qty_for_branch,
                                 'counter': request.user,
                                 'selling_price': product['max_selling_price'],
-                                'profit_percentage': Decimal('30.00')
+                                'profit_percentage': Decimal('100.00')  # تغییر به 100 درصد
                             }
                         )
 
@@ -187,6 +201,7 @@ def distribute_inventory(request):
                                 inventory_obj.selling_price or 0,
                                 product['max_selling_price']
                             )
+                            inventory_obj.profit_percentage = Decimal('100.00')  # به‌روزرسانی درصد سود
                             inventory_obj.save()
 
                         product_distributed += qty_for_branch
@@ -223,14 +238,12 @@ def distribute_inventory(request):
 
     return redirect('invoice_list')
 
+
 # ---------------------------------------------------------------پاک کردن قیمت ها------------------
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
-from account_app.models import ProductPricing
-
-
 
 
 @require_http_methods(["GET", "POST"])
@@ -278,12 +291,10 @@ def delete_all_product_pricing(request):
     return render(request, 'delete_all_product_pricing.html', context)
 
 
-
 # ------------------------------------------------------پاک کردن کل دیتاهای انبار------------------------------------------
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
-from account_app.models import InventoryCount
 
 
 @require_POST
@@ -305,4 +316,4 @@ def clear_inventory(request):
     except Exception as e:
         messages.error(request, f"❌ خطا در پاک کردن داده‌های انبار: {str(e)}")
 
-    return redirect('invoice_list')  # تغییر به نام URL واقعی شما
+    return redirect('invoice_list')

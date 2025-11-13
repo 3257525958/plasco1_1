@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -240,6 +239,62 @@
             background: var(--danger-color) !important;
         }
 
+        .progress-container {
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-success);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .distribution-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-right: 4px solid var(--info-color);
+        }
+
+        .distribution-item {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .distribution-item:last-child {
+            border-bottom: none;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -269,6 +324,11 @@
             
             .action-buttons .btn {
                 min-width: 100%;
+            }
+
+            .progress-info {
+                flex-direction: column;
+                gap: 5px;
             }
         }
     </style>
@@ -310,11 +370,14 @@
                                 <th class="checkbox-cell">
                                     <input type="checkbox" id="selectAllCheckbox">
                                 </th>
+                                <th>ردیف</th>
                                 <th>شماره سریال</th>
                                 <th>فروشنده</th>
                                 <th>تاریخ فاکتور</th>
                                 <th>تاریخ صدور</th>
                                 <th>تعداد آیتم‌ها</th>
+                                <th>تعداد کل</th>
+                                <th>تعداد باقیمانده</th>
                                 <th>وضعیت</th>
                             </tr>
                         </thead>
@@ -323,6 +386,9 @@
                             <tr>
                                 <td>
                                     <input type="checkbox" name="selected_invoices" value="{{ invoice.id }}" class="invoice-checkbox">
+                                </td>
+                                <td>
+                                    <strong>{{ forloop.counter }}</strong>
                                 </td>
                                 <td>
                                     <strong>{{ invoice.serial_number }}</strong>
@@ -334,22 +400,28 @@
                                     <span class="badge bg-primary">{{ invoice.items.count }}</span>
                                 </td>
                                 <td>
-                                    {% with total_items=invoice.items.count %}
-                                        {% with remaining_items=invoice.items.all|length %}
-                                            {% if remaining_items == total_items %}
-                                                <span class="status-badge bg-success">کامل</span>
-                                            {% elif remaining_items == 0 %}
-                                                <span class="status-badge bg-danger">اتمام</span>
-                                            {% else %}
-                                                <span class="status-badge bg-warning">جزیی</span>
-                                            {% endif %}
-                                        {% endwith %}
-                                    {% endwith %}
+                                    <span class="badge bg-info">{{ invoice.total_quantity }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if invoice.total_remaining > 0 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ invoice.total_remaining }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if invoice.total_remaining == invoice.total_quantity %}
+                                        <span class="status-badge bg-success">کامل</span>
+                                    {% elif invoice.total_remaining == 0 %}
+                                        <span class="status-badge bg-danger">اتمام</span>
+                                    {% else %}
+                                        <span class="status-badge bg-warning">
+                                            جزیی ({{ invoice.total_remaining }}/{{ invoice.total_quantity }})
+                                        </span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="7" class="text-center py-4">
+                                <td colspan="10" class="text-center py-4">
                                     <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                                     <p class="text-muted">هیچ فاکتوری یافت نشد.</p>
                                 </td>
@@ -418,6 +490,36 @@
         </div>
     </div>
 </div>    
+
+<!-- مودال نمایش پیشرفت توزیع -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-sync-alt fa-spin text-info"></i> در حال توزیع کالاها...</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span id="currentInvoiceInfo">آماده سازی...</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+                    </div>
+                </div>
+                
+                <div class="distribution-details">
+                    <h6><i class="fas fa-info-circle"></i> جزئیات توزیع:</h6>
+                    <div id="distributionDetails">
+                        <!-- جزئیات توزیع به صورت داینامیک نمایش داده می‌شود -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- مودال تایید ریست -->
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -444,6 +546,7 @@
             </div>
         </div>
     </div>
+
 <!-- مودال تایید پاک کردن تمام داده‌های انبار -->
 <div class="modal fade" id="clearInventoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -478,6 +581,7 @@
         </div>
     </div>
 </div>    
+
 <!-- مودال تایید توزیع -->
 <div class="modal fade" id="distributionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -496,6 +600,7 @@
                         <li>اگر کالا از قبل در انبار وجود داشته باشد، <strong>تعداد اضافه</strong> می‌شود</li>
                         <li><strong>تعداد باقیمانده تمام آیتم‌ها صفر خواهد شد</strong></li>
                         <li>این عملیات غیرقابل بازگشت است</li>
+                        <li><strong>درصد سود: ۱۰۰٪</strong></li>
                     </ul>
                 </div>
                 <div class="alert alert-warning">
@@ -557,19 +662,18 @@
                     return;
                 }
 
-                // تنظیم action برای توزیع
-                $('#actionType').val('distribute_inventory');
-                
-                // نمایش مودال تایید
+                // نمایش مودال تایید توزیع
                 var distributionModal = new bootstrap.Modal(document.getElementById('distributionModal'));
                 distributionModal.show();
             });
+
             // مدیریت دکمه پاک کردن انبار
             $('#clearInventoryButton').on('click', function() {
-    // نمایش مودال تایید
-    var clearInventoryModal = new bootstrap.Modal(document.getElementById('clearInventoryModal'));
-    clearInventoryModal.show();
-});
+                // نمایش مودال تایید
+                var clearInventoryModal = new bootstrap.Modal(document.getElementById('clearInventoryModal'));
+                clearInventoryModal.show();
+            });
+
             // مدیریت دکمه پاک کردن دیتای قیمت‌ها
             $('#deletePricingButton').on('click', function() {
                 // نمایش مودال تایید
@@ -600,9 +704,18 @@
 
             // تایید توزیع در مودال
             $('#confirmDistribution').on('click', function() {
-                $('#invoiceForm').attr('action', "{% url 'distribute_inventory' %}");
-                $('#invoiceForm').submit();
-                $('#distributionModal').modal('hide');
+                // نمایش مودال پیشرفت
+                var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                progressModal.show();
+                
+                // شروع شبیه‌سازی پیشرفت
+                simulateDistributionProgress();
+                
+                // ارسال فرم پس از تأخیر
+                setTimeout(function() {
+                    $('#invoiceForm').attr('action', "{% url 'distribute_inventory' %}");
+                    $('#invoiceForm').submit();
+                }, 3000); // تأخیر 3 ثانیه برای نمایش پیشرفت
             });
 
             // هماهنگی چک‌باکس هدر با بقیه
@@ -617,8 +730,83 @@
                     $('#selectAllCheckbox').prop('checked', true);
                 }
             });
+
+            // تابع شبیه‌سازی پیشرفت توزیع
+            function simulateDistributionProgress() {
+                var progress = 0;
+                var progressInterval = setInterval(function() {
+                    progress += 5;
+                    if (progress > 100) {
+                        progress = 100;
+                        clearInterval(progressInterval);
+                    }
+                    
+                    // به‌روزرسانی نوار پیشرفت
+                    $('#progressFill').css('width', progress + '%').text(progress + '%');
+                    $('#progressPercentage').text(progress + '%');
+                    
+                    // به‌روزرسانی اطلاعات
+                    updateProgressInfo(progress);
+                    
+                }, 150);
+            }
+
+            // تابع به‌روزرسانی اطلاعات پیشرفت
+            function updateProgressInfo(progress) {
+                var stages = [
+                    {percent: 0, text: "آماده سازی برای توزیع..."},
+                    {percent: 10, text: "در حال خواندن اطلاعات فاکتورها..."},
+                    {percent: 25, text: "محاسبه مجموع کالاهای باقیمانده..."},
+                    {percent: 40, text: "توزیع کالاها بین شعب..."},
+                    {percent: 60, text: "بروزرسانی موجودی انبارها..."},
+                    {percent: 80, text: "صفر کردن تعداد باقیمانده..."},
+                    {percent: 95, text: "پایان عملیات توزیع..."},
+                    {percent: 100, text: "توزیع با موفقیت انجام شد!"}
+                ];
+
+                var currentStage = stages[0];
+                for (var i = stages.length - 1; i >= 0; i--) {
+                    if (progress >= stages[i].percent) {
+                        currentStage = stages[i];
+                        break;
+                    }
+                }
+
+                $('#currentInvoiceInfo').html(
+                    '<i class="fas fa-sync-alt fa-spin"></i> ' + currentStage.text
+                );
+
+                // نمایش جزئیات توزیع
+                var detailsHtml = '';
+                if (progress >= 25) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-file-invoice text-primary"></i> فاکتورهای انتخاب شده: ' + $('input[name="selected_invoices"]:checked').length + ' فاکتور</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 40) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-boxes text-success"></i> کالاهای در حال توزیع: چندین محصول</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 60) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-store text-info"></i> شعب: در حال به‌روزرسانی</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 80) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-check-circle text-success"></i> تعداد باقیمانده: در حال صفر شدن</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 95) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-tasks text-primary"></i> درصد سود: 100%</span>';
+                    detailsHtml += '</div>';
+                }
+
+                $('#distributionDetails').html(detailsHtml);
+            }
         });
     </script>
 </body>
 </html>
-
