@@ -40,6 +40,7 @@
 #     'sync_app',
 #     'sync_api',
 #     'control_panel',
+#     'offline_ins',
 #     'ip_manager'
 # ]
 #
@@ -177,6 +178,7 @@ INSTALLED_APPS = [
     'sync_app',
     'sync_api',
     'control_panel',
+    'offline_ins',
     'ip_manager'
 ]
 
