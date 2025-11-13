@@ -450,7 +450,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('account_app.urls')),
     path('dashboard/', include('dashbord_app.urls')),
-    path('contact/', include('cantact_app.urls')),
+    path('cantact/', include('cantact_app.urls')),
     path('invoice/', include('invoice_app.urls')),
     path('it/', include('it_app.urls')),
     path('pos/', include('pos_payment.urls')),

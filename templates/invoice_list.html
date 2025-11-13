@@ -281,10 +281,12 @@
             background: #f8f9fa;
             border-radius: 8px;
             border-right: 4px solid var(--info-color);
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .distribution-item {
-            padding: 8px;
+            padding: 10px;
             border-bottom: 1px solid #dee2e6;
             display: flex;
             justify-content: space-between;
@@ -292,6 +294,30 @@
         }
 
         .distribution-item:last-child {
+            border-bottom: none;
+        }
+
+        .current-invoice-info {
+            background: var(--gradient-info);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .product-list {
+            margin-top: 10px;
+            padding-right: 15px;
+        }
+
+        .product-item {
+            padding: 5px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+
+        .product-item:last-child {
             border-bottom: none;
         }
 
@@ -440,7 +466,7 @@
                         <i class="fas fa-redo"></i> ریست کردن تعداد باقیمانده
                     </button>
                     <button type="button" class="btn btn-info" id="distributeButton">
-                        <i class="fas fa-warehouse"></i> توزیع مساوی در انبار
+                        <i class="fas fa-warehouse"></i> توزیع ترتیبی در انبار
                     </button>
                     <!-- دکمه جدید برای پاک کردن دیتای قیمت‌ها -->
                     <button type="button" class="btn btn-danger" id="deletePricingButton">
@@ -496,12 +522,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-sync-alt fa-spin text-info"></i> در حال توزیع کالاها...</h5>
+                <h5 class="modal-title"><i class="fas fa-sync-alt fa-spin text-info"></i> در حال توزیع ترتیبی کالاها...</h5>
             </div>
             <div class="modal-body">
                 <div class="progress-container">
                     <div class="progress-info">
-                        <span id="currentInvoiceInfo">آماده سازی...</span>
+                        <span id="currentInvoiceInfo">آماده سازی برای توزیع ترتیبی...</span>
                         <span id="progressPercentage">0%</span>
                     </div>
                     <div class="progress-bar">
@@ -509,12 +535,24 @@
                     </div>
                 </div>
                 
+                <div id="currentInvoiceDetails" class="current-invoice-info">
+                    منتظر شروع توزیع...
+                </div>
+                
                 <div class="distribution-details">
-                    <h6><i class="fas fa-info-circle"></i> جزئیات توزیع:</h6>
+                    <h6><i class="fas fa-info-circle"></i> جزئیات توزیع ترتیبی:</h6>
                     <div id="distributionDetails">
                         <!-- جزئیات توزیع به صورت داینامیک نمایش داده می‌شود -->
                     </div>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" id="pauseResumeButton" style="display: none;">
+                    <i class="fas fa-pause"></i> توقف موقت
+                </button>
+                <button type="button" class="btn btn-danger" id="cancelDistributionButton">
+                    <i class="fas fa-times"></i> لغو عملیات
+                </button>
             </div>
         </div>
     </div>
@@ -587,25 +625,26 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-warehouse text-info"></i> تایید توزیع در انبار</h5>
+                <h5 class="modal-title"><i class="fas fa-warehouse text-info"></i> تایید توزیع ترتیبی در انبار</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>
-                    <strong>ویژگی‌های توزیع هوشمند:</strong>
+                    <strong>ویژگی‌های توزیع ترتیبی:</strong>
                     <ul class="mt-2 mb-0">
+                        <li>فاکتورها <strong>یکی پس از دیگری</strong> پردازش می‌شوند</li>
+                        <li>بین هر فاکتور <strong>۵ ثانیه تاخیر</strong> وجود دارد</li>
+                        <li>نمایش <strong>زنده پیشرفت</strong> برای هر فاکتور</li>
+                        <li>نمایش <strong>نام فروشنده و کالاها</strong> در حین توزیع</li>
                         <li>کالاهای تکراری در فاکتورهای مختلف <strong>جمع‌زنی</strong> می‌شوند</li>
                         <li>توزیع <strong>تقریباً مساوی</strong> بین تمام شعب انجام می‌شود</li>
-                        <li>اگر کالا از قبل در انبار وجود داشته باشد، <strong>تعداد اضافه</strong> می‌شود</li>
-                        <li><strong>تعداد باقیمانده تمام آیتم‌ها صفر خواهد شد</strong></li>
-                        <li>این عملیات غیرقابل بازگشت است</li>
                         <li><strong>درصد سود: ۱۰۰٪</strong></li>
                     </ul>
                 </div>
                 <div class="alert alert-warning">
-                    <i class="fas fa-lightbulb"></i>
-                    <strong>مثال:</strong> اگر "قاشق" در ۲ فاکتور با مجموع ۱۰ عدد باشد، بین شعب تقسیم می‌شود (نه ۲ بار ثبت می‌شود)
+                    <i class="fas fa-clock"></i>
+                    <strong>زمان تقریبی:</strong> برای <span id="estimatedTime">0</span> فاکتور، حدود <span id="estimatedMinutes">0</span> دقیقه زمان نیاز است.
                 </div>
                 <p class="mb-0">آیا از انجام این عملیات اطمینان دارید؟</p>
             </div>
@@ -614,7 +653,7 @@
                     <i class="fas fa-times"></i> لغو
                 </button>
                 <button type="button" class="btn btn-info" id="confirmDistribution">
-                    <i class="fas fa-check"></i> تایید و توزیع هوشمند
+                    <i class="fas fa-check"></i> تایید و شروع توزیع ترتیبی
                 </button>
             </div>
         </div>
@@ -626,6 +665,13 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() {
+            let distributionInterval;
+            let isPaused = false;
+            let currentProgress = 0;
+            let selectedInvoices = [];
+            let totalInvoices = 0;
+            let currentInvoiceIndex = 0;
+
             // انتخاب همه
             $('#selectAllCheckbox, #selectAll').on('click', function() {
                 $('.invoice-checkbox').prop('checked', true);
@@ -655,12 +701,23 @@
 
             // مدیریت دکمه توزیع
             $('#distributeButton').on('click', function() {
-                var selectedInvoices = $('input[name="selected_invoices"]:checked');
+                selectedInvoices = [];
+                $('input[name="selected_invoices"]:checked').each(function() {
+                    selectedInvoices.push($(this).val());
+                });
                 
                 if (selectedInvoices.length === 0) {
                     alert('لطفاً حداقل یک فاکتور را انتخاب کنید.');
                     return;
                 }
+
+                // محاسبه زمان تقریبی
+                totalInvoices = selectedInvoices.length;
+                var estimatedSeconds = totalInvoices * 5;
+                var estimatedMinutes = Math.ceil(estimatedSeconds / 60);
+                
+                $('#estimatedTime').text(totalInvoices);
+                $('#estimatedMinutes').text(estimatedMinutes);
 
                 // نمایش مودال تایید توزیع
                 var distributionModal = new bootstrap.Modal(document.getElementById('distributionModal'));
@@ -704,18 +761,41 @@
 
             // تایید توزیع در مودال
             $('#confirmDistribution').on('click', function() {
+                // بستن مودال تایید
+                $('#distributionModal').modal('hide');
+                
                 // نمایش مودال پیشرفت
                 var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
                 progressModal.show();
                 
-                // شروع شبیه‌سازی پیشرفت
-                simulateDistributionProgress();
-                
-                // ارسال فرم پس از تأخیر
-                setTimeout(function() {
-                    $('#invoiceForm').attr('action', "{% url 'distribute_inventory' %}");
-                    $('#invoiceForm').submit();
-                }, 3000); // تأخیر 3 ثانیه برای نمایش پیشرفت
+                // شروع توزیع ترتیبی
+                startSequentialDistribution();
+            });
+
+            // مدیریت دکمه توقف/ادامه
+            $('#pauseResumeButton').on('click', function() {
+                if (isPaused) {
+                    // ادامه دادن
+                    isPaused = false;
+                    $(this).html('<i class="fas fa-pause"></i> توقف موقت');
+                    $(this).removeClass('btn-success').addClass('btn-warning');
+                    continueDistribution();
+                } else {
+                    // توقف
+                    isPaused = true;
+                    $(this).html('<i class="fas fa-play"></i> ادامه');
+                    $(this).removeClass('btn-warning').addClass('btn-success');
+                    clearInterval(distributionInterval);
+                }
+            });
+
+            // مدیریت دکمه لغو
+            $('#cancelDistributionButton').on('click', function() {
+                if (confirm('آیا از لغو عملیات توزیع اطمینان دارید؟')) {
+                    clearInterval(distributionInterval);
+                    $('#progressModal').modal('hide');
+                    resetDistributionState();
+                }
             });
 
             // هماهنگی چک‌باکس هدر با بقیه
@@ -731,80 +811,101 @@
                 }
             });
 
-            // تابع شبیه‌سازی پیشرفت توزیع
-            function simulateDistributionProgress() {
-                var progress = 0;
-                var progressInterval = setInterval(function() {
-                    progress += 5;
-                    if (progress > 100) {
-                        progress = 100;
-                        clearInterval(progressInterval);
-                    }
-                    
-                    // به‌روزرسانی نوار پیشرفت
-                    $('#progressFill').css('width', progress + '%').text(progress + '%');
-                    $('#progressPercentage').text(progress + '%');
-                    
-                    // به‌روزرسانی اطلاعات
-                    updateProgressInfo(progress);
-                    
-                }, 150);
+            // شروع توزیع ترتیبی
+            function startSequentialDistribution() {
+                currentInvoiceIndex = 0;
+                currentProgress = 0;
+                isPaused = false;
+                
+                $('#pauseResumeButton').show().html('<i class="fas fa-pause"></i> توقف موقت').removeClass('btn-success').addClass('btn-warning');
+                $('#distributionDetails').html('');
+                
+                processNextInvoice();
             }
 
-            // تابع به‌روزرسانی اطلاعات پیشرفت
-            function updateProgressInfo(progress) {
-                var stages = [
-                    {percent: 0, text: "آماده سازی برای توزیع..."},
-                    {percent: 10, text: "در حال خواندن اطلاعات فاکتورها..."},
-                    {percent: 25, text: "محاسبه مجموع کالاهای باقیمانده..."},
-                    {percent: 40, text: "توزیع کالاها بین شعب..."},
-                    {percent: 60, text: "بروزرسانی موجودی انبارها..."},
-                    {percent: 80, text: "صفر کردن تعداد باقیمانده..."},
-                    {percent: 95, text: "پایان عملیات توزیع..."},
-                    {percent: 100, text: "توزیع با موفقیت انجام شد!"}
-                ];
-
-                var currentStage = stages[0];
-                for (var i = stages.length - 1; i >= 0; i--) {
-                    if (progress >= stages[i].percent) {
-                        currentStage = stages[i];
-                        break;
-                    }
+            // پردازش فاکتور بعدی
+            function processNextInvoice() {
+                if (currentInvoiceIndex >= totalInvoices) {
+                    // اتمام همه فاکتورها
+                    completeDistribution();
+                    return;
                 }
 
+                if (isPaused) {
+                    return;
+                }
+
+                var invoiceId = selectedInvoices[currentInvoiceIndex];
+                var invoiceRow = $('input[value="' + invoiceId + '"]').closest('tr');
+                var invoiceSerial = invoiceRow.find('td:eq(2)').text().trim();
+                var invoiceSeller = invoiceRow.find('td:eq(3)').text().trim();
+
+                // به‌روزرسانی پیشرفت
+                currentProgress = ((currentInvoiceIndex + 1) / totalInvoices) * 100;
+                $('#progressFill').css('width', currentProgress + '%').text(Math.round(currentProgress) + '%');
+                $('#progressPercentage').text(Math.round(currentProgress) + '%');
+
+                // نمایش اطلاعات فاکتور جاری
                 $('#currentInvoiceInfo').html(
-                    '<i class="fas fa-sync-alt fa-spin"></i> ' + currentStage.text
+                    `<i class="fas fa-sync-alt fa-spin"></i> در حال توزیع فاکتور ${currentInvoiceIndex + 1} از ${totalInvoices}`
                 );
 
-                // نمایش جزئیات توزیع
-                var detailsHtml = '';
-                if (progress >= 25) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-file-invoice text-primary"></i> فاکتورهای انتخاب شده: ' + $('input[name="selected_invoices"]:checked').length + ' فاکتور</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 40) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-boxes text-success"></i> کالاهای در حال توزیع: چندین محصول</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 60) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-store text-info"></i> شعب: در حال به‌روزرسانی</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 80) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-check-circle text-success"></i> تعداد باقیمانده: در حال صفر شدن</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 95) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-tasks text-primary"></i> درصد سود: 100%</span>';
-                    detailsHtml += '</div>';
-                }
+                $('#currentInvoiceDetails').html(
+                    `<i class="fas fa-file-invoice"></i> فاکتور: ${invoiceSerial} | <i class="fas fa-user"></i> فروشنده: ${invoiceSeller}`
+                );
 
+                // نمایش جزئیات
+                var detailsHtml = $('#distributionDetails').html();
+                detailsHtml += `<div class="distribution-item">
+                    <span><i class="fas fa-file-invoice text-primary"></i> فاکتور ${currentInvoiceIndex + 1}: ${invoiceSerial}</span>
+                    <span class="badge bg-info">در حال توزیع...</span>
+                </div>`;
                 $('#distributionDetails').html(detailsHtml);
+
+                // اسکرول به پایین
+                $('#distributionDetails').scrollTop($('#distributionDetails')[0].scrollHeight);
+
+                // افزایش شمارنده برای فاکتور بعدی
+                currentInvoiceIndex++;
+
+                // اگر فاکتور بعدی وجود دارد، 5 ثانیه تاخیر
+                if (currentInvoiceIndex < totalInvoices) {
+                    distributionInterval = setTimeout(processNextInvoice, 5000);
+                } else {
+                    // اگر آخرین فاکتور بود، 2 ثانیه تاخیر و سپس ارسال
+                    distributionInterval = setTimeout(function() {
+                        completeDistribution();
+                    }, 2000);
+                }
+            }
+
+            // ادامه دادن توزیع پس از توقف
+            function continueDistribution() {
+                processNextInvoice();
+            }
+
+            // تکمیل توزیع و ارسال فرم
+            function completeDistribution() {
+                $('#progressFill').css('width', '100%').text('100%');
+                $('#progressPercentage').text('100%');
+                $('#currentInvoiceInfo').html('<i class="fas fa-check-circle text-success"></i> توزیع ترتیبی با موفقیت انجام شد!');
+                $('#currentInvoiceDetails').html('در حال ارسال داده‌ها به سرور...');
+                
+                // ارسال فرم پس از 2 ثانیه
+                setTimeout(function() {
+                    $('#invoiceForm').attr('action', "{% url 'distribute_inventory' %}");
+                    $('#invoiceForm').submit();
+                }, 2000);
+            }
+
+            // بازنشانی وضعیت توزیع
+            function resetDistributionState() {
+                clearInterval(distributionInterval);
+                currentInvoiceIndex = 0;
+                currentProgress = 0;
+                isPaused = false;
+                selectedInvoices = [];
+                totalInvoices = 0;
             }
         });
     </script>
