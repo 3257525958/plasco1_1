@@ -159,6 +159,7 @@ def validate_ip_address(ip_address):
 
     return True
 
+
 def create_complete_install_package(selected_ips):
     """ایجاد پکیج نصب کامل با تنظیمات آفلاین سفارشی"""
     try:
@@ -370,7 +371,7 @@ SILENCED_SYSTEM_CHECKS = [
             # فایل settings.py اصلی که از آفلاین ایمپورت می‌کند
             zipf.writestr('plasco_system/plasco/settings.py', 'from .settings_offline import *\n')
 
-            # ==================== فایل requirements ====================
+            # ==================== فایل requirements با user-agents ====================
             requirements_content = '''# Plasco Offline System - Python 3.8+ Compatible
 Django==4.2.7
 django-cors-headers==4.3.1
@@ -396,8 +397,117 @@ pyserial==3.5
 pymysql==1.1.0
 sqlparse==0.4.4
 asgiref==3.7.2
+user-agents==2.2.0  # برای middleware
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
+
+            # ==================== فایل‌های apps.py برای اپلیکیشن‌ها ====================
+
+            # فایل apps.py برای ip_manager
+            ip_manager_apps_content = '''
+from django.apps import AppConfig
+
+class IpManagerConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'ip_manager'
+    verbose_name = 'مدیریت IPها'
+'''
+            zipf.writestr('plasco_system/ip_manager/apps.py', ip_manager_apps_content)
+
+            # فایل‌های apps.py برای سایر اپلیکیشن‌ها
+            apps_configs = {
+                'account_app': 'AccountAppConfig',
+                'dashbord_app': 'DashbordAppConfig',
+                'cantact_app': 'CantactAppConfig',
+                'invoice_app': 'InvoiceAppConfig',
+                'it_app': 'ItAppConfig',
+                'pos_payment': 'PosPaymentConfig',
+                'sync_app': 'SyncAppConfig',
+                'sync_api': 'SyncApiConfig',
+                'control_panel': 'ControlPanelConfig',
+                'offline_ins': 'OfflineInsConfig',
+                'home_app': 'HomeAppConfig'
+            }
+
+            for app_name, config_class in apps_configs.items():
+                apps_content = f'''
+from django.apps import AppConfig
+
+class {config_class}(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = '{app_name}'
+    verbose_name = '{app_name}'
+'''
+                zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
+
+            # ==================== فایل urls.py اصلی ====================
+            urls_content = '''
+from django.contrib import admin
+from django.urls import path, include
+from django.shortcuts import redirect
+
+def redirect_to_main(request):
+    """هدایت به صفحه اصلی واقعی سیستم"""
+    return redirect('/admin/')
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', redirect_to_main, name='home'),
+    path('accounts/', include('account_app.urls')),
+    path('dashboard/', include('dashbord_app.urls')),
+    path('contact/', include('cantact_app.urls')),
+    path('invoice/', include('invoice_app.urls')),
+    path('it/', include('it_app.urls')),
+    path('pos/', include('pos_payment.urls')),
+    path('sync/', include('sync_app.urls')),
+    path('api/sync/', include('sync_api.urls')),
+    path('control/', include('control_panel.urls')),
+    path('offline/', include('offline_ins.urls')),
+    path('ip/', include('ip_manager.urls')),
+    path('home/', include('home_app.urls')),
+]
+'''
+            zipf.writestr('plasco_system/plasco/urls.py', urls_content)
+
+            # ==================== ایجاد فایل‌های urls.py برای همه اپ‌ها ====================
+
+            # فایل urls.py برای ip_manager
+            ip_manager_urls_content = '''
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('ip_manager/', views.manage_ips, name='manage_ips'),
+    path('ip_manager/api/list/', views.list_ips, name='list_ips'),
+    path('ip_manager/api/add/', views.add_ip, name='add_ip'),
+    path('ip_manager/api/delete/<int:ip_id>/', views.delete_ip, name='delete_ip'),
+    path('ip_manager/api/update/<int:ip_id>/', views.update_ip, name='update_ip'),
+    path('ip_manager/api/toggle/<int:ip_id>/', views.toggle_ip, name='toggle_ip'),
+    path('ip_manager/api/create-offline-installer/', views.create_offline_installer, name='create_offline_installer'),
+]
+'''
+            zipf.writestr('plasco_system/ip_manager/urls.py', ip_manager_urls_content)
+
+            # فایل‌های urls.py ساده برای سایر اپ‌ها
+            simple_urls_content = '''
+from django.urls import path
+from django.http import HttpResponse
+
+def app_home(request):
+    return HttpResponse("🔄 این اپلیکیشن در حالت آفلاین در حال اجراست.")
+
+urlpatterns = [
+    path('', app_home, name='app_home'),
+]
+'''
+
+            # ایجاد فایل urls.py برای همه اپ‌های دیگر
+            other_apps = ['account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
+                          'it_app', 'pos_payment', 'sync_app', 'sync_api',
+                          'control_panel', 'offline_ins', 'home_app']
+
+            for app in other_apps:
+                zipf.writestr(f'plasco_system/{app}/urls.py', simple_urls_content)
 
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
 
@@ -585,7 +695,7 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 '''
             zipf.writestr('plasco_system/serial.py', serial_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) ====================
+            # ==================== فایل نصب اصلی (BAT) با user-agents ====================
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System Installer
@@ -683,6 +793,7 @@ python -m pip install pyserial==3.5
 python -m pip install pymysql==1.1.0
 python -m pip install sqlparse==0.4.4
 python -m pip install asgiref==3.7.2
+python -m pip install user-agents==2.2.0
 
 echo [OK] All packages installed successfully
 echo.
