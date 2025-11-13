@@ -39,6 +39,44 @@
             color: var(--text-color);
             direction: rtl;
         }
+        .search-results {
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    max-height: 400px; /* افزایش ارتفاع */
+    overflow-y: auto;
+    margin-top: 8px;
+    background: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: none;
+    z-index: 1000;
+    position: absolute;
+    width: 100%;
+}
+
+.search-result-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+    line-height: 1.5;
+}
+
+.search-result-item:hover {
+    background-color: var(--light-bg);
+}
+
+.search-result-item strong {
+    color: var(--primary-color);
+    font-size: 16px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.search-result-item div {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 2px;
+}
 
         .edit-invoice-container {
             max-width: 1400px;
@@ -589,45 +627,47 @@
         }
 
         // جستجوی فاکتور برای ویرایش
+        // جستجوی فاکتور برای ویرایش
         $('#edit-invoice-search').on('input', function() {
-            const query = $(this).val().trim();
-            const convertedQuery = convertPersianToEnglishNumbers(query);
+    const query = $(this).val().trim();
+    const convertedQuery = convertPersianToEnglishNumbers(query);
 
-            if (convertedQuery.length < 2) {
-                $('#edit-invoice-search-results').hide().empty();
-                return;
+    if (convertedQuery.length < 2) {
+        $('#edit-invoice-search-results').hide().empty();
+        return;
+    }
+
+    clearTimeout(invoiceSearchTimeout);
+    invoiceSearchTimeout = setTimeout(function() {
+        $.ajax({
+            url: "{% url 'search_invoices_for_edit' %}",
+            data: { q: convertedQuery },
+            dataType: 'json',
+            success: function(data) {
+                if (data.results && data.results.length > 0) {
+                    let html = '';
+                    data.results.forEach(invoice => {
+                        html += `
+                            <div class="search-result-item" data-invoice-id="${invoice.id}">
+                                <strong>${invoice.serial_number}</strong>
+                                <div>فروشنده: ${invoice.seller_name}</div>
+                                <div>فروشگاه: ${invoice.store_name}</div>
+                                <div>تاریخ: ${invoice.date}</div>
+                            </div>
+                        `;
+                    });
+                    $('#edit-invoice-search-results').html(html).show();
+                } else {
+                    $('#edit-invoice-search-results').html('<div class="search-result-item">هیچ فاکتوری یافت نشد</div>').show();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error in invoice search for edit:', error);
+                showMessage('خطا در جستجوی فاکتورها', 'error');
             }
-
-            clearTimeout(invoiceSearchTimeout);
-            invoiceSearchTimeout = setTimeout(function() {
-                $.ajax({
-                    url: "{% url 'search_invoices_for_edit' %}",
-                    data: { q: convertedQuery },
-                    dataType: 'json',
-                    success: function(data) {
-                        if (data.results && data.results.length > 0) {
-                            let html = '';
-                            data.results.forEach(invoice => {
-                                html += `
-                                    <div class="search-result-item" data-invoice-id="${invoice.id}">
-                                        <strong>${invoice.serial_number}</strong>
-                                        <div>فروشنده: ${invoice.seller_name}</div>
-                                        <div>تاریخ: ${invoice.date}</div>
-                                    </div>
-                                `;
-                            });
-                            $('#edit-invoice-search-results').html(html).show();
-                        } else {
-                            $('#edit-invoice-search-results').html('<div class="search-result-item">هیچ فاکتوری یافت نشد</div>').show();
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error in invoice search for edit:', error);
-                        showMessage('خطا در جستجوی فاکتورها', 'error');
-                    }
-                });
-            }, 300);
         });
+    }, 300);
+});
 
         // انتخاب فاکتور از نتایج جستجو
         $(document).on('click', '#edit-invoice-search-results .search-result-item', function() {

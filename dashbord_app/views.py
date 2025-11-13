@@ -1454,24 +1454,33 @@ def search_invoices_for_edit(request):
     if len(query) < 2:
         return JsonResponse({'results': []})
 
-    # جستجو در شماره سریال و نام فروشنده
+    # تبدیل اعداد فارسی و عربی به انگلیسی
+    query_english = convert_persian_arabic_to_english(query)
+
+    # جستجو در شماره سریال، نام فروشنده، نام خانوادگی و نام فروشگاه
     invoices = Invoice.objects.filter(
-        Q(serial_number__icontains=query) |
-        Q(seller__name__icontains=query) |
-        Q(seller__family__icontains=query)
-    )[:10]
+        Q(serial_number__icontains=query_english) |
+        Q(seller__name__icontains=query_english) |
+        Q(seller__family__icontains=query_english) |
+        Q(seller__store_name__icontains=query_english)
+    ).select_related('seller').order_by('-date')  # حذف محدودیت تعداد و مرتب‌سازی بر اساس تاریخ
 
     results = []
     for invoice in invoices:
+        # تبدیل تاریخ به شمسی
+        gregorian_date = invoice.date
+        jalali_date = jdatetime.date.fromgregorian(date=gregorian_date)
+        formatted_date = jalali_date.strftime('%Y/%m/%d')
+
         results.append({
             'id': invoice.id,
             'serial_number': invoice.serial_number,
             'seller_name': f"{invoice.seller.name} {invoice.seller.family}",
-            'date': invoice.jalali_date
+            'store_name': invoice.seller.store_name or 'بدون نام فروشگاه',
+            'date': formatted_date
         })
 
     return JsonResponse({'results': results})
-
 
 @require_GET
 def get_invoice_for_edit(request):
