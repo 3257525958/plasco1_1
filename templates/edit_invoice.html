@@ -39,44 +39,6 @@
             color: var(--text-color);
             direction: rtl;
         }
-        .search-results {
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    max-height: 400px; /* افزایش ارتفاع */
-    overflow-y: auto;
-    margin-top: 8px;
-    background: white;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    display: none;
-    z-index: 1000;
-    position: absolute;
-    width: 100%;
-}
-
-.search-result-item {
-    padding: 12px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border-color);
-    transition: background 0.2s;
-    line-height: 1.5;
-}
-
-.search-result-item:hover {
-    background-color: var(--light-bg);
-}
-
-.search-result-item strong {
-    color: var(--primary-color);
-    font-size: 16px;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.search-result-item div {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 2px;
-}
 
         .edit-invoice-container {
             max-width: 1400px;
@@ -101,6 +63,7 @@
 
         .search-section {
             margin-bottom: 20px;
+            position: relative;
         }
 
         .search-container {
@@ -147,12 +110,15 @@
             margin-top: 5px;
             font-size: 14px;
             color: #666;
+            line-height: 1.4;
         }
 
+        /* استایل اصلی برای لیست نتایج جستجو */
         .search-results {
             border: 1px solid var(--border-color);
             border-radius: 5px;
-            max-height: 200px;
+            max-height: 500px;
+            min-height: 300px; /* حداقل ارتفاع برای نمایش ۵ نتیجه */
             overflow-y: auto;
             margin-top: 8px;
             background: white;
@@ -164,14 +130,67 @@
         }
 
         .search-result-item {
-            padding: 10px;
+            padding: 12px;
             cursor: pointer;
             border-bottom: 1px solid var(--border-color);
             transition: background 0.2s;
+            line-height: 1.5;
         }
 
         .search-result-item:hover {
             background-color: var(--light-bg);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .invoice-number {
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .invoice-date {
+            color: #666;
+            font-size: 14px;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .invoice-details {
+            font-size: 14px;
+        }
+
+        .seller-info, .store-info, .products-info {
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            color: #555;
+        }
+
+        .seller-info i, .store-info i, .products-info i {
+            margin-left: 8px;
+            color: var(--primary-color);
+            width: 16px;
+            text-align: center;
+        }
+
+        .products-info {
+            color: #777;
+            font-size: 13px;
+            background: #f8f8f8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
         }
 
         .invoice-details {
@@ -193,40 +212,14 @@
             border-radius: 5px;
         }
 
-        /* استایل‌های مربوط به فیلد تاریخ */
-        .date-input-container {
-            position: relative;
-            display: flex;
-            align-items: center;
+        /* استایل برای تضمین نمایش صحیح تقویم */
+        .pdatepicker-gui {
+            z-index: 10000 !important;
+            font-family: 'Vazirmatn', sans-serif !important;
         }
 
-        .shamsi-date-input {
-            width: 100%;
-            padding: 12px 15px;
-            padding-right: 40px;
-            border: 2px solid var(--primary-color);
-            border-radius: 10px;
-            font-size: 16px;
-            background: var(--input-bg);
-            text-align: center;
-            cursor: pointer;
-            font-family: 'Vazirmatn', sans-serif;
-            height: 50px;
-        }
-
-        .calendar-icon {
-            position: absolute;
-            left: 15px;
-            color: var(--primary-color);
-            font-size: 18px;
-            cursor: pointer;
-            z-index: 10;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .shamsi-date-input:hover {
-            border-color: var(--accent-color);
+        .pdatepicker-gui .pdatepicker-day {
+            cursor: pointer !important;
         }
 
         .invoice-table {
@@ -415,10 +408,46 @@
                 gap: 10px;
             }
 
-            .shamsi-date-input {
-                padding: 10px 35px 10px 10px;
-                font-size: 16px;
+            .search-results {
+                min-height: 250px; /* کاهش حداقل ارتفاع در موبایل */
             }
+
+            .invoice-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .invoice-date {
+                align-self: flex-start;
+            }
+        }
+
+        /* استایل برای وضعیت خالی */
+        .empty-results {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* استایل برای اسکرول بار */
+        .search-results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-results::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
         }
     </style>
 </head>
@@ -431,13 +460,19 @@
         <div class="search-section">
             <div class="search-container">
                 <label class="search-label">جستجوی فاکتور برای ویرایش:</label>
-                <input type="text" id="edit-invoice-search" class="search-input" placeholder="شماره فاکتور، نام فروشنده یا نام خانوادگی...">
+                <input type="text" id="edit-invoice-search" class="search-input" 
+                       placeholder="شماره فاکتور، نام فروشنده، نام خانوادگی، نام فروشگاه یا نام کالا...">
                 <button type="button" class="search-btn">
                     <i class="fas fa-search"></i>
                 </button>
-                <div id="edit-invoice-search-results" class="search-results"></div>
+                <div id="edit-invoice-search-results" class="search-results">
+                    <!-- نتایج جستجو در اینجا نمایش داده می‌شود -->
+                    <div class="empty-results">برای جستجو، حداقل ۲ کاراکتر وارد کنید</div>
+                </div>
             </div>
-            <div class="search-hint">برای جستجو، حداقل 2 کاراکتر وارد کنید</div>
+            <div class="search-hint">
+                برای جستجو، حداقل ۲ کاراکتر وارد کنید - جستجو بر اساس: شماره فاکتور، نام فروشنده، نام خانوادگی، نام فروشگاه و نام کالا
+            </div>
         </div>
 
         <div id="invoice-details" class="invoice-details">
@@ -628,6 +663,7 @@
 
         // جستجوی فاکتور برای ویرایش
         // جستجوی فاکتور برای ویرایش
+        // جستجوی فاکتور برای ویرایش
         $('#edit-invoice-search').on('input', function() {
     const query = $(this).val().trim();
     const convertedQuery = convertPersianToEnglishNumbers(query);
@@ -649,10 +685,21 @@
                     data.results.forEach(invoice => {
                         html += `
                             <div class="search-result-item" data-invoice-id="${invoice.id}">
-                                <strong>${invoice.serial_number}</strong>
-                                <div>فروشنده: ${invoice.seller_name}</div>
-                                <div>فروشگاه: ${invoice.store_name}</div>
-                                <div>تاریخ: ${invoice.date}</div>
+                                <div class="invoice-header">
+                                    <strong class="invoice-number">${invoice.serial_number}</strong>
+                                    <span class="invoice-date">${invoice.date}</span>
+                                </div>
+                                <div class="invoice-details">
+                                    <div class="seller-info">
+                                        <i class="fas fa-user"></i> ${invoice.seller_name}
+                                    </div>
+                                    <div class="store-info">
+                                        <i class="fas fa-store"></i> ${invoice.store_name}
+                                    </div>
+                                    <div class="products-info">
+                                        <i class="fas fa-box"></i> ${invoice.products}
+                                    </div>
+                                </div>
                             </div>
                         `;
                     });
@@ -929,5 +976,7 @@
             }
         });
     </script>
+
+
 </body>
 </html>

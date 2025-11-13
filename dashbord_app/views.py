@@ -1457,13 +1457,14 @@ def search_invoices_for_edit(request):
     # تبدیل اعداد فارسی و عربی به انگلیسی
     query_english = convert_persian_arabic_to_english(query)
 
-    # جستجو در شماره سریال، نام فروشنده، نام خانوادگی و نام فروشگاه
+    # جستجو در شماره سریال، نام فروشنده، نام خانوادگی، نام فروشگاه و نام کالا
     invoices = Invoice.objects.filter(
         Q(serial_number__icontains=query_english) |
         Q(seller__name__icontains=query_english) |
         Q(seller__family__icontains=query_english) |
-        Q(seller__store_name__icontains=query_english)
-    ).select_related('seller').order_by('-date')  # حذف محدودیت تعداد و مرتب‌سازی بر اساس تاریخ
+        Q(seller__store_name__icontains=query_english) |
+        Q(items__product_name__icontains=query_english)  # جستجو در نام کالا
+    ).select_related('seller').prefetch_related('items').distinct().order_by('-date')
 
     results = []
     for invoice in invoices:
@@ -1472,16 +1473,22 @@ def search_invoices_for_edit(request):
         jalali_date = jdatetime.date.fromgregorian(date=gregorian_date)
         formatted_date = jalali_date.strftime('%Y/%m/%d')
 
+        # گرفتن لیست نام کالاهای این فاکتور برای نمایش در نتایج
+        product_names = list(invoice.items.values_list('product_name', flat=True)[:3])  # حداکثر 3 کالا
+        products_text = ', '.join(product_names)
+        if invoice.items.count() > 3:
+            products_text += ' ...'
+
         results.append({
             'id': invoice.id,
             'serial_number': invoice.serial_number,
             'seller_name': f"{invoice.seller.name} {invoice.seller.family}",
             'store_name': invoice.seller.store_name or 'بدون نام فروشگاه',
-            'date': formatted_date
+            'date': formatted_date,
+            'products': products_text  # اضافه کردن لیست کالاها
         })
 
     return JsonResponse({'results': results})
-
 @require_GET
 def get_invoice_for_edit(request):
     """دریافت اطلاعات فاکتور برای ویرایش"""
