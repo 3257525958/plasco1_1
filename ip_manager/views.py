@@ -445,9 +445,6 @@ from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
 
-def redirect_to_main(request):
-    """هدایت به صفحه اصلی واقعی سیستم"""
-    return redirect('/admin/')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
