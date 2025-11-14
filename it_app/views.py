@@ -191,7 +191,7 @@ def distribute_inventory(request):
                                 'quantity': qty_for_branch,
                                 'counter': request.user,
                                 'selling_price': product['max_selling_price'],
-                                'profit_percentage': Decimal('100.00')  # تغییر به 100 درصد
+                                'profit_percentage': Decimal('30.00')  # تغییر به 100 درصد
                             }
                         )
 
