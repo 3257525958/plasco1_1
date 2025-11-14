@@ -1175,33 +1175,6 @@ from django.contrib import messages
 from cantact_app.models import UserSessionLog, accuntmodel
 
 
-@login_required(login_url='/cantact/login/')
-def session_management_view(request):
-    """صفحه مدیریت سشن‌های کاربر جاری"""
-    # فقط سشن‌های فعال کاربر جاری را نمایش بده
-    user_sessions = UserSessionLog.objects.filter(
-        user=request.user,
-        is_active=True
-    ).order_by('-last_activity')
-
-    current_session_key = request.session.session_key
-
-    # دریافت اطلاعات پروفایل کاربر
-    try:
-        user_profile = accuntmodel.objects.get(melicode=request.user.username)
-        full_name = f"{user_profile.firstname} {user_profile.lastname}"
-    except accuntmodel.DoesNotExist:
-        full_name = request.user.get_full_name() or request.user.username
-
-    context = {
-        'user_sessions': user_sessions,
-        'current_session_key': current_session_key,
-        'full_name': full_name,
-        'username': request.user.username,
-    }
-
-    return render(request, 'cantact_app/session_management.html', context)
-
 
 @login_required(login_url='/cantact/login/')
 def terminate_other_sessions_view(request):
@@ -1242,3 +1215,63 @@ def terminate_other_sessions_view(request):
     return redirect('cantact_app:session_management')
 
 
+@login_required(login_url='/cantact/login/')
+def session_management_view(request):
+    """صفحه مدیریت سشن‌های کاربر جاری"""
+    # فقط سشن‌های فعال کاربر جاری را نمایش بده
+    user_sessions = UserSessionLog.objects.filter(
+        user=request.user,
+        is_active=True
+    ).order_by('-last_activity')
+
+    current_session_key = request.session.session_key
+
+    # 🔥 **رفع مشکل اصلی: دریافت صحیح اطلاعات کاربر**
+    try:
+        # روش ۱: دریافت از مدل accuntmodel با استفاده از username کاربر جاری
+        user_profile = accuntmodel.objects.get(melicode=request.user.username)
+        full_name = f"{user_profile.firstname} {user_profile.lastname}"
+        print(f"✅ اطلاعات کاربر از accuntmodel: {full_name}")
+
+    except accuntmodel.DoesNotExist:
+        try:
+            # روش ۲: دریافت از مدل User
+            full_name = f"{request.user.first_name} {request.user.last_name}".strip()
+            if not full_name or full_name == " ":
+                full_name = request.user.username
+            print(f"✅ اطلاعات کاربر از User: {full_name}")
+
+        except Exception as e:
+            # روش ۳: استفاده از username در صورت خطا
+            full_name = request.user.username
+            print(f"⚠️ استفاده از username: {full_name}")
+
+    context = {
+        'user_sessions': user_sessions,
+        'current_session_key': current_session_key,
+        'full_name': full_name,
+        'username': request.user.username,
+    }
+
+    return render(request, 'cantact_app/session_management.html', context)
+
+
+# در views.py - قبل از توابع اصلی
+def debug_user_info(request):
+    """تابع کمکی برای دیباگ اطلاعات کاربر"""
+    print("=" * 50)
+    print("🔍 دیباگ اطلاعات کاربر:")
+    print(f"✅ کاربر جاری: {request.user}")
+    print(f"✅ username: {request.user.username}")
+    print(f"✅ first_name: {request.user.first_name}")
+    print(f"✅ last_name: {request.user.last_name}")
+    print(f"✅ is_authenticated: {request.user.is_authenticated}")
+
+    # بررسی وجود کاربر در accuntmodel
+    try:
+        accunt_user = accuntmodel.objects.get(melicode=request.user.username)
+        print(f"✅ کاربر در accuntmodel: {accunt_user.firstname} {accunt_user.lastname}")
+    except accuntmodel.DoesNotExist:
+        print("❌ کاربر در accuntmodel یافت نشد")
+
+    print("=" * 50)
