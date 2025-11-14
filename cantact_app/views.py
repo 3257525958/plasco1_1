@@ -631,66 +631,66 @@ def convert_farsi_to_latin(input_str):
         pass
 
 
-# def logindef(request):
-#     username = convert_farsi_to_latin(request.POST.get("username"))
-#     password = convert_farsi_to_latin(request.POST.get("password"))
-#     button_back = request.POST.get("button_back")
-#     button_send = request.POST.get("button_send")
-#     login_etebar[0] = 'f'
-#
-#     if button_back == 'accept':
-#         return redirect('/')
-#
-#     if button_send == 'accept':
-#         login_etebar[0] = 'false'
-#         if not username:
-#             login_etebar[0] = 'empty'
-#             return render(request, 'new_loggin.html', context={
-#                 "firstname": firstname_r[0],
-#                 "lastname": lastname_r[0],
-#                 "melicod": melicod_r[0],
-#                 "phonnumber": phonnumber_r[0],
-#                 'login_etebar': login_etebar[0],
-#             })
-#
-#         users = accuntmodel.objects.all()
-#         for user in users:
-#             if username == user.melicode:
-#                 login_etebar[0] = 'false_in_paswoord'
-#                 if password == user.pasword:
-#                     login_etebar[0] = 'true'
-#
-#                     # ✅ به جای حذف و ایجاد جدید، بررسی کن کاربر وجود داره یا نه
-#                     try:
-#                         # اگر کاربر از قبل وجود داره، از همون استفاده کن
-#                         existing_user = User.objects.get(username=user.melicode)
-#                     except User.DoesNotExist:
-#                         # اگر کاربر وجود نداره، جدید ایجاد کن
-#                         existing_user = User.objects.create_user(
-#                             username=user.melicode,
-#                             password=user.pasword,
-#                             first_name=user.firstname,
-#                             last_name=user.lastname,
-#                         )
-#
-#                     user_login = authenticate(
-#                         request,
-#                         username=user.melicode,
-#                         password=user.pasword,
-#                     )
-#
-#                     if user_login is not None:
-#                         login(request, user_login)
-#                         # می‌تونی اینجا redirect کنی به صفحه اصلی
-#                         # return redirect('/')
-#
-#     return render(request, 'new_loggin.html', context={
-#         "firstname": firstname_r[0],
-#         "lastname": lastname_r[0],
-#         "melicod": melicod_r[0],
-#         "phonnumber": phonnumber_r[0],
-#         'login_etebar': login_etebar[0],
-#     })
+def logindef(request):
+    username = convert_farsi_to_latin(request.POST.get("username"))
+    password = convert_farsi_to_latin(request.POST.get("password"))
+    button_back = request.POST.get("button_back")
+    button_send = request.POST.get("button_send")
+    login_etebar[0] = 'f'
+
+    if button_back == 'accept':
+        return redirect('/')
+
+    if button_send == 'accept':
+        login_etebar[0] = 'false'
+        if not username:
+            login_etebar[0] = 'empty'
+            return render(request, 'new_loggin.html', context={
+                "firstname": firstname_r[0],
+                "lastname": lastname_r[0],
+                "melicod": melicod_r[0],
+                "phonnumber": phonnumber_r[0],
+                'login_etebar': login_etebar[0],
+            })
+
+        users = accuntmodel.objects.all()
+        for user in users:
+            if username == user.melicode:
+                login_etebar[0] = 'false_in_paswoord'
+                if password == user.pasword:
+                    login_etebar[0] = 'true'
+
+                    # ✅ به جای حذف و ایجاد جدید، بررسی کن کاربر وجود داره یا نه
+                    try:
+                        # اگر کاربر از قبل وجود داره، از همون استفاده کن
+                        existing_user = User.objects.get(username=user.melicode)
+                    except User.DoesNotExist:
+                        # اگر کاربر وجود نداره، جدید ایجاد کن
+                        existing_user = User.objects.create_user(
+                            username=user.melicode,
+                            password=user.pasword,
+                            first_name=user.firstname,
+                            last_name=user.lastname,
+                        )
+
+                    user_login = authenticate(
+                        request,
+                        username=user.melicode,
+                        password=user.pasword,
+                    )
+
+                    if user_login is not None:
+                        login(request, user_login)
+                        # می‌تونی اینجا redirect کنی به صفحه اصلی
+                        # return redirect('/')
+
+    return render(request, 'new_loggin.html', context={
+        "firstname": firstname_r[0],
+        "lastname": lastname_r[0],
+        "melicod": melicod_r[0],
+        "phonnumber": phonnumber_r[0],
+        'login_etebar': login_etebar[0],
+    })
 ignor_etebar = ['false']
 melicod_ignor = ['']
 
@@ -1277,76 +1277,3 @@ def debug_user_info(request):
     print("=" * 50)
 
 
-# در views.py - تابع logindef
-def logindef(request):
-    # اگر کاربر قبلاً لاگین کرده، به صفحه اصلی برو
-    if request.user.is_authenticated:
-        return redirect('/')
-
-    # اگر سشن مشکل دارد، یک سشن جدید ایجاد کن
-    if not request.session.session_key:
-        request.session.cycle_key()
-
-    username = convert_farsi_to_latin(request.POST.get("username"))
-    password = convert_farsi_to_latin(request.POST.get("password"))
-    button_send = request.POST.get("button_send")
-    button_back = request.POST.get("button_back")
-
-    if button_back == 'accept':
-        return redirect('/')
-
-    if button_send == 'accept':
-        login_etebar[0] = 'false'
-
-        if not username:
-            login_etebar[0] = 'empty'
-            return render(request, 'new_loggin.html', {
-                'login_etebar': login_etebar[0],
-                'username': username or ''
-            })
-
-        # جستجوی کاربر در accuntmodel
-        try:
-            user_profile = accuntmodel.objects.get(melicode=username)
-
-            if password == user_profile.pasword:
-                # ایجاد یا به‌روزرسانی کاربر در User استاندارد
-                user_obj, created = User.objects.get_or_create(
-                    username=user_profile.melicode,
-                    defaults={
-                        'first_name': user_profile.firstname,
-                        'last_name': user_profile.lastname
-                    }
-                )
-
-                # تنظیم رمز عبور
-                user_obj.set_password(password)
-                user_obj.save()
-
-                # لاگین کاربر
-                user_login = authenticate(
-                    request,
-                    username=user_profile.melicode,
-                    password=password,
-                )
-
-                if user_login is not None:
-                    login(request, user_login)
-
-                    # ریدایرکت به صفحه اصلی
-                    return redirect('/')
-                else:
-                    login_etebar[0] = 'false_in_paswoord'
-            else:
-                login_etebar[0] = 'false_in_paswoord'
-
-        except accuntmodel.DoesNotExist:
-            login_etebar[0] = 'false'
-        except Exception as e:
-            print(f"⚠️ خطا در لاگین: {e}")
-            login_etebar[0] = 'false'
-
-    return render(request, 'new_loggin.html', {
-        'login_etebar': login_etebar[0],
-        'username': username or ''
-    })
