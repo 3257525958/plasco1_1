@@ -221,7 +221,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     # 'plasco.middleware.StrictSessionMiddleware',  # این خط را اضافه کنید
-    # 'cantact_app.middleware.AdvancedSessionMiddleware',
+    'cantact_app.middleware.SingleSessionMiddleware',
 ]
 
 ROOT_URLCONF = 'plasco.urls'
