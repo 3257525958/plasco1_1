@@ -5,10 +5,10 @@ from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.contrib import messages
 import hashlib
-import json
 
 try:
     import user_agents
+
     USER_AGENTS_AVAILABLE = True
 except ImportError:
     USER_AGENTS_AVAILABLE = False
@@ -17,72 +17,59 @@ except ImportError:
 class AdvancedSessionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
-        # تنظیمات قابل تنظیم
-        self.max_sessions_per_user = 1  # حداکثر تعداد سشن فعال
-        self.allow_multiple_admin_sessions = False
-        self.session_timeout = 3600  # 1 ساعت
+        self.max_sessions_per_user = 3  # حداکثر ۳ سشن همزمان
+        self.session_timeout = 3600 * 24  # 24 ساعت
 
     def __call__(self, request):
-        # پردازش درخواست
         response = self.process_request(request)
-
         if not response:
             response = self.get_response(request)
-
-        # پردازش پاسخ
         return self.process_response(request, response)
 
     def process_request(self, request):
         """پردازش هر درخواست قبل از رسیدن به view"""
-
-        # اگر کاربر لاگین شده است
         if request.user.is_authenticated:
             current_session_key = request.session.session_key
 
-            # بررسی آیا سشن معتبر است
+            # بررسی معتبر بودن سشن
             if not self.is_session_valid(request):
                 return self.force_logout(request)
 
             # بروزرسانی آخرین فعالیت
             self.update_last_activity(request)
 
-            # بررسی و مدیریت سشن‌های متعدد
+            # مدیریت سشن‌های متعدد برای کاربر جاری
             self.manage_user_sessions(request)
 
     def process_response(self, request, response):
         """پردازش هر پاسخ قبل از ارسال به کاربر"""
-
-        # بعد از لاگین موفق
         if (request.user.is_authenticated and
                 self.is_login_successful(request, response)):
             self.handle_successful_login(request)
-
         return response
 
     def is_login_successful(self, request, response):
         """بررسی آیا لاگین موفق بوده است"""
-        login_urls = ['/login/', '/cantact/login/', '/admin/login/']
+        login_urls = ['/cantact/login/', '/login/']
         is_login_url = any(request.path.startswith(url) for url in login_urls)
-        is_successful = response.status_code in [200, 302]
-
-        return is_login_url and is_successful and request.user.is_authenticated
+        return is_login_url and response.status_code in [200, 302] and request.user.is_authenticated
 
     def handle_successful_login(self, request):
-        """مدیریت لاگین موفق"""
+        """مدیریت لاگین موفق - فقط برای کاربر جاری"""
         try:
             from .models import UserSessionLog
 
             user = request.user
             session_key = request.session.session_key
 
-            # ایجاد fingerprint برای امنیت بیشتر
+            # ایجاد fingerprint امنیتی
             security_fingerprint = self.create_security_fingerprint(request)
             request.session['security_fingerprint'] = security_fingerprint
 
             # تشخیص نوع دستگاه
             device_info = self.detect_device_info(request)
 
-            # ذخیره اطلاعات سشن
+            # ذخیره اطلاعات سشن جدید
             UserSessionLog.objects.create(
                 user=user,
                 session_key=session_key,
@@ -94,13 +81,142 @@ class AdvancedSessionMiddleware:
                 is_active=True
             )
 
-            # مدیریت سشن‌های قدیمی - اینجا سشن‌های قبلی را terminate می‌کنیم
+            # مدیریت سشن‌های قدیمی کاربر جاری
             self.cleanup_old_sessions(user, session_key)
 
             print(f"✅ لاگین موفق: {user.username} از {device_info['type']}")
 
         except Exception as e:
             print(f"⚠️ خطا در ذخیره سشن: {e}")
+
+    def cleanup_old_sessions(self, user, current_session_key):
+        """پاکسازی سشن‌های قدیمی فقط برای کاربر جاری"""
+        try:
+            from .models import UserSessionLog
+
+            # دریافت سشن‌های فعال کاربر جاری
+            active_sessions = UserSessionLog.objects.filter(
+                user=user,
+                is_active=True
+            ).exclude(session_key=current_session_key).order_by('-last_activity')
+
+            # اگر بیشتر از حد مجاز سشن فعال دارد، قدیمی‌ترین‌ها را قطع کن
+            if active_sessions.count() >= self.max_sessions_per_user:
+                sessions_to_remove = active_sessions[self.max_sessions_per_user - 1:]
+                for session_log in sessions_to_remove:
+                    session_log.terminate()
+                    print(f"🔒 حذف سشن اضافی برای کاربر: {user.username}")
+
+        except Exception as e:
+            print(f"⚠️ خطا در پاکسازی سشن‌های قدیمی: {e}")
+
+    def is_session_valid(self, request):
+        """بررسی معتبر بودن سشن برای کاربر جاری"""
+        if not request.user.is_authenticated:
+            return True
+
+        try:
+            from .models import UserSessionLog
+
+            current_session_key = request.session.session_key
+            if not current_session_key:
+                return False
+
+            # بررسی وجود سشن در لاگ برای کاربر جاری
+            session_log = UserSessionLog.objects.get(
+                session_key=current_session_key,
+                user=request.user,
+                is_active=True
+            )
+
+            # بررسی timeout
+            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
+            if session_log.last_activity < timeout_time:
+                print(f"⏰ سشن منقضی شده: {request.user.username}")
+                return False
+
+        except UserSessionLog.DoesNotExist:
+            print(f"🔍 سشن در لاگ پیدا نشد: {request.user.username}")
+            return False
+        except Exception as e:
+            print(f"⚠️ خطا در بررسی سشن: {e}")
+            return True
+
+        return True
+
+    def update_last_activity(self, request):
+        """بروزرسانی زمان آخرین فعالیت برای کاربر جاری"""
+        if request.user.is_authenticated:
+            try:
+                from .models import UserSessionLog
+
+                session_log = UserSessionLog.objects.get(
+                    session_key=request.session.session_key,
+                    user=request.user
+                )
+                session_log.last_activity = timezone.now()
+                session_log.save()
+            except Exception as e:
+                print(f"⚠️ خطا در بروزرسانی فعالیت: {e}")
+
+    def manage_user_sessions(self, request):
+        """مدیریت سشن‌های کاربر جاری"""
+        try:
+            from .models import UserSessionLog
+
+            user = request.user
+            current_session_key = request.session.session_key
+
+            # غیرفعال کردن سشن‌های منقضی شده کاربر جاری
+            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
+            expired_sessions = UserSessionLog.objects.filter(
+                user=user,
+                is_active=True,
+                last_activity__lt=timeout_time
+            )
+
+            for session_log in expired_sessions:
+                session_log.terminate()
+                print(f"🕒 سشن منقضی شده غیرفعال شد: {user.username}")
+
+        except Exception as e:
+            print(f"⚠️ خطا در مدیریت سشن‌ها: {e}")
+
+    def force_logout(self, request):
+        """اجباری کردن خروج برای کاربر جاری"""
+        try:
+            from .models import UserSessionLog
+
+            if request.user.is_authenticated:
+                print(f"🔐 خروج اجباری: {request.user.username}")
+
+                # غیرفعال کردن سشن در لاگ
+                try:
+                    session_log = UserSessionLog.objects.get(
+                        session_key=request.session.session_key,
+                        user=request.user
+                    )
+                    session_log.is_active = False
+                    session_log.forced_logout = True
+                    session_log.save()
+                except UserSessionLog.DoesNotExist:
+                    pass
+
+                # logout کاربر
+                logout(request)
+                request.session.flush()
+
+                messages.warning(
+                    request,
+                    "🔐 سشن شما منقضی شده یا از دستگاه دیگری خارج شده‌اید. لطفاً مجدداً وارد شوید."
+                )
+
+                return HttpResponseRedirect('/cantact/login/')
+
+        except Exception as e:
+            print(f"⚠️ خطا در خروج اجباری: {e}")
+
+        return None
 
     def create_security_fingerprint(self, request):
         """ایجاد fingerprint امنیتی"""
@@ -161,150 +277,8 @@ class AdvancedSessionMiddleware:
         return ip
 
     def get_estimated_location(self, request):
-        """تخمین موقعیت جغرافیایی (ساده)"""
+        """تخمین موقعیت جغرافیایی"""
         ip = self.get_client_ip(request)
         if ip.startswith('192.168.') or ip.startswith('10.') or ip == '127.0.0.1':
             return 'شبکه داخلی'
         return 'نامشخص'
-
-    def cleanup_old_sessions(self, user, current_session_key):
-        """پاکسازی سشن‌های قدیمی - این تابع سشن‌های قبلی را terminate می‌کند"""
-        try:
-            from .models import UserSessionLog
-
-            active_sessions = UserSessionLog.objects.filter(
-                user=user,
-                is_active=True
-            ).exclude(session_key=current_session_key)
-
-            terminated_count = 0
-            for session_log in active_sessions:
-                session_log.terminate()
-                terminated_count += 1
-                print(f"🔒 سشن قدیمی حذف شد: {user.username} - {session_log.device_type}")
-
-            if terminated_count > 0:
-                print(f"✅ {terminated_count} سشن قبلی terminate شدند")
-
-        except Exception as e:
-            print(f"⚠️ خطا در پاکسازی سشن‌های قدیمی: {e}")
-
-    def is_session_valid(self, request):
-        """بررسی معتبر بودن سشن"""
-        if not request.user.is_authenticated:
-            return True
-
-        try:
-            from .models import UserSessionLog
-
-            # بررسی fingerprint امنیتی
-            current_fingerprint = self.create_security_fingerprint(request)
-            stored_fingerprint = request.session.get('security_fingerprint')
-
-            if stored_fingerprint and current_fingerprint != stored_fingerprint:
-                print(f"🚨 خطای امنیتی: fingerprint مطابقت ندارد - {request.user.username}")
-                return False
-
-            # بررسی وجود سشن در لاگ
-            session_log = UserSessionLog.objects.get(
-                session_key=request.session.session_key,
-                user=request.user,
-                is_active=True
-            )
-
-            # بررسی timeout
-            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
-            if session_log.last_activity < timeout_time:
-                print(f"⏰ سشن منقضی شده: {request.user.username}")
-                return False
-
-        except UserSessionLog.DoesNotExist:
-            print(f"🔍 سشن در لاگ پیدا نشد: {request.user.username}")
-            return False
-        except Exception as e:
-            print(f"⚠️ خطا در بررسی سشن: {e}")
-            return True
-
-        return True
-
-    def update_last_activity(self, request):
-        """بروزرسانی زمان آخرین فعالیت"""
-        if request.user.is_authenticated:
-            try:
-                from .models import UserSessionLog
-
-                session_log = UserSessionLog.objects.get(
-                    session_key=request.session.session_key,
-                    user=request.user
-                )
-                session_log.last_activity = timezone.now()
-                session_log.save()
-            except Exception as e:
-                print(f"⚠️ خطا در بروزرسانی فعالیت: {e}")
-
-    def manage_user_sessions(self, request):
-        """مدیریت سشن‌های کاربر"""
-        try:
-            from .models import UserSessionLog
-
-            user = request.user
-            current_session_key = request.session.session_key
-
-            # تعداد سشن‌های فعال
-            active_count = UserSessionLog.objects.filter(user=user, is_active=True).count()
-
-            # اگر بیشتر از حد مجاز سشن فعال دارد
-            if active_count > self.max_sessions_per_user:
-                old_sessions = UserSessionLog.objects.filter(
-                    user=user,
-                    is_active=True
-                ).exclude(session_key=current_session_key).order_by('last_activity')
-
-                sessions_to_remove = old_sessions[:active_count - self.max_sessions_per_user]
-                for session_log in sessions_to_remove:
-                    session_log.terminate()
-                    print(f"🔒 حذف سشن اضافی: {user.username}")
-
-        except Exception as e:
-            print(f"⚠️ خطا در مدیریت سشن‌ها: {e}")
-
-    def force_logout(self, request):
-        """اجباری کردن خروج"""
-        try:
-            from .models import UserSessionLog
-
-            if request.user.is_authenticated:
-                print(f"🔐 خروج اجباری: {request.user.username}")
-
-                # غیرفعال کردن سشن در لاگ
-                try:
-                    session_log = UserSessionLog.objects.get(
-                        session_key=request.session.session_key,
-                        user=request.user
-                    )
-                    session_log.is_active = False
-                    session_log.forced_logout = True
-                    session_log.save()
-                except UserSessionLog.DoesNotExist:
-                    pass
-
-                # logout کاربر
-                logout(request)
-                request.session.flush()
-
-                # اضافه کردن پیام
-                storage = messages.get_messages(request)
-                storage.used = True
-
-                messages.warning(
-                    request,
-                    "🔐 از دستگاه دیگری با حساب شما وارد شده است. برای امنیت، از این دستگاه خارج شدید."
-                )
-
-                # 🔥 تغییر مهم: استفاده از آدرس لاگین خودتان
-                return HttpResponseRedirect('/cantact/login/')
-
-        except Exception as e:
-            print(f"⚠️ خطا در خروج اجباری: {e}")
-
-        return None

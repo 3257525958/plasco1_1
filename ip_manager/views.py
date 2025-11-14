@@ -277,6 +277,15 @@ INSTALLED_APPS = [
     'offline_ins',
     'ip_manager'
 ]
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # حتماً از دیتابیس استفاده کنید
+SESSION_COOKIE_NAME = 'plasco_session_id'
+SESSION_COOKIE_AGE = 3600 * 24  # 24 ساعت
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SECURE = True  # برای HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -287,6 +296,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        'cantact_app.middleware.AdvancedSessionMiddleware',
+
 ]
 
 ROOT_URLCONF = 'plasco.urls'
