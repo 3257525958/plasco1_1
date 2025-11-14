@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حذف تمام اطلاعات قیمت‌گذاری</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2E7D32;
+            --secondary-color: #388E3C;
+            --accent-color: #1B5E20;
+            --danger-color: #F44336;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #F44336, #EF5350);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .alert-container {
+            margin-bottom: 25px;
+        }
+
+        .stats-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-right: 5px solid #F44336;
+            margin-bottom: 25px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #F44336, #EF5350);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #D32F2F, #E53935);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-secondary {
+            background: #78909c;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #546e7a;
+            transform: translateY(-2px);
+        }
+
+        .warning-list {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 10px;
+            border-right: 4px solid #FF9800;
+            margin: 20px 0;
+        }
+
+        .warning-list ul {
+            margin-bottom: 0;
+            padding-right: 20px;
+        }
+
+        .warning-list li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-exclamation-triangle"></i> {{ page_title }}</h1>
+            <p>عملیات حذف کامل داده‌های قیمت‌گذاری</p>
+        </div>
+
+        <div class="content">
+            <!-- نمایش پیام‌ها -->
+            {% if messages %}
+            <div class="alert-container">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="stats-card">
+                <h4><i class="fas fa-chart-bar"></i> آمار فعلی:</h4>
+                <p class="mb-2"><strong>تعداد رکوردهای موجود:</strong> {{ record_count }} رکورد</p>
+                <p class="mb-0"><strong>وضعیت:</strong> {% if record_count > 0 %}داده‌های قیمت‌گذاری موجود است{% else %}هیچ داده‌ای وجود ندارد{% endif %}</p>
+            </div>
+
+            {% if record_count > 0 %}
+            <div class="warning-list">
+                <h5><i class="fas fa-skull-crossbones"></i> هشدارهای مهم:</h5>
+                <ul>
+                    <li>این عملیات <strong>تمام داده‌های قیمت‌گذاری محصولات</strong> را حذف می‌کند</li>
+                    <li>حذف داده‌ها <strong>غیرقابل بازگشت</strong> است</li>
+                    <li>پس از حذف، باید اطلاعات قیمت‌گذاری جدید را مجدداً وارد کنید</li>
+                    <li>این عمل بر روی داده‌های انبار تأثیری ندارد</li>
+                    <li>توصیه می‌شود قبل از حذف، از داده‌ها پشتیبان بگیرید</li>
+                </ul>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='{% url 'it_app:invoice_list' %}'">
+                        <i class="fas fa-arrow-right"></i> بازگشت به لیست فاکتورها
+                    </button>
+                    <button type="submit" name="action" value="confirm" class="btn btn-danger" 
+                            onclick="return confirm('آیا از حذف کامل تمام داده‌های قیمت‌گذاری اطمینان دارید؟ این عمل غیرقابل بازگشت است!')">
+                        <i class="fas fa-trash-alt"></i> حذف کامل داده‌های قیمت‌گذاری
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i>
+                <h5>هیچ داده‌ای برای حذف وجود ندارد</h5>
+                <p class="mb-0">در حال حاضر هیچ رکورد قیمت‌گذاری در سیستم موجود نیست.</p>
+            </div>
+            <div class="action-buttons">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='{% url 'it_app:invoice_list' %}'">
+                    <i class="fas fa-arrow-right"></i> بازگشت به لیست فاکتورها
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

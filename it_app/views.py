@@ -72,6 +72,7 @@ def reset_remaining_quantity(request):
     return redirect('invoice_list')
 
 
+@transaction.atomic
 def distribute_single_invoice(invoice_id, user):
     """
     توزیع یک فاکتور به صورت جداگانه
@@ -206,6 +207,121 @@ def distribute_single_invoice(invoice_id, user):
 
     except Exception as e:
         return False, f"خطا در توزیع فاکتور: {str(e)}"
+
+
+@require_POST
+def start_distribution(request):
+    """
+    شروع توزیع ترتیبی - ذخیره اطلاعات در session و نمایش صفحه پیشرفت
+    """
+    selected_invoice_ids = request.POST.getlist('selected_invoices')
+
+    if not selected_invoice_ids:
+        messages.warning(request, 'هیچ فاکتوری انتخاب نشده است.')
+        return redirect('invoice_list')
+
+    # ذخیره اطلاعات در session
+    request.session['pending_invoices'] = selected_invoice_ids
+    request.session['current_invoice_index'] = 0
+    request.session['distribution_results'] = []
+    request.session['total_invoices'] = len(selected_invoice_ids)
+
+    return render(request, 'distribution_progress.html', {
+        'total_invoices': len(selected_invoice_ids),
+        'selected_invoices': selected_invoice_ids
+    })
+
+
+def distribute_next_invoice(request):
+    """
+    توزیع فاکتور بعدی - فراخوانی توسط Ajax
+    """
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            pending_invoices = request.session.get('pending_invoices', [])
+            current_index = request.session.get('current_invoice_index', 0)
+            results = request.session.get('distribution_results', [])
+
+            if current_index >= len(pending_invoices):
+                return JsonResponse({
+                    'completed': True,
+                    'results': results
+                })
+
+            # توزیع فاکتور جاری
+            invoice_id = pending_invoices[current_index]
+            success, result = distribute_single_invoice(invoice_id, request.user)
+
+            # به‌روزرسانی session
+            current_index += 1
+            request.session['current_invoice_index'] = current_index
+
+            results.append({
+                'invoice_number': current_index,
+                'total_invoices': len(pending_invoices),
+                'success': success,
+                'data': result if success else None,
+                'error': result if not success else None
+            })
+            request.session['distribution_results'] = results
+
+            return JsonResponse({
+                'completed': False,
+                'current_invoice': current_index,
+                'total_invoices': len(pending_invoices),
+                'success': success,
+                'data': result if success else None,
+                'error': result if not success else None
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'completed': False,
+                'error': f'خطا در توزیع: {str(e)}'
+            })
+
+    return JsonResponse({'error': 'درخواست نامعتبر'})
+
+
+def complete_distribution(request):
+    """
+    اتمام توزیع و نمایش نتایج
+    """
+    results = request.session.get('distribution_results', [])
+    total_invoices = request.session.get('total_invoices', 0)
+
+    # پاک کردن session
+    if 'pending_invoices' in request.session:
+        del request.session['pending_invoices']
+    if 'current_invoice_index' in request.session:
+        del request.session['current_invoice_index']
+    if 'distribution_results' in request.session:
+        del request.session['distribution_results']
+
+    # ایجاد پیام خلاصه
+    success_count = sum(1 for r in results if r.get('success', False))
+    failed_count = total_invoices - success_count
+
+    if success_count > 0:
+        summary_message = f'✅ توزیع {success_count} از {total_invoices} فاکتور با موفقیت انجام شد!\n\n'
+
+        for result in results:
+            if result.get('success'):
+                data = result['data']
+                summary_message += f'📦 فاکتور {result["invoice_number"]}: {data["invoice_serial"]} - فروشنده: {data["seller"]}\n'
+                summary_message += f'   • تعداد کالاهای توزیع شده: {data["total_distributed"]} عدد\n'
+                summary_message += f'   • تعداد محصولات منحصر به فرد: {data["products_count"]} مورد\n'
+                for detail in data['details']:
+                    summary_message += f'   • {detail}\n'
+                summary_message += '\n'
+            else:
+                summary_message += f'❌ فاکتور {result["invoice_number"]}: {result["error"]}\n\n'
+
+        messages.success(request, summary_message)
+    else:
+        messages.error(request, 'هیچ فاکتوری با موفقیت توزیع نشد.')
+
+    return redirect('invoice_list')
 
 
 @require_POST
