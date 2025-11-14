@@ -22,9 +22,9 @@ urlpatterns = [
     path('branch/search-sellers/', views.search_sellers, name='search_sellers'),
 
     # -------------------------برسی لاگین------------------------------------------------------------
-
-    path('sessions/', views.session_management_view, name='session_management'),
-    path('sessions/terminate/', views.terminate_other_sessions_view, name='terminate_other_sessions'),
-
+    #
+    # path('sessions/', views.session_management_view, name='session_management'),
+    # path('sessions/terminate/', views.terminate_other_sessions_view, name='terminate_other_sessions'),
+    #
 
 ]

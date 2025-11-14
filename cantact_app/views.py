@@ -1160,120 +1160,120 @@ def search_sellers(request):
 #
 # -----------------------------------------------لاگین ها---------------------------------------
 # ------------------------------- مدیریت سشن‌ها ---------------------------------
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from cantact_app.models import UserSessionLog
-
-
-
-# در views.py - اضافه کردن این توابع
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from cantact_app.models import UserSessionLog, accuntmodel
-
-
-
-@login_required(login_url='/cantact/login/')
-def terminate_other_sessions_view(request):
-    """خاتمه دادن به سایر سشن‌های کاربر جاری"""
-    if request.method == 'POST':
-        current_session_key = request.session.session_key
-        specific_session_key = request.POST.get('session_key')
-
-        if specific_session_key:
-            # قطع سشن خاص
-            try:
-                session_log = UserSessionLog.objects.get(
-                    user=request.user,  # فقط سشن‌های کاربر جاری
-                    session_key=specific_session_key,
-                    is_active=True
-                )
-                session_log.terminate()
-                messages.success(request, "دستگاه مورد نظر قطع ارتباط شد.")
-            except UserSessionLog.DoesNotExist:
-                messages.error(request, "سشن مورد نظر یافت نشد.")
-        else:
-            # قطع تمام سشن‌های دیگر کاربر جاری
-            other_sessions = UserSessionLog.objects.filter(
-                user=request.user,  # فقط کاربر جاری
-                is_active=True
-            ).exclude(session_key=current_session_key)
-
-            terminated_count = 0
-            for session_log in other_sessions:
-                session_log.terminate()
-                terminated_count += 1
-
-            if terminated_count > 0:
-                messages.success(request, f"از {terminated_count} دستگاه دیگر خارج شدید.")
-            else:
-                messages.info(request, "هیچ دستگاه فعال دیگری وجود ندارد.")
-
-    return redirect('cantact_app:session_management')
-
-
-@login_required(login_url='/cantact/login/')
-def session_management_view(request):
-    """صفحه مدیریت سشن‌های کاربر جاری"""
-    # فقط سشن‌های فعال کاربر جاری را نمایش بده
-    user_sessions = UserSessionLog.objects.filter(
-        user=request.user,
-        is_active=True
-    ).order_by('-last_activity')
-
-    current_session_key = request.session.session_key
-
-    # 🔥 **رفع مشکل اصلی: دریافت صحیح اطلاعات کاربر**
-    try:
-        # روش ۱: دریافت از مدل accuntmodel با استفاده از username کاربر جاری
-        user_profile = accuntmodel.objects.get(melicode=request.user.username)
-        full_name = f"{user_profile.firstname} {user_profile.lastname}"
-        print(f"✅ اطلاعات کاربر از accuntmodel: {full_name}")
-
-    except accuntmodel.DoesNotExist:
-        try:
-            # روش ۲: دریافت از مدل User
-            full_name = f"{request.user.first_name} {request.user.last_name}".strip()
-            if not full_name or full_name == " ":
-                full_name = request.user.username
-            print(f"✅ اطلاعات کاربر از User: {full_name}")
-
-        except Exception as e:
-            # روش ۳: استفاده از username در صورت خطا
-            full_name = request.user.username
-            print(f"⚠️ استفاده از username: {full_name}")
-
-    context = {
-        'user_sessions': user_sessions,
-        'current_session_key': current_session_key,
-        'full_name': full_name,
-        'username': request.user.username,
-    }
-
-    return render(request, 'cantact_app/session_management.html', context)
-
-
-# در views.py - قبل از توابع اصلی
-def debug_user_info(request):
-    """تابع کمکی برای دیباگ اطلاعات کاربر"""
-    print("=" * 50)
-    print("🔍 دیباگ اطلاعات کاربر:")
-    print(f"✅ کاربر جاری: {request.user}")
-    print(f"✅ username: {request.user.username}")
-    print(f"✅ first_name: {request.user.first_name}")
-    print(f"✅ last_name: {request.user.last_name}")
-    print(f"✅ is_authenticated: {request.user.is_authenticated}")
-
-    # بررسی وجود کاربر در accuntmodel
-    try:
-        accunt_user = accuntmodel.objects.get(melicode=request.user.username)
-        print(f"✅ کاربر در accuntmodel: {accunt_user.firstname} {accunt_user.lastname}")
-    except accuntmodel.DoesNotExist:
-        print("❌ کاربر در accuntmodel یافت نشد")
-
-    print("=" * 50)
-
-
+# from django.contrib.auth.decorators import login_required
+# from django.shortcuts import render, redirect
+# from django.contrib import messages
+# from cantact_app.models import UserSessionLog
+#
+#
+#
+# # در views.py - اضافه کردن این توابع
+#
+# from django.contrib.auth.decorators import login_required
+# from django.shortcuts import render, redirect
+# from django.contrib import messages
+# from cantact_app.models import UserSessionLog, accuntmodel
+#
+#
+#
+# @login_required(login_url='/cantact/login/')
+# def terminate_other_sessions_view(request):
+#     """خاتمه دادن به سایر سشن‌های کاربر جاری"""
+#     if request.method == 'POST':
+#         current_session_key = request.session.session_key
+#         specific_session_key = request.POST.get('session_key')
+#
+#         if specific_session_key:
+#             # قطع سشن خاص
+#             try:
+#                 session_log = UserSessionLog.objects.get(
+#                     user=request.user,  # فقط سشن‌های کاربر جاری
+#                     session_key=specific_session_key,
+#                     is_active=True
+#                 )
+#                 session_log.terminate()
+#                 messages.success(request, "دستگاه مورد نظر قطع ارتباط شد.")
+#             except UserSessionLog.DoesNotExist:
+#                 messages.error(request, "سشن مورد نظر یافت نشد.")
+#         else:
+#             # قطع تمام سشن‌های دیگر کاربر جاری
+#             other_sessions = UserSessionLog.objects.filter(
+#                 user=request.user,  # فقط کاربر جاری
+#                 is_active=True
+#             ).exclude(session_key=current_session_key)
+#
+#             terminated_count = 0
+#             for session_log in other_sessions:
+#                 session_log.terminate()
+#                 terminated_count += 1
+#
+#             if terminated_count > 0:
+#                 messages.success(request, f"از {terminated_count} دستگاه دیگر خارج شدید.")
+#             else:
+#                 messages.info(request, "هیچ دستگاه فعال دیگری وجود ندارد.")
+#
+#     return redirect('cantact_app:session_management')
+#
+#
+# @login_required(login_url='/cantact/login/')
+# def session_management_view(request):
+#     """صفحه مدیریت سشن‌های کاربر جاری"""
+#     # فقط سشن‌های فعال کاربر جاری را نمایش بده
+#     user_sessions = UserSessionLog.objects.filter(
+#         user=request.user,
+#         is_active=True
+#     ).order_by('-last_activity')
+#
+#     current_session_key = request.session.session_key
+#
+#     # 🔥 **رفع مشکل اصلی: دریافت صحیح اطلاعات کاربر**
+#     try:
+#         # روش ۱: دریافت از مدل accuntmodel با استفاده از username کاربر جاری
+#         user_profile = accuntmodel.objects.get(melicode=request.user.username)
+#         full_name = f"{user_profile.firstname} {user_profile.lastname}"
+#         print(f"✅ اطلاعات کاربر از accuntmodel: {full_name}")
+#
+#     except accuntmodel.DoesNotExist:
+#         try:
+#             # روش ۲: دریافت از مدل User
+#             full_name = f"{request.user.first_name} {request.user.last_name}".strip()
+#             if not full_name or full_name == " ":
+#                 full_name = request.user.username
+#             print(f"✅ اطلاعات کاربر از User: {full_name}")
+#
+#         except Exception as e:
+#             # روش ۳: استفاده از username در صورت خطا
+#             full_name = request.user.username
+#             print(f"⚠️ استفاده از username: {full_name}")
+#
+#     context = {
+#         'user_sessions': user_sessions,
+#         'current_session_key': current_session_key,
+#         'full_name': full_name,
+#         'username': request.user.username,
+#     }
+#
+#     return render(request, 'cantact_app/session_management.html', context)
+#
+#
+# # در views.py - قبل از توابع اصلی
+# def debug_user_info(request):
+#     """تابع کمکی برای دیباگ اطلاعات کاربر"""
+#     print("=" * 50)
+#     print("🔍 دیباگ اطلاعات کاربر:")
+#     print(f"✅ کاربر جاری: {request.user}")
+#     print(f"✅ username: {request.user.username}")
+#     print(f"✅ first_name: {request.user.first_name}")
+#     print(f"✅ last_name: {request.user.last_name}")
+#     print(f"✅ is_authenticated: {request.user.is_authenticated}")
+#
+#     # بررسی وجود کاربر در accuntmodel
+#     try:
+#         accunt_user = accuntmodel.objects.get(melicode=request.user.username)
+#         print(f"✅ کاربر در accuntmodel: {accunt_user.firstname} {accunt_user.lastname}")
+#     except accuntmodel.DoesNotExist:
+#         print("❌ کاربر در accuntmodel یافت نشد")
+#
+#     print("=" * 50)
+#
+#
