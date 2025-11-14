@@ -1266,7 +1266,8 @@ def search_sellers(request):
 #     print(f"✅ first_name: {request.user.first_name}")
 #     print(f"✅ last_name: {request.user.last_name}")
 #     print(f"✅ is_authenticated: {request.user.is_authenticated}")
-#
+
+
 #     # بررسی وجود کاربر در accuntmodel
 #     try:
 #         accunt_user = accuntmodel.objects.get(melicode=request.user.username)
