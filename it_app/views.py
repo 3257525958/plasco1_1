@@ -44,7 +44,7 @@ def reset_remaining_quantity(request):
 
     if not selected_invoice_ids:
         messages.warning(request, 'هیچ فاکتوری انتخاب نشده است.')
-        return redirect('invoice_list')
+        return redirect('it_app:invoice_list')
 
     try:
         # پیدا کردن آیتم‌های فاکتورهای انتخاب شده
@@ -69,7 +69,7 @@ def reset_remaining_quantity(request):
     except Exception as e:
         messages.error(request, f'خطا در بروزرسانی: {str(e)}')
 
-    return redirect('invoice_list')
+    return redirect('it_app:invoice_list')
 
 
 @transaction.atomic
@@ -218,7 +218,7 @@ def start_distribution(request):
 
     if not selected_invoice_ids:
         messages.warning(request, 'هیچ فاکتوری انتخاب نشده است.')
-        return redirect('invoice_list')
+        return redirect('it_app:invoice_list')
 
     # ذخیره اطلاعات در session
     request.session['pending_invoices'] = selected_invoice_ids
@@ -321,7 +321,7 @@ def complete_distribution(request):
     else:
         messages.error(request, 'هیچ فاکتوری با موفقیت توزیع نشد.')
 
-    return redirect('invoice_list')
+    return redirect('it_app:invoice_list')
 
 
 @require_POST
@@ -330,13 +330,11 @@ def distribute_inventory(request):
     """
     توزیع فاکتورها به صورت ترتیبی با تاخیر
     """
-    print("Start distribute_inventory")
-
     selected_invoice_ids = request.POST.getlist('selected_invoices')
 
     if not selected_invoice_ids:
         messages.warning(request, 'هیچ فاکتوری انتخاب نشده است.')
-        return redirect('invoice_list')
+        return redirect('it_app:invoice_list')
 
     try:
         results = []
@@ -389,16 +387,14 @@ def distribute_inventory(request):
             messages.error(request, 'هیچ فاکتوری با موفقیت توزیع نشد.')
 
     except Exception as e:
-        print(f"❌ General error in distribute_inventory: {str(e)}")
         messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
 
-    return redirect('invoice_list')
+    return redirect('it_app:invoice_list')
 
 
 # ---------------------------------------------------------------پاک کردن قیمت ها------------------
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 
 
@@ -407,8 +403,6 @@ def delete_all_product_pricing(request):
     """
     ویو برای حذف تمام رکوردهای ProductPricing با تأیید کاربر
     """
-    print("🔍 1 - ویو فراخوانی شد")
-
     if request.method == 'POST':
         action = request.POST.get('action')
 
@@ -418,7 +412,7 @@ def delete_all_product_pricing(request):
 
             if record_count == 0:
                 messages.warning(request, '❌ هیچ رکوردی برای حذف وجود ندارد.')
-                return redirect('delete_all_product_pricing')
+                return redirect('it_app:delete_all_product_pricing')
 
             try:
                 # حذف تمام رکوردها
@@ -429,14 +423,14 @@ def delete_all_product_pricing(request):
                 error_msg = f'❌ خطا در حذف رکوردها: {str(e)}'
                 messages.error(request, error_msg)
 
-            return redirect('delete_all_product_pricing')
+            return redirect('it_app:delete_all_product_pricing')
 
         elif action == 'cancel':
             messages.info(request, '🔒 عملیات حذف لغو شد.')
-            return redirect('delete_all_product_pricing')
+            return redirect('it_app:delete_all_product_pricing')
         else:
             messages.error(request, '❌ عمل نامعتبر!')
-            return redirect('delete_all_product_pricing')
+            return redirect('it_app:delete_all_product_pricing')
 
     # GET request - نمایش صفحه تأیید
     record_count = ProductPricing.objects.count()
@@ -472,4 +466,4 @@ def clear_inventory(request):
     except Exception as e:
         messages.error(request, f"❌ خطا در پاک کردن داده‌های انبار: {str(e)}")
 
-    return redirect('invoice_list')
+    return redirect('it_app:invoice_list')
