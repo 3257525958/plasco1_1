@@ -30,17 +30,17 @@ class SingleSessionMiddleware:
         try:
             # پردازش قبل از view
             response = self.process_request(request)
+
+            # اگر response برگردانده شده باشد، یعنی خطایی رخ داده
             if response:
                 return response
 
-            # اجرای view
+            # اجرای view اصلی
             response = self.get_response(request)
 
-            # پردازش بعد از view
-            return self.process_response(request, response)
+            return response
 
         except Exception as e:
-            # در صورت خطا، درخواست را بدون تغییر عبور دهید
             print(f"⚠️ خطای بحرانی در میدلوار: {e}")
             return self.get_response(request)
 
@@ -56,14 +56,14 @@ class SingleSessionMiddleware:
             current_session_key = request.session.session_key
             if not current_session_key:
                 print("❌ سشن کیی موجود نیست")
-                return self.force_logout(request)
+                return self.safe_force_logout(request)
 
             # بررسی معتبر بودن سشن فعلی
             if not self.is_session_valid(request, current_session_key):
                 print("❌ سشن معتبر نیست")
-                return self.force_logout(request)
+                return self.safe_force_logout(request)
 
-            # قطع تمام سشن‌های دیگر این کاربر
+            # قطع تمام سشن‌های دیگر این کاربر (بدون تأثیر روی سشن فعلی)
             self.terminate_other_sessions(request.user, current_session_key)
 
             # به‌روزرسانی آخرین فعالیت
@@ -74,33 +74,137 @@ class SingleSessionMiddleware:
 
         return None
 
-    def process_response(self, request, response):
+    def safe_force_logout(self, request):
         """
-        پردازش هر پاسخ قبل از ارسال به کاربر
+        خروج امن کاربر بدون ایجاد SessionInterrupted
         """
         try:
-            # اگر لاگین موفق بوده، سشن لاگ ایجاد کن
-            if self.is_login_successful(request, response):
-                self.handle_successful_login(request)
+            if request.user.is_authenticated:
+                username = request.user.username
+                print(f"🔐 خروج امن: {username}")
+
+                # ابتدا کاربر را logout کن
+                logout(request)
+
+                # سپس سشن را در پس‌زمینه غیرفعال کن
+                self.background_terminate_session(request.session.session_key, request.user)
+
+                # یک سشن جدید ایجاد کن
+                request.session.cycle_key()
+
+                messages.warning(
+                    request,
+                    "🔐 سشن شما منقضی شده است. لطفاً مجدداً وارد شوید."
+                )
+
+                return HttpResponseRedirect('/cantact/login/')
+
         except Exception as e:
-            print(f"⚠️ خطا در پردازش پاسخ: {e}")
+            print(f"⚠️ خطا در خروج امن: {e}")
+            # در صورت خطا، فقط ریدایرکت کن
+            return HttpResponseRedirect('/cantact/login/')
 
-        return response
+        return None
 
-    def is_login_successful(self, request, response):
+    def background_terminate_session(self, session_key, user):
         """
-        بررسی آیا لاگین موفق بوده است
+        غیرفعال کردن سشن در پس‌زمینه
         """
         try:
-            # بررسی URL لاگین و وضعیت کاربر
-            login_urls = ['/cantact/login/', '/login/']
-            is_login_url = any(url in request.path for url in login_urls)
+            from .models import UserSessionLog
 
-            return (is_login_url and
-                    response.status_code in [200, 302] and
-                    request.user.is_authenticated)
-        except:
-            return False
+            if session_key:
+                # غیرفعال کردن سشن در لاگ
+                UserSessionLog.objects.filter(
+                    session_key=session_key,
+                    user=user
+                ).update(is_active=False, forced_logout=True)
+
+                # حذف سشن از دیتابیس (در پس‌زمینه)
+                try:
+                    Session.objects.filter(session_key=session_key).delete()
+                except:
+                    pass
+
+        except Exception as e:
+            print(f"⚠️ خطا در غیرفعال کردن سشن در پس‌زمینه: {e}")
+
+    def terminate_other_sessions(self, user, current_session_key):
+        """
+        قطع تمام سشن‌های دیگر کاربر به جز سشن فعلی
+        """
+        try:
+            from .models import UserSessionLog
+
+            # پیدا کردن تمام سشن‌های فعال کاربر به جز سشن فعلی
+            other_sessions = UserSessionLog.objects.filter(
+                user=user,
+                is_active=True
+            ).exclude(session_key=current_session_key)
+
+            terminated_count = 0
+            for session_log in other_sessions:
+                # از تابع terminate مدل استفاده کن
+                session_log.terminate()
+                terminated_count += 1
+
+            if terminated_count > 0:
+                print(f"🔒 {terminated_count} سشن دیگر کاربر {user.username} قطع شد")
+
+        except Exception as e:
+            print(f"⚠️ خطا در قطع سشن‌های دیگر: {e}")
+
+    def is_session_valid(self, request, session_key):
+        """
+        بررسی معتبر بودن سشن
+        """
+        try:
+            from .models import UserSessionLog
+
+            if not request.user.is_authenticated or not session_key:
+                return False
+
+            # بررسی وجود سشن در لاگ
+            try:
+                session_log = UserSessionLog.objects.get(
+                    session_key=session_key,
+                    user=request.user,
+                    is_active=True
+                )
+            except UserSessionLog.DoesNotExist:
+                print(f"❌ سشن در لاگ یافت نشد: {session_key}")
+                return False
+
+            # بررسی timeout
+            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
+            if session_log.last_activity < timeout_time:
+                print(f"⏰ سشن منقضی شده: {request.user.username}")
+                return False
+
+            return True
+
+        except Exception as e:
+            print(f"⚠️ خطا در بررسی سشن: {e}")
+            return True  # در صورت خطا، اجازه بده ادامه دهد
+
+    def update_last_activity(self, user, session_key):
+        """
+        به‌روزرسانی زمان آخرین فعالیت
+        """
+        try:
+            from .models import UserSessionLog
+
+            session_log = UserSessionLog.objects.get(
+                session_key=session_key,
+                user=user
+            )
+            session_log.last_activity = timezone.now()
+            session_log.save()
+
+        except UserSessionLog.DoesNotExist:
+            print(f"⚠️ سشن برای به‌روزرسانی یافت نشد: {session_key}")
+        except Exception as e:
+            print(f"⚠️ خطا در به‌روزرسانی فعالیت: {e}")
 
     def handle_successful_login(self, request):
         """
@@ -166,136 +270,6 @@ class SingleSessionMiddleware:
 
         except Exception as e:
             print(f"⚠️ خطا در قطع تمام سشن‌ها: {e}")
-
-    def terminate_other_sessions(self, user, current_session_key):
-        """
-        قطع تمام سشن‌های دیگر کاربر به جز سشن فعلی
-        """
-        try:
-            from .models import UserSessionLog
-
-            # پیدا کردن تمام سشن‌های فعال کاربر به جز سشن فعلی
-            other_sessions = UserSessionLog.objects.filter(
-                user=user,
-                is_active=True
-            ).exclude(session_key=current_session_key)
-
-            terminated_count = 0
-            for session_log in other_sessions:
-                session_log.terminate()
-                terminated_count += 1
-
-            if terminated_count > 0:
-                print(f"🔒 {terminated_count} سشن دیگر کاربر {user.username} قطع شد")
-
-        except Exception as e:
-            print(f"⚠️ خطا در قطع سشن‌های دیگر: {e}")
-
-    def is_session_valid(self, request, session_key):
-        """
-        بررسی معتبر بودن سشن
-        """
-        try:
-            from .models import UserSessionLog
-
-            if not request.user.is_authenticated or not session_key:
-                return False
-
-            # بررسی وجود سشن در لاگ
-            try:
-                session_log = UserSessionLog.objects.get(
-                    session_key=session_key,
-                    user=request.user,
-                    is_active=True
-                )
-            except UserSessionLog.DoesNotExist:
-                print(f"❌ سشن در لاگ یافت نشد: {session_key}")
-                return False
-
-            # بررسی timeout
-            timeout_time = timezone.now() - timezone.timedelta(seconds=self.session_timeout)
-            if session_log.last_activity < timeout_time:
-                print(f"⏰ سشن منقضی شده: {request.user.username}")
-                return False
-
-            # بررسی fingerprint امنیتی (اختیاری)
-            stored_fingerprint = request.session.get('security_fingerprint')
-            if stored_fingerprint:
-                current_fingerprint = self.create_security_fingerprint(request)
-                if stored_fingerprint != current_fingerprint:
-                    print(f"🔐 fingerprint امنیتی مطابقت ندارد: {request.user.username}")
-                    return False
-
-            return True
-
-        except Exception as e:
-            print(f"⚠️ خطا در بررسی سشن: {e}")
-            return False
-
-    def update_last_activity(self, user, session_key):
-        """
-        به‌روزرسانی زمان آخرین فعالیت
-        """
-        try:
-            from .models import UserSessionLog
-
-            session_log = UserSessionLog.objects.get(
-                session_key=session_key,
-                user=user
-            )
-            session_log.last_activity = timezone.now()
-            session_log.save()
-
-        except UserSessionLog.DoesNotExist:
-            print(f"⚠️ سشن برای به‌روزرسانی یافت نشد: {session_key}")
-        except Exception as e:
-            print(f"⚠️ خطا در به‌روزرسانی فعالیت: {e}")
-
-    def force_logout(self, request):
-        """
-        اجباری کردن خروج کاربر
-        """
-        try:
-            if request.user.is_authenticated:
-                username = request.user.username
-                print(f"🔐 خروج اجباری: {username}")
-
-                # غیرفعال کردن سشن در لاگ
-                try:
-                    from .models import UserSessionLog
-
-                    session_key = request.session.session_key
-                    if session_key:
-                        UserSessionLog.objects.filter(
-                            session_key=session_key,
-                            user=request.user
-                        ).update(is_active=False, forced_logout=True)
-                except Exception as e:
-                    print(f"⚠️ خطا در غیرفعال کردن سشن لاگ: {e}")
-
-                # logout کاربر
-                logout(request)
-
-                # پاک کردن سشن از دیتابیس
-                try:
-                    Session.objects.filter(session_key=request.session.session_key).delete()
-                except:
-                    pass
-
-                # پاک کردن سشن فعلی
-                request.session.flush()
-
-                messages.warning(
-                    request,
-                    "🔐 سشن شما منقضی شده یا از دستگاه دیگری وارد شده‌اید. لطفاً مجدداً وارد شوید."
-                )
-
-                return HttpResponseRedirect('/cantact/login/')
-
-        except Exception as e:
-            print(f"⚠️ خطا در خروج اجباری: {e}")
-
-        return None
 
     def create_security_fingerprint(self, request):
         """
