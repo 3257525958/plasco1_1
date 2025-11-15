@@ -120,8 +120,11 @@ class InventoryCount(models.Model):
         print("✅ متد save با موفقیت اجرا شد.")
 
     def __str__(self):
-        return f"{self.product_name} - {self.branch.name} - {self.quantity}"
-
+        try:
+            branch_name = self.branch.name if self.branch else "بدون شعبه"
+            return f"{self.product_name} - {branch_name} - {self.quantity}"
+        except Exception:
+            return f"{self.product_name} - {self.quantity}"
 
 
 
