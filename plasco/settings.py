@@ -190,6 +190,10 @@ INSTALLED_APPS = [
 'offline_ins',
 'ip_manager'
 ]
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # یا 'django.contrib.sessions.backends.cache'
+SESSION_COOKIE_AGE = 1209600  # 2 هفته (پیش‌فرض)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+ROOT_URLCONF = 'plasco.urls'
 
 
 # SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # حتماً از دیتابیس استفاده کنید
@@ -223,8 +227,6 @@ MIDDLEWARE = [
     # 'plasco.middleware.StrictSessionMiddleware',  # این خط را اضافه کنید
     # 'cantact_app.middleware.SingleSessionMiddleware',
 ]
-
-ROOT_URLCONF = 'plasco.urls'
 
 TEMPLATES = [
     {
@@ -275,4 +277,242 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SYNC_INTERVAL = 60
 ONLINE_SERVER_URL = "https://plasmarket.ir"
 OFFLINE_MODE = False
+
+# ------------------------------------------------اوکال و محلی---------------------------------------------
+#
+# from pathlib import Path
+# import os
+#
+# import locale
+#
+#
+# # Build paths inside the project like this: BASE_DIR / 'subdir'.
+# BASE_DIR = Path(__file__).resolve().parent.parent
+#
+#
+# # Quick-start development settings - unsuitable for production
+# # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+#
+# # SECURITY WARNING: keep the secret key used in production secret!
+# SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
+#
+# # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG = True
+# ALLOWED_HOSTS = ['http://plasmarket.ir','plasmarket.ir','www.plasmarket.ir','https://plasmarket.ir','192.168.1.157']
+# CSRF_TRUSTED_ORIGINS = ["https://plasmarket.ir",'http://plasmarket.ir','https://www.plasmarket.ir','http://www.plasmarket.ir']
+#
+# # ALLOWED_HOSTS = []
+#
+#
+# # Application definition
+#
+# INSTALLED_APPS = [
+#     'django.contrib.admin',
+#     'django.contrib.auth',
+#     'django.contrib.contenttypes',
+#     'django.contrib.sessions',
+#     'django.contrib.messages',
+#     'django.contrib.staticfiles',
+#     'account_app.apps.AccountAppConfig',  # تغییر به حروف بزرگ
+#     'dashbord_app.apps.DashbordAppConfig',
+#     'cantact_app.apps.CantactAppConfig',
+#     'invoice_app.apps.InvoiceAppConfig',
+#     'it_app.apps.ItAppConfig',
+#     'pos_payment.apps.PosPaymentConfig',
+# ]
+# JALALI_DATE_DEFAULTS = {
+#    'Strftime': {
+#         'date': '%y/%m/%d',
+#         'datetime': '%H:%M:%S _ %y%m%d',
+#     },
+#     'Static':{
+#         'js':[
+#             # loading datepicker
+#             'admin/js/django_jalali.min.js',
+#             # OR
+#             # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.core.js',
+#             # 'admin/jquery.ui.datepicker.jalali/scripts/calender.js',
+#             # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc.js',
+#             # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc-fa.js',
+#             # 'admin/js/main.js',
+#         ],
+#         'css': {
+#             'all': [
+#                 'admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css',
+#             ]
+#         }
+#     },
+# }
+#
+# MIDDLEWARE = [
+#     'django.middleware.security.SecurityMiddleware',
+#     'django.contrib.sessions.middleware.SessionMiddleware',
+#     'django.middleware.common.CommonMiddleware',
+#     'django.middleware.csrf.CsrfViewMiddleware',
+#     'django.contrib.auth.middleware.AuthenticationMiddleware',
+#     'django.contrib.messages.middleware.MessageMiddleware',
+#     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+# ]
+#
+# ROOT_URLCONF = 'plasco.urls'
+#
+# TEMPLATES = [
+#     {
+#         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+#         'DIRS': [BASE_DIR / 'templates']
+#         ,
+#         'APP_DIRS': True,
+#         'OPTIONS': {
+#             'context_processors': [
+#                 'django.template.context_processors.request',
+#                 'django.contrib.auth.context_processors.auth',
+#                 'django.contrib.messages.context_processors.messages',
+#             ],
+#         },
+#     },
+# ]
+#
+# WSGI_APPLICATION = 'plasco.wsgi.application'
+#
+#
+# # Database
+# # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+#
+# # DATABASES = {
+# #     'default': {
+# #         'ENGINE': 'django.db.backends.sqlite3',
+# #         'NAME': BASE_DIR / 'db.sqlite3',
+# #     }
+# # }
+#
+#
+#
+#
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'plascodavor_db',
+#         'USER': 'root',
+#         'PASSWORD': 'zh21oYmLXiINj!Es3Rtq',
+#         'HOST': 'plascodata1-ayh-service',
+#
+#     }
+# }
+#
+#
+# # Password validation
+# # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+#
+# AUTH_PASSWORD_VALIDATORS = [
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+#     },
+# ]
+#
+#
+# # Internationalization
+# # https://docs.djangoproject.com/en/5.2/topics/i18n/
+#
+# LANGUAGE_CODE = 'fa-ir'
+#
+# TIME_ZONE = 'UTC'
+#
+# USE_I18N = True
+#
+# USE_TZ = True
+#
+#
+# # Static files (CSS, JavaScript, Images)
+# # https://docs.djangoproject.com/en/5.2/howto/static-files/
+#
+# STATIC_URL = '/static/'
+# MEDIA_URL = '/media/'
+# STATICFILES_DIRS=[os.path.join(BASE_DIR,'static')]
+# STATIC_ROOT='/static/'
+# MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+#
+#
+# # Default primary key field type
+# # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+#
+# DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+#
+#
+#
+# AZ_IRANIAN_BANK_GATEWAYS = {
+#    'GATEWAYS': {
+#        # 'BMI': {
+#        #     'MERCHANT_CODE': '<YOUR MERCHANT CODE>',
+#        #     'TERMINAL_CODE': '<YOUR TERMINAL CODE>',
+#        #     'SECRET_KEY': '<YOUR SECRET CODE>',
+#        # },
+#        # 'SEP': {
+#        #     'MERCHANT_CODE': '<YOUR MERCHANT CODE>',
+#        #     'TERMINAL_CODE': '<YOUR TERMINAL CODE>',
+#        # },
+#        # 'ZARINPAL': {
+#        #     'MERCHANT_CODE': '<YOUR MERCHANT CODE>',
+#        #     'SANDBOX': 0,  # 0 disable, 1 active
+#        # },
+#        'IDPAY': {
+#            'MERCHANT_CODE': '021de8d3-3eb3-40ba-b0e3-01883a6575e1',
+#            'METHOD': 'POST',  # GET or POST
+#            'X_SANDBOX': 1,  # 0 disable, 1 active
+#        },
+#        # 'ZIBAL': {
+#        #     'MERCHANT_CODE': '64c2047fcbbc270017f4c6b2',
+#        # },
+#        # 'BAHAMTA': {
+#        #     'MERCHANT_CODE': '<YOUR MERCHANT CODE>',
+#        # },
+#        # 'MELLAT': {
+#        #     'TERMINAL_CODE': '<YOUR TERMINAL CODE>',
+#        #     'USERNAME': '<YOUR USERNAME>',
+#        #     'PASSWORD': '<YOUR PASSWORD>',
+#        # },
+#        # 'PAYV1': {
+#        #     'MERCHANT_CODE': '<YOUR MERCHANT CODE>',
+#        #     'X_SANDBOX': 0,  # 0 disable, 1 active
+#        # },
+#    },
+#    # 'IS_SAMPLE_FORM_ENABLE': True, # اختیاری و پیش فرض غیر فعال است
+#    'DEFAULT': 'IDPAY',
+#    'CURRENCY': 'IRR', # اختیاری
+#    'TRACKING_CODE_QUERY_PARAM': 'tc', # اختیاری
+#    'TRACKING_CODE_LENGTH': 16, # اختیاری
+#    'SETTING_VALUE_READER_CLASS': 'azbankgateways.readers.DefaultReader', # اختیاری
+#    'BANK_PRIORITIES': [
+#        # 'BMI',
+#        # 'SEP',
+#        # and so on ...
+#    ], # اختیاری
+#     # 'IS_SAMPLE_FORM_ENABLE': True,
+#    'IS_SAFE_GET_GATEWAY_PAYMENT': True, #اختیاری، بهتر است True بزارید.
+#    # 'CUSTOM_APP': None, # اختیاری
+# }
+#
+# MERCHANT = '021de8d3-3eb3-40ba-b0e3-01883a6575e1'
+# SANDBOX = True
+# # LOGGING = {
+# #     'version': 1,
+# #     'disable_existing_loggers': False,
+# #     'handlers': {
+# #         'console': {
+# #             'class': 'logging.StreamHandler',
+# #         },
+# #     },
+# #     'root': {
+# #         'handlers': ['console'],
+# #         'level': 'DEBUG',
+# #     },
+# # }
 
