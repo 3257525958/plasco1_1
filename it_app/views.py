@@ -170,16 +170,36 @@ def distribute_inventory(request):
 
         for product in products_to_distribute:
             total_remaining = product['total_remaining']
-            base_per_branch = total_remaining // branch_count
-            remainder = total_remaining % branch_count
+
+            # 🔴 منطق جدید توزیع برای زمانی که تعداد کالا کمتر از تعداد شعبه است
+            if total_remaining < branch_count:
+                # اگر تعداد کالاها کمتر از تعداد شعبه‌ها باشد
+                # به هر شعبه یک کالا می‌دهیم تا جایی که کالا داریم
+                base_per_branch = 1
+                remainder = 0
+                # تعداد شعب قابل سرویس دهی با کالاهای موجود
+                serviceable_branches = total_remaining
+            else:
+                # منطق قبلی برای زمانی که کالا به اندازه کافی داریم
+                base_per_branch = total_remaining // branch_count
+                remainder = total_remaining % branch_count
+                serviceable_branches = branch_count
 
             product_distributed = 0
             print(f"Distributing {product['name']}: {total_remaining} units")
 
             for i, branch in enumerate(branches):
-                qty_for_branch = base_per_branch
-                if i < remainder:
-                    qty_for_branch += 1
+                if total_remaining < branch_count:
+                    # اگر تعداد کالاها کمتر از شعبه‌ها باشد
+                    if i < serviceable_branches:
+                        qty_for_branch = base_per_branch  # که برابر 1 است
+                    else:
+                        qty_for_branch = 0
+                else:
+                    # منطق قبلی
+                    qty_for_branch = base_per_branch
+                    if i < remainder:
+                        qty_for_branch += 1
 
                 if qty_for_branch > 0:
                     try:
@@ -191,7 +211,7 @@ def distribute_inventory(request):
                                 'quantity': qty_for_branch,
                                 'counter': request.user,
                                 'selling_price': product['max_selling_price'],
-                                'profit_percentage': Decimal('70.00')  # تغییر به 100 درصد
+                                'profit_percentage': Decimal('70.00')
                             }
                         )
 
@@ -201,7 +221,7 @@ def distribute_inventory(request):
                                 inventory_obj.selling_price or 0,
                                 product['max_selling_price']
                             )
-                            inventory_obj.profit_percentage = Decimal('70.00')  # به‌روزرسانی درصد سود
+                            inventory_obj.profit_percentage = Decimal('70.00')
                             inventory_obj.save()
 
                         product_distributed += qty_for_branch
@@ -237,7 +257,6 @@ def distribute_inventory(request):
         messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
 
     return redirect('invoice_list')
-
 
 # ---------------------------------------------------------------پاک کردن قیمت ها------------------
 from django.shortcuts import render, redirect
