@@ -1008,27 +1008,42 @@ def finalize_invoice_non_pos(request):
 
             print(f"✅ [NON-POS] فاکتور ایجاد شد با ID: {invoice.id}")
 
-            # ثبت آیتم‌ها
+            # ثبت آیتم‌ها در InvoiceItemfrosh
+            item_count = 0
             for item_data in items:
                 try:
                     product = InventoryCount.objects.get(id=item_data['product_id'])
-                    InvoiceItemfrosh.objects.create(
+
+                    # محاسبه قیمت کل برای هر آیتم
+                    item_total_price = (item_data['quantity'] * item_data['price']) - item_data.get('discount', 0)
+
+                    # ایجاد آیتم فاکتور با مدل InvoiceItemfrosh
+                    invoice_item = InvoiceItemfrosh.objects.create(
                         invoice=invoice,
                         product=product,
                         quantity=item_data['quantity'],
                         price=item_data['price'],
+                        total_price=item_total_price,
+                        standard_price=item_data['price'],  # می‌توانید منطق خود را برای این فیلد اعمال کنید
                         discount=item_data.get('discount', 0)
                     )
+
                     # کاهش موجودی
                     product.quantity -= item_data['quantity']
                     product.save()
-                    print(f"✅ [NON-POS] آیتم ثبت شد: {product.name} - تعداد: {item_data['quantity']}")
+
+                    item_count += 1
+                    print(
+                        f"✅ [NON-POS] آیتم فاکتور ثبت شد: {product.name} - تعداد: {item_data['quantity']} - قیمت کل: {item_total_price}")
+
                 except InventoryCount.DoesNotExist:
                     print(f"⚠️ [NON-POS] محصول با ID {item_data['product_id']} یافت نشد")
                     continue
                 except Exception as e:
-                    print(f"⚠️ [NON-POS] خطا در ثبت آیتم: {e}")
+                    print(f"⚠️ [NON-POS] خطا در ثبت آیتم فاکتور: {e}")
                     continue
+
+            print(f"✅ [NON-POS] تعداد {item_count} آیتم فاکتور ثبت شد")
 
             # پاکسازی session
             session_keys = ['invoice_items', 'customer_name', 'customer_phone',
@@ -1042,7 +1057,8 @@ def finalize_invoice_non_pos(request):
             return JsonResponse({
                 'status': 'success',
                 'message': 'فاکتور با موفقیت ثبت شد',
-                'invoice_id': invoice.id
+                'invoice_id': invoice.id,
+                'items_count': item_count
             })
 
         except Exception as e:
@@ -1056,6 +1072,49 @@ def finalize_invoice_non_pos(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+
+
+# در views.py - ویوهای مربوط به مدیریت آیتم‌های فاکتور
+@login_required
+def invoice_add_item(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        quantity = data.get('quantity', 1)
+
+        try:
+            product = InventoryCount.objects.get(id=product_id)
+
+            # اضافه کردن آیتم به session
+            if 'invoice_items' not in request.session:
+                request.session['invoice_items'] = []
+
+            # محاسبه قیمت کل آیتم
+            item_total = quantity * product.unit_price
+            item_discount = data.get('discount', 0)
+
+            item_data = {
+                'product_id': product.id,
+                'product_name': product.product_name,
+                'quantity': quantity,
+                'price': product.unit_price,  # این باید با فیلد price در مدل مطابقت کند
+                'discount': item_discount,
+                'total': item_total - item_discount
+            }
+
+            request.session['invoice_items'].append(item_data)
+            request.session.modified = True
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'کالا به فاکتور اضافه شد'
+            })
+
+        except InventoryCount.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'محصول یافت نشد'
+            })
 # --------------------------------------------------------------------------
 @login_required
 @csrf_exempt
