@@ -2626,7 +2626,7 @@ function processNonPosPayment(action, paymentMethod, amount) {
         data: JSON.stringify({
             action: action,
             payment_method: paymentMethod,
-            paid_amount: amount,
+            paid_amount: amount,  // اضافه کردن این فیلد
             timestamp: new Date().getTime()
         }),
         headers: {'X-CSRFToken': getCookie('csrftoken')},
@@ -2663,7 +2663,6 @@ function processNonPosPayment(action, paymentMethod, amount) {
         }
     });
 }
-
 /**
  * ذخیره اطلاعات مشتری در session
  */

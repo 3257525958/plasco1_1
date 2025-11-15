@@ -26,7 +26,7 @@ urlpatterns = [
     path('it/', include('it_app.urls')),
     path('pos-payment/', include('pos_payment.urls')),
     path('api/sync/', include('sync_api.urls')),
-    path('sync_app/', include('sync_app.urls')),
+    # path('sync_app/', include('sync_app.urls')),
     path('sync/', include('sync_app.urls')),
     path('switch-to-offline/', switch_to_offline, name='switch_to_offline'),
     path('ip/', include('ip_manager.urls')),

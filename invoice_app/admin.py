@@ -104,18 +104,16 @@ class CreditPaymentAdmin(admin.ModelAdmin):
 
     remaining_amount_display.short_description = 'مبلغ باقیمانده'
 
-
 class InvoiceItemfroshInline(admin.TabularInline):
     model = InvoiceItemfrosh
     extra = 0
-    readonly_fields = ['product', 'quantity', 'price', 'total_price', 'standard_price', 'discount']
-    can_delete = False
+    readonly_fields = ['profit_per_item']
 
-    fieldsets = (
-        (None, {
-            'fields': ('product', 'quantity', 'price', 'discount', 'total_price', 'standard_price')
-        }),
-    )
+    def profit_per_item(self, obj):
+        profit = (obj.price - obj.standard_price) * obj.quantity
+        return f"{profit:,} تومان"
+
+    profit_per_item.short_description = "سود آیتم"
 
 
 class CheckPaymentInline(admin.StackedInline):
@@ -166,67 +164,29 @@ class CreditPaymentInline(admin.StackedInline):
 
 @admin.register(Invoicefrosh)
 class InvoicefroshAdmin(admin.ModelAdmin):
-    list_display = ['serial_number', 'branch', 'customer_name', 'total_amount_display',
-                    'payment_method_display', 'is_paid', 'is_finalized', 'created_at_jalali']
-    list_filter = ['branch', 'payment_method', 'is_paid', 'is_finalized', 'created_at']
-    search_fields = ['serial_number', 'customer_name', 'customer_phone']
-    readonly_fields = ['serial_number', 'created_at', 'created_by', 'total_without_discount']
+    list_display = ['serial_number', 'branch', 'customer_name', 'total_amount',
+                    'discount', 'profit_display', 'payment_method', 'is_finalized',
+                    'is_paid', 'created_at']
+    list_filter = ['branch', 'payment_method', 'is_finalized', 'is_paid', 'created_at']
+    readonly_fields = ['serial_number', 'created_at', 'profit_display', 'total_profit']
     inlines = [InvoiceItemfroshInline]
 
     fieldsets = (
-        ('اطلاعات اصلی', {
+        ('اطلاعات پایه', {
             'fields': ('serial_number', 'branch', 'created_by', 'created_at')
         }),
-        ('اطلاعات مالی', {
-            'fields': ('total_without_discount', 'discount', 'total_amount')
-        }),
         ('اطلاعات پرداخت', {
-            'fields': ('payment_method', 'pos_device', 'is_paid', 'payment_date')
-        }),
-        ('وضعیت فاکتور', {
-            'fields': ('is_finalized',)
+            'fields': ('payment_method', 'pos_device', 'total_amount',
+                       'total_without_discount', 'discount', 'paid_amount',
+                       'is_finalized', 'is_paid', 'payment_date')
         }),
         ('اطلاعات مشتری', {
             'fields': ('customer_name', 'customer_phone')
-        })
+        }),
+        ('محاسبات سود', {
+            'fields': ('profit_display',)
+        }),
     )
-
-    def get_inlines(self, request, obj):
-        """
-        نمایش اینلاین مناسب بر اساس روش پرداخت
-        """
-        if obj:
-            if obj.payment_method == 'check':
-                return [InvoiceItemfroshInline, CheckPaymentInline]
-            elif obj.payment_method == 'credit':
-                return [InvoiceItemfroshInline, CreditPaymentInline]
-        return [InvoiceItemfroshInline]
-
-    def payment_method_display(self, obj):
-        return obj.get_payment_method_display()
-
-    payment_method_display.short_description = 'روش پرداخت'
-
-    def total_amount_display(self, obj):
-        return f"{obj.total_amount:,} تومان"
-
-    total_amount_display.short_description = 'مبلغ کل'
-
-    def created_at_jalali(self, obj):
-        return obj.get_jalali_date() + ' ' + obj.get_jalali_time()
-
-    created_at_jalali.short_description = 'تاریخ ایجاد (شمسی)'
-
-    def save_model(self, request, obj, form, change):
-        if not obj.created_by_id:
-            obj.created_by = request.user
-        super().save_model(request, obj, form, change)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            'branch', 'created_by', 'pos_device'
-        ).prefetch_related('items')
-
 
 @admin.register(InvoiceItemfrosh)
 class InvoiceItemfroshAdmin(admin.ModelAdmin):
@@ -271,3 +231,9 @@ admin.site.register(CreditPayment, CreditPaymentAdmin)
 admin.site.site_header = 'سیستم مدیریت فروش'
 admin.site.site_title = 'پنل مدیریت فروش'
 admin.site.index_title = 'مدیریت فروش و فاکتورها'
+
+from django.contrib import admin
+
+
+
+

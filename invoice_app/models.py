@@ -32,6 +32,8 @@ class POSDevice(models.Model):
         elif not POSDevice.objects.filter(is_default=True).exists():
             self.is_default = True
         super().save(*args, **kwargs)
+
+
 class Invoicefrosh(models.Model):
     PAYMENT_METHODS = [
         ('cash', 'نقدی'),
@@ -55,8 +57,6 @@ class Invoicefrosh(models.Model):
     customer_name = models.CharField(max_length=100, blank=True, null=True, verbose_name="نام خریدار")
     customer_phone = models.CharField(max_length=15, blank=True, null=True, verbose_name="تلفن خریدار")
     serial_number = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="شماره سریال")
-
-    # فیلد جدید اضافه شده
     paid_amount = models.PositiveIntegerField(default=0, verbose_name="مبلغ پرداخت شده")
 
     class Meta:
@@ -90,6 +90,81 @@ class Invoicefrosh(models.Model):
 
     def get_payment_method_display(self):
         return dict(self.PAYMENT_METHODS).get(self.payment_method, 'نامشخص')
+
+    # محاسبه سود کل فاکتور
+    @property
+    def total_profit(self):
+        try:
+            profit = sum(
+                (item.price - item.standard_price) * item.quantity
+                for item in self.items.all()
+            )
+            return max(0, profit)
+        except:
+            return 0
+
+    # نمایش سود در ادمین
+    def profit_display(self):
+        return f"{self.total_profit:,} تومان"
+    profit_display.short_description = "سود فاکتور"
+# class Invoicefrosh(models.Model):
+#     PAYMENT_METHODS = [
+#         ('cash', 'نقدی'),
+#         ('pos', 'دستگاه پوز'),
+#         ('check', 'چک'),
+#         ('credit', 'نسیه'),
+#     ]
+#
+#     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, verbose_name="شعبه")
+#     created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="ایجاد کننده")
+#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+#     payment_date = models.DateTimeField(null=True, blank=True, verbose_name="تاریخ پرداخت")
+#     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='pos', verbose_name="روش پرداخت")
+#     pos_device = models.ForeignKey(POSDevice, on_delete=models.SET_NULL, null=True, blank=True,
+#                                    verbose_name="دستگاه پوز")
+#     total_amount = models.PositiveIntegerField(default=0, verbose_name="مبلغ کل")
+#     total_without_discount = models.PositiveIntegerField(default=0, verbose_name="مبلغ بدون تخفیف")
+#     discount = models.PositiveIntegerField(default=0, verbose_name="تخفیف")
+#     is_finalized = models.BooleanField(default=False, verbose_name="نهایی شده")
+#     is_paid = models.BooleanField(default=False, verbose_name="پرداخت شده")
+#     customer_name = models.CharField(max_length=100, blank=True, null=True, verbose_name="نام خریدار")
+#     customer_phone = models.CharField(max_length=15, blank=True, null=True, verbose_name="تلفن خریدار")
+#     serial_number = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="شماره سریال")
+#
+#     # فیلد جدید اضافه شده
+#     paid_amount = models.PositiveIntegerField(default=0, verbose_name="مبلغ پرداخت شده")
+#
+#     class Meta:
+#         verbose_name = "فاکتور"
+#         verbose_name_plural = "فاکتورها"
+#         ordering = ['-created_at']
+#
+#     def __str__(self):
+#         return f"فاکتور {self.id} - {self.branch.name}"
+#
+#     def save(self, *args, **kwargs):
+#         if not self.serial_number:
+#             now = timezone.now()
+#             self.serial_number = now.strftime('%Y%m%d%H%M%S')
+#
+#         if self.is_paid and not self.payment_date:
+#             self.payment_date = timezone.now()
+#
+#         if self.total_amount and self.discount:
+#             self.total_without_discount = self.total_amount + self.discount
+#         else:
+#             self.total_without_discount = self.total_amount
+#
+#         super().save(*args, **kwargs)
+#
+#     def get_jalali_date(self):
+#         return jdatetime.fromgregorian(datetime=self.created_at).strftime('%Y/%m/%d')
+#
+#     def get_jalali_time(self):
+#         return jdatetime.fromgregorian(datetime=self.created_at).strftime('%H:%M')
+#
+#     def get_payment_method_display(self):
+#         return dict(self.PAYMENT_METHODS).get(self.payment_method, 'نامشخص')
 
 class InvoiceItemfrosh(models.Model):
     invoice = models.ForeignKey(Invoicefrosh, on_delete=models.CASCADE, related_name='items')
