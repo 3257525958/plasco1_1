@@ -2550,68 +2550,6 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         console.log("دکمه ثبت فاکتور وجود دارد:", $('#save-invoice-btn').length > 0);
         console.log("دکمه انصراف وجود دارد:", $('#cancel-invoice-btn').length > 0);
     });
-
-{#    function processPosPayment(amount, posDeviceId) {#}
-{#    console.log('💰 شروع فرآیند پرداخت POS:', { amount, posDeviceId });#}
-{#    #}
-{#    currentPaymentAmount = amount;#}
-{#    showPaymentStatusModal();#}
-{#    updatePaymentStatus('processing', 'در حال اتصال به کارت خوان...');#}
-{##}
-{#    // تنظیم timeout کلی برای کل فرآیند پرداخت#}
-{#    const paymentTimeout = setTimeout(() => {#}
-{#        console.log('⏰ timeout کلی پرداخت');#}
-{#        updatePaymentStatus('timeout', 'زمان پرداخت به پایان رسید. لطفاً مجدداً تلاش کنید.');#}
-{#    }, 25000); // 25 ثانیه timeout کلی#}
-{##}
-{#    // ارسال درخواست پرداخت به سرور#}
-{#    $.ajax({#}
-{#        url: "{% url 'invoice_app:process_pos_payment' %}",#}
-{#        method: 'POST',#}
-{#        contentType: 'application/json',#}
-{#        timeout: 20000, // 20 ثانیه timeout برای AJAX#}
-{#        data: JSON.stringify({#}
-{#            amount: amount,#}
-{#            pos_device_id: posDeviceId#}
-{#        }),#}
-{#        headers: {'X-CSRFToken': getCookie('csrftoken')},#}
-{#        success: function(data) {#}
-{#            clearTimeout(paymentTimeout); // پاک کردن timeout#}
-{#            console.log('✅ پاسخ پرداخت POS:', data);#}
-{#            #}
-{#            if (data.status === 'success') {#}
-{#                const transactionStatus = data.transaction_status;#}
-{#                #}
-{#                if (transactionStatus.status_type === 'success') {#}
-{#                    // پرداخت موفق#}
-{#                    updatePaymentStatus('success', transactionStatus.message, {#}
-{#                        amount_toman: data.amount_toman,#}
-{#                        amount_rial: data.amount_rial#}
-{#                    });#}
-{#                    #}
-{#                    // ثبت فاکتور#}
-{#                    registerFinalInvoice(amount, 'pos');#}
-{#                } else {#}
-{#                    // خطا در پرداخت#}
-{#                    updatePaymentStatus(transactionStatus.status_type, transactionStatus.message);#}
-{#                }#}
-{#            } else {#}
-{#                // خطا در ارتباط#}
-{#                updatePaymentStatus('error', data.message);#}
-{#            }#}
-{#        },#}
-{#        error: function(xhr, status, error) {#}
-{#            clearTimeout(paymentTimeout); // پاک کردن timeout#}
-{#            console.error('❌ خطا در ارسال درخواست پرداخت:', error);#}
-{#            #}
-{#            if (status === 'timeout') {#}
-{#                updatePaymentStatus('timeout', 'زمان اتصال به سرور به پایان رسید. لطفاً مجدداً تلاش کنید.');#}
-{#            } else {#}
-{#                updatePaymentStatus('error', 'خطا در ارتباط با سرور: ' + error);#}
-{#            }#}
-{#        }#}
-{#    });#}
-{#}#}
     // =============================================
     // قرار دادن توابع در scope جهانی
     // =============================================
@@ -2631,63 +2569,63 @@ function submitFinalInvoice(action, paymentMethod, amount) {
     window.retryPayment = retryPayment;
     window.cancelPayment = cancelPayment;
     
-// همچنین مطمئن شوید finalizeInvoice تعریف شده است
-window.finalizeInvoice = function(action) {
-    console.log('🔄 شروع فرآیند ثبت فاکتور...');
-    console.log('🔍 وضعیت فعلی:');
-    console.log('- action:', action);
-    console.log('- currentPaymentMethod:', currentPaymentMethod);
-
-    // اعتبارسنجی اولیه
-    if (!validateInvoiceBeforeSubmit()) {
-        console.log('❌ اعتبارسنجی اولیه失敗 شد');
-        return;
-    }
-    console.log('✅ اعتبارسنجی اولیه passed');
-
-    const paymentMethod = currentPaymentMethod;
-    const amount = calculateInvoiceTotal().totalAmount;
-
-    console.log('💳 اطلاعات پرداخت:');
-    console.log('- روش پرداخت:', paymentMethod);
-    console.log('- مبلغ:', amount);
-
-    if (paymentMethod === 'pos') {
-        console.log('🔵 وارد شاخه POS شد');
-        const posDeviceId = $('#pos-device').val();
-        console.log('- دستگاه پوز انتخاب شده:', posDeviceId);
-        
-        if (!posDeviceId) {
-            console.log('❌ دستگاه پوز انتخاب نشده');
-            showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
+    // همچنین مطمئن شوید finalizeInvoice تعریف شده است
+    window.finalizeInvoice = function(action) {
+        console.log('🔄 شروع فرآیند ثبت فاکتور...');
+        console.log('🔍 وضعیت فعلی:');
+        console.log('- action:', action);
+        console.log('- currentPaymentMethod:', currentPaymentMethod);
+    
+        // اعتبارسنجی اولیه
+        if (!validateInvoiceBeforeSubmit()) {
+            console.log('❌ اعتبارسنجی اولیه失敗 شد');
             return;
         }
-        console.log('✅ دستگاه پوز OK - فراخوانی processPosPayment');
-        processPosPayment(amount, posDeviceId);
-    }
-    else if (paymentMethod === 'check') {
-        console.log('🔵 وارد شاخه CHECK شد');
-        console.log('- نمایش مودال چک');
-        $('#checkPaymentModal').modal('show');
-    }
-    else if (paymentMethod === 'credit') {
-        console.log('🔵 وارد شاخه CREDIT شد');
-        console.log('- نمایش مودال نسیه');
-        $('#creditPaymentModal').modal('show');
-    }
-    else if (paymentMethod === 'cash') {
-        console.log('🔵 وارد شاخه CASH شد');
-        console.log('- فراخوانی submitFinalInvoice برای نقدی');
-        submitFinalInvoice(action, paymentMethod, amount);
-    }
-    else {
-        console.log('🔵 وارد شاخه OTHER شد - روش پرداخت:', paymentMethod);
-        console.log('- فراخوانی submitFinalInvoice');
-        submitFinalInvoice(action, paymentMethod, amount);
-    }
+        console.log('✅ اعتبارسنجی اولیه passed');
     
-    console.log('🏁 پایان تابع finalizeInvoice');
-};
+        const paymentMethod = currentPaymentMethod;
+        const amount = calculateInvoiceTotal().totalAmount;
+    
+        console.log('💳 اطلاعات پرداخت:');
+        console.log('- روش پرداخت:', paymentMethod);
+        console.log('- مبلغ:', amount);
+    
+        if (paymentMethod === 'pos') {
+            console.log('🔵 وارد شاخه POS شد');
+            const posDeviceId = $('#pos-device').val();
+            console.log('- دستگاه پوز انتخاب شده:', posDeviceId);
+            
+            if (!posDeviceId) {
+                console.log('❌ دستگاه پوز انتخاب نشده');
+                showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
+                return;
+            }
+            console.log('✅ دستگاه پوز OK - فراخوانی processPosPayment');
+            processPosPayment(amount, posDeviceId);
+        }
+        else if (paymentMethod === 'check') {
+            console.log('🔵 وارد شاخه CHECK شد');
+            console.log('- نمایش مودال چک');
+            $('#checkPaymentModal').modal('show');
+        }
+        else if (paymentMethod === 'credit') {
+            console.log('🔵 وارد شاخه CREDIT شد');
+            console.log('- نمایش مودال نسیه');
+            $('#creditPaymentModal').modal('show');
+        }
+        else if (paymentMethod === 'cash') {
+            console.log('🔵 وارد شاخه CASH شد');
+            console.log('- فراخوانی submitFinalInvoice برای نقدی');
+            submitFinalInvoice(action, paymentMethod, amount);
+        }
+        else {
+            console.log('🔵 وارد شاخه OTHER شد - روش پرداخت:', paymentMethod);
+            console.log('- فراخوانی submitFinalInvoice');
+            submitFinalInvoice(action, paymentMethod, amount);
+        }
+        
+        console.log('🏁 پایان تابع finalizeInvoice');
+    };
     </script>
 </body>
 </html>
