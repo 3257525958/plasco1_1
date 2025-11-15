@@ -307,8 +307,8 @@
                             <th>نام کالا</th>
                             <th>قیمت معیار (تومان)</th>
                             <th>قیمت فروش (تومان)</th>
-                            <th>درصد سود</th>
-                            <th>عملیات</th>
+{#                            <th>درصد سود</th>#}
+{#                            <th>عملیات</th>#}
                         </tr>
                     </thead>
                     <tbody id="pricing-products-body">
@@ -485,7 +485,7 @@
                 }
                 
                 // نمایش درصد سود
-                {#$(this).closest('tr').find('.profit-percentage-display').text(profitPercentage.toFixed(2) + '%');#}
+                $(this).closest('tr').find('.profit-percentage-display').text(profitPercentage.toFixed(2) + '%');
             });
         }
 
