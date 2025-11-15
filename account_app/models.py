@@ -48,9 +48,9 @@ class InventoryCount(models.Model):
         try:
             profit_value = Decimal(str(self.profit_percentage))
             if profit_value < Decimal('0.00') or profit_value > Decimal('10000.00'):
-                self.profit_percentage = Decimal('30.00')
+                self.profit_percentage = Decimal('70.00')
         except (TypeError, ValueError, InvalidOperation):
-            self.profit_percentage = Decimal('30.00')
+            self.profit_percentage = Decimal('70.00')
 
     def generate_unique_numeric_barcode(self):
         """تولید بارکد ثابت ۱۲ رقمی بر اساس نام کالا"""

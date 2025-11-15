@@ -2131,44 +2131,44 @@
             window.location.href = "{% url 'invoice_app:invoice_cancel' %}";
         }
     }
-
     function finalizeInvoice(action) {
-        console.log('🔄 شروع فرآیند ثبت فاکتور...');
+    console.log('🔄 شروع فرآیند ثبت فاکتور...');
 
-        // اعتبارسنجی اولیه
-        if (!validateInvoiceBeforeSubmit()) {
+    // اعتبارسنجی اولیه
+    if (!validateInvoiceBeforeSubmit()) {
+        return;
+    }
+
+    const paymentMethod = currentPaymentMethod;
+    const amount = calculateInvoiceTotal().totalAmount;
+
+    console.log('💳 روش پرداخت:', paymentMethod, 'مبلغ:', amount);
+
+    // برای پرداخت POS از فرآیند جدید استفاده کن
+    if (paymentMethod === 'pos') {
+        const posDeviceId = $('#pos-device').val();
+        if (!posDeviceId) {
+            showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
             return;
         }
 
-        const paymentMethod = currentPaymentMethod;
-        const amount = calculateInvoiceTotal().totalAmount;
-
-        console.log('💳 روش پرداخت:', paymentMethod, 'مبلغ:', amount);
-
-        // برای پرداخت POS از فرآیند جدید استفاده کن
-        if (paymentMethod === 'pos') {
-            const posDeviceId = $('#pos-device').val();
-            if (!posDeviceId) {
-                showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
-                return;
-            }
-
-            processPosPayment(amount, posDeviceId);
-        }
-        // برای سایر روش‌های پرداخت از تابع قدیمی استفاده کن
-        else if (paymentMethod === 'check') {
-            // نمایش مودال چک
-            $('#checkPaymentModal').modal('show');
-        }
-        else if (paymentMethod === 'credit') {
-            // نمایش مودال نسیه
-            $('#creditPaymentModal').modal('show');
-        }
-        else {
-            // برای نقدی و سایر روش‌ها
-            submitFinalInvoice(action, paymentMethod, amount);
-        }
+        processPosPayment(amount, posDeviceId);
     }
+    // برای پرداخت چک
+    else if (paymentMethod === 'check') {
+        // نمایش مودال چک
+        $('#checkPaymentModal').modal('show');
+    }
+    // برای پرداخت نسیه
+    else if (paymentMethod === 'credit') {
+        // نمایش مودال نسیه
+        $('#creditPaymentModal').modal('show');
+    }
+    // برای پرداخت نقدی و سایر روش‌ها
+    else {
+        submitFinalInvoice(action, paymentMethod, amount);
+    }
+}
 
     // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
     function submitFinalInvoice(action, paymentMethod, amount) {
@@ -2580,67 +2580,6 @@
         console.log("دکمه انصراف وجود دارد:", $('#cancel-invoice-btn').length > 0);
     });
 
-{#    function processPosPayment(amount, posDeviceId) {#}
-{#    console.log('💰 شروع فرآیند پرداخت POS:', { amount, posDeviceId });#}
-{#    #}
-{#    currentPaymentAmount = amount;#}
-{#    showPaymentStatusModal();#}
-{#    updatePaymentStatus('processing', 'در حال اتصال به کارت خوان...');#}
-{##}
-{#    // تنظیم timeout کلی برای کل فرآیند پرداخت#}
-{#    const paymentTimeout = setTimeout(() => {#}
-{#        console.log('⏰ timeout کلی پرداخت');#}
-{#        updatePaymentStatus('timeout', 'زمان پرداخت به پایان رسید. لطفاً مجدداً تلاش کنید.');#}
-{#    }, 25000); // 25 ثانیه timeout کلی#}
-{##}
-{#    // ارسال درخواست پرداخت به سرور#}
-{#    $.ajax({#}
-{#        url: "{% url 'invoice_app:process_pos_payment' %}",#}
-{#        method: 'POST',#}
-{#        contentType: 'application/json',#}
-{#        timeout: 20000, // 20 ثانیه timeout برای AJAX#}
-{#        data: JSON.stringify({#}
-{#            amount: amount,#}
-{#            pos_device_id: posDeviceId#}
-{#        }),#}
-{#        headers: {'X-CSRFToken': getCookie('csrftoken')},#}
-{#        success: function(data) {#}
-{#            clearTimeout(paymentTimeout); // پاک کردن timeout#}
-{#            console.log('✅ پاسخ پرداخت POS:', data);#}
-{#            #}
-{#            if (data.status === 'success') {#}
-{#                const transactionStatus = data.transaction_status;#}
-{#                #}
-{#                if (transactionStatus.status_type === 'success') {#}
-{#                    // پرداخت موفق#}
-{#                    updatePaymentStatus('success', transactionStatus.message, {#}
-{#                        amount_toman: data.amount_toman,#}
-{#                        amount_rial: data.amount_rial#}
-{#                    });#}
-{#                    #}
-{#                    // ثبت فاکتور#}
-{#                    registerFinalInvoice(amount, 'pos');#}
-{#                } else {#}
-{#                    // خطا در پرداخت#}
-{#                    updatePaymentStatus(transactionStatus.status_type, transactionStatus.message);#}
-{#                }#}
-{#            } else {#}
-{#                // خطا در ارتباط#}
-{#                updatePaymentStatus('error', data.message);#}
-{#            }#}
-{#        },#}
-{#        error: function(xhr, status, error) {#}
-{#            clearTimeout(paymentTimeout); // پاک کردن timeout#}
-{#            console.error('❌ خطا در ارسال درخواست پرداخت:', error);#}
-{#            #}
-{#            if (status === 'timeout') {#}
-{#                updatePaymentStatus('timeout', 'زمان اتصال به سرور به پایان رسید. لطفاً مجدداً تلاش کنید.');#}
-{#            } else {#}
-{#                updatePaymentStatus('error', 'خطا در ارتباط با سرور: ' + error);#}
-{#            }#}
-{#        }#}
-{#    });#}
-{#}#}
     // =============================================
     // قرار دادن توابع در scope جهانی
     // =============================================
