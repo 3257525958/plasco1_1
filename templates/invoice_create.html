@@ -2630,6 +2630,64 @@ function submitFinalInvoice(action, paymentMethod, amount) {
     window.printCurrentInvoice = printCurrentInvoice;
     window.retryPayment = retryPayment;
     window.cancelPayment = cancelPayment;
+    
+// همچنین مطمئن شوید finalizeInvoice تعریف شده است
+window.finalizeInvoice = function(action) {
+    console.log('🔄 شروع فرآیند ثبت فاکتور...');
+    console.log('🔍 وضعیت فعلی:');
+    console.log('- action:', action);
+    console.log('- currentPaymentMethod:', currentPaymentMethod);
+
+    // اعتبارسنجی اولیه
+    if (!validateInvoiceBeforeSubmit()) {
+        console.log('❌ اعتبارسنجی اولیه失敗 شد');
+        return;
+    }
+    console.log('✅ اعتبارسنجی اولیه passed');
+
+    const paymentMethod = currentPaymentMethod;
+    const amount = calculateInvoiceTotal().totalAmount;
+
+    console.log('💳 اطلاعات پرداخت:');
+    console.log('- روش پرداخت:', paymentMethod);
+    console.log('- مبلغ:', amount);
+
+    if (paymentMethod === 'pos') {
+        console.log('🔵 وارد شاخه POS شد');
+        const posDeviceId = $('#pos-device').val();
+        console.log('- دستگاه پوز انتخاب شده:', posDeviceId);
+        
+        if (!posDeviceId) {
+            console.log('❌ دستگاه پوز انتخاب نشده');
+            showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
+            return;
+        }
+        console.log('✅ دستگاه پوز OK - فراخوانی processPosPayment');
+        processPosPayment(amount, posDeviceId);
+    }
+    else if (paymentMethod === 'check') {
+        console.log('🔵 وارد شاخه CHECK شد');
+        console.log('- نمایش مودال چک');
+        $('#checkPaymentModal').modal('show');
+    }
+    else if (paymentMethod === 'credit') {
+        console.log('🔵 وارد شاخه CREDIT شد');
+        console.log('- نمایش مودال نسیه');
+        $('#creditPaymentModal').modal('show');
+    }
+    else if (paymentMethod === 'cash') {
+        console.log('🔵 وارد شاخه CASH شد');
+        console.log('- فراخوانی submitFinalInvoice برای نقدی');
+        submitFinalInvoice(action, paymentMethod, amount);
+    }
+    else {
+        console.log('🔵 وارد شاخه OTHER شد - روش پرداخت:', paymentMethod);
+        console.log('- فراخوانی submitFinalInvoice');
+        submitFinalInvoice(action, paymentMethod, amount);
+    }
+    
+    console.log('🏁 پایان تابع finalizeInvoice');
+};
     </script>
 </body>
 </html>
