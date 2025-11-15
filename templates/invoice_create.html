@@ -2166,7 +2166,7 @@
         }
         else {
             // برای نقدی و سایر روش‌ها
-            submitFinalInvoice(action, paymentMethod, amount);
+            processNonPosPayment(action, paymentMethod, amount);
         }
     }
 
@@ -2591,67 +2591,140 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         console.log("دکمه انصراف وجود دارد:", $('#cancel-invoice-btn').length > 0);
     });
 
-{#    function processPosPayment(amount, posDeviceId) {#}
-{#    console.log('💰 شروع فرآیند پرداخت POS:', { amount, posDeviceId });#}
-{#    #}
-{#    currentPaymentAmount = amount;#}
-{#    showPaymentStatusModal();#}
-{#    updatePaymentStatus('processing', 'در حال اتصال به کارت خوان...');#}
-{##}
-{#    // تنظیم timeout کلی برای کل فرآیند پرداخت#}
-{#    const paymentTimeout = setTimeout(() => {#}
-{#        console.log('⏰ timeout کلی پرداخت');#}
-{#        updatePaymentStatus('timeout', 'زمان پرداخت به پایان رسید. لطفاً مجدداً تلاش کنید.');#}
-{#    }, 25000); // 25 ثانیه timeout کلی#}
-{##}
-{#    // ارسال درخواست پرداخت به سرور#}
-{#    $.ajax({#}
-{#        url: "{% url 'invoice_app:process_pos_payment' %}",#}
-{#        method: 'POST',#}
-{#        contentType: 'application/json',#}
-{#        timeout: 20000, // 20 ثانیه timeout برای AJAX#}
-{#        data: JSON.stringify({#}
-{#            amount: amount,#}
-{#            pos_device_id: posDeviceId#}
-{#        }),#}
-{#        headers: {'X-CSRFToken': getCookie('csrftoken')},#}
-{#        success: function(data) {#}
-{#            clearTimeout(paymentTimeout); // پاک کردن timeout#}
-{#            console.log('✅ پاسخ پرداخت POS:', data);#}
-{#            #}
-{#            if (data.status === 'success') {#}
-{#                const transactionStatus = data.transaction_status;#}
-{#                #}
-{#                if (transactionStatus.status_type === 'success') {#}
-{#                    // پرداخت موفق#}
-{#                    updatePaymentStatus('success', transactionStatus.message, {#}
-{#                        amount_toman: data.amount_toman,#}
-{#                        amount_rial: data.amount_rial#}
-{#                    });#}
-{#                    #}
-{#                    // ثبت فاکتور#}
-{#                    registerFinalInvoice(amount, 'pos');#}
-{#                } else {#}
-{#                    // خطا در پرداخت#}
-{#                    updatePaymentStatus(transactionStatus.status_type, transactionStatus.message);#}
-{#                }#}
-{#            } else {#}
-{#                // خطا در ارتباط#}
-{#                updatePaymentStatus('error', data.message);#}
-{#            }#}
-{#        },#}
-{#        error: function(xhr, status, error) {#}
-{#            clearTimeout(paymentTimeout); // پاک کردن timeout#}
-{#            console.error('❌ خطا در ارسال درخواست پرداخت:', error);#}
-{#            #}
-{#            if (status === 'timeout') {#}
-{#                updatePaymentStatus('timeout', 'زمان اتصال به سرور به پایان رسید. لطفاً مجدداً تلاش کنید.');#}
-{#            } else {#}
-{#                updatePaymentStatus('error', 'خطا در ارتباط با سرور: ' + error);#}
-{#            }#}
-{#        }#}
-{#    });#}
-{#}#}
+// =============================================
+// توابع جدید برای پرداخت‌های غیر-POS
+// =============================================
+
+/**
+ * ثبت فاکتور برای پرداخت‌های غیر از پوز
+ */
+function processNonPosPayment(action, paymentMethod, amount) {
+    console.log('📦 [NON-POS] ارسال درخواست ثبت فاکتور...', {
+        action: action,
+        paymentMethod: paymentMethod,
+        amount: amount
+    });
+
+    // ذخیره تمام اطلاعات در session قبل از ارسال
+    saveCustomerInfoToSession();
+    saveDiscountToSession();
+    savePaymentMethodToSession(paymentMethod);
+
+    // لاگ اطلاعات
+    console.log('🔍 [NON-POS] اطلاعات ارسالی:');
+    console.log('   - مبلغ:', amount);
+    console.log('   - روش پرداخت:', paymentMethod);
+    console.log('   - نام مشتری:', $('#customer-name').val());
+    console.log('   - تلفن مشتری:', $('#customer-phone').val());
+    console.log('   - تخفیف کل:', $('#total-discount').val());
+
+    // ارسال درخواست
+    $.ajax({
+        url: "{% url 'invoice_app:finalize_invoice_non_pos' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: action,
+            payment_method: paymentMethod,
+            paid_amount: amount,
+            timestamp: new Date().getTime()
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log('✅ [NON-POS] پاسخ سرور:', data);
+            
+            if (data.status === 'success') {
+                showToast('فاکتور با موفقیت ثبت شد', 'success');
+                currentInvoiceId = data.invoice_id;
+
+                // هدایت به صفحه موفقیت
+                setTimeout(() => {
+                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                    window.location.href = successUrl;
+                }, 1500);
+                
+            } else {
+                showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
+                console.error('❌ [NON-POS] خطا در ثبت فاکتور:', data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ [NON-POS] خطای AJAX:', {
+                status: status,
+                error: error,
+                response: xhr.responseText
+            });
+            
+            let errorMessage = 'خطا در ارتباط با سرور';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage += ': ' + xhr.responseJSON.message;
+            }
+            showToast(errorMessage, 'error');
+        }
+    });
+}
+
+/**
+ * ذخیره اطلاعات مشتری در session
+ */
+function saveCustomerInfoToSession() {
+    const name = $('#customer-name').val();
+    const phone = $('#customer-phone').val();
+
+    $.ajax({
+        url: "{% url 'invoice_app:save_customer_info' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ 
+            customer_name: name, 
+            customer_phone: phone 
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            if (data.status === 'success') {
+                console.log('✅ [NON-POS] اطلاعات مشتری ذخیره شد:', { name, phone });
+            }
+        }
+    });
+}
+
+/**
+ * ذخیره تخفیف در session
+ */
+function saveDiscountToSession() {
+    const discount = parseInt($('#total-discount').val()) || 0;
+
+    $.ajax({
+        url: "{% url 'invoice_app:save_discount' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ discount: discount }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            if (data.status === 'success') {
+                console.log('✅ [NON-POS] تخفیف ذخیره شد:', discount);
+            }
+        }
+    });
+}
+
+/**
+ * ذخیره روش پرداخت در session
+ */
+function savePaymentMethodToSession(method) {
+    $.ajax({
+        url: "{% url 'invoice_app:save_payment_method' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ payment_method: method }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            if (data.status === 'success') {
+                console.log('✅ [NON-POS] روش پرداخت ذخیره شد:', method);
+            }
+        }
+    });
+}
     // =============================================
     // قرار دادن توابع در scope جهانی
     // =============================================
@@ -2670,6 +2743,11 @@ function submitFinalInvoice(action, paymentMethod, amount) {
     window.printCurrentInvoice = printCurrentInvoice;
     window.retryPayment = retryPayment;
     window.cancelPayment = cancelPayment;
+    // در انتهای فایل، فقط توابع جدید را global کنید
+window.processNonPosPayment = processNonPosPayment;
+window.saveCustomerInfoToSession = saveCustomerInfoToSession;
+window.saveDiscountToSession = saveDiscountToSession;
+window.savePaymentMethodToSession = savePaymentMethodToSession;
     </script>
 </body>
 </html>

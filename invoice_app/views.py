@@ -955,6 +955,107 @@ def finalize_invoice(request):
 
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
 
+
+@login_required
+@csrf_exempt
+def finalize_invoice_non_pos(request):
+    """ویوی نهایی کردن فاکتور برای پرداخت‌های غیر از پوز"""
+    if request.method == 'POST':
+        try:
+            # دریافت داده‌های JSON
+            import json
+            data = json.loads(request.body)
+
+            branch_id = request.session.get('branch_id')
+            items = request.session.get('invoice_items', [])
+            payment_method = data.get('payment_method', 'cash')
+
+            # لاگ برای دیباگ
+            print(f"🔍 [NON-POS] آیتم‌های session: {len(items)} آیتم")
+            print(f"🔍 [NON-POS] تخفیف session: {request.session.get('discount', 0)}")
+            print(f"🔍 [NON-POS] شعبه: {branch_id}")
+            print(f"🔍 [NON-POS] روش پرداخت: {payment_method}")
+
+            if not branch_id:
+                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
+
+            if not items:
+                return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
+
+            # محاسبه مبلغ - با لاگ دقیق
+            total_without_discount = sum(item['total'] for item in items)
+            items_discount = sum(item.get('discount', 0) for item in items)
+            session_discount = request.session.get('discount', 0)
+
+            total_amount = total_without_discount - items_discount - session_discount
+            total_amount = max(0, total_amount)
+
+            print(f"💰 [NON-POS] محاسبات مبلغ:")
+            print(f"   - جمع بدون تخفیف: {total_without_discount}")
+            print(f"   - تخفیف آیتم‌ها: {items_discount}")
+            print(f"   - تخفیف فاکتور: {session_discount}")
+            print(f"   - مبلغ نهایی: {total_amount}")
+
+            # ثبت فاکتور در دیتابیس
+            invoice = Invoicefrosh.objects.create(
+                branch_id=branch_id,
+                total_amount=total_amount,
+                payment_method=payment_method,
+                customer_name=request.session.get('customer_name', ''),
+                customer_phone=request.session.get('customer_phone', ''),
+                created_by=request.user
+            )
+
+            print(f"✅ [NON-POS] فاکتور ایجاد شد با ID: {invoice.id}")
+
+            # ثبت آیتم‌ها
+            for item_data in items:
+                try:
+                    product = InventoryCount.objects.get(id=item_data['product_id'])
+                    InvoiceItemfrosh.objects.create(
+                        invoice=invoice,
+                        product=product,
+                        quantity=item_data['quantity'],
+                        price=item_data['price'],
+                        discount=item_data.get('discount', 0)
+                    )
+                    # کاهش موجودی
+                    product.quantity -= item_data['quantity']
+                    product.save()
+                    print(f"✅ [NON-POS] آیتم ثبت شد: {product.name} - تعداد: {item_data['quantity']}")
+                except InventoryCount.DoesNotExist:
+                    print(f"⚠️ [NON-POS] محصول با ID {item_data['product_id']} یافت نشد")
+                    continue
+                except Exception as e:
+                    print(f"⚠️ [NON-POS] خطا در ثبت آیتم: {e}")
+                    continue
+
+            # پاکسازی session
+            session_keys = ['invoice_items', 'customer_name', 'customer_phone',
+                            'payment_method', 'discount', 'pos_device_id']
+            for key in session_keys:
+                if key in request.session:
+                    del request.session[key]
+
+            print("✅ [NON-POS] session پاکسازی شد")
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'فاکتور با موفقیت ثبت شد',
+                'invoice_id': invoice.id
+            })
+
+        except Exception as e:
+            print(f"❌ [NON-POS] خطا در ثبت فاکتور: {str(e)}")
+            import traceback
+            print(f"❌ [NON-POS] جزئیات خطا: {traceback.format_exc()}")
+
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در ثبت فاکتور: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
 # --------------------------------------------------------------------------
 @login_required
 @csrf_exempt

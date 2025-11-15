@@ -37,4 +37,6 @@ path('create-pos-transaction/', views.create_pos_transaction, name='create_pos_t
     path('get-pending-transactions/', views.get_pending_transactions, name='get_pending_transactions'),
     path('update-transaction-status/', views.update_transaction_status, name='update_transaction_status'),
     path('transaction-status/<str:transaction_id>/', views.transaction_status, name='transaction_status'),
+    # ------------------------------برای ثبت غیر پوز--------------------------------------------
+path('finalize-invoice-non-pos/', views.finalize_invoice_non_pos, name='finalize_invoice_non_pos'),
 ]
