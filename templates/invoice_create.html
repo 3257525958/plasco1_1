@@ -2171,49 +2171,60 @@
     }
 
     // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
-    function submitFinalInvoice(action, paymentMethod, amount) {
-        $.ajax({
-            url: "{% url 'invoice_app:finalize_invoice' %}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                action: action,
-                payment_method: paymentMethod,
-                paid_amount: amount,
-                timestamp: new Date().getTime()
-            }),
-            headers: {'X-CSRFToken': getCookie('csrftoken')},
-            success: function(data) {
-                if (data.status === 'success') {
-                    showToast('فاکتور با موفقیت ثبت شد', 'success');
-                    currentInvoiceId = data.invoice_id;
+function submitFinalInvoice(action, paymentMethod, amount) {
+    console.log('📦 ارسال درخواست ثبت فاکتور...', {
+        action: action,
+        paymentMethod: paymentMethod,
+        amount: amount
+    });
 
-                    if (action === 'print_and_save') {
-                        const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
-                        window.open(printUrl, '_blank');
+    $.ajax({
+        url: "{% url 'invoice_app:finalize_invoice' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: action,
+            payment_method: paymentMethod,
+            paid_amount: amount,
+            timestamp: new Date().getTime()
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log('✅ پاسخ سرور:', data);
+            if (data.status === 'success') {
+                showToast('فاکتور با موفقیت ثبت شد', 'success');
+                currentInvoiceId = data.invoice_id;
 
-                        setTimeout(() => {
-                            const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
-                            window.location.href = successUrl;
-                        }, 2000);
-                    } else {
+                if (action === 'print_and_save') {
+                    const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                    window.open(printUrl, '_blank');
+                    setTimeout(() => {
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
-                    }
+                    }, 2000);
                 } else {
-                    showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
+                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                    window.location.href = successUrl;
                 }
-            },
-            error: function(xhr) {
-                let errorMessage = 'خطا در ارتباط با سرور';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage += ': ' + xhr.responseJSON.message;
-                }
-                showToast(errorMessage, 'error');
+            } else {
+                showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
+                console.error('❌ خطا در ثبت فاکتور:', data.message);
             }
-        });
-    }
-
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ خطای AJAX:', {
+                status: status,
+                error: error,
+                response: xhr.responseText
+            });
+            let errorMessage = 'خطا در ارتباط با سرور';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage += ': ' + xhr.responseJSON.message;
+            }
+            showToast(errorMessage, 'error');
+        }
+    });
+}
     // =============================================
     // توابع پرداخت چک و نسیه
     // =============================================
