@@ -59,6 +59,9 @@ class Invoicefrosh(models.Model):
     serial_number = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="شماره سریال")
     paid_amount = models.PositiveIntegerField(default=0, verbose_name="مبلغ پرداخت شده")
 
+    # فیلد جدید برای سود فاکتور
+    total_profit = models.PositiveIntegerField(default=0, verbose_name="سود فاکتور")
+
     class Meta:
         verbose_name = "فاکتور"
         verbose_name_plural = "فاکتورها"
@@ -91,21 +94,10 @@ class Invoicefrosh(models.Model):
     def get_payment_method_display(self):
         return dict(self.PAYMENT_METHODS).get(self.payment_method, 'نامشخص')
 
-    # محاسبه سود کل فاکتور
-    @property
-    def total_profit(self):
-        try:
-            profit = sum(
-                (item.price - item.standard_price) * item.quantity
-                for item in self.items.all()
-            )
-            return max(0, profit)
-        except:
-            return 0
-
-    # نمایش سود در ادمین
+    # حذف property قدیمی و استفاده از فیلد ذخیره شده
     def profit_display(self):
         return f"{self.total_profit:,} تومان"
+
     profit_display.short_description = "سود فاکتور"
 # class Invoicefrosh(models.Model):
 #     PAYMENT_METHODS = [

@@ -104,89 +104,6 @@ class CreditPaymentAdmin(admin.ModelAdmin):
 
     remaining_amount_display.short_description = 'مبلغ باقیمانده'
 
-class InvoiceItemfroshInline(admin.TabularInline):
-    model = InvoiceItemfrosh
-    extra = 0
-    readonly_fields = ['profit_per_item']
-
-    def profit_per_item(self, obj):
-        profit = (obj.price - obj.standard_price) * obj.quantity
-        return f"{profit:,} تومان"
-
-    profit_per_item.short_description = "سود آیتم"
-
-
-class CheckPaymentInline(admin.StackedInline):
-    model = CheckPayment
-    extra = 0
-    max_num = 1
-    can_delete = False
-    readonly_fields = ['created_at']
-
-    fieldsets = (
-        ('اطلاعات صاحب چک', {
-            'fields': ('owner_name', 'owner_family', 'national_id', 'phone', 'address')
-        }),
-        ('اطلاعات چک', {
-            'fields': ('check_number', 'amount', 'check_date')
-        }),
-        ('پرداخت باقیمانده', {
-            'fields': ('remaining_amount', 'remaining_payment_method', 'pos_device')
-        }),
-        ('تاریخ‌ها', {
-            'fields': ('created_at',)
-        })
-    )
-
-
-class CreditPaymentInline(admin.StackedInline):
-    model = CreditPayment
-    extra = 0
-    max_num = 1
-    can_delete = False
-    readonly_fields = ['created_at']
-
-    fieldsets = (
-        ('اطلاعات مشتری', {
-            'fields': ('customer_name', 'customer_family', 'national_id', 'phone', 'address')
-        }),
-        ('اطلاعات نسیه', {
-            'fields': ('credit_amount', 'due_date')
-        }),
-        ('پرداخت باقیمانده', {
-            'fields': ('remaining_amount', 'remaining_payment_method', 'pos_device')
-        }),
-        ('تاریخ‌ها', {
-            'fields': ('created_at',)
-        })
-    )
-
-
-@admin.register(Invoicefrosh)
-class InvoicefroshAdmin(admin.ModelAdmin):
-    list_display = ['serial_number', 'branch', 'customer_name', 'total_amount',
-                    'discount', 'profit_display', 'payment_method', 'is_finalized',
-                    'is_paid', 'created_at']
-    list_filter = ['branch', 'payment_method', 'is_finalized', 'is_paid', 'created_at']
-    readonly_fields = ['serial_number', 'created_at', 'profit_display', 'total_profit']
-    inlines = [InvoiceItemfroshInline]
-
-    fieldsets = (
-        ('اطلاعات پایه', {
-            'fields': ('serial_number', 'branch', 'created_by', 'created_at')
-        }),
-        ('اطلاعات پرداخت', {
-            'fields': ('payment_method', 'pos_device', 'total_amount',
-                       'total_without_discount', 'discount', 'paid_amount',
-                       'is_finalized', 'is_paid', 'payment_date')
-        }),
-        ('اطلاعات مشتری', {
-            'fields': ('customer_name', 'customer_phone')
-        }),
-        ('محاسبات سود', {
-            'fields': ('profit_display',)
-        }),
-    )
 
 @admin.register(InvoiceItemfrosh)
 class InvoiceItemfroshAdmin(admin.ModelAdmin):
@@ -223,6 +140,31 @@ class InvoiceItemfroshAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(Invoicefrosh)
+class InvoicefroshAdmin(admin.ModelAdmin):
+    list_display = ['serial_number', 'branch', 'customer_name', 'total_amount',
+                    'total_profit', 'payment_method', 'is_finalized', 'is_paid', 'created_at']
+    list_filter = ['branch', 'payment_method', 'is_finalized', 'is_paid', 'created_at']
+    readonly_fields = ['serial_number', 'created_at', 'total_profit']
+
+    fieldsets = (
+        ('اطلاعات پایه', {
+            'fields': ('serial_number', 'branch', 'created_by', 'created_at')
+        }),
+        ('اطلاعات پرداخت', {
+            'fields': ('payment_method', 'pos_device', 'total_amount',
+                       'total_without_discount', 'discount', 'paid_amount',
+                       'is_finalized', 'is_paid', 'payment_date')
+        }),
+        ('اطلاعات مشتری', {
+            'fields': ('customer_name', 'customer_phone')
+        }),
+        ('سود فاکتور', {
+            'fields': ('total_profit',)
+        }),
+    )
+
+
 # ثبت مدل‌ها با کلاس‌های Admin سفارشی
 admin.site.register(CheckPayment, CheckPaymentAdmin)
 admin.site.register(CreditPayment, CreditPaymentAdmin)
@@ -231,9 +173,3 @@ admin.site.register(CreditPayment, CreditPaymentAdmin)
 admin.site.site_header = 'سیستم مدیریت فروش'
 admin.site.site_title = 'پنل مدیریت فروش'
 admin.site.index_title = 'مدیریت فروش و فاکتورها'
-
-from django.contrib import admin
-
-
-
-
