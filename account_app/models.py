@@ -11,96 +11,6 @@ from django.db import models, connection
 from decimal import Decimal
 import random
 
-# class InventoryCount(models.Model):  # حذف class تکراری
-#     product_name = models.CharField(max_length=100, verbose_name="نام کالا")
-#     is_new = models.BooleanField(default=True, verbose_name="کالای جدید")
-#     quantity = models.IntegerField(verbose_name="تعداد")
-#     count_date = models.CharField(max_length=10, verbose_name="تاریخ شمارش", default="")
-#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
-#     barcode_data = models.CharField(max_length=100, blank=True, null=True, verbose_name="داده بارکد")
-#     selling_price = models.PositiveIntegerField(verbose_name="قیمت فروش", blank=True, null=True)
-#     # در models.py اصلاح کنید:
-#     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, verbose_name="شعبه")
-#     counter = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="شمارنده")
-#     profit_percentage = models.DecimalField(
-#         max_digits=5,
-#         decimal_places=2,
-#         verbose_name="درصد سود",
-#         default=Decimal('30.00'),
-#     )
-#
-#     class Meta:
-#         verbose_name = "شمارش انبار"
-#         verbose_name_plural = "شمارش های انبار"
-#         ordering = ['-created_at']
-#
-#     def clean(self):
-#         """
-#         اعتبارسنجی خودکار قبل از ذخیره‌سازی
-#         """
-#         try:
-#             profit_value = Decimal(str(self.profit_percentage))
-#             if profit_value < Decimal('0.00') or profit_value > Decimal('10000.00'):
-#                 self.profit_percentage = Decimal('30.00')
-#         except (TypeError, ValueError, InvalidOperation):
-#             self.profit_percentage = Decimal('30.00')
-#
-#     def generate_unique_numeric_barcode(self):
-#         """تولید بارکد عددی ۱۲ رقمی یکتا"""
-#         while True:
-#             # تولید عدد ۱۲ رقمی
-#             barcode = ''.join([str(random.randint(0, 9)) for _ in range(12)])
-#
-#             # بررسی یکتا بودن
-#             if not InventoryCount.objects.filter(barcode_data=barcode).exists():
-#                 return barcode
-#
-#     def save(self, *args, **kwargs):
-#         self.clean()
-#
-#         if not self.count_date:
-#             jalali_date = jdatetime.datetime.now().strftime('%Y/%m/%d')
-#             self.count_date = jalali_date
-#
-#         if not self.barcode_data:
-#             self.barcode_data = self.generate_unique_numeric_barcode()
-#
-#         print(f"✅ شروع محاسبه قیمت برای کالا: {self.product_name}")
-#
-#         # ایجاد ProductPricing اگر وجود ندارد
-#         try:
-#             pricing = ProductPricing.objects.get(product_name=self.product_name)
-#             print(f"✅ ProductPricing یافت شد: {pricing}")
-#         except ProductPricing.DoesNotExist:
-#             # ایجاد ProductPricing با مقادیر پیشفرض
-#             pricing = ProductPricing.objects.create(
-#                 product_name=self.product_name,
-#                 highest_purchase_price=Decimal('0'),
-#                 standard_price=Decimal('0')
-#             )
-#             print(f"✅ ProductPricing جدید ایجاد شد برای: {self.product_name}")
-#
-#         # محاسبه قیمت فروش
-#         if pricing.standard_price is not None and pricing.standard_price > 0:
-#             try:
-#                 profit_percentage = Decimal(str(self.profit_percentage))
-#             except (TypeError, ValueError):
-#                 profit_percentage = Decimal('100.00')
-#
-#             print(f"✅ درصد سود استفاده شده: {profit_percentage}")
-#
-#             new_price = pricing.standard_price * (1 + profit_percentage / 100)
-#             self.selling_price = Decimal(math.ceil(new_price / 1000) * 1000)
-#             print(f"✅ قیمت فروش محاسبه و تنظیم شد: {self.selling_price}")
-#         else:
-#             print("⚠️ قیمت معیار صفر یا None است، قیمت فروش تنظیم نشد")
-#
-#         super().save(*args, **kwargs)
-#         print("✅ متد save با موفقیت اجرا شد.")
-#
-#
-#     def __str__(self):
-#         return f"{self.product_name} - {self.branch.name} - {self.quantity}"
 import math  # این خط را اضافه کنید
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -143,14 +53,22 @@ class InventoryCount(models.Model):
             self.profit_percentage = Decimal('30.00')
 
     def generate_unique_numeric_barcode(self):
-        """تولید بارکد عددی ۱۲ رقمی یکتا"""
-        while True:
-            # تولید عدد ۱۲ رقمی
-            barcode = ''.join([str(random.randint(0, 9)) for _ in range(12)])
+        """تولید بارکد ثابت ۱۲ رقمی بر اساس نام کالا"""
+        import hashlib
 
-            # بررسی یکتا بودن
-            if not InventoryCount.objects.filter(barcode_data=barcode).exists():
-                return barcode
+        # استفاده از نام کالا برای تولید بارکد ثابت
+        product_name = self.product_name.strip()
+
+        # تولید کد دیجیتال از نام کالا
+        hash_object = hashlib.md5(product_name.encode('utf-8'))
+        hash_hex = hash_object.hexdigest()
+
+        # تبدیل به عدد ۱۲ رقمی
+        hash_int = int(hash_hex[:8], 16)  # استفاده از ۸ کاراکتر اول
+        barcode = str(hash_int % 10 ** 12).zfill(12)
+
+        return barcode
+
 
     def save(self, *args, **kwargs):
         self.clean()
