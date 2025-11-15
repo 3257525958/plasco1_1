@@ -2131,46 +2131,6 @@
             window.location.href = "{% url 'invoice_app:invoice_cancel' %}";
         }
     }
-
-    function finalizeInvoice(action) {
-        console.log('🔄 شروع فرآیند ثبت فاکتور...');
-
-        // اعتبارسنجی اولیه
-        if (!validateInvoiceBeforeSubmit()) {
-            return;
-        }
-
-        const paymentMethod = currentPaymentMethod;
-        const amount = calculateInvoiceTotal().totalAmount;
-
-        console.log('💳 روش پرداخت:', paymentMethod, 'مبلغ:', amount);
-
-        // برای پرداخت POS از فرآیند جدید استفاده کن
-        if (paymentMethod === 'pos') {
-            const posDeviceId = $('#pos-device').val();
-            if (!posDeviceId) {
-                showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
-                return;
-            }
-
-            processPosPayment(amount, posDeviceId);
-        }
-        // برای سایر روش‌های پرداخت از تابع قدیمی استفاده کن
-        else if (paymentMethod === 'check') {
-            // نمایش مودال چک
-            $('#checkPaymentModal').modal('show');
-        }
-        else if (paymentMethod === 'credit') {
-            // نمایش مودال نسیه
-            $('#creditPaymentModal').modal('show');
-        }
-        else {
-            // برای نقدی و سایر روش‌ها
-            submitFinalInvoice(action, paymentMethod, amount);
-        }
-    }
-
-    // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
 function submitFinalInvoice(action, paymentMethod, amount) {
     console.log('📦 ارسال درخواست ثبت فاکتور...', {
         action: action,
