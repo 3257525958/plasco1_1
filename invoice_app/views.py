@@ -1928,3 +1928,282 @@ def transaction_status(request, transaction_id):
         })
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+# ==================== ویوهای گزارش‌گیری فاکتورها ====================
+
+import csv
+from django.http import HttpResponse
+from django.db.models import Sum, Count, Avg, Q
+from datetime import datetime, timedelta
+
+
+@login_required
+def invoice_report(request):
+    """صفحه اصلی گزارش‌گیری فاکتورها"""
+    branches = Branch.objects.all()
+
+    # تاریخ امروز به شمسی
+    today_jalali = jdatetime.now().strftime('%Y/%m/%d')
+
+    context = {
+        'branches': branches,
+        'today_jalali': today_jalali,
+    }
+
+    return render(request, 'invoice_report.html', context)
+
+
+@login_required
+@csrf_exempt
+def get_invoice_report_data(request):
+    """دریافت داده‌های گزارش فاکتورها به صورت AJAX"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            branch_id = data.get('branch_id')
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+
+            print(f"📊 دریافت درخواست گزارش: شعبه {branch_id}, از {start_date} تا {end_date}")
+
+            # فیلترهای پایه
+            invoices = Invoicefrosh.objects.select_related('branch', 'created_by').prefetch_related('items')
+
+            # فیلتر بر اساس شعبه
+            if branch_id and branch_id != 'all':
+                invoices = invoices.filter(branch_id=branch_id)
+
+            # فیلتر بر اساس تاریخ (تبدیل شمسی به میلادی)
+            if start_date and end_date:
+                try:
+                    # تبدیل تاریخ شمسی به میلادی
+                    start_date_parts = start_date.split('/')
+                    end_date_parts = end_date.split('/')
+
+                    start_jalali = jdatetime(
+                        year=int(start_date_parts[0]),
+                        month=int(start_date_parts[1]),
+                        day=int(start_date_parts[2])
+                    )
+                    end_jalali = jdatetime(
+                        year=int(end_date_parts[0]),
+                        month=int(end_date_parts[1]),
+                        day=int(end_date_parts[2])
+                    )
+
+                    # تبدیل به میلادی
+                    start_gregorian = start_jalali.togregorian()
+                    end_gregorian = end_jalali.togregorian()
+
+                    # اضافه کردن زمان به انتهای روز
+                    end_gregorian = datetime.combine(end_gregorian, datetime.max.time())
+
+                    # فیلتر بر اساس تاریخ
+                    invoices = invoices.filter(
+                        created_at__gte=start_gregorian,
+                        created_at__lte=end_gregorian
+                    )
+
+                    print(f"📅 فیلتر تاریخ: {start_gregorian} تا {end_gregorian}")
+
+                except Exception as e:
+                    print(f"❌ خطا در تبدیل تاریخ: {e}")
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'فرمت تاریخ نامعتبر است'
+                    })
+
+            # مرتب سازی
+            invoices = invoices.order_by('-created_at')
+
+            # محاسبه آمار کلی
+            total_invoices = invoices.count()
+            total_amount = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            total_profit = invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0
+            avg_sale = invoices.aggregate(Avg('total_amount'))['total_amount__avg'] or 0
+
+            # آمار پرداخت‌ها
+            payment_stats = {
+                'cash': invoices.filter(payment_method='cash').count(),
+                'pos': invoices.filter(payment_method='pos').count(),
+                'check': invoices.filter(payment_method='check').count(),
+                'credit': invoices.filter(payment_method='credit').count(),
+            }
+
+            # آماده سازی داده‌ها برای نمایش
+            invoice_data = []
+            for invoice in invoices[:1000]:  # محدودیت برای عملکرد بهتر
+                invoice_data.append({
+                    'id': invoice.id,
+                    'serial_number': invoice.serial_number,
+                    'date': invoice.get_jalali_date(),
+                    'time': invoice.get_jalali_time(),
+                    'customer_name': invoice.customer_name or 'فروش حضوری',
+                    'customer_phone': invoice.customer_phone or '-',
+                    'total_amount': invoice.total_amount,
+                    'total_profit': invoice.total_profit,
+                    'payment_method': invoice.get_payment_method_display(),
+                    'payment_method_code': invoice.payment_method,
+                    'is_paid': invoice.is_paid,
+                    'is_finalized': invoice.is_finalized,
+                    'item_count': invoice.items.count(),
+                    'branch_name': invoice.branch.name,
+                })
+
+            return JsonResponse({
+                'status': 'success',
+                'invoices': invoice_data,
+                'statistics': {
+                    'total_invoices': total_invoices,
+                    'total_amount': total_amount,
+                    'total_profit': total_profit,
+                    'avg_sale': round(avg_sale),
+                    'payment_stats': payment_stats
+                },
+                'filters': {
+                    'branch_id': branch_id,
+                    'start_date': start_date,
+                    'end_date': end_date
+                }
+            })
+
+        except Exception as e:
+            print(f"❌ خطا در دریافت گزارش: {e}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در دریافت گزارش: {str(e)}'
+            })
+
+    return JsonResponse({
+        'status': 'error',
+        'message': 'درخواست نامعتبر'
+    })
+
+
+@login_required
+def export_invoice_report_csv(request):
+    """خروجی CSV از گزارش فاکتورها"""
+    try:
+        # دریافت پارامترها
+        branch_id = request.GET.get('branch_id')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+        # فیلترهای مشابه با گزارش
+        invoices = Invoicefrosh.objects.select_related('branch', 'created_by').prefetch_related('items')
+
+        if branch_id and branch_id != 'all':
+            invoices = invoices.filter(branch_id=branch_id)
+
+        if start_date and end_date:
+            try:
+                start_date_parts = start_date.split('/')
+                end_date_parts = end_date.split('/')
+
+                start_jalali = jdatetime(
+                    year=int(start_date_parts[0]),
+                    month=int(start_date_parts[1]),
+                    day=int(start_date_parts[2])
+                )
+                end_jalali = jdatetime(
+                    year=int(end_date_parts[0]),
+                    month=int(end_date_parts[1]),
+                    day=int(end_date_parts[2])
+                )
+
+                start_gregorian = start_jalali.togregorian()
+                end_gregorian = end_jalali.togregorian()
+
+                end_gregorian = datetime.combine(end_gregorian, datetime.max.time())
+
+                invoices = invoices.filter(
+                    created_at__gte=start_gregorian,
+                    created_at__lte=end_gregorian
+                )
+
+            except Exception as e:
+                print(f"❌ خطا در تبدیل تاریخ برای CSV: {e}")
+
+        # ایجاد پاسخ CSV
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response[
+            'Content-Disposition'] = f'attachment; filename="invoice_report_{jdatetime.now().strftime("%Y%m%d_%H%M")}.csv"'
+
+        # ایجاد writer CSV
+        writer = csv.writer(response)
+        writer.writerow([
+            'شماره سریال', 'تاریخ', 'ساعت', 'شعبه', 'مشتری',
+            'تلفن مشتری', 'مبلغ کل (تومان)', 'سود (تومان)',
+            'روش پرداخت', 'وضعیت پرداخت', 'تعداد آیتم‌ها'
+        ])
+
+        # نوشتن داده‌ها
+        for invoice in invoices:
+            writer.writerow([
+                invoice.serial_number,
+                invoice.get_jalali_date(),
+                invoice.get_jalali_time(),
+                invoice.branch.name,
+                invoice.customer_name or 'فروش حضوری',
+                invoice.customer_phone or '-',
+                invoice.total_amount,
+                invoice.total_profit,
+                invoice.get_payment_method_display(),
+                'پرداخت شده' if invoice.is_paid else 'در انتظار',
+                invoice.items.count()
+            ])
+
+        return response
+
+    except Exception as e:
+        print(f"❌ خطا در ایجاد خروجی CSV: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در ایجاد خروجی CSV: {str(e)}'
+        })
+
+
+@login_required
+def quick_stats(request):
+    """آمار سریع برای نمایش در داشبورد"""
+    try:
+        branch_id = request.GET.get('branch_id', 'all')
+
+        # فیلتر پایه
+        invoices = Invoicefrosh.objects.all()
+
+        if branch_id != 'all':
+            invoices = invoices.filter(branch_id=branch_id)
+
+        # تاریخ امروز
+        today = timezone.now().date()
+
+        # آمار امروز
+        today_invoices = invoices.filter(created_at__date=today)
+        today_stats = {
+            'count': today_invoices.count(),
+            'amount': today_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'profit': today_invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0
+        }
+
+        # آمار ماه جاری
+        start_of_month = today.replace(day=1)
+        month_invoices = invoices.filter(created_at__date__gte=start_of_month)
+        month_stats = {
+            'count': month_invoices.count(),
+            'amount': month_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'profit': month_invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0
+        }
+
+        return JsonResponse({
+            'status': 'success',
+            'today': today_stats,
+            'month': month_stats
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        })

@@ -39,4 +39,9 @@ path('create-pos-transaction/', views.create_pos_transaction, name='create_pos_t
     path('transaction-status/<str:transaction_id>/', views.transaction_status, name='transaction_status'),
     # ------------------------------برای ثبت غیر پوز--------------------------------------------
 path('finalize-invoice-non-pos/', views.finalize_invoice_non_pos, name='finalize_invoice_non_pos'),
+# 🔴 URLهای گزارش‌گیری فاکتورها
+path('report/', views.invoice_report, name='invoice_report'),
+path('api/report-data/', views.get_invoice_report_data, name='get_invoice_report_data'),
+path('api/export-csv/', views.export_invoice_report_csv, name='export_invoice_report_csv'),
+path('api/quick-stats/', views.quick_stats, name='quick_stats'),
 ]
