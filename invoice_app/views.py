@@ -1930,12 +1930,13 @@ def transaction_status(request, transaction_id):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
-# ==================== ویوهای گزارش‌گیری فاکتورها ====================
+# ==================== ویوهای گزارش‌گیری فاکتورها - نسخه اصلاح شده ====================
 
 import csv
 from django.http import HttpResponse
-from django.db.models import Sum, Count, Avg, Q
+from django.db.models import Sum, Count, Avg
 from datetime import datetime, timedelta
+from jdatetime import datetime as jdatetime_datetime
 
 
 @login_required
@@ -1943,8 +1944,8 @@ def invoice_report(request):
     """صفحه اصلی گزارش‌گیری فاکتورها"""
     branches = Branch.objects.all()
 
-    # تاریخ امروز به شمسی
-    today_jalali = jdatetime.now().strftime('%Y/%m/%d')
+    # تاریخ امروز به شمسی - اصلاح شده
+    today_jalali = jdatetime_datetime.now().strftime('%Y/%m/%d')
 
     context = {
         'branches': branches,
@@ -1977,16 +1978,16 @@ def get_invoice_report_data(request):
             # فیلتر بر اساس تاریخ (تبدیل شمسی به میلادی)
             if start_date and end_date:
                 try:
-                    # تبدیل تاریخ شمسی به میلادی
+                    # تبدیل تاریخ شمسی به میلادی - اصلاح شده
                     start_date_parts = start_date.split('/')
                     end_date_parts = end_date.split('/')
 
-                    start_jalali = jdatetime(
+                    start_jalali = jdatetime_datetime(
                         year=int(start_date_parts[0]),
                         month=int(start_date_parts[1]),
                         day=int(start_date_parts[2])
                     )
-                    end_jalali = jdatetime(
+                    end_jalali = jdatetime_datetime(
                         year=int(end_date_parts[0]),
                         month=int(end_date_parts[1]),
                         day=int(end_date_parts[2])
@@ -2101,12 +2102,13 @@ def export_invoice_report_csv(request):
                 start_date_parts = start_date.split('/')
                 end_date_parts = end_date.split('/')
 
-                start_jalali = jdatetime(
+                # اصلاح شده - استفاده از jdatetime_datetime
+                start_jalali = jdatetime_datetime(
                     year=int(start_date_parts[0]),
                     month=int(start_date_parts[1]),
                     day=int(start_date_parts[2])
                 )
-                end_jalali = jdatetime(
+                end_jalali = jdatetime_datetime(
                     year=int(end_date_parts[0]),
                     month=int(end_date_parts[1]),
                     day=int(end_date_parts[2])
@@ -2128,7 +2130,7 @@ def export_invoice_report_csv(request):
         # ایجاد پاسخ CSV
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response[
-            'Content-Disposition'] = f'attachment; filename="invoice_report_{jdatetime.now().strftime("%Y%m%d_%H%M")}.csv"'
+            'Content-Disposition'] = f'attachment; filename="invoice_report_{jdatetime_datetime.now().strftime("%Y%m%d_%H%M")}.csv"'
 
         # ایجاد writer CSV
         writer = csv.writer(response)
