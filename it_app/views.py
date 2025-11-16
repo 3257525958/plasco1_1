@@ -101,8 +101,6 @@ def distribute_inventory(request):
             messages.warning(request, 'هیچ کالایی با تعداد باقیمانده برای توزیع یافت نشد.')
             return redirect('invoice_list')
 
-        print(f"📦 تعداد آیتم‌های قابل توزیع: {all_items.count()}")
-
         # گروه‌بندی کالاها
         product_summary = {}
         for item in all_items:
@@ -133,12 +131,12 @@ def distribute_inventory(request):
             messages.warning(request, 'هیچ کالایی با تعداد باقیمانده معتبر برای توزیع یافت نشد.')
             return redirect('invoice_list')
 
-        print(f"📊 تعداد محصولات منحصر به فرد برای توزیع: {len(products_to_distribute)}")
+        print(f"Products to distribute: {len(products_to_distribute)}")
 
         # بخش ProductPricing
         for product in products_to_distribute:
             product_name = product['name']
-            print(f"💰 پردازش قیمت‌گذاری برای: {product_name}")
+            print(f"Processing product: {product_name}")
 
             try:
                 highest_purchase = InvoiceItem.objects.filter(
@@ -156,42 +154,33 @@ def distribute_inventory(request):
                     }
                 )
 
-                print(f"✅ قیمت‌گذاری محصول {'ایجاد شد' if created else 'آپدیت شد'}: {product_name}")
+                print(f"✅ Product pricing {'created' if created else 'updated'}: {product_name}")
 
             except Exception as e:
-                print(f"❌ خطا در قیمت‌گذاری برای {product_name}: {str(e)}")
+                print(f"❌ Error in ProductPricing for {product_name}: {str(e)}")
                 continue
 
-        print("🚀 شروع توزیع کالاها بین شعب")
+        print("Starting distribution to branches")
 
-        # توزیع کالاها
+        # توزیع کالاها - دقیقاً مطابق دستور
         total_distributed = 0
         distribution_details = []
-        operation_count = 0
 
         for product in products_to_distribute:
             total_remaining = product['total_remaining']
             product_distributed = 0
 
-            print(f"📤 توزیع محصول: {product['name']} - تعداد: {total_remaining}")
+            print(f"Distributing {product['name']}: {total_remaining} units")
 
-            # 🔴 منطق جدید: اگر تعداد کالا کمتر از ۳ باشد، به هر شعبه یک کالا بده
+            # 🔴 دقیقاً مطابق دستور: اگر کمتر از ۳ باشد، به هر شعبه یک کالا بده
             if total_remaining < 3:
-                print(f"   ⚠️  تعداد کالا ({total_remaining}) کمتر از ۳ است - توزیع یک کالا به هر شعبه")
+                print(f"   ⚠️  تعداد کالا ({total_remaining}) کمتر از ۳ است - دادن ۱ کالا به هر شعبه")
 
-                # به هر شعبه یک کالا می‌دهیم بدون توجه به تعداد شعبه‌ها
-                for i, branch in enumerate(branches):
-                    qty_for_branch = 1  # همیشه یک کالا به هر شعبه
-                    print(f"   ✅ شعبه {branch.name}: 1 کالا")
+                # به هر شعبه دقیقاً یک کالا می‌دهیم
+                for branch in branches:
+                    qty_for_branch = 1  # همیشه ۱ کالا به هر شعبه
 
-                    # ذخیره در انبار
                     try:
-                        # تاخیر ۱ ثانیه‌ای بین عملیات
-                        if operation_count > 0:
-                            time.sleep(1)
-
-                        operation_count += 1
-
                         inventory_obj, created = InventoryCount.objects.get_or_create(
                             product_name=product['name'],
                             branch=branch,
@@ -216,32 +205,23 @@ def distribute_inventory(request):
                         product_distributed += qty_for_branch
                         total_distributed += qty_for_branch
 
+                        print(f"   ✅ شعبه {branch.name}: 1 کالا")
+
                     except Exception as e:
-                        print(f"   💥 خطا در شعبه {branch.name}: {str(e)}")
+                        print(f"Error distributing to branch {branch.name}: {str(e)}")
                         continue
             else:
-                # منطق قبلی برای وقتی کالا ۳ تا یا بیشتر باشد
+                # منطق عادی برای کالاهای ۳ تا یا بیشتر
                 base_per_branch = total_remaining // branch_count
                 remainder = total_remaining % branch_count
-
-                print(f"   📊 توزیع مساوی: پایه = {base_per_branch}, باقیمانده = {remainder}")
 
                 for i, branch in enumerate(branches):
                     qty_for_branch = base_per_branch
                     if i < remainder:
                         qty_for_branch += 1
 
-                    print(f"   📦 شعبه {branch.name}: {qty_for_branch} کالا")
-
-                    # ذخیره در انبار
                     if qty_for_branch > 0:
                         try:
-                            # تاخیر ۱ ثانیه‌ای بین عملیات
-                            if operation_count > 0:
-                                time.sleep(1)
-
-                            operation_count += 1
-
                             inventory_obj, created = InventoryCount.objects.get_or_create(
                                 product_name=product['name'],
                                 branch=branch,
@@ -266,8 +246,10 @@ def distribute_inventory(request):
                             product_distributed += qty_for_branch
                             total_distributed += qty_for_branch
 
+                            print(f"   📦 شعبه {branch.name}: {qty_for_branch} کالا")
+
                         except Exception as e:
-                            print(f"   💥 خطا در شعبه {branch.name}: {str(e)}")
+                            print(f"Error distributing to branch {branch.name}: {str(e)}")
                             continue
 
             distribution_details.append(
@@ -276,7 +258,7 @@ def distribute_inventory(request):
 
         # صفر کردن remaining_quantity
         zeroed_count = all_items.update(remaining_quantity=0)
-        print(f"🎯 تعداد آیتم‌های صفر شده: {zeroed_count}")
+        print(f"Zeroed {zeroed_count} items")
 
         # پیام موفقیت
         detail_message = "\n".join(distribution_details)
@@ -291,10 +273,8 @@ def distribute_inventory(request):
             f'📦 جزئیات توزیع:\n{detail_message}'
         )
 
-        print(f"🎉 توزیع کامل شد! مجموع کالاهای توزیع شده: {total_distributed}")
-
     except Exception as e:
-        print(f"❌ خطای کلی در توزیع موجودی: {str(e)}")
+        print(f"❌ General error in distribute_inventory: {str(e)}")
         messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
 
     return redirect('invoice_list')
