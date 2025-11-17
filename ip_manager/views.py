@@ -413,108 +413,108 @@ user-agents==2.2.0  # برای middleware
             # ==================== فایل‌های apps.py برای اپلیکیشن‌ها ====================
 
             # فایل apps.py برای ip_manager
-            ip_manager_apps_content = '''
-from django.apps import AppConfig
-
-class IpManagerConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'ip_manager'
-    verbose_name = 'مدیریت IPها'
-'''
-            zipf.writestr('plasco_system/ip_manager/apps.py', ip_manager_apps_content)
-
-            # فایل‌های apps.py برای سایر اپلیکیشن‌ها
-            apps_configs = {
-                'account_app': 'AccountAppConfig',
-                'dashbord_app': 'DashbordAppConfig',
-                'cantact_app': 'CantactAppConfig',
-                'invoice_app': 'InvoiceAppConfig',
-                'it_app': 'ItAppConfig',
-                'pos_payment': 'PosPaymentConfig',
-                'sync_app': 'SyncAppConfig',
-                'sync_api': 'SyncApiConfig',
-                'control_panel': 'ControlPanelConfig',
-                'offline_ins': 'OfflineInsConfig',
-                'home_app': 'HomeAppConfig'
-            }
-
-            for app_name, config_class in apps_configs.items():
-                apps_content = f'''
-from django.apps import AppConfig
-
-class {config_class}(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = '{app_name}'
-    verbose_name = '{app_name}'
-'''
-                zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
-
+#             ip_manager_apps_content = '''
+# from django.apps import AppConfig
+#
+# class IpManagerConfig(AppConfig):
+#     default_auto_field = 'django.db.models.BigAutoField'
+#     name = 'ip_manager'
+#     verbose_name = 'مدیریت IPها'
+# '''
+#             zipf.writestr('plasco_system/ip_manager/apps.py', ip_manager_apps_content)
+#
+#             # فایل‌های apps.py برای سایر اپلیکیشن‌ها
+#             apps_configs = {
+#                 'account_app': 'AccountAppConfig',
+#                 'dashbord_app': 'DashbordAppConfig',
+#                 'cantact_app': 'CantactAppConfig',
+#                 'invoice_app': 'InvoiceAppConfig',
+#                 'it_app': 'ItAppConfig',
+#                 'pos_payment': 'PosPaymentConfig',
+#                 'sync_app': 'SyncAppConfig',
+#                 'sync_api': 'SyncApiConfig',
+#                 'control_panel': 'ControlPanelConfig',
+#                 'offline_ins': 'OfflineInsConfig',
+#                 'home_app': 'HomeAppConfig'
+#             }
+#
+#             for app_name, config_class in apps_configs.items():
+#                 apps_content = f'''
+# from django.apps import AppConfig
+#
+# class {config_class}(AppConfig):
+#     default_auto_field = 'django.db.models.BigAutoField'
+#     name = '{app_name}'
+#     verbose_name = '{app_name}'
+# '''
+#                 zipf.writestr(f'plasco_system/{app_name}/apps.py', apps_content)
+#
             # ==================== فایل urls.py اصلی ====================
-            urls_content = '''
-from django.contrib import admin
-from django.urls import path, include
-from django.shortcuts import redirect
-
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('accounts/', include('account_app.urls')),
-    path('dashboard/', include('dashbord_app.urls')),
-    path('cantact/', include('cantact_app.urls')),
-    path('invoice/', include('invoice_app.urls')),
-    path('it/', include('it_app.urls')),
-    path('pos/', include('pos_payment.urls')),
-    path('sync/', include('sync_app.urls')),
-    path('api/sync/', include('sync_api.urls')),
-    path('control/', include('control_panel.urls')),
-    path('offline/', include('offline_ins.urls')),
-    path('ip/', include('ip_manager.urls')),
-    path('', include('home_app.urls')),
-    
-]
-'''
-            zipf.writestr('plasco_system/plasco/urls.py', urls_content)
-
+#             urls_content = '''
+# from django.contrib import admin
+# from django.urls import path, include
+# from django.shortcuts import redirect
+#
+#
+# urlpatterns = [
+#     path('admin/', admin.site.urls),
+#     path('accounts/', include('account_app.urls')),
+#     path('dashboard/', include('dashbord_app.urls')),
+#     path('cantact/', include('cantact_app.urls')),
+#     path('invoice/', include('invoice_app.urls')),
+#     path('it/', include('it_app.urls')),
+#     path('pos/', include('pos_payment.urls')),
+#     path('sync/', include('sync_app.urls')),
+#     path('api/sync/', include('sync_api.urls')),
+#     path('control/', include('control_panel.urls')),
+#     path('offline/', include('offline_ins.urls')),
+#     path('ip/', include('ip_manager.urls')),
+#     path('', include('home_app.urls')),
+#
+# ]
+# '''
+#             zipf.writestr('plasco_system/plasco/urls.py', urls_content)
+#
             # ==================== ایجاد فایل‌های urls.py برای همه اپ‌ها ====================
 
             # فایل urls.py برای ip_manager
-            ip_manager_urls_content = '''
-from django.urls import path
-from . import views
+#             ip_manager_urls_content = '''
+# from django.urls import path
+# from . import views
+#
+# urlpatterns = [
+#     path('ip_manager/', views.manage_ips, name='manage_ips'),
+#     path('ip_manager/api/list/', views.list_ips, name='list_ips'),
+#     path('ip_manager/api/add/', views.add_ip, name='add_ip'),
+#     path('ip_manager/api/delete/<int:ip_id>/', views.delete_ip, name='delete_ip'),
+#     path('ip_manager/api/update/<int:ip_id>/', views.update_ip, name='update_ip'),
+#     path('ip_manager/api/toggle/<int:ip_id>/', views.toggle_ip, name='toggle_ip'),
+#     path('ip_manager/api/create-offline-installer/', views.create_offline_installer, name='create_offline_installer'),
+# ]
+# '''
+#             zipf.writestr('plasco_system/ip_manager/urls.py', ip_manager_urls_content)
 
-urlpatterns = [
-    path('ip_manager/', views.manage_ips, name='manage_ips'),
-    path('ip_manager/api/list/', views.list_ips, name='list_ips'),
-    path('ip_manager/api/add/', views.add_ip, name='add_ip'),
-    path('ip_manager/api/delete/<int:ip_id>/', views.delete_ip, name='delete_ip'),
-    path('ip_manager/api/update/<int:ip_id>/', views.update_ip, name='update_ip'),
-    path('ip_manager/api/toggle/<int:ip_id>/', views.toggle_ip, name='toggle_ip'),
-    path('ip_manager/api/create-offline-installer/', views.create_offline_installer, name='create_offline_installer'),
-]
-'''
-            zipf.writestr('plasco_system/ip_manager/urls.py', ip_manager_urls_content)
-
-            # فایل‌های urls.py ساده برای سایر اپ‌ها
-            simple_urls_content = '''
-from django.urls import path
-from django.http import HttpResponse
-
-def app_home(request):
-    return HttpResponse("🔄 این اپلیکیشن در حالت آفلاین در حال اجراست.")
-
-urlpatterns = [
-    path('', app_home, name='app_home'),
-]
-'''
-
-            # ایجاد فایل urls.py برای همه اپ‌های دیگر
-            other_apps = ['account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
-                          'it_app', 'pos_payment', 'sync_app', 'sync_api',
-                          'control_panel', 'offline_ins', 'home_app']
-
-            for app in other_apps:
-                zipf.writestr(f'plasco_system/{app}/urls.py', simple_urls_content)
-
+#             # فایل‌های urls.py ساده برای سایر اپ‌ها
+#             simple_urls_content = '''
+# from django.urls import path
+# from django.http import HttpResponse
+#
+# def app_home(request):
+#     return HttpResponse("🔄 این اپلیکیشن در حالت آفلاین در حال اجراست.")
+#
+# urlpatterns = [
+#     path('', app_home, name='app_home'),
+# ]
+# '''
+#
+#             # ایجاد فایل urls.py برای همه اپ‌های دیگر
+#             other_apps = ['account_app', 'dashbord_app', 'cantact_app', 'invoice_app',
+#                           'it_app', 'pos_payment', 'sync_app', 'sync_api',
+#                           'control_panel', 'offline_ins', 'home_app']
+#
+#             for app in other_apps:
+#                 zipf.writestr(f'plasco_system/{app}/urls.py', simple_urls_content)
+#
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
 
             # ماژول جایگزین kavenegar
