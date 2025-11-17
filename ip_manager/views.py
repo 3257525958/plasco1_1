@@ -595,7 +595,7 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 '''
             zipf.writestr('plasco_system/serial.py', serial_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) ====================
+            # ==================== فایل نصب اصلی (BAT) - اضافه کردن انتقال خودکار دیتابیس ====================
             main_bat = '''@echo off
 chcp 65001
 title Plasco Offline System Installer
@@ -722,6 +722,42 @@ echo ============================================
 echo.
 echo [SUCCESS] Plasco Offline System is ready!
 echo.
+echo 📦 شروع انتقال خودکار دیتابیس از سرور اصلی...
+echo.
+
+echo 🔄 در حال بررسی اتصال به سرور اصلی...
+python manage.py shell -c "
+import requests
+try:
+    response = requests.get('https://plasmarket.ir/', timeout=10)
+    print('✅ اتصال به سرور اصلی برقرار است')
+    print('🌐 شروع انتقال داده‌ها...')
+except:
+    print('⚠️ اتصال به سرور اصلی برقرار نیست')
+    print('💡 سیستم بدون داده‌های سرور راه‌اندازی می‌شود')
+"
+
+echo.
+echo 📞 انتقال مخاطبان و شعب...
+python manage.py sync_full_cantact
+
+echo 💰 انتقال داده‌های مالی...
+python manage.py sync_full_account
+
+echo 📊 انتقال داده‌های داشبورد...
+python manage.py sync_full_dashbord
+
+echo 🧾 انتقال فاکتورها...
+python manage.py sync_full_invoice
+
+echo 💳 انتقال تراکنش‌ها...
+python manage.py sync_full_pos_payment
+
+echo.
+echo ============================================
+echo    نصب و انتقال داده کامل شد!
+echo ============================================
+echo.
 echo Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
@@ -824,7 +860,7 @@ Quick Start:
 1. Extract ALL files to a folder
 2. Double-click "START_HERE.bat"
 3. Wait for automatic installation (5-15 minutes)
-4. System will start automatically
+4. System will start automatically with full database transfer
 
 Access Information:
 - Main Application: http://localhost:8000
@@ -846,6 +882,7 @@ Features:
 ✅ Automatic package installation
 ✅ Admin user creation
 ✅ IP access management
+✅ Automatic full database transfer from main server
 
 Limitations in Offline Mode:
 ❌ SMS functionality disabled
@@ -888,7 +925,6 @@ Troubleshooting:
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
-
 @csrf_exempt
 def create_offline_installer(request):
     """ایجاد و دانلود فایل نصب"""
