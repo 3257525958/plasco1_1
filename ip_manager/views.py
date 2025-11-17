@@ -682,7 +682,6 @@ Troubleshooting:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
 
-
 @csrf_exempt
 def create_offline_installer(request):
     """ایجاد و دانلود فایل نصب"""
@@ -806,4 +805,3 @@ Contact support if issues persist.
     response = HttpResponse(guide_content, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="manual_install_guide.txt"'
     return response
-
