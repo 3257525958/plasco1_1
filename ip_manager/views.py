@@ -159,6 +159,7 @@ def validate_ip_address(ip_address):
 
     return True
 
+
 def create_complete_install_package(selected_ips):
     """ایجاد پکیج نصب کامل با تنظیمات آفلاین سفارشی"""
     try:
@@ -757,6 +758,9 @@ echo ============================================
 echo    نصب و انتقال داده کامل شد!
 echo ============================================
 echo.
+
+cd plasco_system
+
 echo Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
@@ -923,6 +927,8 @@ Troubleshooting:
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
+
+
 # def create_complete_install_package(selected_ips):
 #     """ایجاد پکیج نصب کامل با تنظیمات آفلاین سفارشی"""
 #     try:
