@@ -806,3 +806,4 @@ Contact support if issues persist.
     response = HttpResponse(guide_content, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="manual_install_guide.txt"'
     return response
+
