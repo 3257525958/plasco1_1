@@ -409,6 +409,192 @@ user-agents==2.2.0  # برای middleware
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
+            # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
+
+            # ماژول جایگزین kavenegar
+            kavenegar_stub_content = '''
+"""
+ماژول جایگزین برای kavenegar - برای حالت آفلاین
+"""
+
+class KavenegarAPI:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def sms_send(self, *args, **kwargs):
+        return {"status": 200, "message": "SMS disabled in offline mode"}
+
+    def call_make(self, *args, **kwargs):
+        return {"status": 200, "message": "Calls disabled in offline mode"}
+
+    def verify_lookup(self, *args, **kwargs):
+        return {"status": 200, "message": "Verify lookup disabled in offline mode"}
+
+class KavenegarException(Exception):
+    pass
+
+def send_sms(api_key, sender, receptor, message):
+    return {"status": 200, "message": "SMS disabled in offline mode"}
+
+def send_lookup_sms(api_key, receptor, token, token2, token3, template):
+    return {"status": 200, "message": "Lookup SMS disabled in offline mode"}
+
+__all__ = ['KavenegarAPI', 'KavenegarException', 'send_sms', 'send_lookup_sms']
+'''
+            zipf.writestr('plasco_system/kavenegar.py', kavenegar_stub_content)
+
+            # ماژول جایگزین escpos
+            escpos_stub_content = '''
+"""
+ماژول جایگزین برای escpos - برای حالت آفلاین
+"""
+
+class Serial:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def text(self, text):
+        print(f"[ESC/POS SIMULATION] Printing: {text}")
+
+    def cut(self):
+        print("[ESC/POS SIMULATION] Paper cut")
+
+    def close(self):
+        pass
+
+class Usb:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def text(self, text):
+        print(f"[ESC/POS SIMULATION] USB Printing: {text}")
+
+    def cut(self):
+        print("[ESC/POS SIMULATION] USB Paper cut")
+
+    def close(self):
+        pass
+
+class Network:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def text(self, text):
+        print(f"[ESC/POS SIMULATION] Network Printing: {text}")
+
+    def cut(self):
+        print("[ESC/POS SIMULATION] Network Paper cut")
+
+    def close(self):
+        pass
+
+class File:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def text(self, text):
+        print(f"[ESC/POS SIMULATION] File Printing: {text}")
+
+    def cut(self):
+        print("[ESC/POS SIMULATION] File Paper cut")
+
+    def close(self):
+        pass
+
+__all__ = ['Serial', 'Usb', 'Network', 'File']
+'''
+            zipf.writestr('plasco_system/escpos.py', escpos_stub_content)
+            zipf.writestr('plasco_system/escpos/__init__.py', '')
+            zipf.writestr('plasco_system/escpos/printer.py', escpos_stub_content)
+
+            # ماژول جایگزین برای serial (pyserial)
+            serial_stub_content = '''
+"""
+ماژول جایگزین برای pyserial - برای حالت آفلاین
+"""
+
+class Serial:
+    def __init__(self, port=None, baudrate=9600, bytesize=8, parity='N', 
+                 stopbits=1, timeout=None, xonxoff=False, rtscts=False, 
+                 write_timeout=None, dsrdtr=False, inter_byte_timeout=None, 
+                 exclusive=None, **kwargs):
+        self.port = port
+        self.baudrate = baudrate
+        self.is_open = False
+
+    def open(self):
+        self.is_open = True
+        print(f"[SERIAL SIMULATION] Opened port: {self.port}")
+        return True
+
+    def close(self):
+        self.is_open = False
+        print(f"[SERIAL SIMULATION] Closed port: {self.port}")
+
+    def write(self, data):
+        print(f"[SERIAL SIMULATION] Writing data: {data}")
+        return len(data)
+
+    def read(self, size=1):
+        return b''
+
+    def readline(self, size=-1):
+        return b''
+
+    def flush(self):
+        pass
+
+    def reset_input_buffer(self):
+        pass
+
+    def reset_output_buffer(self):
+        pass
+
+    @property
+    def in_waiting(self):
+        return 0
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+def serial_for_url(url, *args, **kwargs):
+    return Serial(port=url)
+
+def list_ports():
+    return []
+
+class SerialException(Exception):
+    pass
+
+class SerialTimeoutException(SerialException):
+    pass
+
+VERSION = "3.5"
+PARITY_NONE = 'N'
+PARITY_EVEN = 'E'
+PARITY_ODD = 'O'
+PARITY_MARK = 'M'
+PARITY_SPACE = 'S'
+STOPBITS_ONE = 1
+STOPBITS_ONE_POINT_FIVE = 1.5
+STOPBITS_TWO = 2
+FIVEBITS = 5
+SIXBITS = 6
+SEVENBITS = 7
+EIGHTBITS = 8
+
+__all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException', 
+           'SerialTimeoutException', 'VERSION', 'PARITY_NONE', 'PARITY_EVEN',
+           'PARITY_ODD', 'PARITY_MARK', 'PARITY_SPACE', 'STOPBITS_ONE',
+           'STOPBITS_ONE_POINT_FIVE', 'STOPBITS_TWO', 'FIVEBITS', 'SIXBITS',
+           'SEVENBITS', 'EIGHTBITS']
+'''
+            zipf.writestr('plasco_system/serial.py', serial_stub_content)
+
             # ==================== فایل نصب اصلی (BAT) ====================
             main_bat = '''@echo off
 chcp 65001
@@ -440,7 +626,28 @@ for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
 echo [OK] !PYTHON_VERSION! detected
 echo.
 
-echo Step 2: Installing required packages...
+echo Step 2: Setting up library stubs for offline mode...
+mkdir plasco_system\\escpos 2>nul
+
+copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
+copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
+
+copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
+
+copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
+copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
+
+copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
+copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
+
+echo [OK] Library stubs setup completed
+echo.
+
+echo Step 3: Installing required packages...
 echo This may take 5-15 minutes. Please wait...
 echo.
 
@@ -491,7 +698,7 @@ python -m pip install user-agents==2.2.0
 echo [OK] All packages installed successfully
 echo.
 
-echo Step 3: Setting up database...
+echo Step 4: Setting up database...
 echo Creating database migrations...
 python manage.py makemigrations --noinput
 
@@ -504,7 +711,7 @@ if %errorlevel% neq 0 (
 
 echo [OK] Database setup completed
 
-echo Step 4: Creating admin user...
+echo Step 5: Creating admin user...
 python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
 echo [OK] Admin user setup completed
 
@@ -681,7 +888,6 @@ Troubleshooting:
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
-
 
 @csrf_exempt
 def create_offline_installer(request):
