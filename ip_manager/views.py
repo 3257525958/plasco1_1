@@ -760,7 +760,7 @@ echo ============================================
 echo    نصب و انتقال داده کامل شد!
 echo ============================================
 echo.
-
+cd plasco_system
 echo Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
@@ -916,7 +916,6 @@ Troubleshooting:
         # حذف فایل موقت
         os.unlink(temp_path)
 
-
         return zip_content
 
     except Exception as e:
@@ -927,8 +926,8 @@ Troubleshooting:
                 os.unlink(temp_path)
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
-        return None
 
+        return None
 # def create_complete_install_package(selected_ips):
 #     """ایجاد پکیج نصب کامل با تنظیمات آفلاین سفارشی"""
 #     try:
