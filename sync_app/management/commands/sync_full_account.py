@@ -326,6 +326,120 @@ from django.db.models import Q
 class Command(BaseCommand):
     help = 'انتقال کامل account_app با مقایسه و پاکسازی خودکار داده‌های اضافه'
 
+    def save_records_safe(self, model_class, records):
+        """ذخیره امن رکوردها با جلوگیری از تکراری"""
+        saved_count = 0
+        duplicate_count = 0
+        error_count = 0
+
+        for record_data in records:
+            try:
+                record_id = record_data.get('id')
+                if not record_id:
+                    continue
+
+                # برای همه مدل‌ها شرط تکراری را حذف می‌کنیم
+                # if model_class.objects.filter(id=record_id).exists():
+                #     duplicate_count += 1
+                #     continue
+
+                # پردازش داده‌ها
+                processed_data = self.process_record_data(record_data, model_class)
+
+                # 🔄 تغییر: مدیریت ویژه برای InventoryCount
+                if model_class.__name__ == 'InventoryCount':
+                    processed_data = self.fix_inventory_dependencies(processed_data)
+
+                # ایجاد یا آپدیت
+                obj, created = model_class.objects.update_or_create(
+                    id=record_id,
+                    defaults=processed_data
+                )
+                saved_count += 1
+
+            except Exception as e:
+                error_count += 1
+                # 🔄 تغییر: مدیریت خطاهای FOREIGN KEY برای InventoryCount
+                if model_class.__name__ == 'InventoryCount' and "FOREIGN KEY" in str(e):
+                    try:
+                        fixed_data = self.fix_inventory_dependencies(record_data)
+                        obj, created = model_class.objects.update_or_create(
+                            id=record_id,
+                            defaults=fixed_data
+                        )
+                        saved_count += 1
+                        error_count -= 1  # خطا جبران شد
+                        self.stdout.write(f"✅ InventoryCount ID {record_id}: خطای FOREIGN KEY حل شد")
+                    except Exception as retry_error:
+                        self.stdout.write(f"❌ InventoryCount ID {record_id}: حل خطا ناموفق - {retry_error}")
+                else:
+                    self.stdout.write(f"⚠️ خطا در {model_class.__name__} ID {record_id}: {str(e)}")
+                continue
+
+        if duplicate_count > 0:
+            self.stdout.write(f"   ⏭️ {duplicate_count} رکورد تکراری رد شد")
+        if error_count > 0:
+            self.stdout.write(f"   ❌ {error_count} خطا در ذخیره")
+
+        return saved_count
+
+    def fix_inventory_dependencies(self, record_data):
+        """رفع مشکلات وابستگی‌های InventoryCount"""
+        fixed_data = record_data.copy()
+
+        # بررسی و اصلاح branch_id
+        branch_id = fixed_data.get('branch_id')
+        if branch_id and not self.check_branch_exists(branch_id):
+            default_branch = self.get_default_branch()
+            fixed_data['branch_id'] = default_branch
+            self.stdout.write(f"   🔄 branch_id {branch_id} -> {default_branch}")
+
+        # بررسی و اصلاح counter_id
+        counter_id = fixed_data.get('counter_id')
+        if counter_id and not self.check_user_exists(counter_id):
+            default_user = self.get_default_user()
+            fixed_data['counter_id'] = default_user
+            self.stdout.write(f"   🔄 counter_id {counter_id} -> {default_user}")
+
+        return fixed_data
+
+    def check_branch_exists(self, branch_id):
+        """بررسی وجود شعبه"""
+        try:
+            from cantact_app.models import Branch
+            return Branch.objects.filter(id=branch_id).exists()
+        except:
+            return False
+
+    def check_user_exists(self, user_id):
+        """بررسی وجود کاربر"""
+        try:
+            from django.contrib.auth.models import User
+            return User.objects.filter(id=user_id).exists()
+        except:
+            return False
+
+    def get_default_branch(self):
+        """دریافت شعبه پیش‌فرض"""
+        try:
+            from cantact_app.models import Branch
+            default_branch = Branch.objects.first()
+            return default_branch.id if default_branch else 1
+        except:
+            return 1
+
+    def get_default_user(self):
+        """دریافت کاربر پیش‌فرض"""
+        try:
+            from django.contrib.auth.models import User
+            default_user = User.objects.first()
+            return default_user.id if default_user else 1
+        except:
+            return 1
+
+
+
+
     def handle(self, *args, **options):
         if not settings.OFFLINE_MODE:
             self.stdout.write("❌ فقط در حالت آفلاین قابل اجراست")
@@ -417,46 +531,6 @@ class Command(BaseCommand):
         self.stdout.write(f"⚠️ خطا در پاسخ سرور برای {model_class.__name__}: {response.status_code}")
         return 0
 
-    def save_records_safe(self, model_class, records):
-        """ذخیره امن رکوردها با جلوگیری از تکراری"""
-        saved_count = 0
-        duplicate_count = 0
-        error_count = 0
-
-        for record_data in records:
-            try:
-                record_id = record_data.get('id')
-                if not record_id:
-                    continue
-
-                # 🔄 تغییر: فقط برای InventoryCount شرط را حذف می‌کنیم
-                if model_class.__name__ != 'InventoryCount' and model_class.objects.filter(id=record_id).exists():
-                    duplicate_count += 1
-                    continue
-
-                # پردازش داده‌ها
-                processed_data = self.process_record_data(record_data, model_class)
-
-                # ایجاد یا آپدیت
-                obj, created = model_class.objects.update_or_create(
-                    id=record_id,
-                    defaults=processed_data
-                )
-                saved_count += 1
-
-            except Exception as e:
-                error_count += 1
-                # 🔄 تغییر: نمایش خطا فقط برای InventoryCount
-                if model_class.__name__ == 'InventoryCount':
-                    self.stdout.write(f"⚠️ خطا در InventoryCount ID {record_id}: {str(e)}")
-                continue
-
-        if duplicate_count > 0:
-            self.stdout.write(f"   ⏭️ {duplicate_count} رکورد تکراری رد شد")
-        if error_count > 0:
-            self.stdout.write(f"   ❌ {error_count} خطا در ذخیره")
-
-        return saved_count
 
     def process_record_data(self, record_data, model_class):
         """پردازش داده‌های رکورد"""
