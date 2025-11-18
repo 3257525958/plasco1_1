@@ -715,10 +715,10 @@ echo [OK] Database setup completed
 
 echo Step 5: Syncing data from online server...
 python manage.py sync_full_cantact
-python manage.py sync_full_account
 python manage.py sync_full_dashbord
 python manage.py sync_full_invoice
 python manage.py sync_full_pos_payment
+python manage.py sync_full_account
 
 echo Step 6: Creating admin user...
 python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
