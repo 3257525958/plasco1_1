@@ -609,7 +609,7 @@ echo.
 
 echo Step 1: Checking Python installation...
 python --version >nul 2>&1
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo.
     echo [ERROR] Python not found or not in PATH!
     echo.
@@ -655,7 +655,7 @@ cd plasco_system
 
 echo Upgrading pip...
 python -m pip install --upgrade pip
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo [ERROR] Failed to upgrade pip
     pause
     exit /b 1
@@ -664,7 +664,7 @@ echo [OK] pip upgraded successfully
 
 echo Installing packages one by one...
 python -m pip install Django==4.2.7
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo [ERROR] Failed to install Django
     pause
     exit /b 1
@@ -704,7 +704,7 @@ python manage.py makemigrations --noinput
 
 echo Applying migrations...
 python manage.py migrate --run-syncdb
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo [WARNING] Migration had some issues, trying alternative approach...
     python manage.py migrate --run-syncdb
 )
@@ -722,47 +722,33 @@ echo ============================================
 echo.
 echo [SUCCESS] Plasco Offline System is ready!
 echo.
-echo 📦 شروع انتقال خودکار دیتابیس از سرور اصلی...
+echo Starting database transfer from main server...
 echo.
 
-cd plasco_system
-
-echo 🔄 در حال بررسی اتصال به سرور اصلی...
-python manage.py shell -c "
-import requests
-try:
-    response = requests.get('https://plasmarket.ir/', timeout=10)
-    print('✅ اتصال به سرور اصلی برقرار است')
-    print('🌐 شروع انتقال داده‌ها...')
-except:
-    print('⚠️ اتصال به سرور اصلی برقرار نیست')
-    print('💡 سیستم بدون داده‌های سرور راه‌اندازی می‌شود')
-"
+echo Checking connection to main server...
+python manage.py shell -c "import requests; print('✅ Connection to main server established') if requests.get('https://plasmarket.ir/', timeout=10).status_code == 200 else print('⚠️ No connection to main server')"
 
 echo.
-echo 📞 انتقال مخاطبان و شعب...
-python manage.py sync_full_cantact || echo ⚠️ خطا در انتقال مخاطبان
+echo Transferring contacts data...
+python manage.py sync_full_cantact
 
-echo 💰 انتقال داده‌های مالی...
-python manage.py sync_full_account || echo ⚠️ خطا در انتقال داده مالی
+echo Transferring financial data...
+python manage.py sync_full_account
 
-echo 📊 انتقال داده‌های داشبورد...
-python manage.py sync_full_dashbord || echo ⚠️ خطا در انتقال داشبورد
+echo Transferring dashboard data...
+python manage.py sync_full_dashbord
 
-echo 🧾 انتقال فاکتورها...
-python manage.py sync_full_invoice || echo ⚠️ خطا در انتقال فاکتورها
+echo Transferring invoices data...
+python manage.py sync_full_invoice
 
-echo 💳 انتقال تراکنش‌ها...
-python manage.py sync_full_pos_payment || echo ⚠️ خطا در انتقال تراکنش‌ها
+echo Transferring transactions data...
+python manage.py sync_full_pos_payment
 
 echo.
 echo ============================================
-echo    نصب و انتقال داده کامل شد!
+echo    Installation and data transfer complete!
 echo ============================================
 echo.
-
-cd plasco_system
-
 echo Access URLs:
 echo    Main System: http://localhost:8000
 echo    Admin Panel: http://localhost:8000/admin
@@ -782,7 +768,7 @@ timeout /t 5 /nobreak >nul
 :start_server
 echo Starting server on port 8000...
 python manage.py runserver 0.0.0.0:8000
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo.
     echo [WARNING] Port 8000 is busy, trying port 8001...
     echo.
@@ -790,7 +776,7 @@ if %errorlevel% neq 0 (
     python manage.py runserver 0.0.0.0:8001
 )
 
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo.
     echo [ERROR] Server startup failed!
     echo.
@@ -928,9 +914,7 @@ Troubleshooting:
                 os.unlink(temp_path)
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
-
         return None
-
 
 # def create_complete_install_package(selected_ips):
 #     """ایجاد پکیج نصب کامل با تنظیمات آفلاین سفارشی"""
