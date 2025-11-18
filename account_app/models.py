@@ -69,6 +69,7 @@ class InventoryCount(models.Model):
 
         return barcode
 
+
     def save(self, *args, **kwargs):
         self.clean()
 
