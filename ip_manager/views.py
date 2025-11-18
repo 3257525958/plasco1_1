@@ -725,6 +725,8 @@ echo.
 echo 📦 شروع انتقال خودکار دیتابیس از سرور اصلی...
 echo.
 
+cd plasco_system
+
 echo 🔄 در حال بررسی اتصال به سرور اصلی...
 python manage.py shell -c "
 import requests
@@ -758,8 +760,6 @@ echo ============================================
 echo    نصب و انتقال داده کامل شد!
 echo ============================================
 echo.
-
-cd plasco_system
 
 echo Access URLs:
 echo    Main System: http://localhost:8000
@@ -927,7 +927,6 @@ Troubleshooting:
         except Exception as cleanup_error:
             logger.error(f"❌ Cleanup error: {cleanup_error}")
         return None
-
 
 # def create_complete_install_package(selected_ips):
 #     """ایجاد پکیج نصب کامل با تنظیمات آفلاین سفارشی"""
