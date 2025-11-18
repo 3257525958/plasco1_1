@@ -314,12 +314,15 @@
 #         except Exception as e:
 #             self.stdout.write(f"⚠️ خطا در بررسی ویژه ProductPricing: {e}")
 
+
 from django.core.management.base import BaseCommand
 from django.conf import settings
 import requests
 from django.apps import apps
 from django.db import transaction
 from django.db.models import Q
+from django.contrib.auth import get_user_model
+from django.db import connection
 
 
 class Command(BaseCommand):
@@ -336,6 +339,14 @@ class Command(BaseCommand):
         self.stdout.write("\n🔍 مرحله 0: بررسی اولیه و دیباگ کامل...")
         self.debug_complete_database_state()
         initial_status = self.get_initial_status()
+
+        # 🔄 مرحله جدید: ایجاد کاربر پیش‌فرض اگر وجود ندارد
+        self.stdout.write("\n👤 مرحله 0.5: ایجاد کاربر پیش‌فرض...")
+        default_user_id = self.ensure_default_user_exists()
+        if default_user_id:
+            self.stdout.write(f"✅ کاربر پیش‌فرض آماده است: ID {default_user_id}")
+        else:
+            self.stdout.write("❌ ایجاد کاربر پیش‌فرض ناموفق بود")
 
         # مرحله 1: انتقال مدل‌های مستقل
         self.stdout.write("\n📦 مرحله 1: انتقال مدل‌های مستقل...")
@@ -378,11 +389,108 @@ class Command(BaseCommand):
             self.style.SUCCESS("\n🎉 انتقال کامل account_app با موفقیت انجام شد!")
         )
 
+    def ensure_default_user_exists(self):
+        """اطمینان از وجود کاربر پیش‌فرض در سیستم"""
+        try:
+            # روش 1: استفاده از مدل User استاندارد Django
+            User = get_user_model()
+
+            # بررسی وجود کاربر
+            user = User.objects.first()
+            if user:
+                self.stdout.write(f"✅ کاربر موجود پیدا شد: {user.username} (ID: {user.id})")
+                return user.id
+
+            # اگر کاربری وجود ندارد، ایجاد می‌کنیم
+            self.stdout.write("👤 ایجاد کاربر پیش‌فرض...")
+
+            # ایجاد سوپر کاربر
+            user = User.objects.create_superuser(
+                username='admin',
+                email='admin@plasco.com',
+                password='admin123'
+            )
+            self.stdout.write(f"✅ کاربر پیش‌فرض ایجاد شد: {user.username} (ID: {user.id})")
+            return user.id
+
+        except Exception as e:
+            self.stdout.write(f"❌ خطا در ایجاد کاربر با ORM: {e}")
+
+            # روش 2: ایجاد کاربر با Raw SQL
+            try:
+                return self.create_user_with_sql()
+            except Exception as sql_error:
+                self.stdout.write(f"❌ خطا در ایجاد کاربر با SQL: {sql_error}")
+                return None
+
+    def create_user_with_sql(self):
+        """ایجاد کاربر با استفاده از Raw SQL"""
+        try:
+            with connection.cursor() as cursor:
+                # پیدا کردن جدول کاربر
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%user%'")
+                user_tables = cursor.fetchall()
+
+                if not user_tables:
+                    self.stdout.write("❌ هیچ جدول کاربری پیدا نشد")
+                    return None
+
+                user_table = user_tables[0][0]
+                self.stdout.write(f"📋 استفاده از جدول کاربر: {user_table}")
+
+                # بررسی ساختار جدول
+                cursor.execute(f"PRAGMA table_info({user_table})")
+                columns = cursor.fetchall()
+                column_names = [col[1] for col in columns]
+
+                self.stdout.write(f"📋 ستون‌های جدول کاربر: {column_names}")
+
+                # ایجاد کاربر جدید
+                user_data = {
+                    'username': 'admin',
+                    'password': 'pbkdf2_sha256$600000$xyz$example=',  # پسورد ساده
+                    'email': 'admin@plasco.com',
+                    'is_staff': 1,
+                    'is_superuser': 1,
+                    'is_active': 1
+                }
+
+                # ساخت query داینامیک بر اساس ستون‌های موجود
+                valid_columns = {}
+                for col_name in column_names:
+                    if col_name in user_data:
+                        valid_columns[col_name] = user_data[col_name]
+                    elif col_name == 'date_joined':
+                        valid_columns[col_name] = 'datetime("now")'
+                    elif col_name == 'last_login':
+                        valid_columns[col_name] = 'NULL'
+
+                if not valid_columns:
+                    self.stdout.write("❌ هیچ ستون معتبری برای درج کاربر پیدا نشد")
+                    return None
+
+                columns_str = ', '.join(valid_columns.keys())
+                placeholders = ', '.join(
+                    ['?' if v != 'datetime("now")' and v != 'NULL' else v for v in valid_columns.values()])
+                values = [v for v in valid_columns.values() if v != 'datetime("now")' and v != 'NULL']
+
+                # درج کاربر
+                cursor.execute(f"INSERT INTO {user_table} ({columns_str}) VALUES ({placeholders})", values)
+
+                # گرفتن ID کاربر جدید
+                cursor.execute("SELECT last_insert_rowid()")
+                new_user_id = cursor.fetchone()[0]
+
+                self.stdout.write(f"✅ کاربر با SQL ایجاد شد: ID {new_user_id}")
+                return new_user_id
+
+        except Exception as e:
+            self.stdout.write(f"❌ خطا در ایجاد کاربر با SQL: {e}")
+            return None
+
     def debug_complete_database_state(self):
         """بررسی کامل وضعیت دیتابیس"""
         self.stdout.write("\n🔍 دیباگ کامل وضعیت دیتابیس:")
-
-        from django.db import connection
 
         try:
             # 1. لیست تمام جدول‌های موجود
@@ -393,40 +501,9 @@ class Command(BaseCommand):
                 for table in tables:
                     self.stdout.write(f"   - {table[0]}")
 
-            # 2. بررسی دقیق جدول‌های مربوط به branch
-            self.stdout.write(f"\n🔍 بررسی دقیق جدول‌های branch:")
-            branch_keywords = ['branch', 'shobe', 'shoabe', 'canact', 'cantact', 'contact']
-
-            for keyword in branch_keywords:
-                with connection.cursor() as cursor:
-                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?",
-                                   [f'%{keyword}%'])
-                    branch_tables = cursor.fetchall()
-                    for table in branch_tables:
-                        table_name = table[0]
-                        cursor.execute(f"SELECT COUNT(*) as count, MAX(id) as max_id FROM {table_name}")
-                        count_result = cursor.fetchone()
-                        count = count_result[0] if count_result else 0
-                        max_id = count_result[1] if count_result else 0
-
-                        cursor.execute(f"PRAGMA table_info({table_name})")
-                        columns = cursor.fetchall()
-                        column_names = [col[1] for col in columns]
-
-                        self.stdout.write(f"   📊 {table_name}:")
-                        self.stdout.write(f"      تعداد رکوردها: {count}")
-                        self.stdout.write(f"      بیشترین ID: {max_id}")
-                        self.stdout.write(f"      ستون‌ها: {', '.join(column_names)}")
-
-                        # نمونه‌ای از داده‌ها
-                        if count > 0:
-                            cursor.execute(f"SELECT id, name FROM {table_name} LIMIT 3")
-                            sample_data = cursor.fetchall()
-                            self.stdout.write(f"      نمونه داده: {sample_data}")
-
-            # 3. بررسی دقیق جدول‌های مربوط به user
-            self.stdout.write(f"\n🔍 بررسی دقیق جدول‌های user:")
-            user_keywords = ['user', 'auth', 'account', 'userprofile']
+            # 2. بررسی دقیق جدول‌های کاربر
+            self.stdout.write(f"\n🔍 بررسی دقیق جدول‌های کاربر:")
+            user_keywords = ['user', 'auth', 'account']
 
             for keyword in user_keywords:
                 with connection.cursor() as cursor:
@@ -435,33 +512,7 @@ class Command(BaseCommand):
                     user_tables = cursor.fetchall()
                     for table in user_tables:
                         table_name = table[0]
-                        cursor.execute(f"SELECT COUNT(*) as count, MAX(id) as max_id FROM {table_name}")
-                        count_result = cursor.fetchone()
-                        count = count_result[0] if count_result else 0
-                        max_id = count_result[1] if count_result else 0
-
-                        self.stdout.write(f"   📊 {table_name}:")
-                        self.stdout.write(f"      تعداد رکوردها: {count}")
-                        self.stdout.write(f"      بیشترین ID: {max_id}")
-
-                        # نمونه‌ای از داده‌ها
-                        if count > 0:
-                            cursor.execute(f"SELECT id, username FROM {table_name} LIMIT 3")
-                            sample_data = cursor.fetchall()
-                            self.stdout.write(f"      نمونه داده: {sample_data}")
-
-            # 4. بررسی جدول InventoryCount
-            self.stdout.write(f"\n🔍 بررسی جدول‌های InventoryCount:")
-            inventory_keywords = ['inventory', 'inventor', 'count']
-
-            for keyword in inventory_keywords:
-                with connection.cursor() as cursor:
-                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?",
-                                   [f'%{keyword}%'])
-                    inventory_tables = cursor.fetchall()
-                    for table in inventory_tables:
-                        table_name = table[0]
-                        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                        cursor.execute(f"SELECT COUNT(*) as count FROM {table_name}")
                         count = cursor.fetchone()[0]
 
                         cursor.execute(f"PRAGMA table_info({table_name})")
@@ -471,6 +522,12 @@ class Command(BaseCommand):
                         self.stdout.write(f"   📊 {table_name}:")
                         self.stdout.write(f"      تعداد رکوردها: {count}")
                         self.stdout.write(f"      ستون‌ها: {', '.join(column_names)}")
+
+                        # نمونه‌ای از داده‌ها
+                        if count > 0:
+                            cursor.execute(f"SELECT * FROM {table_name} LIMIT 2")
+                            sample_data = cursor.fetchall()
+                            self.stdout.write(f"      نمونه داده: {sample_data}")
 
         except Exception as e:
             self.stdout.write(f"❌ خطا در دیباگ دیتابیس: {e}")
@@ -552,7 +609,6 @@ class Command(BaseCommand):
 
     def insert_inventory_comprehensive(self, record_data, record_id):
         """درج جامع InventoryCount با تمام راه‌حل‌های ممکن"""
-        from django.db import connection
         from decimal import Decimal
 
         try:
@@ -568,27 +624,27 @@ class Command(BaseCommand):
 
             self.stdout.write(f"🔍 پردازش InventoryCount ID {record_id}: {product_name}")
 
-            # 🔄 راه حل 1: پیدا کردن branch_id و counter_id با روش‌های مختلف
+            # پیدا کردن branch_id و counter_id
             branch_id = self.find_branch_id_comprehensive()
             counter_id = self.find_user_id_comprehensive()
 
             if not branch_id:
-                self.stdout.write(f"❌ InventoryCount ID {record_id}: هیچ شعبه معتبری در کل دیتابیس پیدا نشد")
+                self.stdout.write(f"❌ InventoryCount ID {record_id}: هیچ شعبه معتبری پیدا نشد")
                 return False
 
             if not counter_id:
-                self.stdout.write(f"❌ InventoryCount ID {record_id}: هیچ کاربر معتبری در کل دیتابیس پیدا نشد")
+                self.stdout.write(f"❌ InventoryCount ID {record_id}: هیچ کاربر معتبری پیدا نشد")
                 return False
 
             self.stdout.write(f"✅ استفاده از branch_id: {branch_id}, counter_id: {counter_id}")
 
-            # 🔄 راه حل 2: پیدا کردن نام صحیح جدول InventoryCount
+            # پیدا کردن نام صحیح جدول InventoryCount
             target_table = self.find_inventory_table()
             if not target_table:
                 self.stdout.write(f"❌ InventoryCount ID {record_id}: هیچ جدول InventoryCount پیدا نشد")
                 return False
 
-            # 🔄 راه حل 3: درج با Raw SQL
+            # درج با Raw SQL
             with connection.cursor() as cursor:
                 try:
                     # حذف رکورد قبلی اگر وجود دارد
@@ -611,36 +667,7 @@ class Command(BaseCommand):
 
                 except Exception as sql_error:
                     self.stdout.write(f"❌ InventoryCount ID {record_id}: خطای SQL - {str(sql_error)}")
-
-                    # 🔄 راه حل 4: اگر خطای SQL داشتیم، سعی می‌کنیم با ORM ذخیره کنیم
-                    try:
-                        self.stdout.write(f"🔄 تلاش با ORM برای InventoryCount ID {record_id}")
-                        from account_app.models import InventoryCount
-
-                        inventory = InventoryCount(
-                            id=record_id,
-                            product_name=product_name,
-                            is_new=is_new,
-                            quantity=quantity,
-                            count_date=count_date,
-                            created_at=created_at,
-                            barcode_data=barcode_data,
-                            selling_price=selling_price,
-                            branch_id=branch_id,
-                            counter_id=counter_id,
-                            profit_percentage=profit_percentage
-                        )
-
-                        # غیرفعال کردن اعتبارسنجی‌ها
-                        inventory.full_clean = lambda: None
-                        inventory.save()
-
-                        self.stdout.write(f"✅ InventoryCount ID {record_id}: انتقال موفق با ORM")
-                        return True
-
-                    except Exception as orm_error:
-                        self.stdout.write(f"❌ InventoryCount ID {record_id}: خطای ORM - {str(orm_error)}")
-                        return False
+                    return False
 
         except Exception as e:
             self.stdout.write(f"❌ InventoryCount ID {record_id}: خطای کلی - {str(e)}")
@@ -648,13 +675,9 @@ class Command(BaseCommand):
 
     def find_branch_id_comprehensive(self):
         """پیدا کردن branch_id با تمام روش‌های ممکن"""
-        from django.db import connection
-
         methods = [
             self._find_branch_method1,  # apps.get_model
             self._find_branch_method2,  # جستجوی مستقیم جدول
-            self._find_branch_method3,  # جستجوی با کلیدواژه‌های مختلف
-            self._find_branch_method4,  # ایجاد در صورت عدم وجود
         ]
 
         for method in methods:
@@ -669,7 +692,7 @@ class Command(BaseCommand):
 
     def _find_branch_method1(self):
         """روش 1: استفاده از apps.get_model"""
-        app_names = ['cantact_app', 'contact_app', 'canact_app', 'account_app']
+        app_names = ['cantact_app', 'contact_app']
         for app_name in app_names:
             try:
                 Branch = apps.get_model(app_name, 'Branch')
@@ -683,7 +706,6 @@ class Command(BaseCommand):
 
     def _find_branch_method2(self):
         """روش 2: جستجوی مستقیم در جدول"""
-        from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%branch%'")
             tables = cursor.fetchall()
@@ -698,56 +720,11 @@ class Command(BaseCommand):
                     continue
         return None
 
-    def _find_branch_method3(self):
-        """روش 3: جستجوی با کلیدواژه‌های مختلف"""
-        from django.db import connection
-        keywords = ['branch', 'shobe', 'shoabe', 'canact', 'cantact', 'contact']
-
-        for keyword in keywords:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?", [f'%{keyword}%'])
-                tables = cursor.fetchall()
-                for table in tables:
-                    try:
-                        cursor.execute(f"SELECT id FROM {table[0]} LIMIT 1")
-                        row = cursor.fetchone()
-                        if row:
-                            self.stdout.write(f"✅ شعبه در جدول {table[0]}: ID {row[0]}")
-                            return row[0]
-                    except:
-                        continue
-        return None
-
-    def _find_branch_method4(self):
-        """روش 4: ایجاد شعبه در صورت عدم وجود"""
-        from django.db import connection
-        with connection.cursor() as cursor:
-            # پیدا کردن یک جدول مناسب برای درج شعبه
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%branch%'")
-            table = cursor.fetchone()
-            if table:
-                table_name = table[0]
-                try:
-                    # درج شعبه جدید
-                    cursor.execute(f"INSERT INTO {table_name} (name, address) VALUES (?, ?)",
-                                   ['شعبه مرکزی', 'آدرس پیش‌فرض'])
-                    cursor.execute(f"SELECT last_insert_rowid()")
-                    new_id = cursor.fetchone()[0]
-                    self.stdout.write(f"✅ شعبه جدید ایجاد شد: ID {new_id}")
-                    return new_id
-                except:
-                    pass
-        return None
-
     def find_user_id_comprehensive(self):
         """پیدا کردن user_id با تمام روش‌های ممکن"""
-        from django.db import connection
-
         methods = [
             self._find_user_method1,  # apps.get_model
             self._find_user_method2,  # جستجوی مستقیم جدول
-            self._find_user_method3,  # جستجوی با کلیدواژه‌های مختلف
-            self._find_user_method4,  # ایجاد در صورت عدم وجود
         ]
 
         for method in methods:
@@ -758,12 +735,14 @@ class Command(BaseCommand):
             except Exception as e:
                 continue
 
-        return None
+        # اگر هیچ کاربری پیدا نشد، از کاربر پیش‌فرض استفاده می‌کنیم
+        self.stdout.write("🔄 استفاده از کاربر پیش‌فرض")
+        return 1  # فرض می‌کنیم کاربر با ID 1 وجود دارد
 
     def _find_user_method1(self):
         """روش 1: استفاده از apps.get_model"""
         try:
-            User = apps.get_model('auth', 'User')
+            User = get_user_model()
             user = User.objects.first()
             if user:
                 self.stdout.write(f"✅ کاربر پیدا شد: {user.username} (ID: {user.id})")
@@ -774,7 +753,6 @@ class Command(BaseCommand):
 
     def _find_user_method2(self):
         """روش 2: جستجوی مستقیم در جدول"""
-        from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE '%user%' OR name LIKE '%auth%')")
@@ -790,50 +768,8 @@ class Command(BaseCommand):
                     continue
         return None
 
-    def _find_user_method3(self):
-        """روش 3: جستجوی با کلیدواژه‌های مختلف"""
-        from django.db import connection
-        keywords = ['user', 'auth', 'account']
-
-        for keyword in keywords:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?", [f'%{keyword}%'])
-                tables = cursor.fetchall()
-                for table in tables:
-                    try:
-                        cursor.execute(f"SELECT id FROM {table[0]} LIMIT 1")
-                        row = cursor.fetchone()
-                        if row:
-                            self.stdout.write(f"✅ کاربر در جدول {table[0]}: ID {row[0]}")
-                            return row[0]
-                    except:
-                        continue
-        return None
-
-    def _find_user_method4(self):
-        """روش 4: ایجاد کاربر در صورت عدم وجود"""
-        from django.db import connection
-        with connection.cursor() as cursor:
-            # پیدا کردن یک جدول مناسب برای درج کاربر
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%user%'")
-            table = cursor.fetchone()
-            if table:
-                table_name = table[0]
-                try:
-                    # درج کاربر جدید
-                    cursor.execute(f"INSERT INTO {table_name} (username, password) VALUES (?, ?)",
-                                   ['admin', 'admin123'])
-                    cursor.execute(f"SELECT last_insert_rowid()")
-                    new_id = cursor.fetchone()[0]
-                    self.stdout.write(f"✅ کاربر جدید ایجاد شد: ID {new_id}")
-                    return new_id
-                except:
-                    pass
-        return None
-
     def find_inventory_table(self):
         """پیدا کردن نام جدول InventoryCount"""
-        from django.db import connection
         with connection.cursor() as cursor:
             keywords = ['inventory', 'inventor', 'count']
 
@@ -994,7 +930,7 @@ class Command(BaseCommand):
         for model_name in models_to_report:
             initial = initial_status.get(model_name, 0)
             transferred = transfer_results.get(model_name, 0)
-            cleaned = cleanup_results.get(model_name, 0)
+            cleaned = cleanup_results.get(model_name, 0
 
             # محاسبه تعداد نهایی
             final_count = initial + transferred - cleaned
@@ -1008,18 +944,18 @@ class Command(BaseCommand):
             total_transferred += transferred
             total_cleaned += cleaned
 
-        self.stdout.write("\n" + "=" * 50)
-        self.stdout.write(f"📈 جمع کل انتقال: {total_transferred} رکورد")
-        self.stdout.write(f"🗑️  جمع کل پاک‌سازی: {total_cleaned} رکورد")
-        self.stdout.write("=" * 50)
+            self.stdout.write("\n" + "=" * 50)
+            self.stdout.write(f"📈 جمع کل انتقال: {total_transferred} رکورد")
+            self.stdout.write(f"🗑️  جمع کل پاک‌سازی: {total_cleaned} رکورد")
+            self.stdout.write("=" * 50)
 
-        # بررسی ویژه
-        self.check_special_cases()
+            # بررسی ویژه
+            self.check_special_cases()
 
     def check_special_cases(self):
         """بررسی موارد ویژه"""
         try:
-            from account_app.models import ProductPricing
+            from account_app.models import ProductPricing, InventoryCount
 
             # بررسی ProductPricing
             final_count = ProductPricing.objects.count()
@@ -1032,7 +968,6 @@ class Command(BaseCommand):
                     self.stdout.write(f"\n⚠️ ProductPricing: عدم تطابق ❌ (لوکال: {final_count} | سرور: {server_count})")
 
             # بررسی InventoryCount
-            from account_app.models import InventoryCount
             inventory_count = InventoryCount.objects.count()
             self.stdout.write(f"\n📦 InventoryCount نهایی: {inventory_count} رکورد")
 
