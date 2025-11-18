@@ -297,6 +297,7 @@ class Command(BaseCommand):
             if server_ids is not None:
                 server_count = len(server_ids)
 
+
                 if final_count == server_count:
                     self.stdout.write(f"\n🎯 InventoryCount: تطابق کامل ✅ (لوکال: {final_count} | سرور: {server_count})")
                 else:
