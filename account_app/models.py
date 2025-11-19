@@ -56,7 +56,6 @@ class InventoryCount(models.Model):
         """تولید بارکد ثابت ۱۲ رقمی بر اساس نام کالا"""
         import hashlib
 
-
         # استفاده از نام کالا برای تولید بارکد ثابت
         product_name = self.product_name.strip()
 
