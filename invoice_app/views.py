@@ -997,23 +997,6 @@ def finalize_invoice_non_pos(request):
             # محاسبه سود کل فاکتور
             total_profit = 0
 
-            # جمع‌آوری تمام product_idها برای یک query
-            product_ids = [item['product_id'] for item in items]
-            products = InventoryCount.objects.filter(id__in=product_ids)
-
-            # جمع‌آوری تمام product_nameها برای pricing
-            product_names = [product.product_name for product in products]
-
-            try:
-                from account_app.models import ProductPricing
-                pricings = ProductPricing.objects.filter(product_name__in=product_names)
-                pricing_dict = {p.product_name: p.standard_price for p in pricings}
-            except Exception as e:
-                print(f"⚠️ خطا در دریافت قیمت‌های معیار: {e}")
-                pricing_dict = {}
-
-            product_dict = {p.id: p for p in products}
-
             # محاسبه سود
             for item_data in items:
                 product = product_dict.get(item_data['product_id'])
