@@ -868,6 +868,57 @@ def build_sale_request(amount):
 
 # ==================== ویوهای اصلی فاکتور ====================
 
+
+
+# views.py - اضافه کردن تابع محاسبه سود با در نظر گرفتن تخفیف‌ها
+
+# views.py - اضافه کردن تابع محاسبه سود با در نظر گرفتن تخفیف‌ها 🔴 تابع جدید
+
+def calculate_invoice_profit(items, total_discount):
+    """
+    محاسبه سود فاکتور با در نظر گرفتن تخفیف‌های موردی و کلی
+    """
+    try:
+        total_standard_cost = 0
+        total_selling_price = 0
+        total_items_discount = 0
+
+        # محاسبه جمع هزینه استاندارد و قیمت فروش
+        for item in items:
+            product_id = item['product_id']
+
+            # دریافت محصول از دیتابیس
+            product = InventoryCount.objects.get(id=product_id)
+
+            # دریافت قیمت معیار از ProductPricing
+            try:
+                pricing = ProductPricing.objects.get(product_name=product.product_name)
+                standard_price = pricing.standard_price
+            except ProductPricing.DoesNotExist:
+                standard_price = 0
+
+            # محاسبه جمع‌ها
+            quantity = item['quantity']
+            selling_price = item['price']
+            item_discount = item.get('discount', 0)
+
+            total_standard_cost += standard_price * quantity
+            total_selling_price += selling_price * quantity
+            total_items_discount += item_discount
+
+        # محاسبه سود ناخالص (قبل از کسر تخفیف‌ها)
+        gross_profit = total_selling_price - total_standard_cost
+
+        # کسر تخفیف‌های موردی و کلی از سود
+        net_profit = gross_profit - total_items_discount - total_discount
+
+        # اطمینان از مثبت بودن سود
+        return max(0, net_profit)
+
+    except Exception as e:
+        print(f"خطا در محاسبه سود: {str(e)}")
+        return 0
+
 @login_required
 @csrf_exempt
 def finalize_invoice(request):
@@ -890,6 +941,11 @@ def finalize_invoice(request):
             total_amount = max(0, total_amount)
 
             print(f"💰 مبلغ فاکتور: {total_amount} تومان - شعبه: {branch_id}")
+
+            # 🔴 محاسبه سود با در نظر گرفتن تخفیف‌ها
+            total_discount = request.session.get('discount', 0)
+            total_profit = calculate_invoice_profit(items, total_discount)
+            print(f"💰 سود فاکتور POS محاسبه شد: {total_profit}")
 
             # اگر پرداخت POS است
             if payment_method == 'pos':
@@ -917,7 +973,9 @@ def finalize_invoice(request):
                 payment_method=payment_method,
                 customer_name=request.session.get('customer_name', ''),
                 customer_phone=request.session.get('customer_phone', ''),
-                created_by=request.user
+                created_by=request.user,
+                # 🔴 اضافه کردن سود به فاکتور POS
+                total_profit=total_profit
             )
 
             # ثبت آیتم‌ها
@@ -994,24 +1052,10 @@ def finalize_invoice_non_pos(request):
             is_paid = payment_method == 'cash'
             payment_date = timezone.now() if is_paid else None
 
-            # محاسبه سود کل فاکتور
-            total_profit = 0
+            # 🔴 استفاده از تابع جدید برای محاسبه سود با در نظر گرفتن تخفیف‌ها
+            total_profit = calculate_invoice_profit(items, total_discount)
 
-            # محاسبه سود
-            for item_data in items:
-                product = product_dict.get(item_data['product_id'])
-                if not product:
-                    continue
-
-                standard_price = pricing_dict.get(product.product_name, 0)
-                if standard_price is None:
-                    standard_price = 0
-
-                # محاسبه سود این آیتم: (قیمت فروش - قیمت معیار) × تعداد
-                item_profit = (item_data['price'] - standard_price) * item_data['quantity']
-                total_profit += max(0, item_profit)  # فقط سود مثبت
-
-            print(f"💰 سود کل فاکتور محاسبه شد: {total_profit}")
+            print(f"💰 سود کل فاکتور محاسبه شد: {total_profit} (با در نظر گرفتن تخفیف‌ها)")
 
             # ثبت فاکتور با سود
             invoice = Invoicefrosh.objects.create(
@@ -1033,12 +1077,9 @@ def finalize_invoice_non_pos(request):
             # ثبت آیتم‌ها
             invoice_items = []
             for item_data in items:
-                product = product_dict.get(item_data['product_id'])
-                if not product:
-                    continue
+                product = InventoryCount.objects.get(id=item_data['product_id'])
 
                 item_total_price = (item_data['quantity'] * item_data['price']) - item_data.get('discount', 0)
-                standard_price = pricing_dict.get(product.product_name, 0)
 
                 invoice_items.append(InvoiceItemfrosh(
                     invoice=invoice,
@@ -1046,16 +1087,15 @@ def finalize_invoice_non_pos(request):
                     quantity=item_data['quantity'],
                     price=item_data['price'],
                     total_price=item_total_price,
-                    standard_price=standard_price,
                     discount=item_data.get('discount', 0)
                 ))
 
                 # کاهش موجودی
                 product.quantity -= item_data['quantity']
+                product.save()
 
-            # bulk create و bulk update
+            # bulk create
             InvoiceItemfrosh.objects.bulk_create(invoice_items)
-            InventoryCount.objects.bulk_update(products, ['quantity'])
 
             # پاکسازی session
             for key in ['invoice_items', 'customer_name', 'customer_phone', 'payment_method', 'discount',
@@ -1080,8 +1120,6 @@ def finalize_invoice_non_pos(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
-
-
 # در views.py - ویوهای مربوط به مدیریت آیتم‌های فاکتور
 @login_required
 def invoice_add_item(request):
