@@ -143,10 +143,10 @@ class InvoiceItemfroshAdmin(admin.ModelAdmin):
 @admin.register(Invoicefrosh)
 class InvoicefroshAdmin(admin.ModelAdmin):
     list_display = ['serial_number', 'branch', 'customer_name', 'total_amount',
-                    'total_standard_price_display', 'total_profit',  # 🔴 اضافه شده
+                    'total_standard_price_display', 'total_profit_display',  # نمایش هر دو
                     'payment_method', 'is_finalized', 'is_paid', 'created_at']
     list_filter = ['branch', 'payment_method', 'is_finalized', 'is_paid', 'created_at']
-    readonly_fields = ['serial_number', 'created_at', 'total_profit', 'total_standard_price']  # 🔴 اضافه شده
+    readonly_fields = ['serial_number', 'created_at', 'total_profit', 'total_standard_price']  # هر دو readonly
 
     fieldsets = (
         ('اطلاعات پایه', {
@@ -160,16 +160,52 @@ class InvoicefroshAdmin(admin.ModelAdmin):
         ('اطلاعات مشتری', {
             'fields': ('customer_name', 'customer_phone')
         }),
-        ('سود فاکتور', {
-            'fields': ('total_profit', 'total_standard_price')  # 🔴 اضافه شده
+        ('محاسبات قیمت', {
+            'fields': ('total_standard_price', 'total_profit')  # نمایش هر دو
         }),
     )
 
-    # 🔴 متد جدید برای نمایش در لیست
+    # متد برای نمایش مجموع قیمت معیار در لیست
     def total_standard_price_display(self, obj):
         return f"{obj.total_standard_price:,} تومان"
 
     total_standard_price_display.short_description = 'مجموع قیمت معیار'
+
+    # متد برای نمایش سود در لیست
+    def total_profit_display(self, obj):
+        return f"{obj.total_profit:,} تومان"
+
+    total_profit_display.short_description = 'سود فاکتور'
+# @admin.register(Invoicefrosh)
+# class InvoicefroshAdmin(admin.ModelAdmin):
+#     list_display = ['serial_number', 'branch', 'customer_name', 'total_amount',
+#                     'total_standard_price_display', 'total_profit',  # 🔴 اضافه شده
+#                     'payment_method', 'is_finalized', 'is_paid', 'created_at']
+#     list_filter = ['branch', 'payment_method', 'is_finalized', 'is_paid', 'created_at']
+#     readonly_fields = ['serial_number', 'created_at', 'total_profit', 'total_standard_price']  # 🔴 اضافه شده
+#
+#     fieldsets = (
+#         ('اطلاعات پایه', {
+#             'fields': ('serial_number', 'branch', 'created_by', 'created_at')
+#         }),
+#         ('اطلاعات پرداخت', {
+#             'fields': ('payment_method', 'pos_device', 'total_amount',
+#                        'total_without_discount', 'discount', 'paid_amount',
+#                        'is_finalized', 'is_paid', 'payment_date')
+#         }),
+#         ('اطلاعات مشتری', {
+#             'fields': ('customer_name', 'customer_phone')
+#         }),
+#         ('سود فاکتور', {
+#             'fields': ('total_profit', 'total_standard_price')  # 🔴 اضافه شده
+#         }),
+#     )
+#
+#     # 🔴 متد جدید برای نمایش در لیست
+#     def total_standard_price_display(self, obj):
+#         return f"{obj.total_standard_price:,} تومان"
+#
+#     total_standard_price_display.short_description = 'مجموع قیمت معیار'
 # @admin.register(Invoicefrosh)
 # class InvoicefroshAdmin(admin.ModelAdmin):
 #     list_display = ['serial_number', 'branch', 'customer_name', 'total_amount',
