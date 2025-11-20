@@ -566,17 +566,16 @@
             }
         }
         
-        .quantity-input[readonly] {
-            background-color: #f8f9fa !important;
-            cursor: not-allowed;
-            border-color: #dee2e6;
-            color: #6c757d;
-        }
         
-        .selling-price {
-            font-weight: bold;
-            color: var(--accent-color);
-        }
+        
+        
+        
+        .quantity-input[readonly] {
+    background-color: #f8f9fa !important;
+    cursor: not-allowed;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
     </style>
 </head>
 <body>
@@ -720,49 +719,46 @@
         </div>
 
         <!-- لیست کالاهای فاکتور -->
-        <table class="invoice-table">
-            <thead>
-                <tr>
-                    <th>نام کالا</th>
-                    <th>تعداد</th>
-                    <th>قیمت واحد</th>
-                    <th>قیمت فروش</th> <!-- تغییر عنوان به "قیمت فروش" -->
-                    <th>تخفیف آیتم</th>
-                    <th>قیمت کل</th>
-                    <th>عملیات</th>
-                </tr>
-            </thead>
-            <tbody id="invoice-items-list">
-                {% for item in items %}
-                <tr id="item-{{ item.product_id }}">
-                    <td>{{ item.product_name }}</td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm quantity-input"
-                               value="{{ item.quantity }}" min="1" readonly
-                               data-product-id="{{ item.product_id }}"
-                               style="width: 80px; display: inline-block; background-color: #f8f9fa;">
-                    </td>
-                    <td>{{ item.price|floatformat:"0" }} تومان</td>
-                    <td class="selling-price">
-                        {{ item.final_price|floatformat:"0" }} تومان <!-- نمایش قیمت فروش -->
-                    </td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm discount-input"
-                               value="{{ item.discount|default:0 }}" min="0"
-                               data-product-id="{{ item.product_id }}"
-                               style="width: 100px; display: inline-block;">
-                    </td>
-                    <td>{{ item.total|floatformat:"0" }} تومان</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" onclick="removeItem({{ item.product_id }})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
+<!-- در بخش لیست کالاهای فاکتور -->
+<table class="invoice-table">
+    <thead>
+        <tr>
+            <th>نام کالا</th>
+            <th>تعداد</th>  <!-- تغییر عنوان به "تعداد" ساده -->
+            <th>قیمت واحد</th>
+            <th>تخفیف آیتم</th>
+            <th>قیمت کل</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody id="invoice-items-list">
+        {% for item in items %}
+        <tr id="item-{{ item.product_id }}">
+            <td>{{ item.product_name }}</td>
+            <td>
+                <!-- تغییر این قسمت - اضافه کردن readonly -->
+                <input type="number" class="form-control form-control-sm quantity-input"
+                       value="{{ item.quantity }}" min="1" readonly
+                       data-product-id="{{ item.product_id }}"
+                       style="width: 80px; display: inline-block; background-color: #f8f9fa;">
+            </td>
+            <td>{{ item.price|floatformat:"0" }} تومان</td>
+            <td>
+                <input type="number" class="form-control form-control-sm discount-input"
+                       value="{{ item.discount|default:0 }}" min="0"
+                       data-product-id="{{ item.product_id }}"
+                       style="width: 100px; display: inline-block;">
+            </td>
+            <td>{{ item.total|floatformat:"0" }} تومان</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="removeItem({{ item.product_id }})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
         <!-- خلاصه فاکتور و تخفیف -->
         <div class="section-card summary-card">
             <h3 class="section-title"><i class="fas fa-calculator"></i> خلاصه فاکتور</h3>
@@ -1323,7 +1319,7 @@
     }
 
     // =============================================
-    // توابع محاسبات فاکتور - اصلاح شده
+    // توابع محاسبات فاکتور
     // =============================================
     function calculateInvoiceTotal() {
         let totalItems = 0;
@@ -1336,17 +1332,10 @@
                 const quantity = parseInt($(this).find('.quantity-input').val()) || 0;
                 const price = parseFloat($(this).find('.quantity-input').data('price')) || 0;
                 const discount = parseInt($(this).find('.discount-input').val()) || 0;
-                
-                // محاسبه قیمت فروش (قیمت نهایی پس از تخفیف)
-                const finalPrice = price; // در این حالت قیمت فروش همان قیمت واحد است
-                const itemTotal = (quantity * finalPrice) - discount;
 
                 totalItems += quantity;
                 totalWithoutDiscount += quantity * price;
                 itemsDiscount += discount;
-                
-                // به‌روزرسانی ستون قیمت فروش
-                $(this).find('td').eq(3).html(finalPrice.toLocaleString('fa-IR') + ' تومان');
             }
         });
 
@@ -1369,15 +1358,9 @@
         const quantity = parseInt(quantityInput.val()) || 0;
         const price = parseFloat(quantityInput.data('price')) || 0;
         const discount = parseInt(row.find('.discount-input').val()) || 0;
-        
-        // محاسبه قیمت فروش و قیمت کل
-        const finalPrice = price; // قیمت فروش همان قیمت واحد است
-        const total = (quantity * finalPrice) - discount;
+        const total = (quantity * price) - discount;
 
-        // به‌روزرسانی مقادیر
-        row.find('td').eq(3).html(finalPrice.toLocaleString('fa-IR') + ' تومان'); // قیمت فروش
-        row.find('td').eq(5).html(total.toLocaleString('fa-IR') + ' تومان'); // قیمت کل
-        
+        row.find('td').eq(4).text(total.toLocaleString('fa-IR') + ' تومان');
         calculateInvoiceTotal();
     }
 
@@ -1585,53 +1568,49 @@
     }
 
     function updateInvoiceTable(items) {
-        const tbody = $('#invoice-items-list');
-        tbody.empty();
+    const tbody = $('#invoice-items-list');
+    tbody.empty();
 
-        if (items.length === 0) {
-            tbody.append('<tr><td colspan="7" class="text-center text-muted py-3">هیچ کالایی در فاکتور وجود ندارد</td></tr>');
-            calculateInvoiceTotal();
-            return;
-        }
-
-        items.forEach(item => {
-            // محاسبه قیمت فروش و قیمت کل
-            const finalPrice = item.price; // قیمت فروش همان قیمت واحد است
-            const totalAmount = (item.quantity * finalPrice) - (item.discount || 0);
-
-            const row = `
-                <tr id="item-${item.product_id}">
-                    <td>${item.product_name}</td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm quantity-input"
-                               value="${item.quantity}" min="1" readonly
-                               data-product-id="${item.product_id}"
-                               data-price="${item.price}"
-                               style="width: 80px; display: inline-block; background-color: #f8f9fa;">
-                    </td>
-                    <td>${item.price.toLocaleString('fa-IR')} تومان</td>
-                    <td class="selling-price">
-                        ${finalPrice.toLocaleString('fa-IR')} تومان
-                    </td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm discount-input"
-                               value="${item.discount || 0}" min="0"
-                               data-product-id="${item.product_id}"
-                               style="width: 100px; display: inline-block;">
-                    </td>
-                    <td>${totalAmount.toLocaleString('fa-IR')} تومان</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" onclick="removeItem(${item.product_id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            tbody.append(row);
-        });
-
+    if (items.length === 0) {
+        tbody.append('<tr><td colspan="6" class="text-center text-muted py-3">هیچ کالایی در فاکتور وجود ندارد</td></tr>');
         calculateInvoiceTotal();
+        return;
     }
+
+    items.forEach(item => {
+        const totalAmount = (item.quantity * item.price) - (item.discount || 0);
+
+        const row = `
+            <tr id="item-${item.product_id}">
+                <td>${item.product_name}</td>
+                <td>
+                    <!-- اضافه کردن readonly در اینجا -->
+                    <input type="number" class="form-control form-control-sm quantity-input"
+                           value="${item.quantity}" min="1" readonly
+                           data-product-id="${item.product_id}"
+                           data-price="${item.price}"
+                           style="width: 80px; display: inline-block; background-color: #f8f9fa;">
+                </td>
+                <td>${item.price.toLocaleString('fa-IR')} تومان</td>
+                <td>
+                    <input type="number" class="form-control form-control-sm discount-input"
+                           value="${item.discount || 0}" min="0"
+                           data-product-id="${item.product_id}"
+                           style="width: 100px; display: inline-block;">
+                </td>
+                <td>${totalAmount.toLocaleString('fa-IR')} تومان</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="removeItem(${item.product_id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+
+    calculateInvoiceTotal();
+}
 
     function removeItem(productId) {
         if (!confirm('آیا از حذف این کالا اطمینان دارید؟')) return;
