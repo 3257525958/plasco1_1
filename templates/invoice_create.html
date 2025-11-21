@@ -1585,37 +1585,37 @@ body.processing #processing-overlay {
     let currentInvoiceId = null;
     let currentPaymentAmount = 0;
 
-    
-    
-    
-    
-    
+
+
+
+
+
      // =============================================
 // توابع مدیریت پردازش با Toast
 // =============================================
 function showProcessingModal(message = 'در حال ثبت فاکتور') {
     console.log('🔄 نمایش مودال پردازش مرکزی');
-    
+
     // تنظیم محتوای مودال برای حالت پردازش
     $('#payment-status-icon').html(`
         <div class="spinner-beautiful-large"></div>
     `);
-    
+
     $('#payment-status-message').html(`
         <div class="text-center">
             <h4 class="mb-3">${message}</h4>
             <p class="text-muted mb-4">لطفاً تا اتمام پردازش شکیبا باشید</p>
         </div>
     `);
-    
+
     // پنهان کردن جزئیات تراکنش
     $('#transaction-details').hide();
-    
+
     // پنهان کردن تمام دکمه‌ها
     $('#success-buttons').hide();
     $('#error-buttons').hide();
     $('#processing-buttons').hide();
-    
+
     // اضافه کردن نوار پیشرفت
     if ($('#processing-progress').length === 0) {
         $('#payment-status-message').after(`
@@ -1632,14 +1632,14 @@ function showProcessingModal(message = 'در حال ثبت فاکتور') {
             </div>
         `);
     }
-    
+
     // نمایش مودال
     const modal = new bootstrap.Modal(document.getElementById('paymentStatusModal'));
     modal.show();
-    
+
     // غیرفعال کردن صفحه
     disablePage();
-    
+
     return modal;
 }
 
@@ -1648,16 +1648,16 @@ function showProcessingModal(message = 'در حال ثبت فاکتور') {
  */
 function hideProcessingModal() {
     console.log('✅ پنهان کردن مودال پردازش');
-    
+
     // فعال کردن صفحه
     enablePage();
-    
+
     // پنهان کردن مودال
     const modal = bootstrap.Modal.getInstance(document.getElementById('paymentStatusModal'));
     if (modal) {
         modal.hide();
     }
-    
+
     // پاک کردن محتوای اضافه
     $('#processing-progress').remove();
 }
@@ -1672,18 +1672,18 @@ function showProcessingToast(message = 'در حال ثبت فاکتور') {
                 <div class="processing-content">
                     <!-- اسپینر زیبا -->
                     <div class="spinner-beautiful"></div>
-                    
+
                     <!-- متن و اطلاعات -->
                     <div class="processing-text">
                         <div class="processing-title">${message}<span class="processing-dots">...</span></div>
                         <div class="processing-subtitle">لطفاً چند لحظه صبر کنید</div>
-                        
+
                         <!-- نوار پیشرفت -->
                         <div class="progress-beautiful">
                             <div class="progress-beautiful-inner"></div>
                         </div>
                     </div>
-                    
+
                     <!-- آیکون اطلاعات -->
                     <div class="text-primary">
                         <i class="fas fa-file-invoice" style="font-size: 1.2rem;"></i>
@@ -1692,20 +1692,20 @@ function showProcessingToast(message = 'در حال ثبت فاکتور') {
             </div>
         </div>
     `);
-    
+
     // اضافه کردن انیمیشن ظهور
     toast.hide().appendTo('#toast-container').fadeIn(400);
-    
+
     // غیرفعال کردن صفحه
     disablePage();
-    
+
     return toast;
 }
 
 function disablePage() {
     $('body').addClass('processing');
     $('.btn').prop('disabled', true);
-    
+
     // ایجاد overlay
     if ($('#processing-overlay').length === 0) {
         $('body').append('<div id="processing-overlay"></div>');
@@ -1725,35 +1725,35 @@ function enablePage() {
  */
 function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') {
     console.log('📦 شروع ثبت فاکتور با مودال بزرگ');
-    
+
     // نمایش مودال پردازش
     const processingModal = showProcessingModal('در حال ثبت فاکتور');
-    
+
     // مراحل پردازش
     const steps = [
         'آماده‌سازی اطلاعات فاکتور',
-        'بررسی موجودی کالاها', 
+        'بررسی موجودی کالاها',
         'محاسبه تخفیف و مالیات',
         'ثبت نهایی در سیستم'
     ];
-    
+
     let currentStep = 0;
     const stepElements = $('.step');
-    
+
     // شبیه‌سازی مراحل پردازش
     const progressInterval = setInterval(() => {
         if (currentStep < steps.length) {
             // به‌روزرسانی مرحله فعال
             stepElements.removeClass('active');
             $(stepElements[currentStep]).addClass('active');
-            
+
             // به‌روزرسانی پیام
             $('#payment-status-message h4').text(steps[currentStep]);
-            
+
             currentStep++;
         }
     }, 1000);
-    
+
     // ارسال درخواست به سرور
     $.ajax({
         url: "{% url 'invoice_app:finalize_invoice_non_pos' %}",
@@ -1768,53 +1768,53 @@ function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') 
         headers: {'X-CSRFToken': getCookie('csrftoken')},
         success: function(data) {
             console.log('✅ پاسخ سرور دریافت شد:', data);
-            
+
             // متوقف کردن شبیه‌سازی مراحل
             clearInterval(progressInterval);
-            
+
             // علامت‌گذاری تمام مراحل به عنوان تکمیل شده
             stepElements.addClass('active');
             $('#payment-status-message h4').text('اتمام پردازش');
-            
+
             // تأخیر برای نمایش تکمیل پردازش
             setTimeout(() => {
                 hideProcessingModal();
-                
+
                 if (data.status === 'success') {
                     showToast('✅ فاکتور با موفقیت ثبت شد', 'success');
                     currentInvoiceId = data.invoice_id;
-                    
+
                     // هدایت به صفحه موفقیت
                     setTimeout(() => {
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
                     }, 1000);
-                    
+
                 } else {
                     showToast('❌ خطا در ثبت فاکتور: ' + data.message, 'error');
                 }
             }, 1500);
-            
+
         },
         error: function(xhr, status, error) {
             console.error('❌ خطای ارتباط با سرور:', error);
-            
+
             // متوقف کردن شبیه‌سازی مراحل
             clearInterval(progressInterval);
-            
+
             // نمایش حالت خطا
             $('#payment-status-icon').html('<i class="fas fa-exclamation-circle payment-error" style="font-size: 4rem;"></i>');
             $('#payment-status-message h4').html('خطا در پردازش').css('color', 'var(--danger-color)');
             $('.progress-bar-large').css('background', 'var(--danger-color)');
-            
+
             setTimeout(() => {
                 hideProcessingModal();
-                
+
                 let errorMessage = 'خطا در ارتباط با سرور';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage += ': ' + xhr.responseJSON.message;
                 }
-                
+
                 showToast(errorMessage, 'error');
             }, 2000);
         }
@@ -1823,28 +1823,28 @@ function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') 
 
 
 
-   
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  /**
  * بررسی اینکه آیا دستگاه پوز انتخاب شده پیش‌فرض است
  * 
@@ -1878,7 +1878,7 @@ function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') 
  */
 function processNonDefaultPosPayment(amount, posDeviceId) {
     console.log('💰 پردازش پرداخت برای پوز غیر پیش‌فرض:', { amount, posDeviceId });
-    
+
     const deviceName = $('#pos-device option:selected').text();
     if (confirm(`⚠️ آیا از ثبت این فاکتور با دستگاه پوز غیر پیش‌فرض اطمینان دارید؟\n\nدستگاه: ${deviceName}`)) {
         processInvoiceWithLoading('pos', amount, 'save_only');
@@ -1886,7 +1886,7 @@ function processNonDefaultPosPayment(amount, posDeviceId) {
 }
 /**
  * پردازش پرداخت برای پوز غیر پیش‌فرض
- 
+
     function processNonDefaultPosPayment(amount, posDeviceId) {
     console.log('💰 پردازش پرداخت برای پوز غیر پیش‌فرض:', { amount, posDeviceId });
     
@@ -2902,64 +2902,6 @@ function finalizeInvoice(action) {
     }
 }
 }
-{#function finalizeInvoice(action) {#}
-{#    console.log('🔄 شروع فرآیند ثبت فاکتور...');#}
-{##}
-{#    // اعتبارسنجی اولیه#}
-{#    if (!validateInvoiceBeforeSubmit()) {#}
-{#        return;#}
-{#    }#}
-{##}
-{#    const paymentMethod = currentPaymentMethod;#}
-{#    const amount = calculateInvoiceTotal().totalAmount;#}
-{##}
-{#    console.log('💳 روش پرداخت:', paymentMethod, 'مبلغ:', amount);#}
-{##}
-{#    // برای پرداخت POS#}
-{#    if (paymentMethod === 'pos') {#}
-{#        const posDeviceId = $('#pos-device').val();#}
-{#        #}
-{#        if (!posDeviceId) {#}
-{#            showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');#}
-{#            return;#}
-{#        }#}
-{##}
-{#        // بررسی آیا دستگاه پوز انتخاب شده، پیش‌فرض است؟#}
-{#        #}
-{#    // 🔥 اضافه کردن لاگ‌های تشخیصی بیشتر#}
-{#    const selectedOption = $('#pos-device option:selected');#}
-{#    console.log('🔍 دیباگ کامل دستگاه پوز:');#}
-{#    console.log('   - ID انتخاب شده:', posDeviceId);#}
-{#    console.log('   - متن گزینه:', selectedOption.text());#}
-{#    console.log('   - data-is-default:', selectedOption.data('is-default'));#}
-{#    console.log('   - HTML:', selectedOption.prop('outerHTML'));#}
-{#        #}
-{#    console.log('🎯 نتیجه نهایی بررسی پیش‌فرض:', isDefaultPos);#}
-{#        const isDefaultPos = checkIfDefaultPOS(posDeviceId);#}
-{#        console.log('🔍 دستگاه پوز پیش‌فرض است؟', isDefaultPos);#}
-{##}
-{#        if (isDefaultPos) {#}
-{#            // استفاده از فرآیند قدیمی برای پوز پیش‌فرض#}
-{#            processPosPayment(amount, posDeviceId);#}
-{#        } else {#}
-{#            // استفاده از فرآیند جدید برای پوز غیر پیش‌فرض#}
-{#            processNonDefaultPosPayment(amount, posDeviceId);#}
-{#        }#}
-{#    }#}
-{#    // برای سایر روش‌های پرداخت#}
-{#    else {#}
-{#        const methodNames = {#}
-{#            'cash': 'نقدی',#}
-{#            'check': 'چک', #}
-{#            'credit': 'نسیه'#}
-{#        };#}
-{#        const methodName = methodNames[paymentMethod] || paymentMethod;#}
-{#        #}
-{#        if (confirm(`⚠️ آیا از ثبت این فاکتور با روش پرداخت ${methodName} اطمینان دارید؟\n\nاین فاکتور ثبت نهایی خواهد شد.`)) {#}
-{#            processNonPosPayment(action, paymentMethod, amount);#}
-{#        }#}
-{#    }#}
-{#}#}
 
     // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
 function submitFinalInvoice(action, paymentMethod, amount) {
@@ -3054,9 +2996,8 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         $('#credit-invoice-total').text(invoiceTotal.toLocaleString('fa-IR'));
         updateCreditRemainingAmount();
     }
-    
-    
-    function saveCheckPayment() {
+
+function saveCheckPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با چک...');
     
     const formData = {
@@ -3082,7 +3023,10 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         }
     }
 
-    // نمایش مودال پردازش
+    // 🔴 ابتدا مودال چک را ببند
+    $('#checkPaymentModal').modal('hide');
+    
+    // سپس نمایش مودال پردازش
     const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت چک');
     
     // ارسال درخواست به سرور
@@ -3100,16 +3044,20 @@ function submitFinalInvoice(action, paymentMethod, amount) {
                 $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
                 $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
                 
-                // هدایت به صفحه چاپ بعد از 2 ثانیه
+                // 🔴 هدایت مستقیم به صفحه چاپ بدون تاخیر
                 setTimeout(() => {
                     hideProcessingModal();
-                    const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
-                    window.open(printUrl, '_blank');
-                    
-                    // هدایت به صفحه موفقیت
-                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
-                    window.location.href = successUrl;
-                }, 2000);
+                    if (data.invoice_id) {
+                        const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                        window.open(printUrl, '_blank');
+                        
+                        // هدایت به صفحه موفقیت
+                        const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                        window.location.href = successUrl;
+                    } else {
+                        showToast('خطا: شماره فاکتور دریافت نشد', 'error');
+                    }
+                }, 1000);
                 
             } else {
                 hideProcessingModal();
@@ -3124,7 +3072,7 @@ function submitFinalInvoice(action, paymentMethod, amount) {
     });
 }
 
-    function saveCreditPayment() {
+function saveCreditPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با نسیه...');
     
     const creditAmount = parseInt($('#credit-amount').val()) || 0;
@@ -3152,6 +3100,9 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         }
     }
 
+    // 🔴 ابتدا مودال نسیه را ببند
+    $('#creditPaymentModal').modal('hide');
+    
     // نمایش مودال پردازش
     const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت نسیه');
 
@@ -3170,16 +3121,20 @@ function submitFinalInvoice(action, paymentMethod, amount) {
                 $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
                 $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
                 
-                // هدایت به صفحه چاپ بعد از 2 ثانیه
+                // 🔴 هدایت مستقیم به صفحه چاپ بدون تاخیر
                 setTimeout(() => {
                     hideProcessingModal();
-                    const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
-                    window.open(printUrl, '_blank');
-                    
-                    // هدایت به صفحه موفقیت
-                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
-                    window.location.href = successUrl;
-                }, 2000);
+                    if (data.invoice_id) {
+                        const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                        window.open(printUrl, '_blank');
+                        
+                        // هدایت به صفحه موفقیت
+                        const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                        window.location.href = successUrl;
+                    } else {
+                        showToast('خطا: شماره فاکتور دریافت نشد', 'error');
+                    }
+                }, 1000);
                 
             } else {
                 hideProcessingModal();
@@ -3193,7 +3148,6 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         }
     });
 }
-
     // =============================================
     // تنظیم event listeners
     // =============================================
@@ -3410,7 +3364,7 @@ function submitFinalInvoice(action, paymentMethod, amount) {
 
 /**
  * ثبت فاکتور برای پرداخت‌های غیر از پوز
- 
+
 function processNonPosPayment(action, paymentMethod, amount) {
     console.log('📦 [NON-POS] ارسال درخواست ثبت فاکتور...', {
         action: action,
@@ -3482,7 +3436,7 @@ function processNonPosPayment(action, paymentMethod, amount) {
  */
 function processNonPosPayment(action, paymentMethod, amount) {
     console.log('💰 پردازش پرداخت غیر-POS:', { action, paymentMethod, amount });
-    
+
     // استفاده از تابع جدید با نمایش وضعیت
     processInvoiceWithLoading(paymentMethod, amount, action);
 }
@@ -3570,6 +3524,36 @@ window.processNonPosPayment = processNonPosPayment;
 window.saveCustomerInfoToSession = saveCustomerInfoToSession;
 window.saveDiscountToSession = saveDiscountToSession;
 window.savePaymentMethodToSession = savePaymentMethodToSession;
+
+// تابع برای دیباگ و لاگ‌گیری
+function debugAjaxResponse(xhr, url) {
+    console.log(`🔍 دیباگ پاسخ از ${url}:`);
+    console.log('   - Status:', xhr.status);
+    console.log('   - Response:', xhr.responseText);
+    console.log('   - ReadyState:', xhr.readyState);
+    
+    try {
+        const response = JSON.parse(xhr.responseText);
+        console.log('   - Parsed JSON:', response);
+        return response;
+    } catch (e) {
+        console.log('   - JSON Parse Error:', e);
+        return null;
+    }
+}
+
+// اصلاح توابع AJAX برای اضافه کردن دیباگ
+// در هر تابع AJAX، این خطوط را به success و error اضافه کنید:
+/*
+success: function(data, status, xhr) {
+    debugAjaxResponse(xhr, "save_check_payment");
+    // بقیه کدها...
+},
+error: function(xhr, status, error) {
+    debugAjaxResponse(xhr, "save_check_payment");
+    // بقیه کدها...
+}
+*/
     </script>
 </body>
 </html>
