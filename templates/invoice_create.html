@@ -699,20 +699,11 @@
                     <label for="pos-device">انتخاب دستگاه پوز:</label>
                     <select id="pos-device" class="form-control">
                         {% for device in pos_devices %}
-                            <option value="{{ device.id }}" 
-                                {% if default_pos and device.id == default_pos.id %}selected{% endif %}
-                                data-is-default="{% if default_pos and device.id == default_pos.id %}true{% else %}false{% endif %}">
+                            <option value="{{ device.id }}" {% if default_pos and device.id == default_pos.id %}selected{% endif %}>
                                 {{ device.name }} - {{ device.bank_name }}
-                                {% if device.is_default %}(پیش‌فرض){% endif %}
                             </option>
                         {% endfor %}
                     </select>
-                    {% if default_pos %}
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle"></i>
-                        دستگاه‌های غیرپیش‌فرض نیاز به تأیید جداگانه دارند
-                    </small>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -2149,77 +2140,6 @@
         }
     }
 
-    // =============================================
-    // توابع جدید برای بررسی نوع پوز و نمایش آلرت
-    // =============================================
-    function checkPaymentMethodAndProceed(action, paymentMethod, amount) {
-        console.log('🔍 بررسی روش پرداخت:', { 
-            paymentMethod, 
-            isPos: paymentMethod === 'pos',
-            isDefaultPos: isDefaultPosDeviceSelected()
-        });
-
-        // اگر روش پرداخت POS است و دستگاه پیش‌فرض نیست
-        if (paymentMethod === 'pos' && !isDefaultPosDeviceSelected()) {
-            if (confirm('⚠️ دستگاه پوز انتخاب شده پیش‌فرض نیست!\n\nآیا از ثبت این فاکتور با دستگاه پوز غیرپیش‌فرض مطمئن هستید؟')) {
-                console.log('✅ کاربر تأیید کرد - استفاده از finalize_invoice_non_pos');
-                processNonPosPayment(action, paymentMethod, amount);
-            } else {
-                console.log('❌ کاربر انصراف داد');
-                showToast('ثبت فاکتور لغو شد', 'warning');
-            }
-            return;
-        }
-
-        // اگر روش پرداخت POS و دستگاه پیش‌فرض است
-        if (paymentMethod === 'pos' && isDefaultPosDeviceSelected()) {
-            console.log('✅ دستگاه پوز پیش‌فرض - استفاده از finalize_invoice');
-            const posDeviceId = $('#pos-device').val();
-            processPosPayment(amount, posDeviceId);
-            return;
-        }
-
-        // برای سایر روش‌های پرداخت غیر از POS پیش‌فرض
-        if (paymentMethod !== 'pos') {
-            if (confirm('⚠️ آیا از ثبت این فاکتور با روش پرداخت ' + getPaymentMethodName(paymentMethod) + ' مطمئن هستید؟')) {
-                console.log('✅ کاربر تأیید کرد - استفاده از finalize_invoice_non_pos');
-                processNonPosPayment(action, paymentMethod, amount);
-            } else {
-                console.log('❌ کاربر انصراف داد');
-                showToast('ثبت فاکتور لغو شد', 'warning');
-            }
-            return;
-        }
-    }
-
-    // =============================================
-    // تابع بررسی آیا دستگاه پوز انتخاب شده پیش‌فرض است
-    // =============================================
-    function isDefaultPosDeviceSelected() {
-        const selectedDeviceId = parseInt($('#pos-device').val());
-        {% if default_pos %}
-            const defaultPosId = {{ default_pos.id }};
-            console.log('🔍 بررسی دستگاه پوز:', { selectedDeviceId, defaultPosId });
-            return selectedDeviceId === defaultPosId;
-        {% else %}
-            console.log('⚠️ هیچ دستگاه پوز پیش‌فرضی وجود ندارد');
-            return false;
-        {% endif %}
-    }
-
-    // =============================================
-    // تابع دریافت نام فارسی روش پرداخت
-    // =============================================
-    function getPaymentMethodName(method) {
-        const methodNames = {
-            'cash': 'نقدی',
-            'pos': 'دستگاه پوز',
-            'check': 'چک',
-            'credit': 'نسیه'
-        };
-        return methodNames[method] || method;
-    }
-
     function finalizeInvoice(action) {
         console.log('🔄 شروع فرآیند ثبت فاکتور...');
 
@@ -2233,145 +2153,86 @@
 
         console.log('💳 روش پرداخت:', paymentMethod, 'مبلغ:', amount);
 
-        // استفاده از تابع جدید برای بررسی روش پرداخت
-        checkPaymentMethodAndProceed(action, paymentMethod, amount);
+        // برای پرداخت POS از فرآیند جدید استفاده کن
+        if (paymentMethod === 'pos') {
+            const posDeviceId = $('#pos-device').val();
+            if (!posDeviceId) {
+                showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
+                return;
+            }
+
+            processPosPayment(amount, posDeviceId);
+        }
+        // برای سایر روش‌های پرداخت از تابع قدیمی استفاده کن
+        else if (paymentMethod === 'check') {
+            // نمایش مودال چک
+            $('#checkPaymentModal').modal('show');
+        }
+        else if (paymentMethod === 'credit') {
+            // نمایش مودال نسیه
+            $('#creditPaymentModal').modal('show');
+        }
+        else {
+            // برای نقدی و سایر روش‌ها
+            processNonPosPayment(action, paymentMethod, amount);
+        }
     }
 
-    // =============================================
-    // توابع جدید برای پرداخت‌های غیر-POS
-    // =============================================
+    // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
+function submitFinalInvoice(action, paymentMethod, amount) {
+    console.log('📦 ارسال درخواست ثبت فاکتور...', {
+        action: action,
+        paymentMethod: paymentMethod,
+        amount: amount
+    });
 
-    /**
-     * ثبت فاکتور برای پرداخت‌های غیر از پوز
-     */
-    function processNonPosPayment(action, paymentMethod, amount) {
-        console.log('📦 [NON-POS] ارسال درخواست ثبت فاکتور...', {
+    $.ajax({
+        url: "{% url 'invoice_app:finalize_invoice' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
             action: action,
-            paymentMethod: paymentMethod,
-            amount: amount
-        });
+            payment_method: paymentMethod,
+            paid_amount: amount,
+            timestamp: new Date().getTime()
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log('✅ پاسخ سرور:', data);
+            if (data.status === 'success') {
+                showToast('فاکتور با موفقیت ثبت شد', 'success');
+                currentInvoiceId = data.invoice_id;
 
-        // ذخیره تمام اطلاعات در session قبل از ارسال
-        saveCustomerInfoToSession();
-        saveDiscountToSession();
-        savePaymentMethodToSession(paymentMethod);
-
-        // لاگ اطلاعات
-        console.log('🔍 [NON-POS] اطلاعات ارسالی:');
-        console.log('   - مبلغ:', amount);
-        console.log('   - روش پرداخت:', paymentMethod);
-        console.log('   - نام مشتری:', $('#customer-name').val());
-        console.log('   - تلفن مشتری:', $('#customer-phone').val());
-        console.log('   - تخفیف کل:', $('#total-discount').val());
-
-        // ارسال درخواست
-        $.ajax({
-            url: "{% url 'invoice_app:finalize_invoice_non_pos' %}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                action: action,
-                payment_method: paymentMethod,
-                paid_amount: amount,  // اضافه کردن این فیلد
-                timestamp: new Date().getTime()
-            }),
-            headers: {'X-CSRFToken': getCookie('csrftoken')},
-            success: function(data) {
-                console.log('✅ [NON-POS] پاسخ سرور:', data);
-                
-                if (data.status === 'success') {
-                    showToast('فاکتور با موفقیت ثبت شد', 'success');
-                    currentInvoiceId = data.invoice_id;
-
-                    // هدایت به صفحه موفقیت
+                if (action === 'print_and_save') {
+                    const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                    window.open(printUrl, '_blank');
                     setTimeout(() => {
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
-                    }, 1500);
-                    
+                    }, 2000);
                 } else {
-                    showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
-                    console.error('❌ [NON-POS] خطا در ثبت فاکتور:', data.message);
+                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                    window.location.href = successUrl;
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('❌ [NON-POS] خطای AJAX:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                });
-                
-                let errorMessage = 'خطا در ارتباط با سرور';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage += ': ' + xhr.responseJSON.message;
-                }
-                showToast(errorMessage, 'error');
+            } else {
+                showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
+                console.error('❌ خطا در ثبت فاکتور:', data.message);
             }
-        });
-    }
-
-    /**
-     * ذخیره اطلاعات مشتری در session
-     */
-    function saveCustomerInfoToSession() {
-        const name = $('#customer-name').val();
-        const phone = $('#customer-phone').val();
-
-        $.ajax({
-            url: "{% url 'invoice_app:save_customer_info' %}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ 
-                customer_name: name, 
-                customer_phone: phone 
-            }),
-            headers: {'X-CSRFToken': getCookie('csrftoken')},
-            success: function(data) {
-                if (data.status === 'success') {
-                    console.log('✅ [NON-POS] اطلاعات مشتری ذخیره شد:', { name, phone });
-                }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ خطای AJAX:', {
+                status: status,
+                error: error,
+                response: xhr.responseText
+            });
+            let errorMessage = 'خطا در ارتباط با سرور';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage += ': ' + xhr.responseJSON.message;
             }
-        });
-    }
-
-    /**
-     * ذخیره تخفیف در session
-     */
-    function saveDiscountToSession() {
-        const discount = parseInt($('#total-discount').val()) || 0;
-
-        $.ajax({
-            url: "{% url 'invoice_app:save_discount' %}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ discount: discount }),
-            headers: {'X-CSRFToken': getCookie('csrftoken')},
-            success: function(data) {
-                if (data.status === 'success') {
-                    console.log('✅ [NON-POS] تخفیف ذخیره شد:', discount);
-                }
-            }
-        });
-    }
-
-    /**
-     * ذخیره روش پرداخت در session
-     */
-    function savePaymentMethodToSession(method) {
-        $.ajax({
-            url: "{% url 'invoice_app:save_payment_method' %}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ payment_method: method }),
-            headers: {'X-CSRFToken': getCookie('csrftoken')},
-            success: function(data) {
-                if (data.status === 'success') {
-                    console.log('✅ [NON-POS] روش پرداخت ذخیره شد:', method);
-                }
-            }
-        });
-    }
-
+            showToast(errorMessage, 'error');
+        }
+    });
+}
     // =============================================
     // توابع پرداخت چک و نسیه
     // =============================================
@@ -2457,7 +2318,7 @@
 
                         // ثبت نهایی فاکتور
                         setTimeout(() => {
-                            processNonPosPayment('save_only', 'check', formData.amount);
+                            submitFinalInvoice('save_only', 'check', formData.amount);
                         }, 1000);
                     } else {
                         showToast('خطا در ذخیره اطلاعات چک: ' + data.message, 'error');
@@ -2516,7 +2377,7 @@
                 // ثبت نهایی فاکتور
                 setTimeout(() => {
                     console.log("🟢 در حال ثبت نهایی فاکتور...");
-                    processNonPosPayment('save_only', 'credit', creditAmount);
+                    submitFinalInvoice('save_only', 'credit', creditAmount);
                 }, 1000);
             } else {
                 alert('خطا در ذخیره اطلاعات نسیه: ' + data.message);
@@ -2738,6 +2599,139 @@
         console.log("دکمه انصراف وجود دارد:", $('#cancel-invoice-btn').length > 0);
     });
 
+// =============================================
+// توابع جدید برای پرداخت‌های غیر-POS
+// =============================================
+
+/**
+ * ثبت فاکتور برای پرداخت‌های غیر از پوز
+ */
+function processNonPosPayment(action, paymentMethod, amount) {
+    console.log('📦 [NON-POS] ارسال درخواست ثبت فاکتور...', {
+        action: action,
+        paymentMethod: paymentMethod,
+        amount: amount
+    });
+
+    // ذخیره تمام اطلاعات در session قبل از ارسال
+    saveCustomerInfoToSession();
+    saveDiscountToSession();
+    savePaymentMethodToSession(paymentMethod);
+
+    // لاگ اطلاعات
+    console.log('🔍 [NON-POS] اطلاعات ارسالی:');
+    console.log('   - مبلغ:', amount);
+    console.log('   - روش پرداخت:', paymentMethod);
+    console.log('   - نام مشتری:', $('#customer-name').val());
+    console.log('   - تلفن مشتری:', $('#customer-phone').val());
+    console.log('   - تخفیف کل:', $('#total-discount').val());
+
+    // ارسال درخواست
+    $.ajax({
+        url: "{% url 'invoice_app:finalize_invoice_non_pos' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: action,
+            payment_method: paymentMethod,
+            paid_amount: amount,  // اضافه کردن این فیلد
+            timestamp: new Date().getTime()
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log('✅ [NON-POS] پاسخ سرور:', data);
+            
+            if (data.status === 'success') {
+                showToast('فاکتور با موفقیت ثبت شد', 'success');
+                currentInvoiceId = data.invoice_id;
+
+                // هدایت به صفحه موفقیت
+                setTimeout(() => {
+                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                    window.location.href = successUrl;
+                }, 1500);
+                
+            } else {
+                showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
+                console.error('❌ [NON-POS] خطا در ثبت فاکتور:', data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ [NON-POS] خطای AJAX:', {
+                status: status,
+                error: error,
+                response: xhr.responseText
+            });
+            
+            let errorMessage = 'خطا در ارتباط با سرور';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage += ': ' + xhr.responseJSON.message;
+            }
+            showToast(errorMessage, 'error');
+        }
+    });
+}
+/**
+ * ذخیره اطلاعات مشتری در session
+ */
+function saveCustomerInfoToSession() {
+    const name = $('#customer-name').val();
+    const phone = $('#customer-phone').val();
+
+    $.ajax({
+        url: "{% url 'invoice_app:save_customer_info' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ 
+            customer_name: name, 
+            customer_phone: phone 
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            if (data.status === 'success') {
+                console.log('✅ [NON-POS] اطلاعات مشتری ذخیره شد:', { name, phone });
+            }
+        }
+    });
+}
+
+/**
+ * ذخیره تخفیف در session
+ */
+function saveDiscountToSession() {
+    const discount = parseInt($('#total-discount').val()) || 0;
+
+    $.ajax({
+        url: "{% url 'invoice_app:save_discount' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ discount: discount }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            if (data.status === 'success') {
+                console.log('✅ [NON-POS] تخفیف ذخیره شد:', discount);
+            }
+        }
+    });
+}
+
+/**
+ * ذخیره روش پرداخت در session
+ */
+function savePaymentMethodToSession(method) {
+    $.ajax({
+        url: "{% url 'invoice_app:save_payment_method' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ payment_method: method }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            if (data.status === 'success') {
+                console.log('✅ [NON-POS] روش پرداخت ذخیره شد:', method);
+            }
+        }
+    });
+}
     // =============================================
     // قرار دادن توابع در scope جهانی
     // =============================================
@@ -2756,14 +2750,11 @@
     window.printCurrentInvoice = printCurrentInvoice;
     window.retryPayment = retryPayment;
     window.cancelPayment = cancelPayment;
-    window.processNonPosPayment = processNonPosPayment;
-    window.saveCustomerInfoToSession = saveCustomerInfoToSession;
-    window.saveDiscountToSession = saveDiscountToSession;
-    window.savePaymentMethodToSession = savePaymentMethodToSession;
-    // توابع جدید
-    window.checkPaymentMethodAndProceed = checkPaymentMethodAndProceed;
-    window.isDefaultPosDeviceSelected = isDefaultPosDeviceSelected;
-    window.getPaymentMethodName = getPaymentMethodName;
+    // در انتهای فایل، فقط توابع جدید را global کنید
+window.processNonPosPayment = processNonPosPayment;
+window.saveCustomerInfoToSession = saveCustomerInfoToSession;
+window.saveDiscountToSession = saveDiscountToSession;
+window.savePaymentMethodToSession = savePaymentMethodToSession;
     </script>
 </body>
 </html>
