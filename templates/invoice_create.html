@@ -2997,7 +2997,6 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         updateCreditRemainingAmount();
     }
 
-
 function saveCheckPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با چک...');
     
@@ -3015,8 +3014,6 @@ function saveCheckPayment() {
         'check_date': $('input[name="check_date"]').val()
     };
 
-    console.log('📋 داده‌های فرم:', formData);
-
     // اعتبارسنجی
     const requiredFields = ['owner_name', 'owner_family', 'national_id', 'phone', 'check_number', 'amount', 'check_date'];
     for (const field of requiredFields) {
@@ -3026,16 +3023,10 @@ function saveCheckPayment() {
         }
     }
 
-    // اعتبارسنجی تاریخ
-    if (!isValidJalaliDate(formData.check_date)) {
-        showToast('فرمت تاریخ نامعتبر است. لطفاً تاریخ را به صورت YYYY/MM/DD وارد کنید', 'error');
-        return;
-    }
-
-    // بستن مودال چک
+    // 🔴 ابتدا مودال چک را ببند
     $('#checkPaymentModal').modal('hide');
     
-    // نمایش مودال پردازش
+    // سپس نمایش مودال پردازش
     const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت چک');
     
     // ارسال درخواست به سرور
@@ -3053,13 +3044,14 @@ function saveCheckPayment() {
                 $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
                 $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
                 
-                // هدایت به صفحه چاپ
+                // 🔴 هدایت مستقیم به صفحه چاپ بدون تاخیر
                 setTimeout(() => {
                     hideProcessingModal();
                     if (data.invoice_id) {
                         const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
                         window.open(printUrl, '_blank');
                         
+                        // هدایت به صفحه موفقیت
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
                     } else {
@@ -3108,13 +3100,7 @@ function saveCreditPayment() {
         }
     }
 
-    // اعتبارسنجی تاریخ
-    if (!isValidJalaliDate(formData.due_date)) {
-        showToast('فرمت تاریخ نامعتبر است. لطفاً تاریخ را به صورت YYYY/MM/DD وارد کنید', 'error');
-        return;
-    }
-
-    // بستن مودال نسیه
+    // 🔴 ابتدا مودال نسیه را ببند
     $('#creditPaymentModal').modal('hide');
     
     // نمایش مودال پردازش
@@ -3135,13 +3121,14 @@ function saveCreditPayment() {
                 $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
                 $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
                 
-                // هدایت به صفحه چاپ
+                // 🔴 هدایت مستقیم به صفحه چاپ بدون تاخیر
                 setTimeout(() => {
                     hideProcessingModal();
                     if (data.invoice_id) {
                         const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
                         window.open(printUrl, '_blank');
                         
+                        // هدایت به صفحه موفقیت
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
                     } else {
