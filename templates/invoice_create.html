@@ -2211,7 +2211,6 @@
             window.location.href = "{% url 'invoice_app:invoice_cancel' %}";
         }
     }
-
 function finalizeInvoice(action) {
     console.log('🔄 شروع فرآیند ثبت فاکتور...');
 
@@ -2234,26 +2233,27 @@ function finalizeInvoice(action) {
             return;
         }
 
-        // بررسی آیا دستگاه پوز انتخاب شده، پیش‌فرض است؟
-        
-    // 🔥 اضافه کردن لاگ‌های تشخیصی بیشتر
-    const selectedOption = $('#pos-device option:selected');
-    console.log('🔍 دیباگ کامل دستگاه پوز:');
-    console.log('   - ID انتخاب شده:', posDeviceId);
-    console.log('   - متن گزینه:', selectedOption.text());
-    console.log('   - data-is-default:', selectedOption.data('is-default'));
-    console.log('   - HTML:', selectedOption.prop('outerHTML'));
-        
-    console.log('🎯 نتیجه نهایی بررسی پیش‌فرض:', isDefaultPos);
-        const isDefaultPos = checkIfDefaultPOS(posDeviceId);
-        console.log('🔍 دستگاه پوز پیش‌فرض است؟', isDefaultPos);
+        // 🔥 اول متغیر را تعریف کن
+        const isDefaultPos = isDefaultPosDevice(posDeviceId);
+
+        // 🔥 سپس لاگ کن
+        const selectedOption = $('#pos-device option:selected');
+        console.log('🔍 دیباگ کامل دستگاه پوز:');
+        console.log('   - ID انتخاب شده:', posDeviceId);
+        console.log('   - متن گزینه:', selectedOption.text());
+        console.log('   - data-is-default:', selectedOption.data('is-default'));
+        console.log('   - HTML:', selectedOption.prop('outerHTML'));
+        console.log('🎯 نتیجه نهایی بررسی پیش‌فرض:', isDefaultPos);
 
         if (isDefaultPos) {
-            // استفاده از فرآیند قدیمی برای پوز پیش‌فرض
+            console.log('🚀 استفاده از فرآیند پرداخت کامل POS');
             processPosPayment(amount, posDeviceId);
         } else {
-            // استفاده از فرآیند جدید برای پوز غیر پیش‌فرض
-            processNonDefaultPosPayment(amount, posDeviceId);
+            console.log('📝 استفاده از فرآیند ثبت ساده فاکتور');
+            const deviceName = $('#pos-device option:selected').text();
+            if (confirm(`⚠️ آیا از ثبت این فاکتور با دستگاه پوز غیر پیش‌فرض اطمینان دارید؟\n\nدستگاه: ${deviceName}`)) {
+                processNonPosPayment('save_only', 'pos', amount);
+            }
         }
     }
     // برای سایر روش‌های پرداخت
@@ -2270,6 +2270,64 @@ function finalizeInvoice(action) {
         }
     }
 }
+{#function finalizeInvoice(action) {#}
+{#    console.log('🔄 شروع فرآیند ثبت فاکتور...');#}
+{##}
+{#    // اعتبارسنجی اولیه#}
+{#    if (!validateInvoiceBeforeSubmit()) {#}
+{#        return;#}
+{#    }#}
+{##}
+{#    const paymentMethod = currentPaymentMethod;#}
+{#    const amount = calculateInvoiceTotal().totalAmount;#}
+{##}
+{#    console.log('💳 روش پرداخت:', paymentMethod, 'مبلغ:', amount);#}
+{##}
+{#    // برای پرداخت POS#}
+{#    if (paymentMethod === 'pos') {#}
+{#        const posDeviceId = $('#pos-device').val();#}
+{#        #}
+{#        if (!posDeviceId) {#}
+{#            showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');#}
+{#            return;#}
+{#        }#}
+{##}
+{#        // بررسی آیا دستگاه پوز انتخاب شده، پیش‌فرض است؟#}
+{#        #}
+{#    // 🔥 اضافه کردن لاگ‌های تشخیصی بیشتر#}
+{#    const selectedOption = $('#pos-device option:selected');#}
+{#    console.log('🔍 دیباگ کامل دستگاه پوز:');#}
+{#    console.log('   - ID انتخاب شده:', posDeviceId);#}
+{#    console.log('   - متن گزینه:', selectedOption.text());#}
+{#    console.log('   - data-is-default:', selectedOption.data('is-default'));#}
+{#    console.log('   - HTML:', selectedOption.prop('outerHTML'));#}
+{#        #}
+{#    console.log('🎯 نتیجه نهایی بررسی پیش‌فرض:', isDefaultPos);#}
+{#        const isDefaultPos = checkIfDefaultPOS(posDeviceId);#}
+{#        console.log('🔍 دستگاه پوز پیش‌فرض است؟', isDefaultPos);#}
+{##}
+{#        if (isDefaultPos) {#}
+{#            // استفاده از فرآیند قدیمی برای پوز پیش‌فرض#}
+{#            processPosPayment(amount, posDeviceId);#}
+{#        } else {#}
+{#            // استفاده از فرآیند جدید برای پوز غیر پیش‌فرض#}
+{#            processNonDefaultPosPayment(amount, posDeviceId);#}
+{#        }#}
+{#    }#}
+{#    // برای سایر روش‌های پرداخت#}
+{#    else {#}
+{#        const methodNames = {#}
+{#            'cash': 'نقدی',#}
+{#            'check': 'چک', #}
+{#            'credit': 'نسیه'#}
+{#        };#}
+{#        const methodName = methodNames[paymentMethod] || paymentMethod;#}
+{#        #}
+{#        if (confirm(`⚠️ آیا از ثبت این فاکتور با روش پرداخت ${methodName} اطمینان دارید؟\n\nاین فاکتور ثبت نهایی خواهد شد.`)) {#}
+{#            processNonPosPayment(action, paymentMethod, amount);#}
+{#        }#}
+{#    }#}
+{#}#}
 
     // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
 function submitFinalInvoice(action, paymentMethod, amount) {
