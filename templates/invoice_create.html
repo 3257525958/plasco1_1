@@ -1589,7 +1589,6 @@ body.processing #processing-overlay {
 
 
 
-
      // =============================================
 // توابع مدیریت پردازش با Toast
 // =============================================
@@ -1723,7 +1722,7 @@ function enablePage() {
 /**
  * ثبت فاکتور با نمایش مودال پردازش بزرگ
  */
-function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') {
+    function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') {
     console.log('📦 شروع ثبت فاکتور با مودال بزرگ');
 
     // نمایش مودال پردازش
@@ -1820,41 +1819,6 @@ function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') 
         }
     });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- /**
- * بررسی اینکه آیا دستگاه پوز انتخاب شده پیش‌فرض است
- * 
- * 
- */
-
-
-/**
- * نمایش Toast وضعیت پردازش زیبا
- */
 // 🔥 فقط این تابع جدید را اضافه کنید - بقیه کدها بدون تغییر می‌مانند
     function isDefaultPosDevice(deviceId) {
     console.log('🔍 تشخیص دستگاه پیش‌فرض - نسخه ساده');
@@ -1876,7 +1840,7 @@ function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') 
 /**
  * پردازش پرداخت برای پوز غیر پیش‌فرض
  */
-function processNonDefaultPosPayment(amount, posDeviceId) {
+    function processNonDefaultPosPayment(amount, posDeviceId) {
     console.log('💰 پردازش پرداخت برای پوز غیر پیش‌فرض:', { amount, posDeviceId });
 
     const deviceName = $('#pos-device option:selected').text();
@@ -2574,14 +2538,22 @@ function processNonDefaultPosPayment(amount, posDeviceId) {
             });
         }
     }
-
     function showAllPOSDevices() {
-        if ($('#pos-devices-list .card').length > 0) {
+    console.log('📱 نمایش دستگاه‌های پوز موجود');
+    
+    const deviceCount = $('#pos-devices-list .card').length;
+    console.log(`تعداد دستگاه‌های یافت شده: ${deviceCount}`);
+    
+    if (deviceCount > 0) {
+        $('#posDeviceModal').modal('show');
+    } else {
+        showToast('هیچ دستگاه پوزی ثبت نشده است. لطفا ابتدا یک دستگاه اضافه کنید.', 'warning');
+        // نمایش خودکار مودال برای افزودن دستگاه
+        setTimeout(() => {
             $('#posDeviceModal').modal('show');
-        } else {
-            showToast('هیچ دستگاه پوزی ثبت نشده است. لطفا ابتدا یک دستگاه اضافه کنید.', 'warning');
-        }
+        }, 1000);
     }
+}
 
     // =============================================
     // توابع مدیریت وضعیت پرداخت
@@ -2842,7 +2814,7 @@ function processNonDefaultPosPayment(amount, posDeviceId) {
             window.location.href = "{% url 'invoice_app:invoice_cancel' %}";
         }
     }
-function finalizeInvoice(action) {
+    function finalizeInvoice(action) {
     console.log('🔄 شروع فرآیند ثبت فاکتور...');
 
     // اعتبارسنجی اولیه
@@ -2904,7 +2876,7 @@ function finalizeInvoice(action) {
 }
 
     // تابع ارسال نهایی فاکتور برای روش‌های غیر POS
-function submitFinalInvoice(action, paymentMethod, amount) {
+    function submitFinalInvoice(action, paymentMethod, amount) {
     console.log('📦 ارسال درخواست ثبت فاکتور...', {
         action: action,
         paymentMethod: paymentMethod,
@@ -2997,7 +2969,7 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         updateCreditRemainingAmount();
     }
 
-function saveCheckPayment() {
+    function saveCheckPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با چک...');
     
     const formData = {
@@ -3072,7 +3044,7 @@ function saveCheckPayment() {
     });
 }
 
-function saveCreditPayment() {
+    function saveCreditPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با نسیه...');
     
     const creditAmount = parseInt($('#credit-amount').val()) || 0;
@@ -3273,11 +3245,29 @@ function saveCreditPayment() {
         });
 
         // مدیریت دستگاه‌های POS
-        $(document).on('click', '.delete-device-btn', function() {
-            const deviceId = $(this).data('device-id');
-            deletePosDevice(deviceId);
-        });
+    // 🔥 اصلاح بخش مدیریت دستگاه‌های POS - اضافه کردن این کدها
+    $(document).on('click', '#addDeviceButton', function(e) {
+        e.preventDefault();
+        console.log('🟢 دکمه افزودن دستگاه کلیک شد');
+        addPosDevice();
+    });
 
+    $(document).on('click', '.delete-device-btn', function(e) {
+        e.preventDefault();
+        const deviceId = $(this).data('device-id');
+        console.log('🟢 دکمه حذف دستگاه کلیک شد:', deviceId);
+        deletePosDevice(deviceId);
+    });
+
+    $(document).on('click', '.set-default-btn', function(e) {
+        e.preventDefault();
+        const deviceId = $(this).data('device-id');
+        console.log('🟢 دکمه تنظیم پیش‌فرض کلیک شد:', deviceId);
+        setDefaultPosDevice(deviceId);
+    });
+    
+    
+    
         $(document).on('click', '.set-default-btn', function() {
             const deviceId = $(this).data('device-id');
             setDefaultPosDevice(deviceId);
@@ -3333,6 +3323,27 @@ function saveCreditPayment() {
 
         // تنظیم event listeners برای دکمه‌ها
         setupButtonListeners();
+        
+            // 🔥 اضافه کردن event listeners برای دستگاه‌های پوز
+    $(document).on('click', '#addDeviceButton', function(e) {
+        e.preventDefault();
+        console.log('🟢 دکمه افزودن دستگاه کلیک شد');
+        addPosDevice();
+    });
+
+    $(document).on('click', '.delete-device-btn', function(e) {
+        e.preventDefault();
+        const deviceId = $(this).data('device-id');
+        console.log('🟢 دکمه حذف دستگاه کلیک شد:', deviceId);
+        deletePosDevice(deviceId);
+    });
+
+    $(document).on('click', '.set-default-btn', function(e) {
+        e.preventDefault();
+        const deviceId = $(this).data('device-id');
+        console.log('🟢 دکمه تنظیم پیش‌فرض کلیک شد:', deviceId);
+        setDefaultPosDevice(deviceId);
+    });
 
         // تنظیم روش پرداخت پیش‌فرض
         if (!currentPaymentMethod || currentPaymentMethod === 'None') {
