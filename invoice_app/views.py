@@ -497,21 +497,24 @@ def save_check_payment(request):
                 if not data.get(field):
                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
 
-            # 🔴 تبدیل ساده تاریخ شمسی به میلادی
-            check_date = data.get('check_date')
+            # تبدیل تاریخ شمسی به میلادی
+            check_date_str = data.get('check_date')
             try:
-                # اگر تاریخ به فرمت YYYY/MM/DD هست، تبدیل کن
-                if '/' in check_date:
-                    year, month, day = map(int, check_date.split('/'))
-                    check_date_gregorian = jdatetime.date(year, month, day).togregorian()
+                if check_date_str and '/' in check_date_str:
+                    parts = check_date_str.split('/')
+                    if len(parts) == 3:
+                        year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+                        jalali_date = jdatetime.date(year, month, day)
+                        gregorian_date = jalali_date.togregorian()
+                        check_date_final = gregorian_date
+                    else:
+                        check_date_final = check_date_str
                 else:
-                    # اگر قبلاً میلادی هست، همون رو استفاده کن
-                    check_date_gregorian = check_date
-            except:
-                # اگر خطا داشت، از همون تاریخ استفاده کن
-                check_date_gregorian = check_date
+                    check_date_final = check_date_str
+            except Exception as e:
+                print(f"⚠️ خطا در تبدیل تاریخ: {e}")
+                check_date_final = check_date_str
 
-            # بقیه کدهای قبلی که کار می‌کرد بدون تغییر:
             items = request.session.get('invoice_items', [])
             if not items:
                 return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
@@ -524,7 +527,36 @@ def save_check_payment(request):
             if not branch_id:
                 return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
 
-            # ایجاد فاکتور
+            # 🔴 محاسبه مجموع قیمت معیار - اضافه شده
+            total_standard_price = 0
+            product_ids = [item['product_id'] for item in items]
+            products = InventoryCount.objects.filter(id__in=product_ids)
+            product_names = [product.product_name for product in products]
+
+            try:
+                from account_app.models import ProductPricing
+                pricings = ProductPricing.objects.filter(product_name__in=product_names)
+                pricing_dict = {p.product_name: p.standard_price for p in pricings}
+            except Exception as e:
+                print(f"⚠️ خطا در دریافت قیمت‌های معیار: {e}")
+                pricing_dict = {}
+
+            product_dict = {p.id: p for p in products}
+
+            for item_data in items:
+                product = product_dict.get(item_data['product_id'])
+                if not product:
+                    continue
+
+                standard_price = pricing_dict.get(product.product_name, 0)
+                if standard_price is None:
+                    standard_price = 0
+
+                total_standard_price += standard_price * item_data['quantity']
+
+            print(f"💰 مجموع قیمت معیار محاسبه شد: {total_standard_price}")
+
+            # ایجاد فاکتور با قیمت معیار محاسبه شده
             invoice = Invoicefrosh.objects.create(
                 branch_id=branch_id,
                 created_by=request.user,
@@ -537,26 +569,35 @@ def save_check_payment(request):
                 customer_name=request.session.get('customer_name', ''),
                 customer_phone=request.session.get('customer_phone', ''),
                 paid_amount=int(data.get('amount', 0)),
-                total_standard_price=0
+                total_standard_price=total_standard_price  # 🔴 حالا مقدار صحیح محاسبه شده
             )
 
-            # ثبت آیتم‌های فاکتور
+            # ثبت آیتم‌های فاکتور با قیمت معیار
+            invoice_items = []
             for item_data in items:
-                try:
-                    product = InventoryCount.objects.get(id=item_data['product_id'])
-                    InvoiceItemfrosh.objects.create(
-                        invoice=invoice,
-                        product=product,
-                        quantity=item_data['quantity'],
-                        price=item_data['price'],
-                        total_price=(item_data['quantity'] * item_data['price']) - item_data.get('discount', 0),
-                        discount=item_data.get('discount', 0)
-                    )
-                    # کاهش موجودی
-                    product.quantity -= item_data['quantity']
-                    product.save()
-                except InventoryCount.DoesNotExist:
-                    print(f"⚠️ محصول با ID {item_data['product_id']} یافت نشد")
+                product = product_dict.get(item_data['product_id'])
+                if not product:
+                    continue
+
+                item_total_price = (item_data['quantity'] * item_data['price']) - item_data.get('discount', 0)
+                standard_price = pricing_dict.get(product.product_name, 0)
+
+                invoice_items.append(InvoiceItemfrosh(
+                    invoice=invoice,
+                    product=product,
+                    quantity=item_data['quantity'],
+                    price=item_data['price'],
+                    total_price=item_total_price,
+                    standard_price=standard_price,  # 🔴 قیمت معیار برای هر آیتم
+                    discount=item_data.get('discount', 0)
+                ))
+
+                # کاهش موجودی
+                product.quantity -= item_data['quantity']
+                product.save()
+
+            # bulk create برای آیتم‌ها
+            InvoiceItemfrosh.objects.bulk_create(invoice_items)
 
             # ثبت اطلاعات چک
             check_payment = CheckPayment.objects.create(
@@ -570,7 +611,7 @@ def save_check_payment(request):
                 amount=int(data.get('amount', 0)),
                 remaining_amount=int(data.get('remaining_amount', 0)),
                 remaining_payment_method=data.get('remaining_payment_method', 'cash'),
-                check_date=check_date_gregorian  # استفاده از تاریخ تبدیل شده
+                check_date=check_date_final
             )
 
             if data.get('remaining_payment_method') == 'pos' and data.get('remaining_pos_device_id'):
@@ -585,12 +626,15 @@ def save_check_payment(request):
                     del request.session[key]
 
             print(f"✅ فاکتور چک با موفقیت ثبت شد. شماره فاکتور: {invoice.id}")
+            print(f"💰 قیمت معیار: {total_standard_price}, سود: {invoice.total_profit}")
 
             return JsonResponse({
                 'status': 'success',
                 'message': 'اطلاعات چک و فاکتور با موفقیت ثبت شد',
                 'invoice_id': invoice.id,
-                'check_id': check_payment.id
+                'check_id': check_payment.id,
+                'total_standard_price': total_standard_price,
+                'total_profit': invoice.total_profit
             })
 
         except Exception as e:
@@ -615,28 +659,143 @@ def save_credit_payment(request):
                 if not data.get(field):
                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
 
-            # 🔴 تبدیل ساده تاریخ شمسی به میلادی برای نسیه
-            due_date = data.get('due_date')
+            # تبدیل تاریخ شمسی به میلادی
+            due_date_str = data.get('due_date')
             try:
-                # اگر تاریخ به فرمت YYYY/MM/DD هست، تبدیل کن
-                if '/' in due_date:
-                    year, month, day = map(int, due_date.split('/'))
-                    due_date_gregorian = jdatetime.date(year, month, day).togregorian()
+                if due_date_str and '/' in due_date_str:
+                    parts = due_date_str.split('/')
+                    if len(parts) == 3:
+                        year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+                        jalali_date = jdatetime.date(year, month, day)
+                        gregorian_date = jalali_date.togregorian()
+                        due_date_final = gregorian_date
+                    else:
+                        due_date_final = due_date_str
                 else:
-                    # اگر قبلاً میلادی هست، همون رو استفاده کن
-                    due_date_gregorian = due_date
-            except:
-                # اگر خطا داشت، از همون تاریخ استفاده کن
-                due_date_gregorian = due_date
+                    due_date_final = due_date_str
+            except Exception as e:
+                print(f"⚠️ خطا در تبدیل تاریخ: {e}")
+                due_date_final = due_date_str
 
-            # بقیه کدهای قبلی بدون تغییر...
-            # [کدهای موجود برای ثبت فاکتور و آیتم‌ها]
+            items = request.session.get('invoice_items', [])
+            if not items:
+                return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
+
+            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
+            discount = request.session.get('discount', 0)
+            total_amount = max(0, total_amount - discount)
+
+            branch_id = request.session.get('branch_id')
+            if not branch_id:
+                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
+
+            # 🔴 محاسبه مجموع قیمت معیار - اضافه شده
+            total_standard_price = 0
+            product_ids = [item['product_id'] for item in items]
+            products = InventoryCount.objects.filter(id__in=product_ids)
+            product_names = [product.product_name for product in products]
+
+            try:
+                from account_app.models import ProductPricing
+                pricings = ProductPricing.objects.filter(product_name__in=product_names)
+                pricing_dict = {p.product_name: p.standard_price for p in pricings}
+            except Exception as e:
+                print(f"⚠️ خطا در دریافت قیمت‌های معیار: {e}")
+                pricing_dict = {}
+
+            product_dict = {p.id: p for p in products}
+
+            for item_data in items:
+                product = product_dict.get(item_data['product_id'])
+                if not product:
+                    continue
+
+                standard_price = pricing_dict.get(product.product_name, 0)
+                if standard_price is None:
+                    standard_price = 0
+
+                total_standard_price += standard_price * item_data['quantity']
+
+            print(f"💰 مجموع قیمت معیار محاسبه شد: {total_standard_price}")
+
+            # ایجاد فاکتور با قیمت معیار محاسبه شده
+            invoice = Invoicefrosh.objects.create(
+                branch_id=branch_id,
+                created_by=request.user,
+                payment_method='credit',
+                total_amount=total_amount,
+                total_without_discount=sum(item['total'] for item in items),
+                discount=discount + sum(item.get('discount', 0) for item in items),
+                is_finalized=True,
+                is_paid=False,
+                customer_name=data.get('customer_name', ''),
+                customer_phone=data.get('phone', ''),
+                paid_amount=int(data.get('credit_amount', 0)),
+                total_standard_price=total_standard_price  # 🔴 حالا مقدار صحیح محاسبه شده
+            )
+
+            # ثبت آیتم‌های فاکتور با قیمت معیار
+            invoice_items = []
+            for item_data in items:
+                product = product_dict.get(item_data['product_id'])
+                if not product:
+                    continue
+
+                item_total_price = (item_data['quantity'] * item_data['price']) - item_data.get('discount', 0)
+                standard_price = pricing_dict.get(product.product_name, 0)
+
+                invoice_items.append(InvoiceItemfrosh(
+                    invoice=invoice,
+                    product=product,
+                    quantity=item_data['quantity'],
+                    price=item_data['price'],
+                    total_price=item_total_price,
+                    standard_price=standard_price,  # 🔴 قیمت معیار برای هر آیتم
+                    discount=item_data.get('discount', 0)
+                ))
+
+                # کاهش موجودی
+                product.quantity -= item_data['quantity']
+                product.save()
+
+            # bulk create برای آیتم‌ها
+            InvoiceItemfrosh.objects.bulk_create(invoice_items)
+
+            # ثبت اطلاعات نسیه
+            credit_payment = CreditPayment.objects.create(
+                invoice=invoice,
+                customer_name=data.get('customer_name', '').strip(),
+                customer_family=data.get('customer_family', '').strip(),
+                national_id=data.get('national_id', '').strip(),
+                address=data.get('address', '').strip(),
+                phone=data.get('phone', '').strip(),
+                due_date=due_date_final,
+                credit_amount=int(data.get('credit_amount', 0)),
+                remaining_amount=int(data.get('remaining_amount', 0)),
+                remaining_payment_method=data.get('remaining_payment_method', 'cash')
+            )
+
+            if data.get('remaining_payment_method') == 'pos' and data.get('remaining_pos_device_id'):
+                credit_payment.pos_device_id = data.get('remaining_pos_device_id')
+                credit_payment.save()
+
+            # پاکسازی session
+            session_keys = ['invoice_items', 'customer_name', 'customer_phone',
+                            'payment_method', 'discount', 'pos_device_id', 'credit_payment_data']
+            for key in session_keys:
+                if key in request.session:
+                    del request.session[key]
+
+            print(f"✅ فاکتور نسیه با موفقیت ثبت شد. شماره فاکتور: {invoice.id}")
+            print(f"💰 قیمت معیار: {total_standard_price}, سود: {invoice.total_profit}")
 
             return JsonResponse({
                 'status': 'success',
                 'message': 'اطلاعات نسیه و فاکتور با موفقیت ثبت شد',
                 'invoice_id': invoice.id,
-                'credit_id': credit_payment.id
+                'credit_id': credit_payment.id,
+                'total_standard_price': total_standard_price,
+                'total_profit': invoice.total_profit
             })
 
         except Exception as e:
@@ -644,7 +803,6 @@ def save_credit_payment(request):
             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
 
     return JsonResponse({'status': 'error'})
-
 
 # @login_required
 # @csrf_exempt
