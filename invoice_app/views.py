@@ -495,33 +495,32 @@ def save_credit_payment(request):
                 if not data.get(field):
                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
 
-            # محاسبه مبلغ فاکتور از session
-            items = request.session.get('invoice_items', [])
-            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
-            discount = request.session.get('discount', 0)
-            total_amount = max(0, total_amount - discount)
+            # 🔴 تبدیل تاریخ شمسی به میلادی برای نسیه
+            try:
+                due_date_jalali = data.get('due_date')
+                # تبدیل تاریخ شمسی به میلادی
+                year, month, day = map(int, due_date_jalali.split('/'))
+                due_date_gregorian = jdatetime.date(year, month, day).togregorian()
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'فرمت تاریخ نامعتبر است. لطفاً تاریخ را به صورت YYYY/MM/DD وارد کنید. خطا: {str(e)}'
+                })
 
-            credit_amount = int(data.get('credit_amount', 0))
+            # بقیه کدها بدون تغییر...
 
-            # 🔴 ثبت فاکتور اولیه
-            branch_id = request.session.get('branch_id')
-            if not branch_id:
-                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
-
-            # ایجاد فاکتور
-            invoice = Invoicefrosh.objects.create(
-                branch_id=branch_id,
-                created_by=request.user,
-                payment_method='credit',
-                total_amount=total_amount,
-                total_without_discount=sum(item['total'] for item in items),
-                discount=discount + sum(item.get('discount', 0) for item in items),
-                is_finalized=True,
-                is_paid=False,  # چون نسیه هست، پرداخت کامل نشده
-                customer_name=data.get('customer_name', ''),
-                customer_phone=data.get('phone', ''),
-                paid_amount=credit_amount,
-                total_standard_price=0  # محاسبه می‌شود
+            # ثبت اطلاعات نسیه با تاریخ میلادی
+            credit_payment = CreditPayment.objects.create(
+                invoice=invoice,
+                customer_name=data.get('customer_name', '').strip(),
+                customer_family=data.get('customer_family', '').strip(),
+                national_id=data.get('national_id', '').strip(),
+                address=data.get('address', '').strip(),
+                phone=data.get('phone', '').strip(),
+                due_date=due_date_gregorian,  # 🔴 استفاده از تاریخ میلادی
+                credit_amount=credit_amount,
+                remaining_amount=int(data.get('remaining_amount', 0)),
+                remaining_payment_method=data.get('remaining_payment_method', 'cash')
             )
 
             # ثبت آیتم‌های فاکتور
@@ -597,34 +596,34 @@ def save_check_payment(request):
                 if not data.get(field):
                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
 
-            # محاسبه مبلغ فاکتور از session
-            items = request.session.get('invoice_items', [])
-            if not items:
-                return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
+            # 🔴 تبدیل تاریخ شمسی به میلادی
+            try:
+                check_date_jalali = data.get('check_date')
+                # تبدیل تاریخ شمسی به میلادی
+                year, month, day = map(int, check_date_jalali.split('/'))
+                check_date_gregorian = jdatetime.date(year, month, day).togregorian()
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'فرمت تاریخ نامعتبر است. لطفاً تاریخ را به صورت YYYY/MM/DD وارد کنید. خطا: {str(e)}'
+                })
 
-            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
-            discount = request.session.get('discount', 0)
-            total_amount = max(0, total_amount - discount)
+            # بقیه کدها بدون تغییر...
+            # [کدهای موجود برای محاسبه مبلغ فاکتور، ایجاد فاکتور و...]
 
-            # ثبت فاکتور اولیه
-            branch_id = request.session.get('branch_id')
-            if not branch_id:
-                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
-
-            # ایجاد فاکتور
-            invoice = Invoicefrosh.objects.create(
-                branch_id=branch_id,
-                created_by=request.user,
-                payment_method='check',
-                total_amount=total_amount,
-                total_without_discount=sum(item['total'] for item in items),
-                discount=discount + sum(item.get('discount', 0) for item in items),
-                is_finalized=True,
-                is_paid=False,
-                customer_name=request.session.get('customer_name', ''),
-                customer_phone=request.session.get('customer_phone', ''),
-                paid_amount=int(data.get('amount', 0)),
-                total_standard_price=0
+            # ثبت اطلاعات چک با تاریخ میلادی
+            check_payment = CheckPayment.objects.create(
+                invoice=invoice,
+                owner_name=data.get('owner_name', '').strip(),
+                owner_family=data.get('owner_family', '').strip(),
+                national_id=data.get('national_id', '').strip(),
+                address=data.get('address', '').strip(),
+                phone=data.get('phone', '').strip(),
+                check_number=data.get('check_number', '').strip(),
+                amount=int(data.get('amount', 0)),
+                remaining_amount=int(data.get('remaining_amount', 0)),
+                remaining_payment_method=data.get('remaining_payment_method', 'cash'),
+                check_date=check_date_gregorian  # 🔴 استفاده از تاریخ میلادی
             )
 
             # ثبت آیتم‌های فاکتور

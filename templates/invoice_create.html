@@ -2997,6 +2997,7 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         updateCreditRemainingAmount();
     }
 
+
 function saveCheckPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با چک...');
     
@@ -3014,6 +3015,8 @@ function saveCheckPayment() {
         'check_date': $('input[name="check_date"]').val()
     };
 
+    console.log('📋 داده‌های فرم:', formData);
+
     // اعتبارسنجی
     const requiredFields = ['owner_name', 'owner_family', 'national_id', 'phone', 'check_number', 'amount', 'check_date'];
     for (const field of requiredFields) {
@@ -3023,10 +3026,16 @@ function saveCheckPayment() {
         }
     }
 
-    // 🔴 ابتدا مودال چک را ببند
+    // اعتبارسنجی تاریخ
+    if (!isValidJalaliDate(formData.check_date)) {
+        showToast('فرمت تاریخ نامعتبر است. لطفاً تاریخ را به صورت YYYY/MM/DD وارد کنید', 'error');
+        return;
+    }
+
+    // بستن مودال چک
     $('#checkPaymentModal').modal('hide');
     
-    // سپس نمایش مودال پردازش
+    // نمایش مودال پردازش
     const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت چک');
     
     // ارسال درخواست به سرور
@@ -3044,14 +3053,13 @@ function saveCheckPayment() {
                 $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
                 $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
                 
-                // 🔴 هدایت مستقیم به صفحه چاپ بدون تاخیر
+                // هدایت به صفحه چاپ
                 setTimeout(() => {
                     hideProcessingModal();
                     if (data.invoice_id) {
                         const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
                         window.open(printUrl, '_blank');
                         
-                        // هدایت به صفحه موفقیت
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
                     } else {
@@ -3100,7 +3108,13 @@ function saveCreditPayment() {
         }
     }
 
-    // 🔴 ابتدا مودال نسیه را ببند
+    // اعتبارسنجی تاریخ
+    if (!isValidJalaliDate(formData.due_date)) {
+        showToast('فرمت تاریخ نامعتبر است. لطفاً تاریخ را به صورت YYYY/MM/DD وارد کنید', 'error');
+        return;
+    }
+
+    // بستن مودال نسیه
     $('#creditPaymentModal').modal('hide');
     
     // نمایش مودال پردازش
@@ -3121,14 +3135,13 @@ function saveCreditPayment() {
                 $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
                 $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
                 
-                // 🔴 هدایت مستقیم به صفحه چاپ بدون تاخیر
+                // هدایت به صفحه چاپ
                 setTimeout(() => {
                     hideProcessingModal();
                     if (data.invoice_id) {
                         const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
                         window.open(printUrl, '_blank');
                         
-                        // هدایت به صفحه موفقیت
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
                     } else {
@@ -3524,36 +3537,6 @@ window.processNonPosPayment = processNonPosPayment;
 window.saveCustomerInfoToSession = saveCustomerInfoToSession;
 window.saveDiscountToSession = saveDiscountToSession;
 window.savePaymentMethodToSession = savePaymentMethodToSession;
-
-// تابع برای دیباگ و لاگ‌گیری
-function debugAjaxResponse(xhr, url) {
-    console.log(`🔍 دیباگ پاسخ از ${url}:`);
-    console.log('   - Status:', xhr.status);
-    console.log('   - Response:', xhr.responseText);
-    console.log('   - ReadyState:', xhr.readyState);
-    
-    try {
-        const response = JSON.parse(xhr.responseText);
-        console.log('   - Parsed JSON:', response);
-        return response;
-    } catch (e) {
-        console.log('   - JSON Parse Error:', e);
-        return null;
-    }
-}
-
-// اصلاح توابع AJAX برای اضافه کردن دیباگ
-// در هر تابع AJAX، این خطوط را به success و error اضافه کنید:
-/*
-success: function(data, status, xhr) {
-    debugAjaxResponse(xhr, "save_check_payment");
-    // بقیه کدها...
-},
-error: function(xhr, status, error) {
-    debugAjaxResponse(xhr, "save_check_payment");
-    // بقیه کدها...
-}
-*/
     </script>
 </body>
 </html>
