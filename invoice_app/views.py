@@ -81,61 +81,97 @@ def send_via_bridge_service(branch_id, pos_ip, amount):
         print(error_msg)
         return {'status': 'error', 'message': error_msg}
 
-
-@require_POST
+@login_required
 @csrf_exempt
 def add_item_to_invoice(request):
-    """افزودن کالا به فاکتور - نسخه بهینه‌شده حافظه"""
-    try:
-        data = json.loads(request.body)
-        product_id = data.get('product_id')
-        quantity = data.get('quantity', 1)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            quantity = int(data.get('quantity', 1))
+            ignore_stock = data.get('ignore_stock', False)
 
-        # محدودیت تعداد
-        if 'invoice_items' in request.session:
-            if len(request.session['invoice_items']) >= 50:
+            if quantity <= 0:
                 return JsonResponse({
                     'status': 'error',
-                    'message': 'حداکثر 50 آیتم در فاکتور مجاز است'
+                    'message': 'تعداد باید بیشتر از صفر باشد'
                 })
 
-        # فقط ذخیره داده‌های ضروری در session
-        product = InventoryCount.objects.only('id', 'product_name', 'quantity', 'price').get(id=product_id)
+            # بررسی وجود شعبه
+            branch_id = request.session.get('branch_id')
+            if not branch_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'لطفا ابتدا شعبه را انتخاب کنید'
+                })
 
-        if 'invoice_items' not in request.session:
-            request.session['invoice_items'] = []
+            product = get_object_or_404(InventoryCount, id=product_id, branch_id=branch_id)
 
-        items = request.session['invoice_items']
+            # بررسی موجودی (مگر اینکه ignore_stock=true باشد)
+            if not ignore_stock and product.quantity < quantity:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'موجودی کالای {product.product_name} کافی نیست. موجودی فعلی: {product.quantity}',
+                    'available_quantity': product.quantity,
+                    'product_name': product.product_name
+                })
 
-        # ذخیره فقط فیلدهای ضروری
-        item_data = {
-            'product_id': product.id,
-            'product_name': product.product_name,
-            'quantity': quantity,
-            'price': float(product.price),  # تبدیل به float برای کاهش حجم
-            'total': float(quantity * product.price)
-        }
+            items = request.session.get('invoice_items', [])
+            item_exists = False
 
-        # بررسی تکراری
-        for item in items:
-            if item['product_id'] == product_id:
-                item['quantity'] += quantity
-                item['total'] = item['quantity'] * item['price']
-                break
-        else:
-            items.append(item_data)
+            # بررسی وجود آیتم در فاکتور
+            for item in items:
+                if item['product_id'] == product_id:
+                    new_quantity = item['quantity'] + quantity
+                    item['quantity'] = new_quantity
+                    item['total'] = product.selling_price * new_quantity
+                    item_exists = True
+                    break
 
-        request.session.modified = True
+            # اگر آیتم جدید است
+            if not item_exists:
+                items.append({
+                    'product_id': product_id,
+                    'product_name': product.product_name,
+                    'barcode': product.barcode_data or '',
+                    'price': product.selling_price,
+                    'quantity': quantity,
+                    'total': product.selling_price * quantity,
+                    'discount': 0,
+                    'available_quantity': product.quantity
+                })
 
-        return JsonResponse({
-            'status': 'success',
-            'items': items
-        })
+            request.session['invoice_items'] = items
+            request.session.modified = True
 
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
+            # 🔴 محاسبه مبالغ نهایی به روش صحیح
+            total_without_discount = sum(item['total'] for item in items)
+            items_discount = sum(item.get('discount', 0) for item in items)
+            invoice_discount = request.session.get('discount', 0)
+            total_discount = items_discount + invoice_discount
+            total_amount = max(0, total_without_discount - total_discount)
 
+            return JsonResponse({
+                'status': 'success',
+                'items': items,
+                'total_without_discount': total_without_discount,
+                'items_discount': items_discount,
+                'invoice_discount': invoice_discount,
+                'total_discount': total_discount,
+                'total_amount': total_amount,
+                'message': 'کالا با موفقیت به فاکتور اضافه شد'
+            })
 
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا: {str(e)}'
+            })
+
+    return JsonResponse({
+        'status': 'error',
+        'message': 'درخواست نامعتبر'
+    })
 @login_required
 def create_invoice(request):
     if 'branch_id' not in request.session:
@@ -829,6 +865,7 @@ def build_sale_request(amount):
 
 
 # ==================== ویوهای اصلی فاکتور ====================
+
 @login_required
 @csrf_exempt
 def finalize_invoice(request):
@@ -960,184 +997,273 @@ def finalize_invoice(request):
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
 
 
-@login_required
+@require_POST
 @csrf_exempt
 def finalize_invoice_non_pos(request):
-    """ویوی نهایی کردن فاکتور برای پرداخت‌های غیر از پوز - نسخه اصلی اصلاح‌شده"""
-    if request.method == 'POST':
-        try:
-            # دریافت داده‌های JSON
-            import json
-            data = json.loads(request.body)
+    """
+    ثبت نهایی فاکتور برای روش‌های پرداخت غیر از POS پیش‌فرض
+    شامل: نقدی، چک، نسیه و POS غیرپیش‌فرض
+    """
+    try:
+        data = json.loads(request.body)
+        payment_method = data.get('payment_method')
+        paid_amount = data.get('paid_amount', 0)
+        action = data.get('action', 'save_only')
 
-            branch_id = request.session.get('branch_id')
-            items = request.session.get('invoice_items', [])
-            payment_method = data.get('payment_method', 'cash')
-            paid_amount = data.get('paid_amount', 0)
+        print(f"🔔 [NON-POS] درخواست ثبت فاکتور - روش پرداخت: {payment_method}, مبلغ: {paid_amount}")
 
-            if not branch_id:
-                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
+        # دریافت اطلاعات از session
+        session_data = request.session.get('invoice_data', {})
+        branch_id = session_data.get('branch_id')
+        items = session_data.get('items', [])
+        customer_name = session_data.get('customer_name', '')
+        customer_phone = session_data.get('customer_phone', '')
+        discount = session_data.get('discount', 0)
 
-            if not items:
-                return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
-
-            # محاسبه مبلغ کل به روش صحیح (مانند قبل)
-            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
-            discount = request.session.get('discount', 0)
-            total_amount = max(0, total_amount - discount)
-
-            # محاسبه مبلغ بدون تخفیف برای نمایش
-            total_without_discount = sum(item['total'] for item in items)
-
-            # محاسبه مجموع تخفیف‌ها
-            items_discount = sum(item.get('discount', 0) for item in items)
-            total_discount = items_discount + discount
-
-            print(f"💰 مبلغ فاکتور: {total_amount} تومان")
-            print(f"💰 مبلغ بدون تخفیف: {total_without_discount} تومان")
-            print(f"💰 مجموع تخفیف‌ها: {total_discount} تومان")
-
-            # تعیین وضعیت فاکتور
-            is_finalized = True  # برای همه روش‌های غیر-POS فاکتور نهایی می‌شود
-            is_paid = payment_method in ['cash', 'pos']  # برای نقدی و POS پرداخت شده در نظر گرفته می‌شود
-            payment_date = timezone.now() if is_paid else None
-
-            # محاسبه مجموع قیمت معیار
-            total_standard_price = 0
-
-            # جمع‌آوری تمام product_idها برای یک query
-            product_ids = [item['product_id'] for item in items]
-            products = InventoryCount.objects.filter(id__in=product_ids)
-
-            # جمع‌آوری تمام product_nameها برای pricing
-            product_names = [product.product_name for product in products]
-
-            try:
-                from account_app.models import ProductPricing
-                pricings = ProductPricing.objects.filter(product_name__in=product_names)
-                pricing_dict = {p.product_name: p.standard_price for p in pricings}
-            except Exception as e:
-                print(f"⚠️ خطا در دریافت قیمت‌های معیار: {e}")
-                pricing_dict = {}
-
-            product_dict = {p.id: p for p in products}
-
-            # محاسبه مجموع قیمت معیار
-            for item_data in items:
-                product = product_dict.get(item_data['product_id'])
-                if not product:
-                    continue
-
-                standard_price = pricing_dict.get(product.product_name, 0)
-                if standard_price is None:
-                    standard_price = 0
-
-                # محاسبه مجموع قیمت معیار
-                total_standard_price += standard_price * item_data['quantity']
-
-            print(f"💰 مجموع قیمت معیار محاسبه شد: {total_standard_price}")
-
-            # ایجاد فاکتور
-            invoice_data = {
-                'branch_id': branch_id,
-                'created_by': request.user,
-                'payment_method': payment_method,
-                'total_amount': total_amount,
-                'total_without_discount': total_without_discount,
-                'discount': total_discount,
-                'is_finalized': is_finalized,
-                'is_paid': is_paid,
-                'payment_date': payment_date,
-                'customer_name': request.session.get('customer_name', ''),
-                'customer_phone': request.session.get('customer_phone', ''),
-                'paid_amount': paid_amount if paid_amount > 0 else total_amount,
-                'total_standard_price': total_standard_price
-            }
-
-            # اگر پرداخت POS غیرپیش‌فرض است، دستگاه را تنظیم کن
-            if payment_method == 'pos':
-                pos_device_id = request.session.get('pos_device_id')
-                if pos_device_id:
-                    try:
-                        pos_device = POSDevice.objects.get(id=pos_device_id)
-                        invoice_data['pos_device'] = pos_device
-                        print(f"✅ دستگاه پوز غیرپیش‌فرض تنظیم شد: {pos_device.name}")
-                    except POSDevice.DoesNotExist:
-                        print("⚠️ دستگاه پوز یافت نشد")
-
-            invoice = Invoicefrosh.objects.create(**invoice_data)
-
-            # ثبت آیتم‌ها
-            invoice_items = []
-            products_to_update = []
-
-            for item_data in items:
-                product = product_dict.get(item_data['product_id'])
-                if not product:
-                    continue
-
-                item_total_price = (item_data['quantity'] * item_data['price']) - item_data.get('discount', 0)
-                standard_price = pricing_dict.get(product.product_name, 0)
-
-                invoice_items.append(InvoiceItemfrosh(
-                    invoice=invoice,
-                    product=product,
-                    quantity=item_data['quantity'],
-                    price=item_data['price'],
-                    total_price=item_total_price,
-                    standard_price=standard_price,
-                    discount=item_data.get('discount', 0)
-                ))
-
-                # کاهش موجودی - فقط اگر موجودی کافی است
-                if product.quantity >= item_data['quantity']:
-                    product.quantity -= item_data['quantity']
-                    products_to_update.append(product)
-                else:
-                    print(
-                        f"⚠️ موجودی کالای {product.product_name} کافی نیست. موجودی: {product.quantity}, درخواست: {item_data['quantity']}")
-
-            # bulk create و bulk update
-            if invoice_items:
-                InvoiceItemfrosh.objects.bulk_create(invoice_items)
-
-            if products_to_update:
-                InventoryCount.objects.bulk_update(products_to_update, ['quantity'])
-
-            print(f"✅ فاکتور {invoice.serial_number} با موفقیت ثبت شد")
-
-            # پاکسازی session
-            session_keys_to_remove = [
-                'invoice_items', 'customer_name', 'customer_phone',
-                'payment_method', 'discount', 'pos_device_id'
-            ]
-
-            for key in session_keys_to_remove:
-                if key in request.session:
-                    del request.session[key]
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'فاکتور با موفقیت ثبت شد',
-                'invoice_id': invoice.id,
-                'serial_number': invoice.serial_number,
-                'total_amount': total_amount,
-                'total_standard_price': total_standard_price,
-                'total_profit': invoice.total_profit
-            })
-
-        except Exception as e:
-            print(f"❌ خطا در ثبت فاکتور غیر-POS: {str(e)}")
-            import traceback
-            print(f"❌ جزئیات خطا: {traceback.format_exc()}")
-
+        if not branch_id:
             return JsonResponse({
                 'status': 'error',
-                'message': f'خطا در ثبت فاکتور: {str(e)}'
+                'message': 'اطلاعات شعبه یافت نشد. لطفا مجددا تلاش کنید.'
             })
 
-    return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+        if not items:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'فاکتور باید حداقل یک آیتم داشته باشد'
+            })
 
+        branch = Branch.objects.get(id=branch_id)
+        total_amount = calculate_session_total(session_data)
+
+        # ایجاد فاکتور
+        invoice = Invoicefrosh(
+            branch=branch,
+            created_by=request.user,
+            payment_method=payment_method,
+            total_amount=total_amount,
+            discount=discount,
+            total_without_discount=total_amount + discount,
+            customer_name=customer_name,
+            customer_phone=customer_phone,
+            is_finalized=True,
+            is_paid=True,
+            paid_amount=paid_amount,
+            payment_date=timezone.now()
+        )
+
+        # اگر روش پرداخت POS است اما غیرپیش‌فرض، دستگاه پوز را تنظیم کن
+        if payment_method == 'pos':
+            pos_device_id = session_data.get('pos_device_id')
+            if pos_device_id:
+                try:
+                    pos_device = POSDevice.objects.get(id=pos_device_id)
+                    invoice.pos_device = pos_device
+                    print(f"✅ [NON-POS] دستگاه پوز غیرپیش‌فرض تنظیم شد: {pos_device.name}")
+                except POSDevice.DoesNotExist:
+                    print("⚠️ [NON-POS] دستگاه پوز یافت نشد")
+
+        invoice.save()
+
+        # محاسبه مجموع قیمت معیار و ایجاد آیتم‌ها
+        total_standard_price = 0
+        for item_data in items:
+            try:
+                product = InventoryCount.objects.get(id=item_data['product_id'])
+                quantity = item_data['quantity']
+                price = item_data['price']
+                item_discount = item_data.get('discount', 0)
+                total_price = (quantity * price) - item_discount
+
+                # محاسبه قیمت معیار
+                standard_price = item_data.get('standard_price', product.standard_price or 0)
+                total_standard_price += standard_price * quantity
+
+                # ایجاد آیتم فاکتور
+                InvoiceItemfrosh.objects.create(
+                    invoice=invoice,
+                    product=product,
+                    quantity=quantity,
+                    price=price,
+                    discount=item_discount,
+                    total_price=total_price,
+                    standard_price=standard_price
+                )
+
+            except InventoryCount.DoesNotExist:
+                continue
+
+        # به‌روزرسانی مجموع قیمت معیار و سود فاکتور
+        invoice.total_standard_price = total_standard_price
+        invoice.total_profit = max(0, total_amount - total_standard_price)
+        invoice.save()
+
+        print(f"✅ [NON-POS] فاکتور با موفقیت ثبت شد - شماره: {invoice.serial_number}")
+
+        # پاک کردن session
+        clear_invoice_session(request)
+
+        return JsonResponse({
+            'status': 'success',
+            'invoice_id': invoice.id,
+            'serial_number': invoice.serial_number,
+            'message': 'فاکتور با موفقیت ثبت شد'
+        })
+
+    except Exception as e:
+        print(f"❌ [NON-POS] خطا در ثبت فاکتور: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در ثبت فاکتور: {str(e)}'
+        })
+# @login_required
+# @csrf_exempt
+# def finalize_invoice_non_pos(request):
+#     """ویوی نهایی کردن فاکتور برای پرداخت‌های غیر از پوز - نسخه بهینه‌شده"""
+#     if request.method == 'POST':
+#         try:
+#             # دریافت داده‌های JSON
+#             import json
+#             data = json.loads(request.body)
+#
+#             branch_id = request.session.get('branch_id')
+#             items = request.session.get('invoice_items', [])
+#             payment_method = data.get('payment_method', 'cash')
+#             paid_amount = data.get('paid_amount', 0)
+#
+#             if not branch_id:
+#                 return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
+#
+#             if not items:
+#                 return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
+#
+#             # 🔴 محاسبه مبلغ کل به روش صحیح (مانند قبل)
+#             total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
+#             discount = request.session.get('discount', 0)
+#             total_amount = max(0, total_amount - discount)
+#
+#             # محاسبه مبلغ بدون تخفیف برای نمایش
+#             total_without_discount = sum(item['total'] for item in items)
+#
+#             # محاسبه مجموع تخفیف‌ها
+#             items_discount = sum(item.get('discount', 0) for item in items)
+#             total_discount = items_discount + discount
+#
+#             print(f"💰 مبلغ فاکتور: {total_amount} تومان")
+#             print(f"💰 مبلغ بدون تخفیف: {total_without_discount} تومان")
+#             print(f"💰 مجموع تخفیف‌ها: {total_discount} تومان")
+#
+#             # تعیین وضعیت فاکتور
+#             is_finalized = payment_method == 'cash'
+#             is_paid = payment_method == 'cash'
+#             payment_date = timezone.now() if is_paid else None
+#
+#             # 🔴 محاسبه مجموع قیمت معیار
+#             total_standard_price = 0
+#
+#             # جمع‌آوری تمام product_idها برای یک query
+#             product_ids = [item['product_id'] for item in items]
+#             products = InventoryCount.objects.filter(id__in=product_ids)
+#
+#             # جمع‌آوری تمام product_nameها برای pricing
+#             product_names = [product.product_name for product in products]
+#
+#             try:
+#                 from account_app.models import ProductPricing
+#                 pricings = ProductPricing.objects.filter(product_name__in=product_names)
+#                 pricing_dict = {p.product_name: p.standard_price for p in pricings}
+#             except Exception as e:
+#                 print(f"⚠️ خطا در دریافت قیمت‌های معیار: {e}")
+#                 pricing_dict = {}
+#
+#             product_dict = {p.id: p for p in products}
+#
+#             # محاسبه مجموع قیمت معیار
+#             for item_data in items:
+#                 product = product_dict.get(item_data['product_id'])
+#                 if not product:
+#                     continue
+#
+#                 standard_price = pricing_dict.get(product.product_name, 0)
+#                 if standard_price is None:
+#                     standard_price = 0
+#
+#                 # محاسبه مجموع قیمت معیار
+#                 total_standard_price += standard_price * item_data['quantity']
+#
+#             print(f"💰 مجموع قیمت معیار محاسبه شد: {total_standard_price}")
+#
+#             # 🔴 ثبت فاکتور - فقط مجموع قیمت معیار ذخیره می‌شود، سود در مدل محاسبه می‌شود
+#             invoice = Invoicefrosh.objects.create(
+#                 branch_id=branch_id,
+#                 created_by=request.user,
+#                 payment_method=payment_method,
+#                 total_amount=total_amount,
+#                 total_without_discount=total_without_discount,
+#                 discount=total_discount,
+#                 is_finalized=is_finalized,
+#                 is_paid=is_paid,
+#                 payment_date=payment_date,
+#                 customer_name=request.session.get('customer_name', ''),
+#                 customer_phone=request.session.get('customer_phone', ''),
+#                 paid_amount=paid_amount if paid_amount > 0 else total_amount,
+#                 total_standard_price=total_standard_price  # 🔴 فقط مجموع قیمت معیار ذخیره می‌شود
+#                 # سود به طور خودکار در مدل محاسبه می‌شود
+#             )
+#
+#             # ثبت آیتم‌ها
+#             invoice_items = []
+#             for item_data in items:
+#                 product = product_dict.get(item_data['product_id'])
+#                 if not product:
+#                     continue
+#
+#                 item_total_price = (item_data['quantity'] * item_data['price']) - item_data.get('discount', 0)
+#                 standard_price = pricing_dict.get(product.product_name, 0)
+#
+#                 invoice_items.append(InvoiceItemfrosh(
+#                     invoice=invoice,
+#                     product=product,
+#                     quantity=item_data['quantity'],
+#                     price=item_data['price'],
+#                     total_price=item_total_price,
+#                     standard_price=standard_price,
+#                     discount=item_data.get('discount', 0)
+#                 ))
+#
+#                 # کاهش موجودی
+#                 product.quantity -= item_data['quantity']
+#
+#             # bulk create و bulk update
+#             InvoiceItemfrosh.objects.bulk_create(invoice_items)
+#             InventoryCount.objects.bulk_update(products, ['quantity'])
+#
+#             # پاکسازی session
+#             for key in ['invoice_items', 'customer_name', 'customer_phone', 'payment_method', 'discount',
+#                         'pos_device_id']:
+#                 request.session.pop(key, None)
+#
+#             return JsonResponse({
+#                 'status': 'success',
+#                 'message': 'فاکتور با موفقیت ثبت شد',
+#                 'invoice_id': invoice.id,
+#                 'total_amount': total_amount,
+#                 'total_standard_price': total_standard_price,
+#                 'total_profit': invoice.total_profit  # 🔴 از مدل خوانده می‌شود
+#             })
+#
+#         except Exception as e:
+#             print(f"❌ خطا در ثبت فاکتور غیر-POS: {str(e)}")
+#             import traceback
+#             print(f"❌ جزئیات خطا: {traceback.format_exc()}")
+#
+#             return JsonResponse({
+#                 'status': 'error',
+#                 'message': f'خطا در ثبت فاکتور: {str(e)}'
+#             })
+#
+#     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+
+# در views.py - ویوهای مربوط به مدیریت آیتم‌های فاکتور
 @login_required
 def invoice_add_item(request):
     if request.method == 'POST':
@@ -1992,6 +2118,7 @@ def invoice_report(request):
 
     return render(request, 'invoice_report.html', context)
 
+
 @login_required
 @csrf_exempt
 def get_invoice_report_data(request):
@@ -2059,7 +2186,6 @@ def get_invoice_report_data(request):
             total_invoices = invoices.count()
             total_amount = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
             total_profit = invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0
-            total_standard_price = invoices.aggregate(Sum('total_standard_price'))['total_standard_price__sum'] or 0  # 🔴 اضافه شده
             avg_sale = invoices.aggregate(Avg('total_amount'))['total_amount__avg'] or 0
 
             # آمار پرداخت‌ها
@@ -2082,7 +2208,6 @@ def get_invoice_report_data(request):
                     'customer_phone': invoice.customer_phone or '-',
                     'total_amount': invoice.total_amount,
                     'total_profit': invoice.total_profit,
-                    'total_standard_price': invoice.total_standard_price,  # 🔴 اضافه شده
                     'payment_method': invoice.get_payment_method_display(),
                     'payment_method_code': invoice.payment_method,
                     'is_paid': invoice.is_paid,
@@ -2098,7 +2223,6 @@ def get_invoice_report_data(request):
                     'total_invoices': total_invoices,
                     'total_amount': total_amount,
                     'total_profit': total_profit,
-                    'total_standard_price': total_standard_price,  # 🔴 اضافه شده
                     'avg_sale': round(avg_sale),
                     'payment_stats': payment_stats
                 },
@@ -2120,6 +2244,7 @@ def get_invoice_report_data(request):
         'status': 'error',
         'message': 'درخواست نامعتبر'
     })
+
 
 @login_required
 def export_invoice_report_csv(request):
@@ -2175,7 +2300,7 @@ def export_invoice_report_csv(request):
         writer = csv.writer(response)
         writer.writerow([
             'شماره سریال', 'تاریخ', 'ساعت', 'شعبه', 'مشتری',
-            'تلفن مشتری', 'مبلغ کل (تومان)', 'مجموع قیمت معیار (تومان)', 'سود (تومان)',  # 🔴 اضافه شده
+            'تلفن مشتری', 'مبلغ کل (تومان)', 'سود (تومان)',
             'روش پرداخت', 'وضعیت پرداخت', 'تعداد آیتم‌ها'
         ])
 
@@ -2189,7 +2314,6 @@ def export_invoice_report_csv(request):
                 invoice.customer_name or 'فروش حضوری',
                 invoice.customer_phone or '-',
                 invoice.total_amount,
-                invoice.total_standard_price,  # 🔴 اضافه شده
                 invoice.total_profit,
                 invoice.get_payment_method_display(),
                 'پرداخت شده' if invoice.is_paid else 'در انتظار',
@@ -2204,6 +2328,7 @@ def export_invoice_report_csv(request):
             'status': 'error',
             'message': f'خطا در ایجاد خروجی CSV: {str(e)}'
         })
+
 
 @login_required
 def quick_stats(request):
@@ -2225,8 +2350,7 @@ def quick_stats(request):
         today_stats = {
             'count': today_invoices.count(),
             'amount': today_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
-            'profit': today_invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0,
-            'standard_price': today_invoices.aggregate(Sum('total_standard_price'))['total_standard_price__sum'] or 0  # 🔴 اضافه شده
+            'profit': today_invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0
         }
 
         # آمار ماه جاری
@@ -2235,8 +2359,7 @@ def quick_stats(request):
         month_stats = {
             'count': month_invoices.count(),
             'amount': month_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
-            'profit': month_invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0,
-            'standard_price': month_invoices.aggregate(Sum('total_standard_price'))['total_standard_price__sum'] or 0  # 🔴 اضافه شده
+            'profit': month_invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0
         }
 
         return JsonResponse({
