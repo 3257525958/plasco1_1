@@ -1239,14 +1239,18 @@
  */
 // 🔥 فقط این تابع جدید را اضافه کنید - بقیه کدها بدون تغییر می‌مانند
     function isDefaultPosDevice(deviceId) {
-    // روش مطمئن: بررسی مستقیم متن option
+    // روش قطعی: بررسی تمام حالات ممکن
     const selectedText = $('#pos-device option:selected').text();
-    const isDefault = selectedText.includes('پیش فرض') || 
-                     selectedText.includes('پیشفرض') || 
-                     selectedText.includes('(پیش فرض)');
     
-    console.log('🔍 تشخیص دستگاه پیش‌فرض:', {
-        deviceId: deviceId,
+    // تمام فرمت‌های ممکن برای "پیش فرض"
+    const isDefault = 
+        /پیش\s*فرض/i.test(selectedText) ||      // "پیش فرض" با هر فاصله
+        /\(پیش\s*فرض\)/i.test(selectedText) ||  // "(پیش فرض)"
+        /default/i.test(selectedText) ||         // "default" 
+        selectedText.includes('پیش‌فرض') ||      // با نیم‌فاصله
+        selectedText.trim().endsWith('(پیش فرض)'); // پایان متن با "(پیش فرض)"
+    
+    console.log('🔍 تشخیص نهایی:', {
         text: selectedText,
         isDefault: isDefault
     });
