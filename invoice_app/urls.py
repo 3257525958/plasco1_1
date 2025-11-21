@@ -44,4 +44,9 @@ path('report/', views.invoice_report, name='invoice_report'),
 path('api/report-data/', views.get_invoice_report_data, name='get_invoice_report_data'),
 path('api/export-csv/', views.export_invoice_report_csv, name='export_invoice_report_csv'),
 path('api/quick-stats/', views.quick_stats, name='quick_stats'),
+
+
+
+# urls.py - اضافه کردن URL جدید
+path('save-cash-payment/', views.save_cash_payment, name='save_cash_payment'),
 ]

@@ -198,3 +198,22 @@ class POSTransaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_id} - {self.branch.name} - {self.amount_rial} ریال"
+
+
+# models.py - اضافه کردن مدل CashPayment
+class CashPayment(models.Model):
+    invoice = models.OneToOneField('Invoicefrosh', on_delete=models.CASCADE, related_name='cash_payment')
+    cash_amount = models.PositiveIntegerField(verbose_name="مبلغ نقدی", default=0)
+    remaining_amount = models.PositiveIntegerField(verbose_name="مبلغ باقیمانده", default=0)
+    remaining_payment_method = models.CharField(max_length=10, choices=Invoicefrosh.PAYMENT_METHODS, default='pos',
+                                                verbose_name="روش پرداخت باقیمانده")
+    pos_device = models.ForeignKey(POSDevice, on_delete=models.SET_NULL, null=True, blank=True,
+                                   verbose_name="دستگاه پوز برای باقیمانده")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "پرداخت نقدی"
+        verbose_name_plural = "پرداخت‌های نقدی"
+
+    def __str__(self):
+        return f"پرداخت نقدی - فاکتور {self.invoice.id}"
