@@ -85,97 +85,57 @@ def send_via_bridge_service(branch_id, pos_ip, amount):
 @require_POST
 @csrf_exempt
 def add_item_to_invoice(request):
-    """افزودن کالا به فاکتور - نسخه اصلاح شده"""
+    """افزودن کالا به فاکتور - نسخه بهینه‌شده حافظه"""
     try:
         data = json.loads(request.body)
         product_id = data.get('product_id')
         quantity = data.get('quantity', 1)
-        ignore_stock = data.get('ignore_stock', False)
-        is_auto_add = data.get('is_auto_add', False)
 
-        print(f"🔄 افزودن کالا - Product ID: {product_id}, Quantity: {quantity}")
+        # محدودیت تعداد
+        if 'invoice_items' in request.session:
+            if len(request.session['invoice_items']) >= 50:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'حداکثر 50 آیتم در فاکتور مجاز است'
+                })
 
-        # دریافت محصول
-        try:
-            product = InventoryCount.objects.get(id=product_id)
-        except InventoryCount.DoesNotExist:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'محصول یافت نشد'
-            })
+        # فقط ذخیره داده‌های ضروری در session
+        product = InventoryCount.objects.only('id', 'product_name', 'quantity', 'price').get(id=product_id)
 
-        # بررسی موجودی
-        if not ignore_stock and product.quantity < quantity:
-            return JsonResponse({
-                'status': 'error',
-                'message': f'موجودی کافی نیست. موجودی: {product.quantity}'
-            })
-
-        # دریافت یا ایجاد session
         if 'invoice_items' not in request.session:
             request.session['invoice_items'] = []
-            print("✅ session جدید ایجاد شد")
 
         items = request.session['invoice_items']
-        print(f"📋 تعداد آیتم‌های فعلی در session: {len(items)}")
 
-        # بررسی آیا محصول قبلاً اضافه شده است
-        item_exists = False
+        # ذخیره فقط فیلدهای ضروری
+        item_data = {
+            'product_id': product.id,
+            'product_name': product.product_name,
+            'quantity': quantity,
+            'price': float(product.price),  # تبدیل به float برای کاهش حجم
+            'total': float(quantity * product.price)
+        }
+
+        # بررسی تکراری
         for item in items:
             if item['product_id'] == product_id:
-                if not ignore_stock and product.quantity < item['quantity'] + quantity:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': f'موجودی کافی نیست. موجودی: {product.quantity}'
-                    })
                 item['quantity'] += quantity
                 item['total'] = item['quantity'] * item['price']
-                item_exists = True
-                print(f"✅ تعداد کالای موجود افزایش یافت: {item['quantity']}")
                 break
+        else:
+            items.append(item_data)
 
-        # اگر محصول جدید است
-        if not item_exists:
-            # دریافت قیمت از ProductPricing
-            try:
-                from account_app.models import ProductPricing
-                pricing = ProductPricing.objects.filter(product_name=product.product_name).first()
-                price = pricing.sales_price if pricing and pricing.sales_price else product.price
-            except:
-                price = product.price
-
-            new_item = {
-                'product_id': product_id,
-                'product_name': product.product_name,
-                'quantity': quantity,
-                'price': price,
-                'total': quantity * price,
-                'discount': 0
-            }
-            items.append(new_item)
-            print(f"✅ کالای جدید اضافه شد: {product.product_name}")
-
-        # ذخیره session
         request.session.modified = True
-        request.session.save()
-
-        print(f"✅ session ذخیره شد. تعداد آیتم‌ها: {len(items)}")
 
         return JsonResponse({
             'status': 'success',
-            'items': items,
-            'message': 'کالا با موفقیت اضافه شد'
+            'items': items
         })
 
     except Exception as e:
-        print(f"❌ خطا در افزودن کالا: {str(e)}")
-        import traceback
-        print(f"❌ جزئیات خطا: {traceback.format_exc()}")
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
-        return JsonResponse({
-            'status': 'error',
-            'message': f'خطا در افزودن کالا: {str(e)}'
-        })
+
 @login_required
 def create_invoice(request):
     if 'branch_id' not in request.session:
