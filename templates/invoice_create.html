@@ -3244,36 +3244,29 @@ function enablePage() {
             }
         });
 
-        // مدیریت دستگاه‌های POS
-    // 🔥 اصلاح بخش مدیریت دستگاه‌های POS - اضافه کردن این کدها
-    $(document).on('click', '#addDeviceButton', function(e) {
-        e.preventDefault();
-        console.log('🟢 دکمه افزودن دستگاه کلیک شد');
-        addPosDevice();
-    });
+// 1. افزودن دستگاه جدید
+$(document).on('click', '#addDeviceButton', function(e) {
+    e.preventDefault();
+    console.log('🟢 دکمه افزودن دستگاه کلیک شد');
+    addPosDevice();
+});
 
-    $(document).on('click', '.delete-device-btn', function(e) {
-        e.preventDefault();
-        const deviceId = $(this).data('device-id');
-        console.log('🟢 دکمه حذف دستگاه کلیک شد:', deviceId);
-        deletePosDevice(deviceId);
-    });
+// 2. حذف دستگاه
+$(document).on('click', '.delete-device-btn', function(e) {
+    e.preventDefault();
+    const deviceId = $(this).data('device-id');
+    console.log('🟢 دکمه حذف دستگاه کلیک شد:', deviceId);
+    deletePosDevice(deviceId);
+});
 
-    $(document).on('click', '.set-default-btn', function(e) {
-        e.preventDefault();
-        const deviceId = $(this).data('device-id');
-        console.log('🟢 دکمه تنظیم پیش‌فرض کلیک شد:', deviceId);
-        setDefaultPosDevice(deviceId);
-    });
+// 3. تنظیم پیش‌فرض
+$(document).on('click', '.set-default-btn', function(e) {
+    e.preventDefault();
+    const deviceId = $(this).data('device-id');
+    console.log('🟢 دکمه تنظیم پیش‌فرض کلیک شد:', deviceId);
+    setDefaultPosDevice(deviceId);
+});    
     
-    
-    
-        $(document).on('click', '.set-default-btn', function() {
-            const deviceId = $(this).data('device-id');
-            setDefaultPosDevice(deviceId);
-        });
-
-        $('#addDeviceButton').on('click', addPosDevice);
 
         // رویدادهای مودال چک
         $('#check-amount').on('input', updateRemainingAmount);
@@ -3324,26 +3317,6 @@ function enablePage() {
         // تنظیم event listeners برای دکمه‌ها
         setupButtonListeners();
         
-            // 🔥 اضافه کردن event listeners برای دستگاه‌های پوز
-    $(document).on('click', '#addDeviceButton', function(e) {
-        e.preventDefault();
-        console.log('🟢 دکمه افزودن دستگاه کلیک شد');
-        addPosDevice();
-    });
-
-    $(document).on('click', '.delete-device-btn', function(e) {
-        e.preventDefault();
-        const deviceId = $(this).data('device-id');
-        console.log('🟢 دکمه حذف دستگاه کلیک شد:', deviceId);
-        deletePosDevice(deviceId);
-    });
-
-    $(document).on('click', '.set-default-btn', function(e) {
-        e.preventDefault();
-        const deviceId = $(this).data('device-id');
-        console.log('🟢 دکمه تنظیم پیش‌فرض کلیک شد:', deviceId);
-        setDefaultPosDevice(deviceId);
-    });
 
         // تنظیم روش پرداخت پیش‌فرض
         if (!currentPaymentMethod || currentPaymentMethod === 'None') {
