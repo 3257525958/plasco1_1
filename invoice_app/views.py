@@ -171,7 +171,8 @@ def add_item_to_invoice(request):
     return JsonResponse({
         'status': 'error',
         'message': 'درخواست نامعتبر'
-    })@login_required
+    })
+@login_required
 def create_invoice(request):
     if 'branch_id' not in request.session:
         if request.method == 'POST':
@@ -717,7 +718,9 @@ def get_invoice_summary(request):
     return JsonResponse({
         'error': 'درخواست نامعتبر',
         'success': False
-    })# فقط این یک تابع cancel_invoice باید باقی بماند - تابع تکراری را حذف کنید
+    })
+
+    # فقط این یک تابع cancel_invoice باید باقی بماند - تابع تکراری را حذف کنید
 @login_required
 def cancel_invoice(request):
     """
