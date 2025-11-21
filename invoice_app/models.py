@@ -11,7 +11,7 @@ class POSDevice(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام دستگاه")
     account_holder = models.CharField(max_length=100, verbose_name="نام صاحب حساب")
     card_number = models.CharField(max_length=16, verbose_name="شماره کارت")
-    account_number = models.CharField(max_length=20, verbose_name="شماره حساب")
+    account_number = models.CharField(max_length=50, verbose_name="شماره حساب")
     bank_name = models.CharField(max_length=100, verbose_name="نام بانک")
     ip_address = models.GenericIPAddressField(verbose_name="آدرس IP", default='192.168.1.157')  # فیلد جدید
     port = models.IntegerField(verbose_name="پورت", default=1362)  # فیلد جدید
