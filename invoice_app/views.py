@@ -804,49 +804,6 @@ def save_credit_payment(request):
 
     return JsonResponse({'status': 'error'})
 
-# @login_required
-# @csrf_exempt
-# def save_check_payment(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             print("📋 اطلاعات دریافتی چک:", data)  # لاگ برای دیباگ
-#
-#             required_fields = ['owner_name', 'owner_family', 'national_id', 'phone',
-#                                'check_number', 'amount', 'check_date', 'remaining_amount',
-#                                'remaining_payment_method']
-#
-#             for field in required_fields:
-#                 if not data.get(field):
-#                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
-#
-#             # ذخیره اطلاعات چک در session
-#             check_data = {
-#                 'owner_name': data.get('owner_name', '').strip(),
-#                 'owner_family': data.get('owner_family', '').strip(),
-#                 'national_id': data.get('national_id', '').strip(),
-#                 'address': data.get('address', '').strip(),
-#                 'phone': data.get('phone', '').strip(),
-#                 'check_number': data.get('check_number', '').strip(),
-#                 'amount': int(data.get('amount', 0)),
-#                 'remaining_amount': int(data.get('remaining_amount', 0)),
-#                 'remaining_payment_method': data.get('remaining_payment_method', 'cash'),
-#                 'remaining_pos_device_id': data.get('remaining_pos_device_id'),
-#                 'check_date': data.get('check_date', '')
-#             }
-#
-#             request.session['check_payment_data'] = check_data
-#             request.session.modified = True
-#
-#             print("✅ اطلاعات چک در session ذخیره شد:", check_data)
-#
-#             return JsonResponse({'status': 'success'})
-#         except Exception as e:
-#             print(f"❌ خطا در ذخیره اطلاعات چک: {str(e)}")
-#             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
-#     return JsonResponse({'status': 'error'})
-
-
 @login_required
 @csrf_exempt
 def save_discount(request):
