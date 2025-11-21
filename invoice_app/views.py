@@ -81,6 +81,7 @@ def send_via_bridge_service(branch_id, pos_ip, amount):
         print(error_msg)
         return {'status': 'error', 'message': error_msg}
 
+
 @login_required
 @csrf_exempt
 def add_item_to_invoice(request):
@@ -172,6 +173,9 @@ def add_item_to_invoice(request):
         'status': 'error',
         'message': 'درخواست نامعتبر'
     })
+
+
+
 @login_required
 def create_invoice(request):
     if 'branch_id' not in request.session:
@@ -675,6 +679,10 @@ def invoice_print(request, invoice_id):
         'print_date': jdatetime.now().strftime('%Y/%m/%d %H:%M')
     })
 
+
+
+
+
 @login_required
 def get_invoice_summary(request):
     """
@@ -720,7 +728,7 @@ def get_invoice_summary(request):
         'success': False
     })
 
-    # فقط این یک تابع cancel_invoice باید باقی بماند - تابع تکراری را حذف کنید
+
 @login_required
 def cancel_invoice(request):
     """
@@ -997,6 +1005,7 @@ def finalize_invoice(request):
 
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
 
+
 @login_required
 @csrf_exempt
 def finalize_invoice_non_pos(request):
@@ -1144,6 +1153,7 @@ def finalize_invoice_non_pos(request):
             })
 
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+
 # در views.py - ویوهای مربوط به مدیریت آیتم‌های فاکتور
 @login_required
 def invoice_add_item(request):
