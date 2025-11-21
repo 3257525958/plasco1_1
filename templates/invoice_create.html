@@ -3054,123 +3054,145 @@ function submitFinalInvoice(action, paymentMethod, amount) {
         $('#credit-invoice-total').text(invoiceTotal.toLocaleString('fa-IR'));
         updateCreditRemainingAmount();
     }
-
+    
+    
     function saveCheckPayment() {
-        const formData = {
-            'owner_name': $('input[name="owner_name"]').val(),
-            'owner_family': $('input[name="owner_family"]').val(),
-            'national_id': $('input[name="national_id"]').val(),
-            'phone': $('input[name="phone"]').val(),
-            'address': $('textarea[name="address"]').val(),
-            'check_number': $('input[name="check_number"]').val(),
-            'amount': parseInt($('input[name="amount"]').val()) || 0,
-            'remaining_amount': parseInt($('input[name="remaining_amount"]').val()) || 0,
-            'remaining_payment_method': $('select[name="remaining_payment_method"]').val(),
-            'remaining_pos_device_id': $('select[name="remaining_pos_device_id"]').val(),
-            'check_date': $('input[name="check_date"]').val()
-        };
+    console.log('💰 شروع فرآیند ثبت فاکتور با چک...');
+    
+    const formData = {
+        'owner_name': $('input[name="owner_name"]').val(),
+        'owner_family': $('input[name="owner_family"]').val(),
+        'national_id': $('input[name="national_id"]').val(),
+        'phone': $('input[name="phone"]').val(),
+        'address': $('textarea[name="address"]').val(),
+        'check_number': $('input[name="check_number"]').val(),
+        'amount': parseInt($('input[name="amount"]').val()) || 0,
+        'remaining_amount': parseInt($('input[name="remaining_amount"]').val()) || 0,
+        'remaining_payment_method': $('select[name="remaining_payment_method"]').val(),
+        'remaining_pos_device_id': $('select[name="remaining_pos_device_id"]').val(),
+        'check_date': $('input[name="check_date"]').val()
+    };
 
-        // اعتبارسنجی
-        const requiredFields = ['owner_name', 'owner_family', 'national_id', 'phone', 'check_number', 'amount', 'check_date'];
-        for (const field of requiredFields) {
-            if (!formData[field]) {
-                showToast(`لطفا فیلد ${field} را پر کنید`, 'error');
-                return;
-            }
-        }
-
-        // بررسی منطقی بودن مبلغ چک
-        const invoiceTotal = calculateInvoiceTotal().totalAmount;
-        if (formData.amount > invoiceTotal) {
-            showToast('مبلغ چک نمی‌تواند از مبلغ کل فاکتور بیشتر باشد', 'error');
+    // اعتبارسنجی
+    const requiredFields = ['owner_name', 'owner_family', 'national_id', 'phone', 'check_number', 'amount', 'check_date'];
+    for (const field of requiredFields) {
+        if (!formData[field]) {
+            showToast(`لطفا فیلد ${field} را پر کنید`, 'error');
             return;
         }
-
-        // نمایش پیام تأیید
-        if (confirm(`آیا از ذخیره اطلاعات چک اطمینان دارید؟\n\nبا تأیید این عمل، فاکتور ثبت نهایی خواهد شد.`)) {
-            $.ajax({
-                url: "{% url 'invoice_app:save_check_payment' %}",
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                headers: {'X-CSRFToken': getCookie('csrftoken')},
-                success: function(data) {
-                    if (data.status === 'success') {
-                        showToast('اطلاعات چک با موفقیت ذخیره شد', 'success');
-                        $('#checkPaymentModal').modal('hide');
-
-                        // ثبت نهایی فاکتور
-                        setTimeout(() => {
-                            submitFinalInvoice('save_only', 'check', formData.amount);
-                        }, 1000);
-                    } else {
-                        showToast('خطا در ذخیره اطلاعات چک: ' + data.message, 'error');
-                    }
-                },
-                error: function() {
-                    showToast('خطا در ارتباط با سرور', 'error');
-                }
-            });
-        }
     }
+
+    // نمایش مودال پردازش
+    const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت چک');
+    
+    // ارسال درخواست به سرور
+    $.ajax({
+        url: "{% url 'invoice_app:save_check_payment' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log('✅ پاسخ سرور برای چک:', data);
+            
+            if (data.status === 'success') {
+                // نمایش موفقیت
+                $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
+                $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
+                
+                // هدایت به صفحه چاپ بعد از 2 ثانیه
+                setTimeout(() => {
+                    hideProcessingModal();
+                    const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                    window.open(printUrl, '_blank');
+                    
+                    // هدایت به صفحه موفقیت
+                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                    window.location.href = successUrl;
+                }, 2000);
+                
+            } else {
+                hideProcessingModal();
+                showToast('خطا در ذخیره اطلاعات چک: ' + data.message, 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ خطا در ذخیره چک:', error);
+            hideProcessingModal();
+            showToast('خطا در ارتباط با سرور', 'error');
+        }
+    });
+}
 
     function saveCreditPayment() {
-        const creditAmount = parseInt($('#credit-amount').val()) || 0;
+    console.log('💰 شروع فرآیند ثبت فاکتور با نسیه...');
+    
+    const creditAmount = parseInt($('#credit-amount').val()) || 0;
+    const formData = {
+        'customer_name': document.querySelector('#creditPaymentModal input[name="customer_name"]').value,
+        'customer_family': document.querySelector('#creditPaymentModal input[name="customer_family"]').value,
+        'phone': document.querySelector('#creditPaymentModal input[name="phone"]').value,
+        'national_id': document.querySelector('#creditPaymentModal input[name="national_id"]').value,
+        'address': document.querySelector('#creditPaymentModal textarea[name="address"]').value,
+        'due_date': document.querySelector('#creditPaymentModal input[name="due_date"]').value,
+        'credit_amount': creditAmount,
+        'remaining_amount': parseInt($('#credit-remaining-amount').val()) || 0,
+        'remaining_payment_method': $('#credit-remaining-payment-method').val(),
+        'remaining_pos_device_id': $('#credit-remaining-pos-device').val()
+    };
 
-        const formData = {
-            'customer_name': document.querySelector('#creditPaymentModal input[name="customer_name"]').value,
-            'customer_family': document.querySelector('#creditPaymentModal input[name="customer_family"]').value,
-            'phone': document.querySelector('#creditPaymentModal input[name="phone"]').value,
-            'national_id': document.querySelector('#creditPaymentModal input[name="national_id"]').value,
-            'address': document.querySelector('#creditPaymentModal textarea[name="address"]').value,
-            'due_date': document.querySelector('#creditPaymentModal input[name="due_date"]').value,
-            'credit_amount': creditAmount,
-            'remaining_amount': parseInt($('#credit-remaining-amount').val()) || 0,
-            'remaining_payment_method': $('#credit-remaining-payment-method').val(),
-            'remaining_pos_device_id': $('#credit-remaining-pos-device').val()
-        };
+    console.log("📋 داده‌های فرم نسیه:", formData);
 
-        console.log("📋 داده‌های فرم نسیه:", formData);
-
-        // بررسی فیلدهای ضروری
-        if (!formData.customer_name || !formData.customer_family || !formData.phone ||
-            !formData.national_id || !formData.due_date) {
-            alert('لطفا تمام فیلدهای ضروری را پر کنید');
+    // بررسی فیلدهای ضروری
+    const requiredFields = ['customer_name', 'customer_family', 'phone', 'national_id', 'due_date'];
+    for (const field of requiredFields) {
+        if (!formData[field]) {
+            showToast(`لطفا فیلد ${field} را پر کنید`, 'error');
             return;
         }
-
-        // ارسال درخواست AJAX
-        fetch("{% url 'invoice_app:save_credit_payment' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("✅ پاسخ سرور:", data);
-            if (data.status === 'success') {
-                alert('اطلاعات نسیه با موفقیت ذخیره شد');
-                // بستن مودال
-                var modal = bootstrap.Modal.getInstance(document.getElementById('creditPaymentModal'));
-                modal.hide();
-
-                // ثبت نهایی فاکتور
-                setTimeout(() => {
-                    console.log("🟢 در حال ثبت نهایی فاکتور...");
-                    submitFinalInvoice('save_only', 'credit', creditAmount);
-                }, 1000);
-            } else {
-                alert('خطا در ذخیره اطلاعات نسیه: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('❌ خطا:', error);
-            alert('خطا در ارتباط با سرور');
-        });
     }
+
+    // نمایش مودال پردازش
+    const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت نسیه');
+
+    // ارسال درخواست AJAX
+    $.ajax({
+        url: "{% url 'invoice_app:save_credit_payment' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log("✅ پاسخ سرور برای نسیه:", data);
+            
+            if (data.status === 'success') {
+                // نمایش موفقیت
+                $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
+                $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
+                
+                // هدایت به صفحه چاپ بعد از 2 ثانیه
+                setTimeout(() => {
+                    hideProcessingModal();
+                    const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                    window.open(printUrl, '_blank');
+                    
+                    // هدایت به صفحه موفقیت
+                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                    window.location.href = successUrl;
+                }, 2000);
+                
+            } else {
+                hideProcessingModal();
+                showToast('خطا در ذخیره اطلاعات نسیه: ' + data.message, 'error');
+            }
+        },
+        error: function(error) {
+            console.error('❌ خطا در ذخیره نسیه:', error);
+            hideProcessingModal();
+            showToast('خطا در ارتباط با سرور', 'error');
+        }
+    });
+}
 
     // =============================================
     // تنظیم event listeners

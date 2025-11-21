@@ -480,13 +480,112 @@ def save_pos_device(request):
             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
     return JsonResponse({'status': 'error'})
 
+
+@login_required
+@csrf_exempt
+def save_credit_payment(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print("📋 اطلاعات دریافتی نسیه:", data)
+
+            # اعتبارسنجی فیلدهای ضروری
+            required_fields = ['customer_name', 'customer_family', 'national_id', 'phone', 'due_date']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
+
+            # محاسبه مبلغ فاکتور از session
+            items = request.session.get('invoice_items', [])
+            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
+            discount = request.session.get('discount', 0)
+            total_amount = max(0, total_amount - discount)
+
+            credit_amount = int(data.get('credit_amount', 0))
+
+            # 🔴 ثبت فاکتور اولیه
+            branch_id = request.session.get('branch_id')
+            if not branch_id:
+                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
+
+            # ایجاد فاکتور
+            invoice = Invoicefrosh.objects.create(
+                branch_id=branch_id,
+                created_by=request.user,
+                payment_method='credit',
+                total_amount=total_amount,
+                total_without_discount=sum(item['total'] for item in items),
+                discount=discount + sum(item.get('discount', 0) for item in items),
+                is_finalized=True,
+                is_paid=False,  # چون نسیه هست، پرداخت کامل نشده
+                customer_name=data.get('customer_name', ''),
+                customer_phone=data.get('phone', ''),
+                paid_amount=credit_amount,
+                total_standard_price=0  # محاسبه می‌شود
+            )
+
+            # ثبت آیتم‌های فاکتور
+            for item_data in items:
+                product = InventoryCount.objects.get(id=item_data['product_id'])
+                InvoiceItemfrosh.objects.create(
+                    invoice=invoice,
+                    product=product,
+                    quantity=item_data['quantity'],
+                    price=item_data['price'],
+                    total_price=(item_data['quantity'] * item_data['price']) - item_data.get('discount', 0),
+                    discount=item_data.get('discount', 0)
+                )
+                # کاهش موجودی
+                product.quantity -= item_data['quantity']
+                product.save()
+
+            # 🔴 ثبت اطلاعات نسیه
+            credit_payment = CreditPayment.objects.create(
+                invoice=invoice,
+                customer_name=data.get('customer_name', '').strip(),
+                customer_family=data.get('customer_family', '').strip(),
+                national_id=data.get('national_id', '').strip(),
+                address=data.get('address', '').strip(),
+                phone=data.get('phone', '').strip(),
+                due_date=data.get('due_date', ''),
+                credit_amount=credit_amount,
+                remaining_amount=int(data.get('remaining_amount', 0)),
+                remaining_payment_method=data.get('remaining_payment_method', 'cash')
+            )
+
+            # اگر باقیمانده با پوز پرداخت شود، دستگاه پوز را ثبت کن
+            if data.get('remaining_payment_method') == 'pos' and data.get('remaining_pos_device_id'):
+                credit_payment.pos_device_id = data.get('remaining_pos_device_id')
+                credit_payment.save()
+
+            # پاکسازی session
+            session_keys = ['invoice_items', 'customer_name', 'customer_phone',
+                            'payment_method', 'discount', 'pos_device_id', 'credit_payment_data']
+            for key in session_keys:
+                if key in request.session:
+                    del request.session[key]
+
+            print(f"✅ فاکتور نسیه با موفقیت ثبت شد. شماره فاکتور: {invoice.id}")
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'اطلاعات نسیه و فاکتور با موفقیت ثبت شد',
+                'invoice_id': invoice.id,
+                'credit_id': credit_payment.id
+            })
+
+        except Exception as e:
+            print(f"❌ خطا در ذخیره اطلاعات نسیه: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+
+    return JsonResponse({'status': 'error'})
 @login_required
 @csrf_exempt
 def save_check_payment(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            print("📋 اطلاعات دریافتی چک:", data)  # لاگ برای دیباگ
+            print("📋 اطلاعات دریافتی چک:", data)
 
             required_fields = ['owner_name', 'owner_family', 'national_id', 'phone',
                                'check_number', 'amount', 'check_date', 'remaining_amount',
@@ -496,31 +595,130 @@ def save_check_payment(request):
                 if not data.get(field):
                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
 
-            # ذخیره اطلاعات چک در session
-            check_data = {
-                'owner_name': data.get('owner_name', '').strip(),
-                'owner_family': data.get('owner_family', '').strip(),
-                'national_id': data.get('national_id', '').strip(),
-                'address': data.get('address', '').strip(),
-                'phone': data.get('phone', '').strip(),
-                'check_number': data.get('check_number', '').strip(),
-                'amount': int(data.get('amount', 0)),
-                'remaining_amount': int(data.get('remaining_amount', 0)),
-                'remaining_payment_method': data.get('remaining_payment_method', 'cash'),
-                'remaining_pos_device_id': data.get('remaining_pos_device_id'),
-                'check_date': data.get('check_date', '')
-            }
+            # محاسبه مبلغ فاکتور از session
+            items = request.session.get('invoice_items', [])
+            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
+            discount = request.session.get('discount', 0)
+            total_amount = max(0, total_amount - discount)
 
-            request.session['check_payment_data'] = check_data
-            request.session.modified = True
+            # 🔴 ثبت فاکتور اولیه
+            branch_id = request.session.get('branch_id')
+            if not branch_id:
+                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
 
-            print("✅ اطلاعات چک در session ذخیره شد:", check_data)
+            # ایجاد فاکتور
+            invoice = Invoicefrosh.objects.create(
+                branch_id=branch_id,
+                created_by=request.user,
+                payment_method='check',
+                total_amount=total_amount,
+                total_without_discount=sum(item['total'] for item in items),
+                discount=discount + sum(item.get('discount', 0) for item in items),
+                is_finalized=True,
+                is_paid=False,  # چون چک هست، پرداخت کامل نشده
+                customer_name=request.session.get('customer_name', ''),
+                customer_phone=request.session.get('customer_phone', ''),
+                paid_amount=int(data.get('amount', 0)),
+                total_standard_price=0  # محاسبه می‌شود
+            )
 
-            return JsonResponse({'status': 'success'})
+            # ثبت آیتم‌های فاکتور
+            for item_data in items:
+                product = InventoryCount.objects.get(id=item_data['product_id'])
+                InvoiceItemfrosh.objects.create(
+                    invoice=invoice,
+                    product=product,
+                    quantity=item_data['quantity'],
+                    price=item_data['price'],
+                    total_price=(item_data['quantity'] * item_data['price']) - item_data.get('discount', 0),
+                    discount=item_data.get('discount', 0)
+                )
+                # کاهش موجودی
+                product.quantity -= item_data['quantity']
+                product.save()
+
+            # 🔴 ثبت اطلاعات چک
+            check_payment = CheckPayment.objects.create(
+                invoice=invoice,
+                owner_name=data.get('owner_name', '').strip(),
+                owner_family=data.get('owner_family', '').strip(),
+                national_id=data.get('national_id', '').strip(),
+                address=data.get('address', '').strip(),
+                phone=data.get('phone', '').strip(),
+                check_number=data.get('check_number', '').strip(),
+                amount=int(data.get('amount', 0)),
+                remaining_amount=int(data.get('remaining_amount', 0)),
+                remaining_payment_method=data.get('remaining_payment_method', 'cash'),
+                check_date=data.get('check_date', '')
+            )
+
+            # اگر باقیمانده با پوز پرداخت شود، دستگاه پوز را ثبت کن
+            if data.get('remaining_payment_method') == 'pos' and data.get('remaining_pos_device_id'):
+                check_payment.pos_device_id = data.get('remaining_pos_device_id')
+                check_payment.save()
+
+            # پاکسازی session
+            session_keys = ['invoice_items', 'customer_name', 'customer_phone',
+                            'payment_method', 'discount', 'pos_device_id', 'check_payment_data']
+            for key in session_keys:
+                if key in request.session:
+                    del request.session[key]
+
+            print(f"✅ فاکتور چک با موفقیت ثبت شد. شماره فاکتور: {invoice.id}")
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'اطلاعات چک و فاکتور با موفقیت ثبت شد',
+                'invoice_id': invoice.id,
+                'check_id': check_payment.id
+            })
+
         except Exception as e:
             print(f"❌ خطا در ذخیره اطلاعات چک: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+
     return JsonResponse({'status': 'error'})
+# @login_required
+# @csrf_exempt
+# def save_check_payment(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             print("📋 اطلاعات دریافتی چک:", data)  # لاگ برای دیباگ
+#
+#             required_fields = ['owner_name', 'owner_family', 'national_id', 'phone',
+#                                'check_number', 'amount', 'check_date', 'remaining_amount',
+#                                'remaining_payment_method']
+#
+#             for field in required_fields:
+#                 if not data.get(field):
+#                     return JsonResponse({'status': 'error', 'message': f'فیلد {field} الزامی است'})
+#
+#             # ذخیره اطلاعات چک در session
+#             check_data = {
+#                 'owner_name': data.get('owner_name', '').strip(),
+#                 'owner_family': data.get('owner_family', '').strip(),
+#                 'national_id': data.get('national_id', '').strip(),
+#                 'address': data.get('address', '').strip(),
+#                 'phone': data.get('phone', '').strip(),
+#                 'check_number': data.get('check_number', '').strip(),
+#                 'amount': int(data.get('amount', 0)),
+#                 'remaining_amount': int(data.get('remaining_amount', 0)),
+#                 'remaining_payment_method': data.get('remaining_payment_method', 'cash'),
+#                 'remaining_pos_device_id': data.get('remaining_pos_device_id'),
+#                 'check_date': data.get('check_date', '')
+#             }
+#
+#             request.session['check_payment_data'] = check_data
+#             request.session.modified = True
+#
+#             print("✅ اطلاعات چک در session ذخیره شد:", check_data)
+#
+#             return JsonResponse({'status': 'success'})
+#         except Exception as e:
+#             print(f"❌ خطا در ذخیره اطلاعات چک: {str(e)}")
+#             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+#     return JsonResponse({'status': 'error'})
 
 
 @login_required
@@ -788,42 +986,42 @@ def confirm_check_payment(request):
     })
 
 
-@login_required
-@csrf_exempt
-def save_credit_payment(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            print("📋 اطلاعات دریافتی نسیه:", data)
-
-            # 🔴 اصلاح: استفاده از credit_amount از داده‌های فرم
-            credit_amount = int(data.get('credit_amount', 0))
-
-            # ذخیره اطلاعات کامل در session
-            credit_data = {
-                'customer_name': data.get('customer_name', '').strip(),
-                'customer_family': data.get('customer_family', '').strip(),
-                'national_id': data.get('national_id', '').strip(),
-                'address': data.get('address', '').strip(),
-                'phone': data.get('phone', '').strip(),
-                'due_date': data.get('due_date', ''),
-                # 🔴 استفاده از credit_amount از فرم، نه total_amount
-                'credit_amount': credit_amount,
-                'remaining_amount': data.get('remaining_amount', 0),
-                'remaining_payment_method': data.get('remaining_payment_method', 'cash'),
-                'remaining_pos_device_id': data.get('remaining_pos_device_id')
-            }
-
-            request.session['credit_payment_data'] = credit_data
-            request.session.modified = True
-
-            print("✅ اطلاعات نسیه در session ذخیره شد:", credit_data)
-            return JsonResponse({'status': 'success'})
-
-        except Exception as e:
-            print(f"❌ خطا در ذخیره اطلاعات نسیه: {str(e)}")
-            return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
-    return JsonResponse({'status': 'error'})
+# @login_required
+# @csrf_exempt
+# def save_credit_payment(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             print("📋 اطلاعات دریافتی نسیه:", data)
+#
+#             # 🔴 اصلاح: استفاده از credit_amount از داده‌های فرم
+#             credit_amount = int(data.get('credit_amount', 0))
+#
+#             # ذخیره اطلاعات کامل در session
+#             credit_data = {
+#                 'customer_name': data.get('customer_name', '').strip(),
+#                 'customer_family': data.get('customer_family', '').strip(),
+#                 'national_id': data.get('national_id', '').strip(),
+#                 'address': data.get('address', '').strip(),
+#                 'phone': data.get('phone', '').strip(),
+#                 'due_date': data.get('due_date', ''),
+#                 # 🔴 استفاده از credit_amount از فرم، نه total_amount
+#                 'credit_amount': credit_amount,
+#                 'remaining_amount': data.get('remaining_amount', 0),
+#                 'remaining_payment_method': data.get('remaining_payment_method', 'cash'),
+#                 'remaining_pos_device_id': data.get('remaining_pos_device_id')
+#             }
+#
+#             request.session['credit_payment_data'] = credit_data
+#             request.session.modified = True
+#
+#             print("✅ اطلاعات نسیه در session ذخیره شد:", credit_data)
+#             return JsonResponse({'status': 'success'})
+#
+#         except Exception as e:
+#             print(f"❌ خطا در ذخیره اطلاعات نسیه: {str(e)}")
+#             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+#     return JsonResponse({'status': 'error'})
 
 
 # invoice_app/views.py (بخش اصلاح شده)
