@@ -578,33 +578,186 @@
 }
 
 /* استایل Toast پردازش */
+/* استایل Toast پردازش پیشرفته */
 .toast.processing {
-    border-left-color: var(--primary-color);
-    background: rgba(255, 255, 255, 0.95);
+    border-left: 4px solid var(--primary-color);
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    backdrop-filter: blur(15px);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    position: relative;
+}
+
+.toast.processing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    animation: progress-line 2s ease-in-out infinite;
+}
+
+@keyframes progress-line {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+    100% { transform: translateX(100%); }
+}
+
+.toast.processing .toast-body {
+    padding: 20px;
+    background: transparent;
+}
+
+/* اسپینر زیبا */
+.spinner-beautiful {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(46, 125, 50, 0.2);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin-beautiful 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+    position: relative;
+}
+
+.spinner-beautiful::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 3px solid transparent;
+    border-top: 3px solid var(--success-color);
+    border-radius: 50%;
+    animation: spin-beautiful 1.5s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite reverse;
+}
+
+@keyframes spin-beautiful {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* محتوای Toast */
+.processing-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.processing-text {
+    flex: 1;
+}
+
+.processing-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.processing-subtitle {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 2px;
+}
+
+.processing-dots {
+    display: inline-block;
+    animation: dots-pulse 1.5s infinite;
+}
+
+@keyframes dots-pulse {
+    0%, 20% { opacity: 0.3; }
+    50% { opacity: 1; }
+    80%, 100% { opacity: 0.3; }
+}
+
+/* نوار پیشرفت زیبا */
+.progress-beautiful {
+    height: 6px;
+    background: rgba(46, 125, 50, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+    position: relative;
+}
+
+.progress-beautiful-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    border-radius: 10px;
+    animation: progress-shimmer 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-beautiful-inner::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: progress-shine 2s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+}
+
+@keyframes progress-shine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Overlay زیبا */
+#processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 250, 0.95));
     backdrop-filter: blur(10px);
+    z-index: 1040;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    animation: overlay-fade-in 0.3s ease-out forwards;
 }
 
-.spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-    border-width: 0.15em;
+@keyframes overlay-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-/* غیرفعال کردن دکمه‌ها */
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
+/* حالت غیرفعال صفحه */
+body.processing {
+    cursor: wait;
+    position: relative;
 }
 
-/* جلوگیری از کلیک روی سایر المان‌ها هنگام پردازش */
-body.processing * {
+body.processing::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(2px);
+    z-index: 1039;
     pointer-events: none;
 }
 
-body.processing {
-    cursor: wait;
-}
     </style>
 </head>
 <body>
@@ -1266,6 +1419,11 @@ body.processing {
  * 
  * 
  */
+
+
+/**
+ * نمایش Toast وضعیت پردازش زیبا
+ */
 // 🔥 فقط این تابع جدید را اضافه کنید - بقیه کدها بدون تغییر می‌مانند
     function isDefaultPosDevice(deviceId) {
     console.log('🔍 تشخیص دستگاه پیش‌فرض - نسخه ساده');
@@ -1480,29 +1638,40 @@ function processNonDefaultPosPayment(amount, posDeviceId) {
     // =============================================
 // توابع مدیریت پردازش با Toast
 // =============================================
-
 /**
- * نمایش Toast وضعیت پردازش
+ * نمایش Toast وضعیت پردازش زیبا
  */
-function showProcessingToast(message = 'در حال ثبت فاکتور...') {
-    // ایجاد Toast پردازش
+function showProcessingToast(message = 'در حال ثبت فاکتور') {
+    // ایجاد Toast پردازش زیبا
     const toast = $(`
         <div class="toast processing">
             <div class="toast-body">
-                <div class="d-flex align-items-center">
-                    <div class="spinner-border spinner-border-sm text-primary me-3" role="status">
-                        <span class="visually-hidden">در حال پردازش...</span>
+                <div class="processing-content">
+                    <!-- اسپینر زیبا -->
+                    <div class="spinner-beautiful"></div>
+                    
+                    <!-- متن و اطلاعات -->
+                    <div class="processing-text">
+                        <div class="processing-title">${message}<span class="processing-dots">...</span></div>
+                        <div class="processing-subtitle">لطفاً چند لحظه صبر کنید</div>
+                        
+                        <!-- نوار پیشرفت -->
+                        <div class="progress-beautiful">
+                            <div class="progress-beautiful-inner"></div>
+                        </div>
                     </div>
-                    <div>
-                        <div class="fw-bold">${message}</div>
-                        <div class="small text-muted">لطفاً منتظر بمانید...</div>
+                    
+                    <!-- آیکون اطلاعات -->
+                    <div class="text-primary">
+                        <i class="fas fa-file-invoice" style="font-size: 1.2rem;"></i>
                     </div>
                 </div>
             </div>
         </div>
     `);
     
-    $('#toast-container').append(toast);
+    // اضافه کردن انیمیشن ظهور
+    toast.hide().appendTo('#toast-container').fadeIn(400);
     
     // غیرفعال کردن صفحه
     disablePage();
@@ -1511,35 +1680,78 @@ function showProcessingToast(message = 'در حال ثبت فاکتور...') {
 }
 
 /**
- * غیرفعال کردن صفحه هنگام پردازش
+ * غیرفعال کردن صفحه با استایل زیبا
  */
 function disablePage() {
     $('body').addClass('processing');
     $('.btn').prop('disabled', true);
     
-    // اضافه کردن overlay برای تأکید بیشتر
+    // ایجاد overlay زیبا
     if ($('#processing-overlay').length === 0) {
-        $('body').append('<div id="processing-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.7);z-index:1040;cursor:wait;"></div>');
+        const overlay = $(`
+            <div id="processing-overlay">
+                <div class="text-center">
+                    <div class="spinner-beautiful mb-3 mx-auto"></div>
+                    <div style="color: var(--primary-color); font-weight: 600;">در حال پردازش درخواست</div>
+                    <div class="small text-muted mt-2">لطفاً شکیبا باشید</div>
+                </div>
+            </div>
+        `);
+        $('body').append(overlay);
     }
+    
+    // اضافه کردن انیمیشن به دکمه‌ها
+    $('.btn:disabled').css({
+        'transform': 'scale(0.98)',
+        'transition': 'all 0.3s ease'
+    });
 }
 
 /**
- * فعال کردن صفحه پس از پردازش
+ * فعال کردن صفحه
  */
 function enablePage() {
     $('body').removeClass('processing');
     $('.btn').prop('disabled', false);
-    $('#processing-overlay').remove();
+    
+    // حذف overlay با انیمیشن
+    $('#processing-overlay').fadeOut(300, function() {
+        $(this).remove();
+    });
+    
+    // بازگرداندن دکمه‌ها به حالت عادی
+    $('.btn').css({
+        'transform': 'scale(1)',
+        'transition': 'all 0.3s ease'
+    });
 }
 
 /**
- * ثبت فاکتور با نمایش وضعیت پردازش
+ * ثبت فاکتور با نمایش وضعیت پردازش زیبا
  */
 function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') {
-    console.log('📦 شروع ثبت فاکتور با نمایش وضعیت');
+    console.log('📦 شروع ثبت فاکتور با نمایش وضعیت زیبا');
     
-    // نمایش Toast وضعیت
-    const processingToast = showProcessingToast('در حال ارسال اطلاعات به سرور...');
+    // نمایش Toast وضعیت زیبا
+    const processingToast = showProcessingToast('ثبت فاکتور');
+    
+    // به‌روزرسانی پویای پیام
+    const messages = [
+        'آماده‌سازی اطلاعات',
+        'بررسی موجودی کالاها',
+        'محاسبه مالیات و تخفیف',
+        'ثبت در سیستم',
+        'اتمام پردازش'
+    ];
+    
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+        if (messageIndex < messages.length) {
+            processingToast.find('.processing-title')
+                .html(`${messages[messageIndex]}<span class="processing-dots">...</span>`);
+            messageIndex++;
+        }
+    }, 800);
     
     // ارسال درخواست به سرور
     $.ajax({
@@ -1556,49 +1768,81 @@ function processInvoiceWithLoading(paymentMethod, amount, action = 'save_only') 
         success: function(data) {
             console.log('✅ پاسخ سرور دریافت شد:', data);
             
-            // فعال کردن صفحه
-            enablePage();
+            // متوقف کردن به‌روزرسانی پیام
+            clearInterval(messageInterval);
             
-            // حذف Toast وضعیت
-            processingToast.fadeOut(300, function() {
-                $(this).remove();
-            });
+            // نمایش پیام نهایی
+            processingToast.find('.processing-title')
+                .html('اتمام پردازش<span class="processing-dots">...</span>');
             
-            if (data.status === 'success') {
-                showToast('فاکتور با موفقیت ثبت شد', 'success');
-                currentInvoiceId = data.invoice_id;
+            // تأخیر برای نمایش پیام نهایی
+            setTimeout(() => {
+                // فعال کردن صفحه
+                enablePage();
                 
-                // هدایت به صفحه موفقیت با تأخیر کوتاه
-                setTimeout(() => {
-                    const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
-                    window.location.href = successUrl;
-                }, 1500);
+                // انیمیشن خروج زیبا برای Toast
+                processingToast.animate({
+                    opacity: 0,
+                    marginTop: '-20px'
+                }, 400, function() {
+                    $(this).remove();
+                });
                 
-            } else {
-                showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
-                console.error('❌ خطا در ثبت فاکتور:', data.message);
-            }
+                if (data.status === 'success') {
+                    showToast('✅ فاکتور با موفقیت ثبت شد', 'success');
+                    currentInvoiceId = data.invoice_id;
+                    
+                    // هدایت به صفحه موفقیت با انیمیشن
+                    setTimeout(() => {
+                        const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                        window.location.href = successUrl;
+                    }, 1200);
+                    
+                } else {
+                    showToast('❌ خطا در ثبت فاکتور: ' + data.message, 'error');
+                }
+            }, 800);
+            
         },
         error: function(xhr, status, error) {
             console.error('❌ خطای ارتباط با سرور:', error);
             
+            // متوقف کردن به‌روزرسانی پیام
+            clearInterval(messageInterval);
+            
             // فعال کردن صفحه
             enablePage();
             
-            // حذف Toast وضعیت
-            processingToast.fadeOut(300, function() {
-                $(this).remove();
-            });
+            // انیمیشن خروج با نشانگر خطا
+            processingToast.find('.spinner-beautiful')
+                .css('border-top-color', 'var(--danger-color)');
+            processingToast.find('.processing-title')
+                .html('خطا در پردازش<span class="processing-dots">...</span>')
+                .css('color', 'var(--danger-color)');
             
-            let errorMessage = 'خطا در ارتباط با سرور';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage += ': ' + xhr.responseJSON.message;
-            }
-            
-            showToast(errorMessage, 'error');
+            setTimeout(() => {
+                processingToast.animate({
+                    opacity: 0,
+                    marginLeft: '100px'
+                }, 400, function() {
+                    $(this).remove();
+                });
+                
+                let errorMessage = 'خطا در ارتباط با سرور';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage += ': ' + xhr.responseJSON.message;
+                }
+                
+                showToast(errorMessage, 'error');
+            }, 1000);
         }
     });
 }
+
+
+
+
+
     // =============================================
     // توابع جستجو و بارکد
     // =============================================
