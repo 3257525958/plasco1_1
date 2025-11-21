@@ -1238,49 +1238,17 @@
  * 
  */
 // 🔥 فقط این تابع جدید را اضافه کنید - بقیه کدها بدون تغییر می‌مانند
-function isDefaultPosDevice(deviceId) {
-    // روش قطعی: استفاده از data attribute + بررسی متن + بررسی سرور
-    const selectedOption = $('#pos-device option:selected');
+    function isDefaultPosDevice(deviceId) {
+    console.log('🔍 تشخیص دستگاه پیش‌فرض - نسخه ساده');
     
-    // 1. بررسی data attribute (مطمئن‌ترین روش)
-    const dataDefault = selectedOption.data('is-default');
-    if (dataDefault === 'true') {
-        console.log('✅ تشخیص از طریق data attribute: پیش‌فرض است');
-        return true;
-    }
+    // روش بسیار ساده: فقط متن گزینه را چک کن
+    const selectedText = $('#pos-device option:selected').text();
+    const isDefault = selectedText.includes('پیش فرض');
     
-    // 2. بررسی مستقیم متن
-    const selectedText = selectedOption.text();
-    const textChecks = [
-        'پیش فرض',
-        'پیشفرض', 
-        'پیش‌فرض',
-        '(پیش فرض)',
-        '(پیشفرض)',
-        'default',
-        'Default'
-    ];
+    console.log('📝 متن گزینه:', selectedText);
+    console.log('✅ پیش‌فرض است؟', isDefault);
     
-    for (const check of textChecks) {
-        if (selectedText.includes(check)) {
-            console.log('✅ تشخیص از طریق متن: پیش‌فرض است - شامل:', check);
-            return true;
-        }
-    }
-    
-    // 3. بررسی از طریق ID دستگاه پیش‌فرض سرور
-    {% if default_pos %}
-    const defaultPosId = {{ default_pos.id }};
-    if (parseInt(deviceId) === defaultPosId) {
-        console.log('✅ تشخیص از طریق ID سرور: پیش‌فرض است');
-        return true;
-    }
-    {% endif %}
-    
-    console.log('❌ دستگاه پیش‌فرض تشخیص داده نشد');
-    console.log('متن گزینه:', selectedText);
-    console.log('data-is-default:', dataDefault);
-    return false;
+    return isDefault;
 }
     function checkIfDefaultPOS(deviceId) {
     const selectedOption = $(`#pos-device option[value="${deviceId}"]`);
