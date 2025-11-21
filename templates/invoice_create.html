@@ -698,15 +698,15 @@
                 <div class="form-group">
                     <label for="pos-device">انتخاب دستگاه پوز:</label>
                         <select id="pos-device" class="form-control">
-    {% for device in pos_devices %}
-        <option value="{{ device.id }}" 
-                {% if default_pos and device.id == default_pos.id %}selected{% endif %}
-                data-default="{% if device.is_default %}true{% else %}false{% endif %}">
-            {{ device.name }} - {{ device.bank_name }}
-            {% if device.is_default %} (پیش فرض) {% endif %}
-        </option>
-    {% endfor %}
-</select>
+                            {% for device in pos_devices %}
+                                <option value="{{ device.id }}" 
+                                        {% if default_pos and device.id == default_pos.id %}selected{% endif %}
+                                        data-is-default="{% if device.is_default %}true{% else %}false{% endif %}">
+                                    {{ device.name }} - {{ device.bank_name }}
+                                    {% if device.is_default %}(پیش فرض){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
                 </div>
             </div>
         </div>
@@ -1238,24 +1238,49 @@
  * 
  */
 // 🔥 فقط این تابع جدید را اضافه کنید - بقیه کدها بدون تغییر می‌مانند
-    function isDefaultPosDevice(deviceId) {
-    // روش قطعی: بررسی تمام حالات ممکن
-    const selectedText = $('#pos-device option:selected').text();
+function isDefaultPosDevice(deviceId) {
+    // روش قطعی: استفاده از data attribute + بررسی متن + بررسی سرور
+    const selectedOption = $('#pos-device option:selected');
     
-    // تمام فرمت‌های ممکن برای "پیش فرض"
-    const isDefault = 
-        /پیش\s*فرض/i.test(selectedText) ||      // "پیش فرض" با هر فاصله
-        /\(پیش\s*فرض\)/i.test(selectedText) ||  // "(پیش فرض)"
-        /default/i.test(selectedText) ||         // "default" 
-        selectedText.includes('پیش‌فرض') ||      // با نیم‌فاصله
-        selectedText.trim().endsWith('(پیش فرض)'); // پایان متن با "(پیش فرض)"
+    // 1. بررسی data attribute (مطمئن‌ترین روش)
+    const dataDefault = selectedOption.data('is-default');
+    if (dataDefault === 'true') {
+        console.log('✅ تشخیص از طریق data attribute: پیش‌فرض است');
+        return true;
+    }
     
-    console.log('🔍 تشخیص نهایی:', {
-        text: selectedText,
-        isDefault: isDefault
-    });
+    // 2. بررسی مستقیم متن
+    const selectedText = selectedOption.text();
+    const textChecks = [
+        'پیش فرض',
+        'پیشفرض', 
+        'پیش‌فرض',
+        '(پیش فرض)',
+        '(پیشفرض)',
+        'default',
+        'Default'
+    ];
     
-    return isDefault;
+    for (const check of textChecks) {
+        if (selectedText.includes(check)) {
+            console.log('✅ تشخیص از طریق متن: پیش‌فرض است - شامل:', check);
+            return true;
+        }
+    }
+    
+    // 3. بررسی از طریق ID دستگاه پیش‌فرض سرور
+    {% if default_pos %}
+    const defaultPosId = {{ default_pos.id }};
+    if (parseInt(deviceId) === defaultPosId) {
+        console.log('✅ تشخیص از طریق ID سرور: پیش‌فرض است');
+        return true;
+    }
+    {% endif %}
+    
+    console.log('❌ دستگاه پیش‌فرض تشخیص داده نشد');
+    console.log('متن گزینه:', selectedText);
+    console.log('data-is-default:', dataDefault);
+    return false;
 }
     function checkIfDefaultPOS(deviceId) {
     const selectedOption = $(`#pos-device option[value="${deviceId}"]`);
@@ -2235,12 +2260,23 @@ function finalizeInvoice(action) {
     // برای پرداخت POS
     if (paymentMethod === 'pos') {
         const posDeviceId = $('#pos-device').val();
+        
         if (!posDeviceId) {
             showToast('لطفا یک دستگاه پوز انتخاب کنید', 'error');
             return;
         }
 
         // بررسی آیا دستگاه پوز انتخاب شده، پیش‌فرض است؟
+        
+    // 🔥 اضافه کردن لاگ‌های تشخیصی بیشتر
+    const selectedOption = $('#pos-device option:selected');
+    console.log('🔍 دیباگ کامل دستگاه پوز:');
+    console.log('   - ID انتخاب شده:', posDeviceId);
+    console.log('   - متن گزینه:', selectedOption.text());
+    console.log('   - data-is-default:', selectedOption.data('is-default'));
+    console.log('   - HTML:', selectedOption.prop('outerHTML'));
+        
+    console.log('🎯 نتیجه نهایی بررسی پیش‌فرض:', isDefaultPos);
         const isDefaultPos = checkIfDefaultPOS(posDeviceId);
         console.log('🔍 دستگاه پوز پیش‌فرض است؟', isDefaultPos);
 
