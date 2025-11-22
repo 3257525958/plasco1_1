@@ -1574,114 +1574,6 @@ body.processing #processing-overlay {
 
 
 
-// توابع مربوط به پرداخت نقدی
-function updateCashModalInvoiceTotal() {
-    const invoiceTotal = calculateInvoiceTotal().totalAmount;
-    $('#cash-invoice-total').text(invoiceTotal.toLocaleString('fa-IR'));
-    updateCashRemainingAmount();
-}
-
-function updateCashRemainingAmount() {
-    const invoiceTotal = calculateInvoiceTotal().totalAmount;
-    const cashAmount = parseInt($('#cash-amount').val()) || 0;
-    const remainingAmount = Math.max(0, invoiceTotal - cashAmount);
-
-    $('#cash-remaining-amount').val(remainingAmount);
-}
-
-function saveCashPayment() {
-    console.log('💰 شروع فرآیند ثبت فاکتور با نقدی...');
-    
-    const cashAmount = parseInt($('#cash-amount').val()) || 0;
-    
-    if (cashAmount <= 0) {
-        showToast('لطفا مبلغ نقدی را وارد کنید', 'error');
-        return;
-    }
-
-    // 🔴 ابتدا مودال نقدی را ببند
-    $('#cashPaymentModal').modal('hide');
-    
-    // نمایش مودال پردازش
-    const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت نقدی');
-
-    // ارسال درخواست به سرور
-    $.ajax({
-        url: "{% url 'invoice_app:save_cash_payment' %}",
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            cash_amount: cashAmount,
-            remaining_amount: parseInt($('#cash-remaining-amount').val()) || 0,
-            remaining_payment_method: $('#cash-remaining-payment-method').val(),
-            remaining_pos_device_id: $('#cash-remaining-pos-device').val()
-        }),
-        headers: {'X-CSRFToken': getCookie('csrftoken')},
-        success: function(data) {
-            console.log("✅ پاسخ سرور برای نقدی:", data);
-            
-            if (data.status === 'success') {
-                // نمایش موفقیت
-                $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
-                $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
-                
-                // هدایت مستقیم به صفحه چاپ
-                setTimeout(() => {
-                    hideProcessingModal();
-                    if (data.invoice_id) {
-                        const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
-                        window.open(printUrl, '_blank');
-                        
-                        // هدایت به صفحه موفقیت
-                        const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
-                        window.location.href = successUrl;
-                    } else {
-                        showToast('خطا: شماره فاکتور دریافت نشد', 'error');
-                    }
-                }, 1000);
-                
-            } else {
-                hideProcessingModal();
-                showToast('خطا در ذخیره اطلاعات نقدی: ' + data.message, 'error');
-            }
-        },
-        error: function(error) {
-            console.error('❌ خطا در ذخیره نقدی:', error);
-            hideProcessingModal();
-            showToast('خطا در ارتباط با سرور', 'error');
-        }
-    });
-}
-
-// اضافه کردن event listener برای دکمه نقدی
-$(document).ready(function() {
-    // هنگام کلیک روی دکمه نقدی
-    $('.payment-method-btn[data-method="cash"]').click(function() {
-        currentPaymentMethod = 'cash';
-        $('.payment-method-btn').removeClass('active');
-        $(this).addClass('active');
-        $('#cashPaymentModal').modal('show');
-        savePaymentMethod('cash');
-    });
-
-    // هنگام باز کردن مودال نقدی
-    $('#cashPaymentModal').on('show.bs.modal', function() {
-        updateCashModalInvoiceTotal();
-    });
-
-    // تغییر real-time در مبلغ نقدی
-    $('#cash-amount').on('input', updateCashRemainingAmount);
-});
-
-// قرار دادن توابع در scope جهانی
-window.saveCashPayment = saveCashPayment;
-window.updateCashRemainingAmount = updateCashRemainingAmount;
-
-
-
-
-
-
      // =============================================
 // توابع مدیریت پردازش با Toast
 // =============================================
@@ -3364,16 +3256,29 @@ $(document).on('click', '.set-default-btn', function(e) {
         $('#credit-amount').on('input', updateCreditRemainingAmount);
         $('#credit-remaining-payment-method').on('change', updateCreditRemainingAmount);
 
+        
+        // 🔴 رویدادهای مودال نقدی
+        $('#cash-amount').on('input', updateCashRemainingAmount);
+        $('#cash-remaining-payment-method').on('change', function() {
+            updateCashRemainingAmount();
+        });
+    
         // هنگام باز کردن مودال چک
         $('#checkPaymentModal').on('show.bs.modal', function() {
             updateCheckModalInvoiceTotal();
         });
-
+    
         // هنگام باز کردن مودال نسیه
         $('#creditPaymentModal').on('show.bs.modal', function() {
             updateCreditModalInvoiceTotal();
         });
-    }
+        
+        // 🔴 هنگام باز کردن مودال نقدی
+        $('#cashPaymentModal').on('show.bs.modal', function() {
+            updateCashModalInvoiceTotal();
+        });
+        
+        }
 
     // =============================================
     // Event Listeners ساده و مستقیم
@@ -3573,6 +3478,89 @@ function savePaymentMethodToSession(method) {
         }
     });
 }
+
+
+// =============================================
+// توابع مربوط به پرداخت نقدی
+// =============================================
+function updateCashModalInvoiceTotal() {
+    const invoiceTotal = calculateInvoiceTotal().totalAmount;
+    $('#cash-invoice-total').text(invoiceTotal.toLocaleString('fa-IR'));
+    updateCashRemainingAmount();
+}
+
+function updateCashRemainingAmount() {
+    const invoiceTotal = calculateInvoiceTotal().totalAmount;
+    const cashAmount = parseInt($('#cash-amount').val()) || 0;
+    const remainingAmount = Math.max(0, invoiceTotal - cashAmount);
+
+    $('#cash-remaining-amount').val(remainingAmount);
+}
+
+function saveCashPayment() {
+    console.log('💰 شروع فرآیند ثبت فاکتور با نقدی...');
+    
+    const cashAmount = parseInt($('#cash-amount').val()) || 0;
+    
+    if (cashAmount <= 0) {
+        showToast('لطفا مبلغ نقدی را وارد کنید', 'error');
+        return;
+    }
+
+    // ابتدا مودال نقدی را ببند
+    $('#cashPaymentModal').modal('hide');
+    
+    // نمایش مودال پردازش
+    const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت نقدی');
+
+    // ارسال درخواست به سرور
+    $.ajax({
+        url: "{% url 'invoice_app:save_cash_payment' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            cash_amount: cashAmount,
+            remaining_amount: parseInt($('#cash-remaining-amount').val()) || 0,
+            remaining_payment_method: $('#cash-remaining-payment-method').val(),
+            remaining_pos_device_id: $('#cash-remaining-pos-device').val()
+        }),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log("✅ پاسخ سرور برای نقدی:", data);
+            
+            if (data.status === 'success') {
+                // نمایش موفقیت
+                $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
+                $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
+                
+                // هدایت مستقیم به صفحه چاپ
+                setTimeout(() => {
+                    hideProcessingModal();
+                    if (data.invoice_id) {
+                        const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                        window.open(printUrl, '_blank');
+                        
+                        // هدایت به صفحه موفقیت
+                        const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                        window.location.href = successUrl;
+                    } else {
+                        showToast('خطا: شماره فاکتور دریافت نشد', 'error');
+                    }
+                }, 1000);
+                
+            } else {
+                hideProcessingModal();
+                showToast('خطا در ذخیره اطلاعات نقدی: ' + data.message, 'error');
+            }
+        },
+        error: function(error) {
+            console.error('❌ خطا در ذخیره نقدی:', error);
+            hideProcessingModal();
+            showToast('خطا در ارتباط با سرور', 'error');
+        }
+    });
+}
+
     // =============================================
     // قرار دادن توابع در scope جهانی
     // =============================================
@@ -3584,6 +3572,7 @@ function savePaymentMethodToSession(method) {
     window.openDueDatePicker = openDueDatePicker;
     window.saveCheckPayment = saveCheckPayment;
     window.saveCreditPayment = saveCreditPayment;
+    window.saveCashPayment = saveCashPayment; // این خط را اضافه کنید
     window.showAllPOSDevices = showAllPOSDevices;
     window.addPosDevice = addPosDevice;
     window.processPosPayment = processPosPayment;
@@ -3591,11 +3580,17 @@ function savePaymentMethodToSession(method) {
     window.printCurrentInvoice = printCurrentInvoice;
     window.retryPayment = retryPayment;
     window.cancelPayment = cancelPayment;
-    // در انتهای فایل، فقط توابع جدید را global کنید
-window.processNonPosPayment = processNonPosPayment;
-window.saveCustomerInfoToSession = saveCustomerInfoToSession;
-window.saveDiscountToSession = saveDiscountToSession;
-window.savePaymentMethodToSession = savePaymentMethodToSession;
-    </script>
+    
+    // توابع پرداخت غیر-POS
+    window.processNonPosPayment = processNonPosPayment;
+    window.saveCustomerInfoToSession = saveCustomerInfoToSession;
+    window.saveDiscountToSession = saveDiscountToSession;
+    window.savePaymentMethodToSession = savePaymentMethodToSession;
+    
+    // 🔴 توابع نقدی را در اینجا قرار دهید (نه در وسط کد)
+    window.updateCashRemainingAmount = updateCashRemainingAmount;
+    window.updateCashModalInvoiceTotal = updateCashModalInvoiceTotal;
+    
+</script>
 </body>
 </html>

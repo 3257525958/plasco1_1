@@ -49,4 +49,6 @@ path('api/quick-stats/', views.quick_stats, name='quick_stats'),
 
 # urls.py - اضافه کردن URL جدید
 path('save-cash-payment/', views.save_cash_payment, name='save_cash_payment'),
+
+
 ]

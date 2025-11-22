@@ -15,7 +15,7 @@ import jdatetime
 from datetime import datetime
 
 from account_app.models import InventoryCount, Branch, ProductPricing
-from .models import Invoicefrosh, InvoiceItemfrosh, POSDevice, CheckPayment, CreditPayment
+from .models import Invoicefrosh, InvoiceItemfrosh, POSDevice, CheckPayment, CreditPayment , CashPayment
 from .forms import BranchSelectionForm, POSDeviceForm, CheckPaymentForm, CreditPaymentForm
 
 # مپینگ شعبه به سرویس واسط - این را قبل از توابع اضافه کنید
