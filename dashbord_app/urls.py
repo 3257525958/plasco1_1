@@ -25,13 +25,21 @@ urlpatterns = [
 
     # path('print-settings/', views.print_settings, name='print_settings'),
     # تغییر مسیر چاپ به پیش‌نمایش
-    path('print-preview/<int:invoice_id>/', views.print_preview, name='print_preview_invoice'),
-    path('print-preview/', views.print_preview, name='print_preview_inventory'),
-    # مسیر تنظیمات چاپ
-    path('print-settings/', views.print_settings, name='print_settings'),
+    path('print-preview/inventory/', views.print_inventory_labels_preview, name='print_inventory_labels_preview'),
+    path('print-preview/invoice/<int:invoice_id>/', views.print_invoice_labels_preview,
+         name='print_invoice_labels_preview'),
 
-    path('usb/',views.usb_view, name='usb'),
+    # مسیرهای قدیمی را غیرفعال کنید یا حذف کنید
+    # path('print-preview/<int:invoice_id>/', views.print_preview, name='print_preview_invoice'),
+    # path('print-preview/', views.print_preview, name='print_preview_inventory'),
 
+    # مسیرهای چاپ سریع
+    path('quick-label-print/', views.quick_label_print_page, name='quick_label_print_page'),
+    path('search-inventory-label/', views.search_inventory_for_label, name='search_inventory_for_label'),
+    path('add-to-print-list/', views.add_to_print_list, name='add_to_print_list'),
+    path('get-print-list/', views.get_print_list, name='get_print_list'),
+    path('clear-print-list/', views.clear_print_list, name='clear_print_list'),
+    path('go-to-print-settings/', views.go_to_print_settings, name='go_to_print_settings'),
     # URLهای جدید برای چاپ سریع لیبل
     path('quick-label-print/', views.quick_label_print, name='quick_label_print'),
     path('generate-label-barcode/', views.generate_label_barcode, name='generate_label_barcode'),
@@ -51,6 +59,14 @@ urlpatterns = [
     path('search-invoices-for-edit/', views.search_invoices_for_edit, name='search_invoices_for_edit'),
     path('get-invoice-for-edit/', views.get_invoice_for_edit, name='get_invoice_for_edit'),
     path('update-invoice/', views.update_invoice, name='update_invoice'),
-
+    # ---------------------------------------لیبل جدید-----------------------------------------
+    path('quick-label-print/', views.quick_label_print_page_label, name='quick_label_print_page_label'),
+    path('search-inventory-label/', views.search_inventory_for_label_label, name='search_inventory_for_label_label'),
+    path('add-to-print-list/', views.add_to_print_list_label, name='add_to_print_list_label'),
+    path('get-print-list/', views.get_print_list_label, name='get_print_list_label'),
+    path('clear-print-list/', views.clear_print_list_label, name='clear_print_list_label'),
+    path('go-to-print-settings/', views.go_to_print_settings_label, name='go_to_print_settings_label'),
+    path('print-settings/', views.print_settings_label, name='print_settings_label'),
+    path('print-preview/inventory/', views.print_inventory_labels_preview_label, name='print_inventory_labels_preview_label'),
 
 ]

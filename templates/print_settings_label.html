@@ -359,7 +359,7 @@
                         <div class="setting-group">
                             <label for="show_product_name">نمایش نام کالا</label>
                             <div class="checkbox-group">
-                                <input type="checkbox" id="show_product_name" name="show_product_name" checked>
+                                <input type="checkbox" id="show_product_name" name="show_product_name" {% if print_config.show_product_name %}checked{% endif %}>
                                 <label for="show_product_name">فعال</label>
                             </div>
                         </div>
@@ -367,7 +367,7 @@
                         <div class="setting-group">
                             <label for="show_price">نمایش قیمت</label>
                             <div class="checkbox-group">
-                                <input type="checkbox" id="show_price" name="show_price" checked>
+                                <input type="checkbox" id="show_price" name="show_price" {% if print_config.show_price %}checked{% endif %}>
                                 <label for="show_price">فعال</label>
                             </div>
                         </div>
@@ -375,15 +375,15 @@
                         <div class="setting-group">
                             <label for="font_family">فونت</label>
                             <select id="font_family" name="font_family" class="setting-input">
-                                <option value="Vazirmatn">Vazirmatn</option>
-                                <option value="Tahoma">Tahoma</option>
-                                <option value="Arial">Arial</option>
+                                <option value="Vazirmatn" {% if print_config.font_family == 'Vazirmatn' %}selected{% endif %}>Vazirmatn</option>
+                                <option value="Tahoma" {% if print_config.font_family == 'Tahoma' %}selected{% endif %}>Tahoma</option>
+                                <option value="Arial" {% if print_config.font_family == 'Arial' %}selected{% endif %}>Arial</option>
                             </select>
                         </div>
                         
                         <div class="setting-group">
                             <label for="font_size">اندازه فونت</label>
-                            <input type="number" id="font_size" name="font_size" class="setting-input" min="8" max="20" value="12">
+                            <input type="number" id="font_size" name="font_size" class="setting-input" min="8" max="20" value="{{ print_config.font_size|default:'12' }}">
                         </div>
                     </div>
                 </div>
@@ -398,55 +398,18 @@
                     <div class="settings-grid">
                         <div class="setting-group">
                             <label for="barcode_scale">مقیاس بارکد (%)</label>
-                            <input type="range" id="barcode_scale" name="barcode_scale" class="setting-input" min="50" max="100" value="90">
-                            <div id="barcode-scale-value" style="text-align: center; margin-top: 5px;">90%</div>
+                            <input type="range" id="barcode_scale" name="barcode_scale" class="setting-input" min="50" max="100" value="{{ print_config.barcode_scale|default:'90' }}">
+                            <div id="barcode-scale-value" style="text-align: center; margin-top: 5px;">{{ print_config.barcode_scale|default:'90' }}%</div>
                         </div>
                         
                         <div class="setting-group">
                             <label for="module_width">عرض میله بارکد</label>
-                            <input type="number" id="module_width" name="module_width" class="setting-input" min="0.1" max="1" step="0.1" value="0.2">
+                            <input type="number" id="module_width" name="module_width" class="setting-input" min="0.1" max="1" step="0.1" value="{{ print_config.module_width|default:'0.2' }}">
                         </div>
                         
                         <div class="setting-group">
                             <label for="module_height">ارتفاع بارکد</label>
-                            <input type="number" id="module_height" name="module_height" class="setting-input" min="5" max="30" value="15">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- تنظیمات چاپ -->
-                <div class="section">
-                    <div class="section-title">
-                        <i class="fas fa-print"></i>
-                        <span>تنظیمات چاپ</span>
-                    </div>
-                    
-                    <div class="settings-grid">
-                        <div class="setting-group">
-                            <label for="barcodes_per_label">تعداد لیبل در هر ردیف</label>
-                            <select id="barcodes_per_label" name="barcodes_per_label" class="setting-input">
-                                <option value="2">2 لیبل (پیشفرض برای MEVA 4200)</option>
-                                <option value="1">1 لیبل</option>
-                            </select>
-                        </div>
-                        
-                        <div class="setting-group">
-                            <label for="content_alignment">تراز محتوا</label>
-                            <select id="content_alignment" name="content_alignment" class="setting-input">
-                                <option value="center">وسط</option>
-                                <option value="right">راست</option>
-                                <option value="left">چپ</option>
-                            </select>
-                        </div>
-                        
-                        <div class="setting-group">
-                            <label for="vertical_gap">فاصله عمودی (میلیمتر)</label>
-                            <input type="number" id="vertical_gap" name="vertical_gap" class="setting-input" min="0" max="20" value="5">
-                        </div>
-                        
-                        <div class="setting-group">
-                            <label for="content_spacing">فاصله بین محتوا (میلیمتر)</label>
-                            <input type="number" id="content_spacing" name="content_spacing" class="setting-input" min="0" max="10" value="3">
+                            <input type="number" id="module_height" name="module_height" class="setting-input" min="5" max="30" value="{{ print_config.module_height|default:'15' }}">
                         </div>
                     </div>
                 </div>
@@ -459,16 +422,12 @@
                     </div>
                     
                     <div class="items-list" id="items-list">
-                        {% for item in items %}
+                        {% for item in inventories %}
                         <div class="item-row">
                             <div class="item-info">
                                 <div class="item-name">{{ item.product_name }}</div>
                                 <div class="item-details">
-                                    {% if print_type == 'invoice' %}
-                                    قیمت: {{ item.selling_price }} تومان
-                                    {% else %}
-                                    شعبه: {{ item.branch_name }}
-                                    {% endif %}
+                                    شعبه: {{ item.branch.name }} - قیمت: {{ item.selling_price|default:0 }} تومان
                                 </div>
                             </div>
                             <div class="item-quantity">
@@ -493,14 +452,18 @@
                     <div class="label-preview">
                         <div class="label-product-name" id="preview-product-name">نام کالا نمونه</div>
                         <div class="label-barcode">
-                            <img src="{% static 'img/sample-barcode.png' %}" alt="بارکد نمونه">
+                            <div style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                                [بارکد نمونه]
+                            </div>
                         </div>
                         <div class="label-price" id="preview-price">25,000 تومان</div>
                     </div>
                     <div class="label-preview">
                         <div class="label-product-name" id="preview-product-name-2">نام کالا نمونه</div>
                         <div class="label-barcode">
-                            <img src="{% static 'img/sample-barcode.png' %}" alt="بارکد نمونه">
+                            <div style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                                [بارکد نمونه]
+                            </div>
                         </div>
                         <div class="label-price" id="preview-price-2">25,000 تومان</div>
                     </div>

@@ -269,10 +269,6 @@ def go_to_print_settings(request):
         'redirect_url': f"{base_url}?{query_string}"
     })
 
-# def quick_label_print_page(request):
-#     """نمایش صفحه اصلی جستجو برای چاپ لیبل"""
-#     return render(request, 'quick_label_print.html')
-
 def generate_label_barcode(request):
     """تولید بارکد برای آیتم انتخاب شده"""
     if request.method == 'POST':
@@ -298,35 +294,6 @@ def generate_label_barcode(request):
 
     return redirect('quick_label_print')
 
-
-# def search_inventory_for_label(request):
-#     """جستجوی موجودی بر اساس نام کالا (API)"""
-#     query = request.GET.get('q', '')
-#
-#     # اگر کوئری کمتر از 2 کاراکتر باشد، نتیجه خالی برگردان
-#     if len(query) < 2:
-#         return JsonResponse({'results': []})
-#
-#     try:
-#         # جستجو در فیلد product_name
-#         inventory_items = InventoryCount.objects.filter(
-#             Q(product_name__icontains=query)
-#         ).select_related('branch')[:10]  # محدودیت نتایج
-#
-#         results = []
-#         for item in inventory_items:
-#             results.append({
-#                 'id': item.id,
-#                 'product_name': item.product_name,
-#                 'branch_name': item.branch.name,
-#                 'quantity': item.quantity
-#             })
-#
-#         return JsonResponse({'results': results})
-#
-#     except Exception as e:
-#         logger.error(f"خطا در جستجوی موجودی: {str(e)}")
-#         return JsonResponse({'results': [], 'error': str(e)})# توابع جدید برای چاپ لیبل کالاها و شعب
 def quick_label_print(request):
     """صفحه جستجو برای چاپ سریع لیبل"""
     return render(request, 'quick_label_print.html')
@@ -752,33 +719,6 @@ def print_label(request, label_type):
 
     return HttpResponse("لیبل‌ها با موفقیت چاپ شدند")
 # تابع کمکی برای تولید بارکد
-def generate_barcode_base64(barcode_value, module_width=0.2, module_height=15):
-    """تولید بارکد به صورت base64 با تنظیم عرض و ارتفاع میله‌ها"""
-    try:
-        # تولید بارکد استاندارد Code128
-        code128 = barcode.get('code128', barcode_value, writer=ImageWriter())
-
-        # تنظیمات برای بارکد
-        options = {
-            'module_width': float(module_width),  # عرض هر میله بارکد
-            'module_height': float(module_height),  # ارتفاع بارکد
-            'quiet_zone': 5,  # فضای خالی اطراف بارکد
-            'write_text': False  # عدم نمایش متن زیر بارکد
-        }
-
-        # ایجاد بافر برای ذخیره موقت
-        buffer = BytesIO()
-        code128.write(buffer, options=options)
-        buffer.seek(0)
-
-        # تبدیل به base64
-        image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
-        return f"data:image/png;base64,{image_base64}"
-
-    except Exception as e:
-        logger.error(f"Error generating barcode: {str(e)}")
-        return None
-# توابع کمکی برای تبدیل اعداد
 def convert_persian_arabic_to_english(text):
     persian_numbers = '۰۱۲۳۴۵۶۷۸۹'
     arabic_numbers = '٠١٢٣٤٥٦٧٨٩'
@@ -1405,28 +1345,8 @@ def froshande_delete_ajax(request, froshande_id):
 
 
 # ------------پرینت لیبل-------------------------
-
 from django.shortcuts import get_object_or_404
-
-
-def print_label(request, label_type):
-    # دریافت تنظیمات چاپ برای این نوع لیبل
-    print_setting = get_object_or_404(LabelPrintSetting, label_type=label_type, is_active=True)
-
-    # تعداد چاپ از تنظیمات دریافت می‌شود
-    copies = print_setting.copies_count
-
-    # منطق چاپ لیبل
-    for i in range(copies):
-        # چاپ لیبل
-        pass
-
-    return HttpResponse("لیبل‌ها با موفقیت چاپ شدند")
-
-
-
 import re
-
 def is_persian(text):
     """
     بررسی میکند که رشته فقط حاوی حروف فارسی و فاصله باشد.
@@ -1435,6 +1355,124 @@ def is_persian(text):
     return bool(pattern.match(text))
 
 
+# توابع جدید برای چاپ لیبل موجودی
+def print_inventory_labels_preview(request):
+    """پیش‌نمایش چاپ لیبل‌های موجودی - نام جدید برای جلوگیری از تداخل"""
+    # دریافت تنظیمات از session
+    settings = request.session.get('print_settings', {
+        'barcodes_per_label': '2',
+        'content_alignment': 'center',
+        'show_product_name': True,
+        'show_price': True,
+        'font_family': 'Vazirmatn',
+        'font_size': '12',
+    })
+
+    # پردازش لیبل موجودی
+    selected_items_ids = request.session.get('selected_items', [])
+
+    if not selected_items_ids:
+        messages.error(request, 'هیچ آیتمی برای چاپ انتخاب نشده است')
+        return redirect('quick_label_print')
+
+    inventories = InventoryCount.objects.filter(id__in=selected_items_ids)
+    quantities = settings.get('quantities', [])
+    inventory_ids = settings.get('inventory_ids', [])
+
+    labels_to_print = []
+    current_label = []
+    barcodes_per_label = 2  # برای MEVA 4200
+
+    items_to_print = []
+    for i, inventory_id in enumerate(inventory_ids):
+        try:
+            inventory = InventoryCount.objects.get(id=inventory_id)
+            quantity = int(quantities[i]) if i < len(quantities) else 1
+
+            for j in range(quantity):
+                # استفاده از barcode_data یا تولید بارکد جدید
+                barcode_value = inventory.barcode_data
+                if not barcode_value:
+                    barcode_value = inventory.generate_unique_numeric_barcode()
+
+                barcode_base64 = generate_barcode_base64(
+                    barcode_value,
+                    module_width=0.2,
+                    module_height=15
+                )
+
+                items_to_print.append({
+                    'product_name': inventory.product_name,
+                    'selling_price': inventory.selling_price or 0,
+                    'barcode_base64': barcode_base64,
+                    'type': 'inventory'
+                })
+        except InventoryCount.DoesNotExist:
+            continue
+
+    # گروه‌بندی در ردیف‌های 2 تایی
+    for i, item in enumerate(items_to_print):
+        current_label.append(item)
+        if len(current_label) == barcodes_per_label or i == len(items_to_print) - 1:
+            labels_to_print.append(current_label)
+            current_label = []
+
+    return render(request, 'print_preview.html', {
+        'labels': labels_to_print,
+        'settings': settings,
+        'print_type': 'inventory'
+    })
+
+
+def print_invoice_labels_preview(request, invoice_id):
+    """پیش‌نمایش چاپ لیبل‌های فاکتور - نام جدید"""
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    selected_items = request.GET.getlist('items')
+    items = invoice.items.filter(id__in=selected_items)
+
+    # دریافت تنظیمات از session
+    settings = request.session.get('print_settings', {
+        'barcodes_per_label': '2',
+        'content_alignment': 'center',
+        'show_product_name': True,
+        'show_price': True,
+        'module_width': '0.2',
+        'module_height': '15'
+    })
+
+    barcodes_per_label = 2
+    labels_to_print = []
+    current_label = []
+    items_to_print = []
+
+    for i, item in enumerate(items):
+        quantity = int(settings['quantities'][i]) if i < len(settings['quantities']) else 1
+        for _ in range(quantity):
+            barcode_value = f"{invoice.serial_number}-{item.id}"
+            barcode_base64 = generate_barcode_base64(
+                barcode_value,
+                module_width=float(settings.get('module_width', 0.2)),
+                module_height=float(settings.get('module_height', 15))
+            )
+            items_to_print.append({
+                'product_name': item.product_name,
+                'selling_price': item.selling_price,
+                'barcode_base64': barcode_base64,
+                'type': 'invoice'
+            })
+
+    for i, item in enumerate(items_to_print):
+        current_label.append(item)
+        if len(current_label) == barcodes_per_label or i == len(items_to_print) - 1:
+            labels_to_print.append(current_label)
+            current_label = []
+
+    return render(request, 'print_preview.html', {
+        'labels': labels_to_print,
+        'settings': settings,
+        'invoice': invoice,
+        'print_type': 'invoice'
+    })
 
 # --------------------------ادیت فاکتور-------------------------------------------------------
 # views.py (بخش جدید)
@@ -1580,3 +1618,264 @@ def update_invoice(request):
 def edit_invoice_page(request):
     """صفحه ویرایش فاکتور"""
     return render(request, 'edit_invoice.html')
+
+# ------------------------------لیبل جدید---------------------------------
+
+# توابع مربوط به چاپ لیبل - با پسوند _label
+
+def quick_label_print_page_label(request):
+    """نمایش صفحه اصلی جستجو برای چاپ لیبل"""
+    if 'selected_items' in request.session:
+        del request.session['selected_items']
+    return render(request, 'quick_label_print_label.html')
+
+
+def search_inventory_for_label_label(request):
+    """جستجوی موجودی بر اساس نام کالا (API)"""
+    query = request.GET.get('q', '')
+
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+
+    try:
+        inventory_items = InventoryCount.objects.filter(
+            product_name__icontains=query
+        ).select_related('branch').order_by('product_name')
+
+        results = []
+        for item in inventory_items:
+            results.append({
+                'id': item.id,
+                'product_name': item.product_name,
+                'branch_name': item.branch.name if item.branch else 'نامشخص',
+                'quantity': item.quantity
+            })
+
+        logger.info(f"جستجوی '{query}': {len(results)} نتیجه یافت شد")
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        logger.error(f"خطا در جستجوی موجودی: {str(e)}")
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
+@csrf_exempt
+def add_to_print_list_label(request):
+    """افزودن آیتم به لیست چاپ"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            item_id = data.get('item_id')
+
+            item = InventoryCount.objects.get(id=item_id)
+
+            if 'selected_items' not in request.session:
+                request.session['selected_items'] = []
+
+            if item_id not in request.session['selected_items']:
+                request.session['selected_items'].append(item_id)
+                request.session.modified = True
+
+                return JsonResponse({
+                    'success': True,
+                    'message': 'آیتم به لیست چاپ اضافه شد',
+                    'count': len(request.session['selected_items'])
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'این آیتم قبلاً اضافه شده است'
+                })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'خطا: {str(e)}'
+            })
+
+
+def get_print_list_label(request):
+    """دریافت لیست آیتم‌های انتخاب شده برای چاپ"""
+    selected_items = request.session.get('selected_items', [])
+    items = []
+
+    for item_id in selected_items:
+        try:
+            item = InventoryCount.objects.get(id=item_id)
+            items.append({
+                'id': item.id,
+                'product_name': item.product_name,
+                'branch_name': item.branch.name,
+                'quantity': item.quantity
+            })
+        except InventoryCount.DoesNotExist:
+            continue
+
+    return JsonResponse({'items': items})
+
+
+def clear_print_list_label(request):
+    """پاک کردن لیست آیتم‌های انتخاب شده"""
+    if 'selected_items' in request.session:
+        del request.session['selected_items']
+    return JsonResponse({'success': True})
+
+
+def go_to_print_settings_label(request):
+    """هدایت به صفحه تنظیمات چاپ"""
+    selected_items = request.session.get('selected_items', [])
+
+    if not selected_items:
+        return JsonResponse({
+            'success': False,
+            'message': 'هیچ آیتمی برای چاپ انتخاب نشده است'
+        })
+
+    base_url = reverse('print_settings_label')
+    query_string = urlencode({
+        'type': 'inventory'
+    })
+
+    return JsonResponse({
+        'success': True,
+        'redirect_url': f"{base_url}?{query_string}"
+    })
+
+
+def print_settings_label(request):
+    """صفحه تنظیمات چاپ"""
+    print_type = request.GET.get('type', 'inventory')
+
+    if print_type == 'inventory':
+        selected_items_ids = request.session.get('selected_items', [])
+
+        if not selected_items_ids:
+            messages.error(request, 'هیچ آیتمی برای چاپ انتخاب نشده است')
+            return redirect('quick_label_print_page_label')
+
+        inventories = InventoryCount.objects.filter(id__in=selected_items_ids)
+
+        if request.method == 'POST':
+            quantities = request.POST.getlist('quantity[]')
+            inventory_ids = request.POST.getlist('inventory_ids[]')
+
+            request.session['print_config'] = {
+                'barcodes_per_label': request.POST.get('barcodes_per_label', '2'),
+                'content_alignment': request.POST.get('content_alignment', 'center'),
+                'vertical_gap': request.POST.get('vertical_gap', '5'),
+                'barcode_scale': request.POST.get('barcode_scale', '90'),
+                'content_spacing': request.POST.get('content_spacing', '5'),
+                'font_family': request.POST.get('font_family', 'Vazirmatn'),
+                'font_size': request.POST.get('font_size', '12'),
+                'show_product_name': 'show_product_name' in request.POST,
+                'show_price': 'show_price' in request.POST,
+                'quantities': quantities,
+                'inventory_ids': inventory_ids,
+                'module_width': request.POST.get('module_width', '0.2'),
+                'module_height': request.POST.get('module_height', '15')
+            }
+
+            return redirect('print_inventory_labels_preview_label')
+
+        else:
+            print_config = request.session.get('print_config', {})
+            return render(request, 'print_settings_label.html', {
+                'inventories': inventories,
+                'print_config': print_config,
+                'print_type': 'inventory'
+            })
+
+
+def print_inventory_labels_preview_label(request):
+    """پیش‌نمایش چاپ لیبل‌های موجودی"""
+    print_config = request.session.get('print_config', {
+        'barcodes_per_label': '2',
+        'content_alignment': 'center',
+        'show_product_name': True,
+        'show_price': True,
+        'font_family': 'Vazirmatn',
+        'font_size': '12',
+    })
+
+    selected_items_ids = request.session.get('selected_items', [])
+
+    if not selected_items_ids:
+        messages.error(request, 'هیچ آیتمی برای چاپ انتخاب نشده است')
+        return redirect('quick_label_print_page_label')
+
+    inventories = InventoryCount.objects.filter(id__in=selected_items_ids)
+    quantities = print_config.get('quantities', [])
+    inventory_ids = print_config.get('inventory_ids', [])
+
+    labels_to_print = []
+    current_label = []
+    barcodes_per_label = 2
+
+    items_to_print = []
+    for i, inventory_id in enumerate(inventory_ids):
+        try:
+            inventory = InventoryCount.objects.get(id=inventory_id)
+            quantity = int(quantities[i]) if i < len(quantities) else 1
+
+            for j in range(quantity):
+                barcode_value = inventory.barcode_data
+                if not barcode_value:
+                    barcode_value = inventory.generate_unique_numeric_barcode()
+
+                barcode_base64 = generate_barcode_base64(
+                    barcode_value,
+                    module_width=0.2,
+                    module_height=15
+                )
+
+                items_to_print.append({
+                    'product_name': inventory.product_name,
+                    'selling_price': inventory.selling_price or 0,
+                    'barcode_base64': barcode_base64,
+                    'type': 'inventory'
+                })
+        except InventoryCount.DoesNotExist:
+            continue
+
+    for i, item in enumerate(items_to_print):
+        current_label.append(item)
+        if len(current_label) == barcodes_per_label or i == len(items_to_print) - 1:
+            labels_to_print.append(current_label)
+            current_label = []
+
+    return render(request, 'print_preview_label.html', {
+        'labels': labels_to_print,
+        'print_config': print_config,
+        'print_type': 'inventory'
+    })
+
+
+def generate_barcode_base64(barcode_value, module_width=0.2, module_height=15):
+    """تولید بارکد به صورت base64"""
+    try:
+        if not barcode_value:
+            barcode_value = "000000000000"
+
+        barcode_value = str(barcode_value)
+
+        CODE128 = barcode.get_barcode_class('code128')
+        barcode_instance = CODE128(barcode_value, writer=ImageWriter())
+
+        options = {
+            'module_width': float(module_width),
+            'module_height': float(module_height),
+            'quiet_zone': 2.0,
+            'write_text': False,
+            'dpi': 203
+        }
+
+        buffer = BytesIO()
+        barcode_instance.write(buffer, options=options)
+        buffer.seek(0)
+
+        image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+        return f"data:image/png;base64,{image_base64}"
+
+    except Exception as e:
+        logger.error(f"خطا در تولید بارکد: {str(e)}")
+        return None
