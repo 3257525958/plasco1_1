@@ -3634,6 +3634,9 @@ function updateCashModalInvoiceTotal() {
 /**
  * ذخیره پرداخت نقدی
  */
+/**
+ * ذخیره پرداخت نقدی
+ */
 function saveCashPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با نقدی...');
 
@@ -3686,42 +3689,66 @@ function saveCashPayment() {
             console.log('✅ پاسخ سرور برای نقدی:', data);
             
             if (data.status === 'success') {
-                // نمایش موفقیت
-                $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
-                $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
+                // پنهان کردن مودال پردازش
+                hideProcessingModal();
                 
+                showToast('فاکتور با موفقیت ثبت شد', 'success');
+                currentInvoiceId = data.invoice_id;
+
                 // هدایت به صفحه چاپ و موفقیت
                 setTimeout(() => {
-                    hideProcessingModal();
                     if (data.invoice_id) {
+                        // اول چاپ
                         const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
                         window.open(printUrl, '_blank');
                         
-                        // هدایت به صفحه موفقیت
+                        // سپس هدایت به صفحه موفقیت
                         const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                         window.location.href = successUrl;
                     } else {
                         showToast('خطا: شماره فاکتور دریافت نشد', 'error');
+                        // اگر invoice_id وجود ندارد، به صفحه اصلی برگرد
+                        setTimeout(() => {
+                            window.location.href = "{% url 'invoice_app:create_invoice' %}";
+                        }, 2000);
                     }
-                }, 1000);
+                }, 500);
                 
             } else {
+                // خطا از سمت سرور
                 hideProcessingModal();
                 showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
-                // در صورت خطا، مودال نقدی دوباره نمایش داده شود
-                setTimeout(() => {
-                    $('#cashPaymentModal').modal('show');
-                }, 1000);
+                
+                // فقط در صورت خطای خاصی مودال را دوباره باز کنیم
+                if (data.message && data.message.includes('session')) {
+                    // اگر مشکل session است، به صفحه اصلی برگرد
+                    setTimeout(() => {
+                        window.location.href = "{% url 'invoice_app:create_invoice' %}";
+                    }, 2000);
+                } else {
+                    // برای سایر خطاها، مودال را دوباره باز کن
+                    setTimeout(() => {
+                        $('#cashPaymentModal').modal('show');
+                    }, 1000);
+                }
             }
         },
         error: function(xhr, status, error) {
             console.error('❌ خطا در ذخیره نقدی:', error);
+            console.error('❌ پاسخ سرور:', xhr.responseText);
+            
             hideProcessingModal();
-            showToast('خطا در ارتباط با سرور', 'error');
-            // در صورت خطا، مودال نقدی دوباره نمایش داده شود
+            
+            let errorMessage = 'خطا در ارتباط با سرور';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage += ': ' + xhr.responseJSON.message;
+            }
+            showToast(errorMessage, 'error');
+            
+            // برای خطاهای شبکه، مودال را دوباره باز نکن، به صفحه اصلی برگرد
             setTimeout(() => {
-                $('#cashPaymentModal').modal('show');
-            }, 1000);
+                window.location.href = "{% url 'invoice_app:create_invoice' %}";
+            }, 2000);
         }
     });
 }
