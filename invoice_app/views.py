@@ -15,7 +15,7 @@ import jdatetime
 from datetime import datetime
 
 from account_app.models import InventoryCount, Branch, ProductPricing
-from .models import Invoicefrosh, InvoiceItemfrosh, POSDevice, CheckPayment, CreditPayment , CashPayment
+from .models import Invoicefrosh, InvoiceItemfrosh, POSDevice, CheckPayment, CreditPayment
 from .forms import BranchSelectionForm, POSDeviceForm, CheckPaymentForm, CreditPaymentForm
 
 # مپینگ شعبه به سرویس واسط - این را قبل از توابع اضافه کنید
@@ -2581,38 +2581,3 @@ def save_cash_payment(request):
             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
 
     return JsonResponse({'status': 'error'})
-
-
-# در ویو invoice_print - اضافه کردن پرداخت نقدی
-@login_required
-def invoice_print(request, invoice_id):
-    invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
-
-    payment_details = None
-    payment_type = None
-
-    if invoice.payment_method == 'check' and hasattr(invoice, 'check_payment'):
-        payment_details = invoice.check_payment
-        payment_type = 'check'
-    elif invoice.payment_method == 'credit' and hasattr(invoice, 'credit_payment'):
-        payment_details = invoice.credit_payment
-        payment_type = 'credit'
-    elif invoice.payment_method == 'cash' and hasattr(invoice, 'cash_payment'):
-        payment_details = invoice.cash_payment
-        payment_type = 'cash'
-    elif invoice.payment_method == 'pos' and invoice.pos_device:
-        payment_details = invoice.pos_device
-        payment_type = 'pos'
-
-    from jdatetime import datetime as jdatetime
-    jalali_date = jdatetime.fromgregorian(datetime=invoice.created_at).strftime('%Y/%m/%d')
-    jalali_time = jdatetime.fromgregorian(datetime=invoice.created_at).strftime('%H:%M')
-
-    return render(request, 'invoice_print.html', {
-        'invoice': invoice,
-        'payment_details': payment_details,
-        'payment_type': payment_type,
-        'jalali_date': jalali_date,
-        'jalali_time': jalali_time,
-        'print_date': jdatetime.now().strftime('%Y/%m/%d %H:%M')
-    })
