@@ -928,6 +928,26 @@ body.processing #processing-overlay {
     display: block;
     animation: overlay-fade-in 0.3s ease-out;
 }
+
+
+
+
+/* استایل برای فیلدهای معتبر/نامعتبر */
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.is-valid {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
+}
+
+/* استایل برای فیلدهای readonly */
+.form-control[readonly] {
+    background-color: #f8f9fa !important;
+    cursor: not-allowed;
+}
     </style>
 </head>
 <body>
@@ -1564,6 +1584,73 @@ body.processing #processing-overlay {
             </div>
         </div>
     </div>
+    <!-- مودال پرداخت نقدی -->
+    <div class="modal fade" id="cashPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-money-bill-wave"></i> اطلاعات پرداخت نقدی</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>مبلغ قابل پرداخت: <span id="cash-invoice-total">0</span> تومان</strong>
+                </div>
+
+                <form id="cash-payment-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>مبلغ نقدی (تومان) *</label>
+                                <input type="number" name="cash_amount" class="form-control" id="cash-amount" 
+                                       min="0" required placeholder="مبلغ نقدی را وارد کنید">
+                                <small class="form-text text-muted">مبلغی که نقدی پرداخت می‌شود</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>مبلغ باقیمانده</label>
+                                <input type="number" name="remaining_amount" class="form-control" 
+                                       id="cash-remaining-amount" readonly style="background-color: #f8f9fa;">
+                                <small class="form-text text-muted">این مبلغ با دستگاه پوز پرداخت می‌شود</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- انتخاب دستگاه پوز برای باقیمانده -->
+                    <div class="border-top pt-3 mt-3">
+                        <h6><i class="fas fa-pos-terminal"></i> پرداخت باقیمانده با دستگاه پوز</h6>
+                        <div class="form-group">
+                            <label>انتخاب دستگاه پوز برای پرداخت باقیمانده *</label>
+                            <select name="remaining_pos_device_id" class="form-control" id="cash-remaining-pos-device" required>
+                                <option value="">-- انتخاب دستگاه پوز --</option>
+                                {% for device in pos_devices %}
+                                    <option value="{{ device.id }}" 
+                                            {% if device.is_default %}selected{% endif %}>
+                                        {{ device.name }} - {{ device.bank_name }}
+                                        {% if device.is_default %}(پیش فرض){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">دستگاه پوزی که برای پرداخت باقیمانده استفاده می‌شود</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> بستن
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveCashPayment()">
+                    <i class="fas fa-save"></i> تایید و ثبت فاکتور
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
 
     <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -3217,6 +3304,8 @@ function addPosDevice() {
                 $('#checkPaymentModal').modal('show');
             } else if (method === 'credit') {
                 $('#creditPaymentModal').modal('show');
+            } else if (method === 'cash') {
+                $('#cashPaymentModal').modal('show');  // این خط اضافه شود
             }
 
             savePaymentMethod(method);
@@ -3225,6 +3314,8 @@ function addPosDevice() {
                 setTimeout(saveSelectedPosDevice, 100);
             }
         });
+        
+        
 
         // تغییر دستگاه POS
         $('#pos-device').on('change', saveSelectedPosDevice);
@@ -3278,6 +3369,24 @@ $(document).on('click', '.set-default-btn', function(e) {
         $('#creditPaymentModal').on('show.bs.modal', function() {
             updateCreditModalInvoiceTotal();
         });
+        
+        // رویدادهای مودال نقدی
+        $('#cash-amount').on('input', updateCashRemainingAmount);
+        
+        // هنگام باز کردن مودال نقدی
+        $('#cashPaymentModal').on('show.bs.modal', function() {
+            updateCashModalInvoiceTotal();
+            // فوکوس روی فیلد مبلغ نقدی
+            setTimeout(() => {
+                $('#cash-amount').focus();
+            }, 500);
+        });
+        
+        // هنگام بستن مودال نقدی
+        $('#cashPaymentModal').on('hidden.bs.modal', function() {
+            resetCashModal();
+        });
+
     }
 
     // =============================================
@@ -3478,6 +3587,154 @@ function savePaymentMethodToSession(method) {
         }
     });
 }
+
+
+
+
+// =============================================
+// توابع مدیریت پرداخت نقدی
+// =============================================
+
+/**
+ * به روزرسانی مبلغ باقیمانده در مودال نقدی
+ */
+function updateCashRemainingAmount() {
+    const invoiceTotal = calculateInvoiceTotal().totalAmount;
+    const cashAmount = parseInt($('#cash-amount').val()) || 0;
+    const remainingAmount = Math.max(0, invoiceTotal - cashAmount);
+
+    $('#cash-remaining-amount').val(remainingAmount);
+    
+    // نمایش هشدار اگر مبلغ نقدی از مبلغ فاکتور بیشتر باشد
+    if (cashAmount > invoiceTotal) {
+        $('#cash-amount').addClass('is-invalid');
+        showToast('مبلغ نقدی نمی‌تواند از مبلغ فاکتور بیشتر باشد', 'warning');
+    } else {
+        $('#cash-amount').removeClass('is-invalid');
+    }
+    
+    // غیرفعال/فعال کردن دکمه ثبت بر اساس اعتبار
+    const submitBtn = $('#cashPaymentModal').find('.btn-primary');
+    if (cashAmount > invoiceTotal || cashAmount <= 0) {
+        submitBtn.prop('disabled', true);
+    } else {
+        submitBtn.prop('disabled', false);
+    }
+}
+
+/**
+ * به روزرسانی مبلغ کل فاکتور در مودال نقدی
+ */
+function updateCashModalInvoiceTotal() {
+    const invoiceTotal = calculateInvoiceTotal().totalAmount;
+    $('#cash-invoice-total').text(invoiceTotal.toLocaleString('fa-IR'));
+    updateCashRemainingAmount();
+}
+
+/**
+ * ذخیره پرداخت نقدی
+ */
+function saveCashPayment() {
+    console.log('💰 شروع فرآیند ثبت فاکتور با نقدی...');
+
+    const cashAmount = parseInt($('#cash-amount').val()) || 0;
+    const invoiceTotal = calculateInvoiceTotal().totalAmount;
+    const remainingAmount = parseInt($('#cash-remaining-amount').val()) || 0;
+    const remainingPosDeviceId = $('#cash-remaining-pos-device').val();
+
+    // اعتبارسنجی
+    if (!cashAmount || cashAmount <= 0) {
+        showToast('لطفا مبلغ نقدی را وارد کنید', 'error');
+        $('#cash-amount').focus();
+        return;
+    }
+
+    if (cashAmount > invoiceTotal) {
+        showToast('مبلغ نقدی نمی‌تواند از مبلغ فاکتور بیشتر باشد', 'error');
+        $('#cash-amount').focus();
+        return;
+    }
+
+    if (!remainingPosDeviceId) {
+        showToast('لطفا دستگاه پوز برای پرداخت باقیمانده را انتخاب کنید', 'error');
+        $('#cash-remaining-pos-device').focus();
+        return;
+    }
+
+    const formData = {
+        'cash_amount': cashAmount,
+        'remaining_amount': remainingAmount,
+        'remaining_pos_device_id': remainingPosDeviceId
+    };
+
+    console.log('📋 داده‌های پرداخت نقدی:', formData);
+
+    // بستن مودال نقدی
+    $('#cashPaymentModal').modal('hide');
+
+    // نمایش مودال پردازش
+    const processingModal = showProcessingModal('در حال ثبت فاکتور با پرداخت نقدی');
+
+    // ارسال درخواست به سرور
+    $.ajax({
+        url: "{% url 'invoice_app:save_cash_payment' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        success: function(data) {
+            console.log('✅ پاسخ سرور برای نقدی:', data);
+            
+            if (data.status === 'success') {
+                // نمایش موفقیت
+                $('#payment-status-icon').html('<i class="fas fa-check-circle payment-success"></i>');
+                $('#payment-status-message h4').html('فاکتور با موفقیت ثبت شد').css('color', 'var(--success-color)');
+                
+                // هدایت به صفحه چاپ و موفقیت
+                setTimeout(() => {
+                    hideProcessingModal();
+                    if (data.invoice_id) {
+                        const printUrl = "{% url 'invoice_app:invoice_print' 0 %}".replace('0', data.invoice_id);
+                        window.open(printUrl, '_blank');
+                        
+                        // هدایت به صفحه موفقیت
+                        const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
+                        window.location.href = successUrl;
+                    } else {
+                        showToast('خطا: شماره فاکتور دریافت نشد', 'error');
+                    }
+                }, 1000);
+                
+            } else {
+                hideProcessingModal();
+                showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
+                // در صورت خطا، مودال نقدی دوباره نمایش داده شود
+                setTimeout(() => {
+                    $('#cashPaymentModal').modal('show');
+                }, 1000);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ خطا در ذخیره نقدی:', error);
+            hideProcessingModal();
+            showToast('خطا در ارتباط با سرور', 'error');
+            // در صورت خطا، مودال نقدی دوباره نمایش داده شود
+            setTimeout(() => {
+                $('#cashPaymentModal').modal('show');
+            }, 1000);
+        }
+    });
+}
+
+/**
+ * ریست کردن فرم مودال نقدی هنگام بسته شدن
+ */
+function resetCashModal() {
+    $('#cash-amount').val('');
+    $('#cash-remaining-amount').val('');
+    $('#cash-remaining-pos-device').val('');
+    $('#cash-amount').removeClass('is-invalid');
+}
     // =============================================
     // قرار دادن توابع در scope جهانی
     // =============================================
@@ -3501,6 +3758,10 @@ window.processNonPosPayment = processNonPosPayment;
 window.saveCustomerInfoToSession = saveCustomerInfoToSession;
 window.saveDiscountToSession = saveDiscountToSession;
 window.savePaymentMethodToSession = savePaymentMethodToSession;
+// توابع جدید برای پرداخت نقدی
+window.saveCashPayment = saveCashPayment;
+window.updateCashRemainingAmount = updateCashRemainingAmount;
+window.updateCashModalInvoiceTotal = updateCashModalInvoiceTotal;
     </script>
 </body>
 </html>

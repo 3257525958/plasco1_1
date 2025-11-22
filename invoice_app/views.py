@@ -2453,26 +2453,49 @@ def quick_stats(request):
 @login_required
 @csrf_exempt
 def save_cash_payment(request):
+    """ذخیره اطلاعات پرداخت نقدی و ثبت فاکتور"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             print("📋 اطلاعات دریافتی نقدی:", data)
 
+            # دریافت داده‌ها
             cash_amount = int(data.get('cash_amount', 0))
+            remaining_amount = int(data.get('remaining_amount', 0))
+            remaining_pos_device_id = data.get('remaining_pos_device_id')
 
+            # اعتبارسنجی
+            if cash_amount <= 0:
+                return JsonResponse({'status': 'error', 'message': 'مبلغ نقدی باید بیشتر از صفر باشد'})
+
+            if not remaining_pos_device_id and remaining_amount > 0:
+                return JsonResponse({'status': 'error', 'message': 'برای پرداخت باقیمانده باید دستگاه پوز انتخاب شود'})
+
+            # بررسی وجود شعبه و آیتم‌ها
+            branch_id = request.session.get('branch_id')
             items = request.session.get('invoice_items', [])
+
+            if not branch_id:
+                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
             if not items:
                 return JsonResponse({'status': 'error', 'message': 'فاکتور خالی است'})
 
-            total_amount = sum(item['total'] - item.get('discount', 0) for item in items)
-            discount = request.session.get('discount', 0)
-            total_amount = max(0, total_amount - discount)
+            # محاسبه مبلغ کل
+            total_without_discount = sum(item['total'] for item in items)
+            items_discount = sum(item.get('discount', 0) for item in items)
+            invoice_discount = request.session.get('discount', 0)
+            total_discount = items_discount + invoice_discount
+            total_amount = max(0, total_without_discount - total_discount)
 
-            branch_id = request.session.get('branch_id')
-            if not branch_id:
-                return JsonResponse({'status': 'error', 'message': 'شعبه انتخاب نشده'})
+            # اعتبارسنجی مبلغ نقدی
+            if cash_amount > total_amount:
+                return JsonResponse({'status': 'error', 'message': 'مبلغ نقدی نمی‌تواند از مبلغ فاکتور بیشتر باشد'})
 
-            # 🔴 محاسبه مجموع قیمت معیار
+            print(f"💰 مبلغ فاکتور: {total_amount} تومان")
+            print(f"💰 مبلغ نقدی: {cash_amount} تومان")
+            print(f"💰 مبلغ باقیمانده: {remaining_amount} تومان")
+
+            # محاسبه مجموع قیمت معیار
             total_standard_price = 0
             product_ids = [item['product_id'] for item in items]
             products = InventoryCount.objects.filter(id__in=product_ids)
@@ -2492,25 +2515,23 @@ def save_cash_payment(request):
                 product = product_dict.get(item_data['product_id'])
                 if not product:
                     continue
-
                 standard_price = pricing_dict.get(product.product_name, 0)
                 if standard_price is None:
                     standard_price = 0
-
                 total_standard_price += standard_price * item_data['quantity']
 
             print(f"💰 مجموع قیمت معیار محاسبه شد: {total_standard_price}")
 
-            # ایجاد فاکتور با قیمت معیار محاسبه شده
+            # ایجاد فاکتور
             invoice = Invoicefrosh.objects.create(
                 branch_id=branch_id,
                 created_by=request.user,
                 payment_method='cash',
                 total_amount=total_amount,
-                total_without_discount=sum(item['total'] for item in items),
-                discount=discount + sum(item.get('discount', 0) for item in items),
+                total_without_discount=total_without_discount,
+                discount=total_discount,
                 is_finalized=True,
-                is_paid=True,  # نقدی همیشه پرداخت شده است
+                is_paid=True,  # فاکتور نقدی بلافاصله پرداخت شده محسوب می‌شود
                 payment_date=timezone.now(),
                 customer_name=request.session.get('customer_name', ''),
                 customer_phone=request.session.get('customer_phone', ''),
@@ -2518,7 +2539,7 @@ def save_cash_payment(request):
                 total_standard_price=total_standard_price
             )
 
-            # ثبت آیتم‌های فاکتور با قیمت معیار
+            # ثبت آیتم‌های فاکتور
             invoice_items = []
             for item_data in items:
                 product = product_dict.get(item_data['product_id'])
@@ -2545,17 +2566,14 @@ def save_cash_payment(request):
             # bulk create برای آیتم‌ها
             InvoiceItemfrosh.objects.bulk_create(invoice_items)
 
-            # ثبت اطلاعات نقدی
+            # ثبت اطلاعات پرداخت نقدی
             cash_payment = CashPayment.objects.create(
                 invoice=invoice,
                 cash_amount=cash_amount,
-                remaining_amount=int(data.get('remaining_amount', 0)),
-                remaining_payment_method=data.get('remaining_payment_method', 'pos')
+                remaining_amount=remaining_amount,
+                remaining_payment_method='pos',  # همیشه پوز برای باقیمانده
+                pos_device_id=remaining_pos_device_id if remaining_pos_device_id else None
             )
-
-            if data.get('remaining_payment_method') == 'pos' and data.get('remaining_pos_device_id'):
-                cash_payment.pos_device_id = data.get('remaining_pos_device_id')
-                cash_payment.save()
 
             # پاکسازی session
             session_keys = ['invoice_items', 'customer_name', 'customer_phone',
@@ -2569,15 +2587,20 @@ def save_cash_payment(request):
 
             return JsonResponse({
                 'status': 'success',
-                'message': 'اطلاعات نقدی و فاکتور با موفقیت ثبت شد',
+                'message': 'فاکتور نقدی با موفقیت ثبت شد',
                 'invoice_id': invoice.id,
                 'cash_id': cash_payment.id,
+                'total_amount': total_amount,
+                'cash_amount': cash_amount,
+                'remaining_amount': remaining_amount,
                 'total_standard_price': total_standard_price,
                 'total_profit': invoice.total_profit
             })
 
         except Exception as e:
             print(f"❌ خطا در ذخیره اطلاعات نقدی: {str(e)}")
+            import traceback
+            print(f"❌ جزئیات خطا: {traceback.format_exc()}")
             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
 
-    return JsonResponse({'status': 'error'})
+    return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
