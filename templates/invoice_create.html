@@ -1548,6 +1548,74 @@ body.processing #processing-overlay {
             </div>
         </div>
     </div>
+    <!-- مودال پرداخت نقدی -->
+<div class="modal fade" id="cashPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-money-bill-wave"></i> اطلاعات پرداخت نقدی</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>مبلغ کل فاکتور: <span id="cash-invoice-total">0</span> تومان</strong>
+                </div>
+
+                <form id="cash-payment-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>مبلغ نقدی (تومان) *</label>
+                                <input type="number" name="cash_amount" class="form-control" id="cash-amount" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>مبلغ باقیمانده</label>
+                                <input type="number" name="remaining_amount" class="form-control" id="cash-remaining-amount" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- بخش مبلغ باقیمانده -->
+                    <div class="border-top pt-3 mt-3">
+                        <h6><i class="fas fa-calculator"></i> محاسبه مبلغ باقیمانده</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>روش پرداخت باقیمانده *</label>
+                                    <select name="remaining_payment_method" class="form-control" id="cash-remaining-payment-method" required>
+                                        <option value="cash">نقدی</option>
+                                        <option value="pos">دستگاه پوز</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- انتخاب دستگاه پوز برای باقیمانده -->
+                        <div id="cash-remaining-pos-section" style="display: none;">
+                            <div class="form-group">
+                                <label>انتخاب دستگاه پوز برای پرداخت باقیمانده</label>
+                                <select name="remaining_pos_device_id" class="form-control" id="cash-remaining-pos-device">
+                                    {% for device in pos_devices %}
+                                        <option value="{{ device.id }}">{{ device.name }} - {{ device.bank_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+                <button type="button" class="btn btn-success" onclick="saveCashPayment()">
+                    <i class="fas fa-save"></i> تایید پرداخت نقدی
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
