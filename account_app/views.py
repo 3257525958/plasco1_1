@@ -1310,3 +1310,139 @@ def delete_expense(request, pk):
         return redirect('expense_list')
 
     return JsonResponse({'success': False, 'error': 'درخواست نامعتبر'})
+
+
+# ----------------------------------چاپ لیبل--------------------------------------------------------
+# account_app/views.py
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import InventoryCount, ProductPricing
+import json
+
+
+@login_required
+def label_generator(request):
+    """صفحه اصلی تولید لیبل"""
+    return render(request, 'account_app/label_generator.html')
+
+
+@login_required
+def search_products_for_label(request):
+    """جستجوی محصولات برای لیبل"""
+    query = request.GET.get('q', '')
+
+    if len(query) >= 2:
+        # جستجو در InventoryCount
+        products = InventoryCount.objects.filter(
+            product_name__icontains=query
+        ).select_related('branch').distinct('product_name')[:50]  # محدودیت برای عملکرد بهتر
+
+        results = []
+        for product in products:
+            try:
+                pricing = ProductPricing.objects.get(product_name=product.product_name)
+                price = pricing.standard_price
+            except ProductPricing.DoesNotExist:
+                price = 0
+
+            results.append({
+                'product_name': product.product_name,
+                'barcode': product.barcode_data,
+                'price': str(price) if price else '0',
+                'branch': product.branch.name if product.branch else 'نامشخص'
+            })
+
+        return JsonResponse({'results': results})
+
+    return JsonResponse({'results': []})
+
+
+@login_required
+def add_product_to_label_cart(request):
+    """افزودن محصول به سبد لیبل"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        product_name = data.get('product_name')
+
+        # دریافت اطلاعات محصول
+        try:
+            product = InventoryCount.objects.filter(product_name=product_name).first()
+            pricing = ProductPricing.objects.get(product_name=product_name)
+
+            product_data = {
+                'product_name': product_name,
+                'barcode': product.barcode_data,
+                'price': str(pricing.standard_price) if pricing.standard_price else '0',
+                'quantity': 1,  # تعداد پیش‌فرض
+                'show_name': True,
+                'show_price': True
+            }
+
+            # ذخیره در سشن
+            if 'label_cart' not in request.session:
+                request.session['label_cart'] = []
+
+            # بررسی وجود تکراری
+            cart = request.session['label_cart']
+            existing_index = next((i for i, item in enumerate(cart) if item['product_name'] == product_name), -1)
+
+            if existing_index >= 0:
+                cart[existing_index]['quantity'] += 1
+            else:
+                cart.append(product_data)
+
+            request.session['label_cart'] = cart
+            request.session.modified = True
+
+            return JsonResponse({'success': True, 'cart_count': len(cart)})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})
+
+
+@login_required
+def label_settings(request):
+    """صفحه تنظیمات لیبل"""
+    cart = request.session.get('label_cart', [])
+
+    if request.method == 'POST':
+        # پردازش تنظیمات
+        for key, value in request.POST.items():
+            if key.startswith('quantity_'):
+                product_name = key.replace('quantity_', '')
+                for item in cart:
+                    if item['product_name'] == product_name:
+                        item['quantity'] = int(value)
+
+            elif key.startswith('show_name_'):
+                product_name = key.replace('show_name_', '')
+                for item in cart:
+                    if item['product_name'] == product_name:
+                        item['show_name'] = (value == 'on')
+
+            elif key.startswith('show_price_'):
+                product_name = key.replace('show_price_', '')
+                for item in cart:
+                    if item['product_name'] == product_name:
+                        item['show_price'] = (value == 'on')
+
+        request.session['label_cart'] = cart
+        request.session.modified = True
+
+        return redirect('label_print')
+
+    return render(request, 'account_app/label_settings.html', {'cart': cart})
+
+
+@login_required
+def label_print(request):
+    """صفحه چاپ لیبل"""
+    cart = request.session.get('label_cart', [])
+    return render(request, 'account_app/label_print.html', {
+        'cart': cart,
+        'label_width': 40,
+        'label_height': 20
+    })

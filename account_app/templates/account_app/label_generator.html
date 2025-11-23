@@ -1,0 +1,489 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تولید لیبل بارکد</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 12px;
+            font-size: 1rem;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            transition: all 0.3s;
+            background: var(--input-bg);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);
+            outline: none;
+        }
+
+        .search-btn {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .search-results {
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 5px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+            position: absolute;
+            width: 100%;
+        }
+
+        .search-result-item {
+            padding: 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-result-item:hover {
+            background-color: var(--light-bg);
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .product-details {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .add-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .add-btn:hover {
+            background: var(--accent-color);
+        }
+
+        .cart-section {
+            margin-top: 30px;
+        }
+
+        .cart-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .cart-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .cart-table td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            border-left-color: #d32f2f;
+        }
+
+        .success-message {
+            color: #2E7D32;
+            background-color: #e8f5e9;
+            border-left-color: #2E7D32;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .cart-badge {
+            background: var(--orange);
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .cart-table {
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>تولید لیبل بارکد</h1>
+            <p>جستجو و انتخاب کالاها برای تولید لیبل</p>
+        </div>
+
+        <!-- بخش جستجو -->
+        <div class="search-section">
+            <div class="search-container">
+                <label class="search-label">جستجوی کالا:</label>
+                <input type="search" id="product-search" class="search-input"
+                       placeholder="نام کالا یا بارکد را وارد کنید..."
+                       aria-label="جستجوی کالا">
+                <button type="button" class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+                <div id="search-results" class="search-results"></div>
+            </div>
+        </div>
+
+        <!-- بخش سبد خرید -->
+        <div class="cart-section">
+            <h3>
+                <i class="fas fa-shopping-cart"></i>
+                کالاهای انتخاب شده
+                <span id="cart-count" class="cart-badge">0</span>
+            </h3>
+
+            <div id="cart-container">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>نام کالا</th>
+                            <th>بارکد</th>
+                            <th>قیمت (تومان)</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-items">
+                        <!-- محتوای سبد خرید اینجا نمایش داده می‌شود -->
+                    </tbody>
+                </table>
+
+                <div id="empty-cart-message" class="message">
+                    <i class="fas fa-info-circle"></i>
+                    هیچ کالایی انتخاب نشده است. لطفاً از قسمت بالا کالاهای مورد نظر را جستجو و انتخاب کنید.
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه اقدام -->
+        <div style="text-align: center; margin-top: 30px;">
+            <button id="continue-btn" class="btn btn-primary" disabled>
+                <i class="fas fa-cog"></i> ادامه به تنظیمات چاپ
+            </button>
+        </div>
+
+        <div id="messages"></div>
+    </div>
+
+    <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
+    <script>
+        // تابع برای دریافت cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // تابع برای نمایش پیام
+        function showMessage(message, type) {
+            const messageClass = type === 'error' ? 'error-message' :
+                                type === 'success' ? 'success-message' : 'info-message';
+            const icon = type === 'error' ? 'fa-exclamation-circle' :
+                        type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+
+            $('#messages').html(`
+                <div class="message ${messageClass}">
+                    <i class="fas ${icon}"></i> ${message}
+                </div>
+            `);
+
+            if (type !== 'error') {
+                setTimeout(() => {
+                    $('#messages').empty();
+                }, 5000);
+            }
+        }
+
+        // جستجوی محصولات
+        $('#product-search').on('input', function() {
+            const query = $(this).val().trim();
+
+            if (query.length < 2) {
+                $('#search-results').hide().empty();
+                return;
+            }
+
+            $.ajax({
+                url: "{% url 'search_products_for_label' %}",
+                data: { q: query },
+                success: function(data) {
+                    if (data.results && data.results.length > 0) {
+                        let html = '';
+                        data.results.forEach(product => {
+                            html += `
+                                <div class="search-result-item"
+                                     data-product-name="${product.product_name}"
+                                     data-barcode="${product.barcode}"
+                                     data-price="${product.price}">
+                                    <div class="product-info">
+                                        <div class="product-name">${product.product_name}</div>
+                                        <div class="product-details">
+                                            بارکد: ${product.barcode} |
+                                            قیمت: ${parseInt(product.price).toLocaleString()} تومان |
+                                            شعبه: ${product.branch}
+                                        </div>
+                                    </div>
+                                    <button class="add-btn" onclick="addToCart('${product.product_name}')">
+                                        <i class="fas fa-plus"></i> افزودن
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        $('#search-results').html(html).show();
+                    } else {
+                        $('#search-results').html('<div class="search-result-item">هیچ کالایی یافت نشد</div>').show();
+                    }
+                },
+                error: function() {
+                    showMessage('خطا در جستجوی کالاها', 'error');
+                }
+            });
+        });
+
+        // افزودن به سبد خرید
+        function addToCart(productName) {
+            $.ajax({
+                url: "{% url 'add_product_to_label_cart' %}",
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    product_name: productName
+                }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(data) {
+                    if (data.success) {
+                        showMessage('کالا با موفقیت به سبد اضافه شد', 'success');
+                        updateCartDisplay();
+                        $('#product-search').val('');
+                        $('#search-results').hide();
+                    } else {
+                        showMessage('خطا در افزودن کالا: ' + data.error, 'error');
+                    }
+                },
+                error: function() {
+                    showMessage('خطا در ارتباط با سرور', 'error');
+                }
+            });
+        }
+
+        // به روزرسانی نمایش سبد خرید
+        function updateCartDisplay() {
+            // در اینجا می‌توانید سبد خرید را از سرور دریافت کنید
+            // برای سادگی، صفحه را رفرش می‌کنیم
+            location.reload();
+        }
+
+        // ادامه به تنظیمات
+        $('#continue-btn').click(function() {
+            window.location.href = "{% url 'label_settings' %}";
+        });
+
+        // بررسی وضعیت سبد خرید برای فعال/غیرفعال کردن دکمه
+        function checkCartStatus() {
+            const cartCount = parseInt($('#cart-count').text());
+            if (cartCount > 0) {
+                $('#continue-btn').prop('disabled', false);
+                $('#empty-cart-message').hide();
+                $('#cart-items').closest('table').show();
+            } else {
+                $('#continue-btn').prop('disabled', true);
+                $('#empty-cart-message').show();
+                $('#cart-items').closest('table').hide();
+            }
+        }
+
+        // مقداردهی اولیه
+        $(document).ready(function() {
+            checkCartStatus();
+        });
+
+        // مخفی کردن نتایج جستجو هنگام کلیک خارج
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.search-container').length) {
+                $('#search-results').hide();
+            }
+        });
+    </script>
+</body>
+</html>
