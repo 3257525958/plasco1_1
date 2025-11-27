@@ -64,7 +64,7 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('expense/detail/<int:pk>/', views.expense_detail, name='expense_detail'),
     path('expense/delete/<int:pk>/', views.delete_expense, name='delete_expense'),
     path('expense/delete-image/', views.delete_expense_image, name='delete_expense_image'),
-# --------------------------------------چاپ لیبل-------------------------------------------------------------
+    # ----------------------- چاپ لیبل -----------------------
     path('label/generator/', views.label_generator, name='label_generator'),
     path('label/search-products/', views.search_products_for_label, name='search_products_for_label'),
     path('label/add-to-cart/', views.add_product_to_label_cart, name='add_product_to_label_cart'),
@@ -75,8 +75,10 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('label/settings/', views.label_settings, name='label_settings'),
     path('label/print/', views.label_print, name='label_print'),
 
-    # URLهای جدید برای مدیریت شعبه
+    # URLهای جدید برای مدیریت شعبه در لیبل
     path('label/get-branches/', views.get_branches_for_label, name='get_branches_for_label'),
     path('label/get-branch-products/', views.get_branch_products_for_label, name='get_branch_products_for_label'),
+
+
 ]
 

@@ -1312,27 +1312,44 @@ def delete_expense(request, pk):
     return JsonResponse({'success': False, 'error': 'درخواست نامعتبر'})
 
 
-# ----------------------------------چاپ لیبل--------------------------------------------------------
+# account_app/views.py
+
 # account_app/views.py
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET, require_POST
-from django.db.models import Q
-from .models import InventoryCount, ProductPricing
+from django.db.models import Q, Sum, Min
+from .models import InventoryCount, Branch
 import json
-from django.db.models import Min, Sum
-import jdatetime
 
 
-# account_app/views.py - اضافه کردن ویوهای جدید
+# تابع تبدیل اعداد فارسی و عربی به انگلیسی
+def convert_persian_arabic_to_english(text):
+    """تبدیل اعداد فارسی و عربی به انگلیسی"""
+    persian_numbers = '۱۲۳۴۵۶۷۸۹۰'
+    arabic_numbers = '١٢٣٤٥٦٧٨٩٠'
+    english_numbers = '1234567890'
+
+    for p, a, e in zip(persian_numbers, arabic_numbers, english_numbers):
+        text = text.replace(p, e).replace(a, e)
+
+    return text
+
+
+# ----------------------- چاپ لیبل -----------------------
+
+@login_required
+def label_generator(request):
+    """صفحه اصلی تولید لیبل"""
+    return render(request, 'account_app/label_generator.html')
+
 
 @login_required
 @require_GET
 def get_branches_for_label(request):
     """دریافت لیست شعبه‌ها برای صفحه لیبل"""
     try:
-        from .models import Branch
         branches = Branch.objects.all().values('id', 'name')
         return JsonResponse({'branches': list(branches)})
     except Exception as e:
@@ -1342,56 +1359,121 @@ def get_branches_for_label(request):
 @login_required
 @require_GET
 def get_branch_products_for_label(request):
-    """دریافت محصولات یک شعبه خاص - نسخه ساده‌تر"""
+    """دریافت محصولات یک شعبه خاص - فقط محصولات همان شعبه"""
     try:
         branch_id = request.GET.get('branch_id')
         if not branch_id:
             return JsonResponse({'products': []})
 
+        # فقط محصولات این شعبه
+        base_query = InventoryCount.objects.filter(branch_id=branch_id)
+
         # دریافت نام محصولات متمایز
-        product_names = InventoryCount.objects.filter(
-            branch_id=branch_id
-        ).values_list('product_name', flat=True).distinct()
+        product_names = base_query.values_list('product_name', flat=True).distinct()
 
         product_list = []
         for product_name in product_names:
             try:
-                # محاسبه مجموع quantity برای این محصول
-                quantity_sum = InventoryCount.objects.filter(
-                    product_name=product_name,
-                    branch_id=branch_id
+                # محاسبه مجموع quantity برای این محصول در این شعبه
+                quantity_sum = base_query.filter(
+                    product_name=product_name
                 ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
 
                 # اولین محصول برای گرفتن اطلاعات دیگر
-                first_product = InventoryCount.objects.filter(
-                    product_name=product_name,
-                    branch_id=branch_id
+                first_product = base_query.filter(
+                    product_name=product_name
                 ).first()
 
                 if first_product:
+                    price = first_product.selling_price if first_product.selling_price else 0
+
                     product_list.append({
                         'product_name': product_name,
                         'barcode': first_product.barcode_data or 'ندارد',
-                        'price': str(first_product.selling_price) if first_product.selling_price else '0',
+                        'price': str(price) if price else '0',
                         'quantity': quantity_sum,
                         'branch_id': branch_id
                     })
 
             except Exception as e:
-                print(f"❌ خطا در پردازش محصول {product_name}: {e}")
                 continue
 
-        print(f"📦 تعداد محصولات شعبه: {len(product_list)}")
         return JsonResponse({'products': product_list})
 
     except Exception as e:
-        print(f"❌ خطا در دریافت محصولات شعبه: {e}")
         return JsonResponse({'products': [], 'error': str(e)})
+
+
+@login_required
+@require_GET
+def search_products_for_label(request):
+    """جستجوی محصولات برای لیبل - فقط کالاهای شعبه انتخاب شده"""
+    query = request.GET.get('q', '').strip()
+    branch_id = request.GET.get('branch_id')
+
+    # اگر شعبه انتخاب نشده باشد، هیچ چیزی برنگردان
+    if not branch_id:
+        return JsonResponse({'results': []})
+
+    try:
+        # حتماً فیلتر شعبه اعمال شود
+        base_query = InventoryCount.objects.filter(branch_id=branch_id)
+
+        # اگر کوئری وجود دارد و حداقل ۲ کاراکتر است جستجو می‌کنیم
+        if query and len(query) >= 2:
+            query_english = convert_persian_arabic_to_english(query)
+
+            # هم فیلتر شعبه و هم فیلتر جستجو با هم اعمال شوند
+            product_names = base_query.filter(
+                Q(product_name__icontains=query_english) |
+                Q(barcode_data__icontains=query_english)
+            ).values_list('product_name', flat=True).distinct()
+        else:
+            # اگر کوئری خالی یا کمتر از ۲ کاراکتر است، همه محصولات شعبه را برگردان
+            product_names = base_query.values_list('product_name', flat=True).distinct()
+
+        results = []
+        for product_name in product_names[:50]:
+            try:
+                # محاسبه مجموع quantity برای این محصول در این شعبه خاص
+                quantity_sum = base_query.filter(
+                    product_name=product_name
+                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+                # اولین رکورد برای گرفتن اطلاعات دیگر
+                first_product = base_query.filter(
+                    product_name=product_name
+                ).select_related('branch').first()
+
+                if not first_product:
+                    continue
+
+                # قیمت از selling_price در InventoryCount
+                price = first_product.selling_price if first_product.selling_price else 0
+
+                product_data = {
+                    'product_name': product_name,
+                    'barcode': first_product.barcode_data or 'ندارد',
+                    'price': str(price) if price else '0',
+                    'branch': first_product.branch.name if first_product.branch else 'نامشخص',
+                    'branch_id': first_product.branch.id if first_product.branch else None,
+                    'quantity': quantity_sum
+                }
+                results.append(product_data)
+
+            except Exception as product_error:
+                continue
+
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        return JsonResponse({'results': [], 'error': str(e)})
+
 
 @login_required
 @require_POST
 def add_product_to_label_cart(request):
-    """افزودن محصول به سبد لیبل - نسخه اصلاح شده با quantity صحیح"""
+    """افزودن محصول به سبد لیبل - فقط از شعبه انتخاب شده"""
     try:
         data = json.loads(request.body)
         product_name = data.get('product_name')
@@ -1401,8 +1483,6 @@ def add_product_to_label_cart(request):
             return JsonResponse({'success': False, 'error': 'شعبه انتخاب نشده است'})
 
         # محاسبه مجموع quantity برای این محصول در شعبه انتخاب شده
-        from django.db.models import Sum, Min
-
         product_aggregate = InventoryCount.objects.filter(
             product_name=product_name,
             branch_id=branch_id
@@ -1415,7 +1495,7 @@ def add_product_to_label_cart(request):
         total_quantity = product_aggregate['total_quantity'] or 0
 
         if total_quantity == 0:
-            return JsonResponse({'success': False, 'error': 'این کالا در انبار موجود نیست'})
+            return JsonResponse({'success': False, 'error': 'این کالا در انبار این شعبه موجود نیست'})
 
         # استفاده از قیمت فروش
         price = str(product_aggregate['first_price']) if product_aggregate['first_price'] else '0'
@@ -1424,7 +1504,7 @@ def add_product_to_label_cart(request):
             'product_name': product_name,
             'barcode': product_aggregate['first_barcode'] or 'ندارد',
             'price': price,
-            'quantity': total_quantity,  # تعداد برابر مجموع موجودی انبار
+            'quantity': total_quantity,
             'show_name': True,
             'show_price': True,
             'branch_id': branch_id
@@ -1440,7 +1520,6 @@ def add_product_to_label_cart(request):
                                if item['product_name'] == product_name and item['branch_id'] == branch_id), -1)
 
         if existing_index >= 0:
-            # اگر از قبل وجود دارد، quantity را به روز می‌کنیم
             cart[existing_index]['quantity'] = total_quantity
         else:
             cart.append(product_data)
@@ -1458,238 +1537,6 @@ def add_product_to_label_cart(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
-
-@login_required
-@require_GET
-def search_products_for_label(request):
-    """جستجوی محصولات برای لیبل - نسخه ساده‌تر و صحیح"""
-    query = request.GET.get('q', '').strip()
-    branch_id = request.GET.get('branch_id')
-
-    print(f"🔍 جستجوی محصولات: '{query}' | شعبه: {branch_id}")
-
-    try:
-        from django.db.models import Q
-
-        # فیلتر بر اساس شعبه اگر انتخاب شده باشد
-        base_query = InventoryCount.objects.all()
-        if branch_id:
-            base_query = base_query.filter(branch_id=branch_id)
-
-        # اگر کوئری وجود دارد جستجو می‌کنیم
-        if query and len(query) >= 2:
-            query_english = convert_persian_arabic_to_english(query)
-            product_names = base_query.filter(
-                Q(product_name__icontains=query_english) |
-                Q(barcode_data__icontains=query_english)
-            ).values_list('product_name', flat=True).distinct()
-        else:
-            # همه محصولات متمایز این شعبه
-            product_names = base_query.values_list('product_name', flat=True).distinct()
-
-        print(f"✅ تعداد محصولات منحصربه‌فرد: {len(product_names)}")
-
-        results = []
-        for product_name in product_names[:50]:  # محدودیت برای عملکرد
-            try:
-                # محاسبه مجموع quantity برای این محصول
-                quantity_sum = base_query.filter(
-                    product_name=product_name
-                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-
-                # اولین رکورد برای گرفتن اطلاعات دیگر
-                first_product = base_query.filter(
-                    product_name=product_name
-                ).select_related('branch').first()
-
-                if not first_product:
-                    continue
-
-                product_data = {
-                    'product_name': product_name,
-                    'barcode': first_product.barcode_data or 'ندارد',
-                    'price': str(first_product.selling_price) if first_product.selling_price else '0',
-                    'branch': first_product.branch.name if first_product.branch else 'نامشخص',
-                    'branch_id': first_product.branch.id if first_product.branch else None,
-                    'quantity': quantity_sum  # مقدار صحیح quantity
-                }
-                results.append(product_data)
-
-                print(f"📦 {product_name}: quantity={quantity_sum}")
-
-            except Exception as product_error:
-                print(f"❌ خطا در پردازش محصول {product_name}: {product_error}")
-                continue
-
-        print(f"📊 نتایج نهایی: {len(results)} آیتم")
-        return JsonResponse({'results': results})
-
-    except Exception as e:
-        print(f"❌ خطای کلی در جستجو: {e}")
-        import traceback
-        print(f"📋 جزئیات خطا: {traceback.format_exc()}")
-        return JsonResponse({'results': [], 'error': str(e)})
-
-
-@login_required
-@require_GET
-def search_products_for_label(request):
-    """جستجوی محصولات برای لیبل - نسخه ساده‌تر و صحیح"""
-    query = request.GET.get('q', '').strip()
-    branch_id = request.GET.get('branch_id')
-
-    print(f"🔍 جستجوی محصولات: '{query}' | شعبه: {branch_id}")
-
-    try:
-        from django.db.models import Q
-
-        # فیلتر بر اساس شعبه اگر انتخاب شده باشد
-        base_query = InventoryCount.objects.all()
-        if branch_id:
-            base_query = base_query.filter(branch_id=branch_id)
-
-        # اگر کوئری وجود دارد جستجو می‌کنیم
-        if query and len(query) >= 2:
-            query_english = convert_persian_arabic_to_english(query)
-            product_names = base_query.filter(
-                Q(product_name__icontains=query_english) |
-                Q(barcode_data__icontains=query_english)
-            ).values_list('product_name', flat=True).distinct()
-        else:
-            # همه محصولات متمایز این شعبه
-            product_names = base_query.values_list('product_name', flat=True).distinct()
-
-        print(f"✅ تعداد محصولات منحصربه‌فرد: {len(product_names)}")
-
-        results = []
-        for product_name in product_names[:50]:  # محدودیت برای عملکرد
-            try:
-                # محاسبه مجموع quantity برای این محصول
-                quantity_sum = base_query.filter(
-                    product_name=product_name
-                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-
-                # اولین رکورد برای گرفتن اطلاعات دیگر
-                first_product = base_query.filter(
-                    product_name=product_name
-                ).select_related('branch').first()
-
-                if not first_product:
-                    continue
-
-                product_data = {
-                    'product_name': product_name,
-                    'barcode': first_product.barcode_data or 'ندارد',
-                    'price': str(first_product.selling_price) if first_product.selling_price else '0',
-                    'branch': first_product.branch.name if first_product.branch else 'نامشخص',
-                    'branch_id': first_product.branch.id if first_product.branch else None,
-                    'quantity': quantity_sum  # مقدار صحیح quantity
-                }
-                results.append(product_data)
-
-                print(f"📦 {product_name}: quantity={quantity_sum}")
-
-            except Exception as product_error:
-                print(f"❌ خطا در پردازش محصول {product_name}: {product_error}")
-                continue
-
-        print(f"📊 نتایج نهایی: {len(results)} آیتم")
-        return JsonResponse({'results': results})
-
-    except Exception as e:
-        print(f"❌ خطای کلی در جستجو: {e}")
-        import traceback
-        print(f"📋 جزئیات خطا: {traceback.format_exc()}")
-        return JsonResponse({'results': [], 'error': str(e)})
-
-
-def convert_persian_arabic_to_english(text):
-    """تبدیل اعداد فارسی و عربی به انگلیسی"""
-    persian_numbers = '۱۲۳۴۵۶۷۸۹۰'
-    arabic_numbers = '١٢٣٤٥٦٧٨٩٠'
-    english_numbers = '1234567890'
-
-    for p, a, e in zip(persian_numbers, arabic_numbers, english_numbers):
-        text = text.replace(p, e).replace(a, e)
-
-    return text
-
-
-@login_required
-def label_generator(request):
-    """صفحه اصلی تولید لیبل"""
-    return render(request, 'account_app/label_generator.html')
-
-
-# account_app/views.py
-@login_required
-@require_GET
-def search_products_for_label(request):
-    """جستجوی محصولات برای لیبل - نسخه اصلاح شده"""
-    query = request.GET.get('q', '').strip()
-
-    print(f"🔍 جستجوی محصولات: '{query}'")
-
-    if len(query) < 2:
-        return JsonResponse({'results': []})
-
-    try:
-        # تبدیل اعداد فارسی و عربی به انگلیسی
-        query_english = convert_persian_arabic_to_english(query)
-        print(f"🔢 کوئری تبدیل شده: '{query_english}'")
-
-        # جستجو در نام کالا و بارکد - نسخه ایمن‌تر
-        from django.db.models import Q
-
-        # ابتدا محصولات منحصربه‌فرد را پیدا کنیم
-        product_names = InventoryCount.objects.filter(
-            Q(product_name__icontains=query_english) |
-            Q(barcode_data__icontains=query_english)
-        ).values_list('product_name', flat=True).distinct()
-
-        print(f"✅ تعداد محصولات منحصربه‌فرد: {len(product_names)}")
-
-        results = []
-        for product_name in product_names[:50]:  # محدودیت برای عملکرد
-            try:
-                # اولین نمونه از هر محصول را بگیریم
-                product = InventoryCount.objects.filter(
-                    product_name=product_name
-                ).select_related('branch').first()
-
-                if not product:
-                    continue
-
-                # دریافت قیمت
-                try:
-                    pricing = ProductPricing.objects.filter(
-                        product_name=product_name
-                    ).first()
-                    price = pricing.standard_price if pricing else 0
-                except Exception as pricing_error:
-                    print(f"⚠️ خطا در دریافت قیمت برای {product_name}: {pricing_error}")
-                    price = 0
-
-                product_data = {
-                    'product_name': product_name,
-                    'barcode': product.barcode_data or 'ندارد',
-                    'price': str(price) if price else '0',
-                    'branch': product.branch.name if product and product.branch else 'نامشخص'
-                }
-                results.append(product_data)
-
-            except Exception as product_error:
-                print(f"❌ خطا در پردازش محصول {product_name}: {product_error}")
-                continue
-
-        print(f"📊 نتایج نهایی: {len(results)} آیتم")
-        return JsonResponse({'results': results})
-
-    except Exception as e:
-        print(f"❌ خطای کلی در جستجو: {e}")
-        import traceback
-        print(f"📋 جزئیات خطا: {traceback.format_exc()}")
-        return JsonResponse({'results': [], 'error': str(e)})
 
 @login_required
 @require_POST
@@ -1731,7 +1578,7 @@ def update_cart_quantity(request):
         cart = request.session.get('label_cart', [])
         for item in cart:
             if item['product_name'] == product_name:
-                item['quantity'] = max(1, quantity)  # حداقل 1
+                item['quantity'] = max(1, quantity)
                 break
 
         request.session['label_cart'] = cart
@@ -1760,16 +1607,7 @@ def label_settings(request):
     if request.method == 'POST':
         # پردازش تنظیمات
         for key, value in request.POST.items():
-            if key.startswith('quantity_'):
-                product_name = key.replace('quantity_', '')
-                for item in cart:
-                    if item['product_name'] == product_name:
-                        try:
-                            item['quantity'] = int(value)
-                        except (ValueError, TypeError):
-                            item['quantity'] = 1
-
-            elif key.startswith('show_name_'):
+            if key.startswith('show_name_'):
                 product_name = key.replace('show_name_', '')
                 for item in cart:
                     if item['product_name'] == product_name:
@@ -1791,7 +1629,7 @@ def label_settings(request):
 
 @login_required
 def label_print(request):
-    """صفحه چاپ لیبل - نسخه کامل"""
+    """صفحه چاپ لیبل"""
     cart = request.session.get('label_cart', [])
 
     # ایجاد لیست کامل از تمام لیبل‌هایی که باید چاپ شوند
@@ -1816,6 +1654,7 @@ def label_print(request):
         'all_labels': all_labels,
         'total_labels': total_labels
     })
+
 
 # ویوهای کمکی برای template tags
 def get_label_range(value):
