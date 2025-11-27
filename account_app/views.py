@@ -1359,55 +1359,47 @@ def get_branches_for_label(request):
 @login_required
 @require_GET
 def get_branch_products_for_label(request):
-    """دریافت محصولات یک شعبه خاص - فقط محصولات همان شعبه"""
+    """دریافت محصولات یک شعبه خاص - تمام محصولات"""
     try:
         branch_id = request.GET.get('branch_id')
         if not branch_id:
             return JsonResponse({'products': []})
 
-        # فقط محصولات این شعبه
-        base_query = InventoryCount.objects.filter(branch_id=branch_id)
-
-        # دریافت نام محصولات متمایز
-        product_names = base_query.values_list('product_name', flat=True).distinct()
+        # دریافت تمام محصولات این شعبه بدون محدودیت
+        products = InventoryCount.objects.filter(
+            branch_id=branch_id
+        ).values(
+            'product_name', 'barcode_data', 'selling_price'
+        ).annotate(
+            total_quantity=Sum('quantity')
+        ).order_by('product_name')
 
         product_list = []
-        for product_name in product_names:
+        for product in products:
             try:
-                # محاسبه مجموع quantity برای این محصول در این شعبه
-                quantity_sum = base_query.filter(
-                    product_name=product_name
-                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-
-                # اولین محصول برای گرفتن اطلاعات دیگر
-                first_product = base_query.filter(
-                    product_name=product_name
-                ).first()
-
-                if first_product:
-                    price = first_product.selling_price if first_product.selling_price else 0
-
-                    product_list.append({
-                        'product_name': product_name,
-                        'barcode': first_product.barcode_data or 'ندارد',
-                        'price': str(price) if price else '0',
-                        'quantity': quantity_sum,
-                        'branch_id': branch_id
-                    })
-
+                product_list.append({
+                    'product_name': product['product_name'],
+                    'barcode': product['barcode_data'] or 'ندارد',
+                    'price': str(product['selling_price']) if product['selling_price'] else '0',
+                    'quantity': product['total_quantity'] or 0,
+                    'branch_id': branch_id
+                })
             except Exception as e:
                 continue
 
+        print(f"✅ تعداد محصولات شعبه {branch_id}: {len(product_list)}")
         return JsonResponse({'products': product_list})
 
     except Exception as e:
+        print(f"❌ خطا در دریافت محصولات شعبه: {e}")
         return JsonResponse({'products': [], 'error': str(e)})
-
 
 @login_required
 @require_GET
+@login_required
+@require_GET
 def search_products_for_label(request):
-    """جستجوی محصولات برای لیبل - فقط کالاهای شعبه انتخاب شده"""
+    """جستجوی محصولات برای لیبل - تمام کالاهای شعبه انتخاب شده"""
     query = request.GET.get('q', '').strip()
     branch_id = request.GET.get('branch_id')
 
@@ -1416,59 +1408,52 @@ def search_products_for_label(request):
         return JsonResponse({'results': []})
 
     try:
-        # حتماً فیلتر شعبه اعمال شود
-        base_query = InventoryCount.objects.filter(branch_id=branch_id)
-
         # اگر کوئری وجود دارد و حداقل ۲ کاراکتر است جستجو می‌کنیم
         if query and len(query) >= 2:
             query_english = convert_persian_arabic_to_english(query)
 
-            # هم فیلتر شعبه و هم فیلتر جستجو با هم اعمال شوند
-            product_names = base_query.filter(
+            # جستجو در محصولات این شعبه
+            products = InventoryCount.objects.filter(
+                branch_id=branch_id
+            ).filter(
                 Q(product_name__icontains=query_english) |
                 Q(barcode_data__icontains=query_english)
-            ).values_list('product_name', flat=True).distinct()
+            ).values(
+                'product_name', 'barcode_data', 'selling_price'
+            ).annotate(
+                total_quantity=Sum('quantity')
+            ).order_by('product_name')
         else:
-            # اگر کوئری خالی یا کمتر از ۲ کاراکتر است، همه محصولات شعبه را برگردان
-            product_names = base_query.values_list('product_name', flat=True).distinct()
+            # همه محصولات این شعبه
+            products = InventoryCount.objects.filter(
+                branch_id=branch_id
+            ).values(
+                'product_name', 'barcode_data', 'selling_price'
+            ).annotate(
+                total_quantity=Sum('quantity')
+            ).order_by('product_name')
 
         results = []
-        for product_name in product_names[:50]:
+        for product in products:
             try:
-                # محاسبه مجموع quantity برای این محصول در این شعبه خاص
-                quantity_sum = base_query.filter(
-                    product_name=product_name
-                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-
-                # اولین رکورد برای گرفتن اطلاعات دیگر
-                first_product = base_query.filter(
-                    product_name=product_name
-                ).select_related('branch').first()
-
-                if not first_product:
-                    continue
-
-                # قیمت از selling_price در InventoryCount
-                price = first_product.selling_price if first_product.selling_price else 0
-
                 product_data = {
-                    'product_name': product_name,
-                    'barcode': first_product.barcode_data or 'ندارد',
-                    'price': str(price) if price else '0',
-                    'branch': first_product.branch.name if first_product.branch else 'نامشخص',
-                    'branch_id': first_product.branch.id if first_product.branch else None,
-                    'quantity': quantity_sum
+                    'product_name': product['product_name'],
+                    'barcode': product['barcode_data'] or 'ندارد',
+                    'price': str(product['selling_price']) if product['selling_price'] else '0',
+                    'branch_id': branch_id,
+                    'quantity': product['total_quantity'] or 0
                 }
                 results.append(product_data)
 
             except Exception as product_error:
                 continue
 
+        print(f"✅ تعداد نتایج برای شعبه {branch_id}: {len(results)}")
         return JsonResponse({'results': results})
 
     except Exception as e:
+        print(f"❌ خطای کلی در جستجو: {e}")
         return JsonResponse({'results': [], 'error': str(e)})
-
 
 @login_required
 @require_POST
