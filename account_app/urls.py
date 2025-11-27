@@ -75,5 +75,8 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('label/settings/', views.label_settings, name='label_settings'),
     path('label/print/', views.label_print, name='label_print'),
 
+    # URLهای جدید برای مدیریت شعبه
+    path('label/get-branches/', views.get_branches_for_label, name='get_branches_for_label'),
+    path('label/get-branch-products/', views.get_branch_products_for_label, name='get_branch_products_for_label'),
 ]
 

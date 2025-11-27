@@ -1321,7 +1321,286 @@ from django.views.decorators.http import require_GET, require_POST
 from django.db.models import Q
 from .models import InventoryCount, ProductPricing
 import json
+from django.db.models import Min, Sum
 import jdatetime
+
+
+# account_app/views.py - اضافه کردن ویوهای جدید
+
+@login_required
+@require_GET
+def get_branches_for_label(request):
+    """دریافت لیست شعبه‌ها برای صفحه لیبل"""
+    try:
+        from .models import Branch
+        branches = Branch.objects.all().values('id', 'name')
+        return JsonResponse({'branches': list(branches)})
+    except Exception as e:
+        return JsonResponse({'branches': [], 'error': str(e)})
+
+
+@login_required
+@require_GET
+def get_branch_products_for_label(request):
+    """دریافت محصولات یک شعبه خاص - نسخه ساده‌تر"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        if not branch_id:
+            return JsonResponse({'products': []})
+
+        # دریافت نام محصولات متمایز
+        product_names = InventoryCount.objects.filter(
+            branch_id=branch_id
+        ).values_list('product_name', flat=True).distinct()
+
+        product_list = []
+        for product_name in product_names:
+            try:
+                # محاسبه مجموع quantity برای این محصول
+                quantity_sum = InventoryCount.objects.filter(
+                    product_name=product_name,
+                    branch_id=branch_id
+                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+                # اولین محصول برای گرفتن اطلاعات دیگر
+                first_product = InventoryCount.objects.filter(
+                    product_name=product_name,
+                    branch_id=branch_id
+                ).first()
+
+                if first_product:
+                    product_list.append({
+                        'product_name': product_name,
+                        'barcode': first_product.barcode_data or 'ندارد',
+                        'price': str(first_product.selling_price) if first_product.selling_price else '0',
+                        'quantity': quantity_sum,
+                        'branch_id': branch_id
+                    })
+
+            except Exception as e:
+                print(f"❌ خطا در پردازش محصول {product_name}: {e}")
+                continue
+
+        print(f"📦 تعداد محصولات شعبه: {len(product_list)}")
+        return JsonResponse({'products': product_list})
+
+    except Exception as e:
+        print(f"❌ خطا در دریافت محصولات شعبه: {e}")
+        return JsonResponse({'products': [], 'error': str(e)})
+
+@login_required
+@require_POST
+def add_product_to_label_cart(request):
+    """افزودن محصول به سبد لیبل - نسخه اصلاح شده با quantity صحیح"""
+    try:
+        data = json.loads(request.body)
+        product_name = data.get('product_name')
+        branch_id = data.get('branch_id')
+
+        if not branch_id:
+            return JsonResponse({'success': False, 'error': 'شعبه انتخاب نشده است'})
+
+        # محاسبه مجموع quantity برای این محصول در شعبه انتخاب شده
+        from django.db.models import Sum, Min
+
+        product_aggregate = InventoryCount.objects.filter(
+            product_name=product_name,
+            branch_id=branch_id
+        ).aggregate(
+            total_quantity=Sum('quantity'),
+            first_barcode=Min('barcode_data'),
+            first_price=Min('selling_price')
+        )
+
+        total_quantity = product_aggregate['total_quantity'] or 0
+
+        if total_quantity == 0:
+            return JsonResponse({'success': False, 'error': 'این کالا در انبار موجود نیست'})
+
+        # استفاده از قیمت فروش
+        price = str(product_aggregate['first_price']) if product_aggregate['first_price'] else '0'
+
+        product_data = {
+            'product_name': product_name,
+            'barcode': product_aggregate['first_barcode'] or 'ندارد',
+            'price': price,
+            'quantity': total_quantity,  # تعداد برابر مجموع موجودی انبار
+            'show_name': True,
+            'show_price': True,
+            'branch_id': branch_id
+        }
+
+        # ذخیره در سشن
+        if 'label_cart' not in request.session:
+            request.session['label_cart'] = []
+
+        # بررسی وجود تکراری - بر اساس نام محصول و شعبه
+        cart = request.session['label_cart']
+        existing_index = next((i for i, item in enumerate(cart)
+                               if item['product_name'] == product_name and item['branch_id'] == branch_id), -1)
+
+        if existing_index >= 0:
+            # اگر از قبل وجود دارد، quantity را به روز می‌کنیم
+            cart[existing_index]['quantity'] = total_quantity
+        else:
+            cart.append(product_data)
+
+        request.session['label_cart'] = cart
+        request.session.modified = True
+
+        return JsonResponse({
+            'success': True,
+            'cart_count': len(cart),
+            'product_name': product_name,
+            'quantity': total_quantity
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@require_GET
+def search_products_for_label(request):
+    """جستجوی محصولات برای لیبل - نسخه ساده‌تر و صحیح"""
+    query = request.GET.get('q', '').strip()
+    branch_id = request.GET.get('branch_id')
+
+    print(f"🔍 جستجوی محصولات: '{query}' | شعبه: {branch_id}")
+
+    try:
+        from django.db.models import Q
+
+        # فیلتر بر اساس شعبه اگر انتخاب شده باشد
+        base_query = InventoryCount.objects.all()
+        if branch_id:
+            base_query = base_query.filter(branch_id=branch_id)
+
+        # اگر کوئری وجود دارد جستجو می‌کنیم
+        if query and len(query) >= 2:
+            query_english = convert_persian_arabic_to_english(query)
+            product_names = base_query.filter(
+                Q(product_name__icontains=query_english) |
+                Q(barcode_data__icontains=query_english)
+            ).values_list('product_name', flat=True).distinct()
+        else:
+            # همه محصولات متمایز این شعبه
+            product_names = base_query.values_list('product_name', flat=True).distinct()
+
+        print(f"✅ تعداد محصولات منحصربه‌فرد: {len(product_names)}")
+
+        results = []
+        for product_name in product_names[:50]:  # محدودیت برای عملکرد
+            try:
+                # محاسبه مجموع quantity برای این محصول
+                quantity_sum = base_query.filter(
+                    product_name=product_name
+                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+                # اولین رکورد برای گرفتن اطلاعات دیگر
+                first_product = base_query.filter(
+                    product_name=product_name
+                ).select_related('branch').first()
+
+                if not first_product:
+                    continue
+
+                product_data = {
+                    'product_name': product_name,
+                    'barcode': first_product.barcode_data or 'ندارد',
+                    'price': str(first_product.selling_price) if first_product.selling_price else '0',
+                    'branch': first_product.branch.name if first_product.branch else 'نامشخص',
+                    'branch_id': first_product.branch.id if first_product.branch else None,
+                    'quantity': quantity_sum  # مقدار صحیح quantity
+                }
+                results.append(product_data)
+
+                print(f"📦 {product_name}: quantity={quantity_sum}")
+
+            except Exception as product_error:
+                print(f"❌ خطا در پردازش محصول {product_name}: {product_error}")
+                continue
+
+        print(f"📊 نتایج نهایی: {len(results)} آیتم")
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        print(f"❌ خطای کلی در جستجو: {e}")
+        import traceback
+        print(f"📋 جزئیات خطا: {traceback.format_exc()}")
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
+@login_required
+@require_GET
+def search_products_for_label(request):
+    """جستجوی محصولات برای لیبل - نسخه ساده‌تر و صحیح"""
+    query = request.GET.get('q', '').strip()
+    branch_id = request.GET.get('branch_id')
+
+    print(f"🔍 جستجوی محصولات: '{query}' | شعبه: {branch_id}")
+
+    try:
+        from django.db.models import Q
+
+        # فیلتر بر اساس شعبه اگر انتخاب شده باشد
+        base_query = InventoryCount.objects.all()
+        if branch_id:
+            base_query = base_query.filter(branch_id=branch_id)
+
+        # اگر کوئری وجود دارد جستجو می‌کنیم
+        if query and len(query) >= 2:
+            query_english = convert_persian_arabic_to_english(query)
+            product_names = base_query.filter(
+                Q(product_name__icontains=query_english) |
+                Q(barcode_data__icontains=query_english)
+            ).values_list('product_name', flat=True).distinct()
+        else:
+            # همه محصولات متمایز این شعبه
+            product_names = base_query.values_list('product_name', flat=True).distinct()
+
+        print(f"✅ تعداد محصولات منحصربه‌فرد: {len(product_names)}")
+
+        results = []
+        for product_name in product_names[:50]:  # محدودیت برای عملکرد
+            try:
+                # محاسبه مجموع quantity برای این محصول
+                quantity_sum = base_query.filter(
+                    product_name=product_name
+                ).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+                # اولین رکورد برای گرفتن اطلاعات دیگر
+                first_product = base_query.filter(
+                    product_name=product_name
+                ).select_related('branch').first()
+
+                if not first_product:
+                    continue
+
+                product_data = {
+                    'product_name': product_name,
+                    'barcode': first_product.barcode_data or 'ندارد',
+                    'price': str(first_product.selling_price) if first_product.selling_price else '0',
+                    'branch': first_product.branch.name if first_product.branch else 'نامشخص',
+                    'branch_id': first_product.branch.id if first_product.branch else None,
+                    'quantity': quantity_sum  # مقدار صحیح quantity
+                }
+                results.append(product_data)
+
+                print(f"📦 {product_name}: quantity={quantity_sum}")
+
+            except Exception as product_error:
+                print(f"❌ خطا در پردازش محصول {product_name}: {product_error}")
+                continue
+
+        print(f"📊 نتایج نهایی: {len(results)} آیتم")
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        print(f"❌ خطای کلی در جستجو: {e}")
+        import traceback
+        print(f"📋 جزئیات خطا: {traceback.format_exc()}")
+        return JsonResponse({'results': [], 'error': str(e)})
 
 
 def convert_persian_arabic_to_english(text):
@@ -1411,60 +1690,6 @@ def search_products_for_label(request):
         import traceback
         print(f"📋 جزئیات خطا: {traceback.format_exc()}")
         return JsonResponse({'results': [], 'error': str(e)})
-
-@login_required
-@require_POST
-def add_product_to_label_cart(request):
-    """افزودن محصول به سبد لیبل"""
-    try:
-        data = json.loads(request.body)
-        product_name = data.get('product_name')
-
-        # دریافت اطلاعات محصول
-        product = InventoryCount.objects.filter(product_name=product_name).first()
-        if not product:
-            return JsonResponse({'success': False, 'error': 'کالا یافت نشد'})
-
-        try:
-            pricing = ProductPricing.objects.get(product_name=product_name)
-            price = str(pricing.standard_price) if pricing.standard_price else '0'
-        except ProductPricing.DoesNotExist:
-            price = '0'
-
-        product_data = {
-            'product_name': product_name,
-            'barcode': product.barcode_data,
-            'price': price,
-            'quantity': 1,  # تعداد پیش‌فرض
-            'show_name': True,
-            'show_price': True
-        }
-
-        # ذخیره در سشن
-        if 'label_cart' not in request.session:
-            request.session['label_cart'] = []
-
-        # بررسی وجود تکراری
-        cart = request.session['label_cart']
-        existing_index = next((i for i, item in enumerate(cart) if item['product_name'] == product_name), -1)
-
-        if existing_index >= 0:
-            cart[existing_index]['quantity'] += 1
-        else:
-            cart.append(product_data)
-
-        request.session['label_cart'] = cart
-        request.session.modified = True
-
-        return JsonResponse({
-            'success': True,
-            'cart_count': len(cart),
-            'product_name': product_name
-        })
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
 
 @login_required
 @require_POST
