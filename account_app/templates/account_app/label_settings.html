@@ -1,0 +1,295 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تنظیمات چاپ لیبل</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .settings-section h3 {
+            margin-bottom: 20px;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .products-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .products-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .products-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .quantity-input {
+            width: 80px;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .printer-settings {
+            background: var(--blue-light);
+            border-left: 4px solid var(--blue-dark);
+        }
+
+        .setting-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .setting-item {
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin: 5px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .products-table {
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .setting-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>تنظیمات چاپ لیبل</h1>
+            <p>تنظیمات مربوط به چاپ لیبل را مشخص کنید</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="settings-section">
+                <h3><i class="fas fa-list"></i> کالاهای انتخاب شده</h3>
+
+                {% if cart %}
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>نام کالا</th>
+                            <th>بارکد</th>
+                            <th>قیمت (تومان)</th>
+                            <th>تعداد لیبل</th>
+                            <th>نمایش نام</th>
+                            <th>نمایش قیمت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart %}
+                        <tr>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.barcode }}</td>
+                            <td>{{ item.price|floatformat:0 }}</td>
+                            <td>
+                                <input type="number" name="quantity_{{ item.product_name }}"
+                                       value="{{ item.quantity }}" min="1" max="100"
+                                       class="quantity-input" required>
+                            </td>
+                            <td>
+                                <input type="checkbox" name="show_name_{{ item.product_name }}"
+                                       {% if item.show_name %}checked{% endif %} class="checkbox">
+                            </td>
+                            <td>
+                                <input type="checkbox" name="show_price_{{ item.product_name }}"
+                                       {% if item.show_price %}checked{% endif %} class="checkbox">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <i class="fas fa-shopping-cart" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                    <p>سبد خرید خالی است</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="settings-section printer-settings">
+                <h3><i class="fas fa-print"></i> تنظیمات چاپگر</h3>
+                <div class="setting-group">
+                    <div class="setting-item">
+                        <strong>مدل چاپگر:</strong> MEVA 4200
+                    </div>
+                    <div class="setting-item">
+                        <strong>سایز لیبل:</strong> 40×20 میلی‌متر
+                    </div>
+                    <div class="setting-item">
+                        <strong>چیدمان:</strong> ۲ لیبل در هر ردیف
+                    </div>
+                    <div class="setting-item">
+                        <strong>فاصله لیبل‌ها:</strong> ۲ میلی‌متر
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                {% if cart %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-print"></i> مشاهده پیش‌نمایش و چاپ
+                </button>
+                {% endif %}
+                <a href="{% url 'label_generator' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right"></i> بازگشت به انتخاب کالا
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

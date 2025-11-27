@@ -1317,8 +1317,23 @@ def delete_expense(request, pk):
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET, require_POST
+from django.db.models import Q
 from .models import InventoryCount, ProductPricing
 import json
+import jdatetime
+
+
+def convert_persian_arabic_to_english(text):
+    """تبدیل اعداد فارسی و عربی به انگلیسی"""
+    persian_numbers = '۱۲۳۴۵۶۷۸۹۰'
+    arabic_numbers = '١٢٣٤٥٦٧٨٩٠'
+    english_numbers = '1234567890'
+
+    for p, a, e in zip(persian_numbers, arabic_numbers, english_numbers):
+        text = text.replace(p, e).replace(a, e)
+
+    return text
 
 
 @login_required
@@ -1327,80 +1342,189 @@ def label_generator(request):
     return render(request, 'account_app/label_generator.html')
 
 
+# account_app/views.py
 @login_required
+@require_GET
 def search_products_for_label(request):
-    """جستجوی محصولات برای لیبل"""
-    query = request.GET.get('q', '')
+    """جستجوی محصولات برای لیبل - نسخه اصلاح شده"""
+    query = request.GET.get('q', '').strip()
 
-    if len(query) >= 2:
-        # جستجو در InventoryCount
-        products = InventoryCount.objects.filter(
-            product_name__icontains=query
-        ).select_related('branch').distinct('product_name')[:50]  # محدودیت برای عملکرد بهتر
+    print(f"🔍 جستجوی محصولات: '{query}'")
+
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+
+    try:
+        # تبدیل اعداد فارسی و عربی به انگلیسی
+        query_english = convert_persian_arabic_to_english(query)
+        print(f"🔢 کوئری تبدیل شده: '{query_english}'")
+
+        # جستجو در نام کالا و بارکد - نسخه ایمن‌تر
+        from django.db.models import Q
+
+        # ابتدا محصولات منحصربه‌فرد را پیدا کنیم
+        product_names = InventoryCount.objects.filter(
+            Q(product_name__icontains=query_english) |
+            Q(barcode_data__icontains=query_english)
+        ).values_list('product_name', flat=True).distinct()
+
+        print(f"✅ تعداد محصولات منحصربه‌فرد: {len(product_names)}")
 
         results = []
-        for product in products:
+        for product_name in product_names[:50]:  # محدودیت برای عملکرد
             try:
-                pricing = ProductPricing.objects.get(product_name=product.product_name)
-                price = pricing.standard_price
-            except ProductPricing.DoesNotExist:
-                price = 0
+                # اولین نمونه از هر محصول را بگیریم
+                product = InventoryCount.objects.filter(
+                    product_name=product_name
+                ).select_related('branch').first()
 
-            results.append({
-                'product_name': product.product_name,
-                'barcode': product.barcode_data,
-                'price': str(price) if price else '0',
-                'branch': product.branch.name if product.branch else 'نامشخص'
-            })
+                if not product:
+                    continue
 
+                # دریافت قیمت
+                try:
+                    pricing = ProductPricing.objects.filter(
+                        product_name=product_name
+                    ).first()
+                    price = pricing.standard_price if pricing else 0
+                except Exception as pricing_error:
+                    print(f"⚠️ خطا در دریافت قیمت برای {product_name}: {pricing_error}")
+                    price = 0
+
+                product_data = {
+                    'product_name': product_name,
+                    'barcode': product.barcode_data or 'ندارد',
+                    'price': str(price) if price else '0',
+                    'branch': product.branch.name if product and product.branch else 'نامشخص'
+                }
+                results.append(product_data)
+
+            except Exception as product_error:
+                print(f"❌ خطا در پردازش محصول {product_name}: {product_error}")
+                continue
+
+        print(f"📊 نتایج نهایی: {len(results)} آیتم")
         return JsonResponse({'results': results})
 
-    return JsonResponse({'results': []})
-
+    except Exception as e:
+        print(f"❌ خطای کلی در جستجو: {e}")
+        import traceback
+        print(f"📋 جزئیات خطا: {traceback.format_exc()}")
+        return JsonResponse({'results': [], 'error': str(e)})
 
 @login_required
+@require_POST
 def add_product_to_label_cart(request):
     """افزودن محصول به سبد لیبل"""
-    if request.method == 'POST':
+    try:
         data = json.loads(request.body)
         product_name = data.get('product_name')
 
         # دریافت اطلاعات محصول
+        product = InventoryCount.objects.filter(product_name=product_name).first()
+        if not product:
+            return JsonResponse({'success': False, 'error': 'کالا یافت نشد'})
+
         try:
-            product = InventoryCount.objects.filter(product_name=product_name).first()
             pricing = ProductPricing.objects.get(product_name=product_name)
+            price = str(pricing.standard_price) if pricing.standard_price else '0'
+        except ProductPricing.DoesNotExist:
+            price = '0'
 
-            product_data = {
-                'product_name': product_name,
-                'barcode': product.barcode_data,
-                'price': str(pricing.standard_price) if pricing.standard_price else '0',
-                'quantity': 1,  # تعداد پیش‌فرض
-                'show_name': True,
-                'show_price': True
-            }
+        product_data = {
+            'product_name': product_name,
+            'barcode': product.barcode_data,
+            'price': price,
+            'quantity': 1,  # تعداد پیش‌فرض
+            'show_name': True,
+            'show_price': True
+        }
 
-            # ذخیره در سشن
-            if 'label_cart' not in request.session:
-                request.session['label_cart'] = []
+        # ذخیره در سشن
+        if 'label_cart' not in request.session:
+            request.session['label_cart'] = []
 
-            # بررسی وجود تکراری
-            cart = request.session['label_cart']
-            existing_index = next((i for i, item in enumerate(cart) if item['product_name'] == product_name), -1)
+        # بررسی وجود تکراری
+        cart = request.session['label_cart']
+        existing_index = next((i for i, item in enumerate(cart) if item['product_name'] == product_name), -1)
 
-            if existing_index >= 0:
-                cart[existing_index]['quantity'] += 1
-            else:
-                cart.append(product_data)
+        if existing_index >= 0:
+            cart[existing_index]['quantity'] += 1
+        else:
+            cart.append(product_data)
 
-            request.session['label_cart'] = cart
-            request.session.modified = True
+        request.session['label_cart'] = cart
+        request.session.modified = True
 
-            return JsonResponse({'success': True, 'cart_count': len(cart)})
+        return JsonResponse({
+            'success': True,
+            'cart_count': len(cart),
+            'product_name': product_name
+        })
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
-    return JsonResponse({'success': False, 'error': 'Method not allowed'})
+
+@login_required
+@require_POST
+def remove_from_label_cart(request):
+    """حذف محصول از سبد لیبل"""
+    try:
+        data = json.loads(request.body)
+        product_name = data.get('product_name')
+
+        cart = request.session.get('label_cart', [])
+        cart = [item for item in cart if item['product_name'] != product_name]
+
+        request.session['label_cart'] = cart
+        request.session.modified = True
+
+        return JsonResponse({'success': True, 'cart_count': len(cart)})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@require_GET
+def get_label_cart(request):
+    """دریافت سبد خرید لیبل"""
+    cart = request.session.get('label_cart', [])
+    return JsonResponse({'cart': cart})
+
+
+@login_required
+@require_POST
+def update_cart_quantity(request):
+    """به روزرسانی تعداد محصول در سبد خرید"""
+    try:
+        data = json.loads(request.body)
+        product_name = data.get('product_name')
+        quantity = int(data.get('quantity', 1))
+
+        cart = request.session.get('label_cart', [])
+        for item in cart:
+            if item['product_name'] == product_name:
+                item['quantity'] = max(1, quantity)  # حداقل 1
+                break
+
+        request.session['label_cart'] = cart
+        request.session.modified = True
+
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@require_POST
+def clear_label_cart(request):
+    """پاک کردن کل سبد خرید"""
+    request.session['label_cart'] = []
+    request.session.modified = True
+    return JsonResponse({'success': True})
 
 
 @login_required
@@ -1415,7 +1539,10 @@ def label_settings(request):
                 product_name = key.replace('quantity_', '')
                 for item in cart:
                     if item['product_name'] == product_name:
-                        item['quantity'] = int(value)
+                        try:
+                            item['quantity'] = int(value)
+                        except (ValueError, TypeError):
+                            item['quantity'] = 1
 
             elif key.startswith('show_name_'):
                 product_name = key.replace('show_name_', '')
@@ -1439,10 +1566,33 @@ def label_settings(request):
 
 @login_required
 def label_print(request):
-    """صفحه چاپ لیبل"""
+    """صفحه چاپ لیبل - نسخه کامل"""
     cart = request.session.get('label_cart', [])
+
+    # ایجاد لیست کامل از تمام لیبل‌هایی که باید چاپ شوند
+    all_labels = []
+    for item in cart:
+        for i in range(item['quantity']):
+            all_labels.append(item)
+
+    # اگر سبد خالی است، یک آیتم نمونه ایجاد کنیم
+    if not all_labels:
+        all_labels = [{
+            'product_name': 'محصول نمونه',
+            'barcode': '123456789012',
+            'price': '10000',
+            'show_name': True,
+            'show_price': True
+        }]
+
+    total_labels = len(all_labels)
+
     return render(request, 'account_app/label_print.html', {
-        'cart': cart,
-        'label_width': 40,
-        'label_height': 20
+        'all_labels': all_labels,
+        'total_labels': total_labels
     })
+
+# ویوهای کمکی برای template tags
+def get_label_range(value):
+    """تولید range برای template (برای استفاده در template tags)"""
+    return range(int(value))

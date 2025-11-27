@@ -68,9 +68,12 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('label/generator/', views.label_generator, name='label_generator'),
     path('label/search-products/', views.search_products_for_label, name='search_products_for_label'),
     path('label/add-to-cart/', views.add_product_to_label_cart, name='add_product_to_label_cart'),
+    path('label/remove-from-cart/', views.remove_from_label_cart, name='remove_from_label_cart'),
+    path('label/get-cart/', views.get_label_cart, name='get_label_cart'),
+    path('label/update-quantity/', views.update_cart_quantity, name='update_cart_quantity'),
+    path('label/clear-cart/', views.clear_label_cart, name='clear_label_cart'),
     path('label/settings/', views.label_settings, name='label_settings'),
     path('label/print/', views.label_print, name='label_print'),
-
 
 ]
 
