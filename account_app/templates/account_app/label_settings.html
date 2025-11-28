@@ -315,38 +315,47 @@
                         </tr>
                     </thead>
                     <tbody>
+
+
+
                         {% for item in cart %}
-                        <tr>
-                            <td>
-                                <strong>{{ item.product_name }}</strong>
-                            </td>
-                            <td>
-                                <span class="product-badge">{{ item.barcode }}</span>
-                            </td>
-                            <td>
-                                <strong>{{ item.price|floatformat:0 }}</strong>
-                            </td>
-                            <td>
-                                <span class="quantity-display">
-                                    <i class="fas fa-tag"></i>
-                                    {{ item.quantity }}
-                                </span>
-                                <input type="hidden" name="quantity_{{ item.product_name }}" value="{{ item.quantity }}">
-                            </td>
-                            <td>
-                                <label class="checkbox-container">
-                                    <input type="checkbox" name="show_name_{{ item.product_name }}"
-                                           {% if item.show_name %}checked{% endif %} class="checkbox">
-                                </label>
-                            </td>
-                            <td>
-                                <label class="checkbox-container">
-                                    <input type="checkbox" name="show_price_{{ item.product_name }}"
-                                           {% if item.show_price %}checked{% endif %} class="checkbox">
-                                </label>
-                            </td>
-                        </tr>
-                        {% endfor %}
+<tr>
+    <td>
+        <strong>{{ item.product_name }}</strong>
+    </td>
+    <td>
+        <span class="product-badge">{{ item.barcode }}</span>
+    </td>
+    <td>
+        <strong>{{ item.price|floatformat:0 }}</strong>
+    </td>
+    <td>
+        <span class="quantity-display">
+            <i class="fas fa-tag"></i>
+            {{ item.quantity }}
+        </span>
+        <input type="hidden" name="quantity_{{ item.product_name }}" value="{{ item.quantity }}">
+    </td>
+    <td>
+        <label class="checkbox-container">
+            <input type="checkbox" name="show_name_{{ item.product_name }}"
+                   {% if item.show_name %}checked{% endif %} class="checkbox">
+            <!-- این hidden field همیشه ارسال می‌شود -->
+            <input type="hidden" name="show_name_{{ item.product_name }}_flag" value="1">
+        </label>
+    </td>
+    <td>
+        <label class="checkbox-container">
+            <input type="checkbox" name="show_price_{{ item.product_name }}"
+                   {% if item.show_price %}checked{% endif %} class="checkbox">
+            <!-- این hidden field همیشه ارسال می‌شود -->
+            <input type="hidden" name="show_price_{{ item.product_name }}_flag" value="1">
+        </label>
+    </td>
+</tr>
+{% endfor %}
+
+
                     </tbody>
                 </table>
                 {% else %}

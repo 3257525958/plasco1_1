@@ -1586,31 +1586,46 @@ def clear_label_cart(request):
 
 @login_required
 def label_settings(request):
-    """صفحه تنظیمات لیبل"""
+    """صفحه تنظیمات لیبل - نسخه اصلاح شده"""
     cart = request.session.get('label_cart', [])
 
     if request.method == 'POST':
-        # پردازش تنظیمات
-        for key, value in request.POST.items():
-            if key.startswith('show_name_'):
-                product_name = key.replace('show_name_', '')
-                for item in cart:
-                    if item['product_name'] == product_name:
-                        item['show_name'] = (value == 'on')
+        print("🔍 POST Data:", dict(request.POST))  # برای دیباگ
 
-            elif key.startswith('show_price_'):
-                product_name = key.replace('show_price_', '')
-                for item in cart:
-                    if item['product_name'] == product_name:
-                        item['show_price'] = (value == 'on')
+        # لیست تمام محصولات در سبد خرید
+        product_names = [item['product_name'] for item in cart]
 
+        # به روزرسانی وضعیت نمایش برای هر محصول
+        for product_name in product_names:
+            for item in cart:
+                if item['product_name'] == product_name:
+                    # بررسی وضعیت نمایش نام
+                    show_name_key = f'show_name_{product_name}'
+                    if show_name_key in request.POST:
+                        item['show_name'] = True
+                        print(f"✅ نمایش نام برای {product_name}: True")
+                    else:
+                        item['show_name'] = False
+                        print(f"❌ نمایش نام برای {product_name}: False")
+
+                    # بررسی وضعیت نمایش قیمت
+                    show_price_key = f'show_price_{product_name}'
+                    if show_price_key in request.POST:
+                        item['show_price'] = True
+                        print(f"✅ نمایش قیمت برای {product_name}: True")
+                    else:
+                        item['show_price'] = False
+                        print(f"❌ نمایش قیمت برای {product_name}: False")
+                    break
+
+        # ذخیره تغییرات در سشن
         request.session['label_cart'] = cart
         request.session.modified = True
 
+        print("🔍 سبد خرید بعد از به روزرسانی:", cart)  # برای دیباگ
         return redirect('label_print')
 
     return render(request, 'account_app/label_settings.html', {'cart': cart})
-
 
 @login_required
 def label_print(request):
