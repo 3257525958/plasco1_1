@@ -21,6 +21,7 @@
             --blue-dark: #2196f3;
             --orange: #FF9800;
             --red: #f44336;
+            --gray: #6c757d;
         }
 
         * {
@@ -64,7 +65,6 @@
             opacity: 0.9;
         }
 
-        /* نوار بالایی برای انتخاب شعبه و جستجو */
         .top-bar {
             display: flex;
             gap: 15px;
@@ -160,7 +160,6 @@
             min-height: 600px;
         }
 
-        /* ستون جستجو */
         .search-column {
             flex: 1;
             padding: 20px;
@@ -199,6 +198,17 @@
             border-bottom: none;
         }
 
+        .search-result-item.disabled {
+            background-color: #f8f9fa !important;
+            color: var(--gray) !important;
+            cursor: not-allowed !important;
+        }
+
+        .search-result-item.disabled:hover {
+            transform: none !important;
+            background-color: #f8f9fa !important;
+        }
+
         .product-info {
             flex: 1;
         }
@@ -207,6 +217,17 @@
             font-weight: bold;
             margin-bottom: 5px;
             color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .disabled-badge {
+            background: var(--red);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
         }
 
         .product-details {
@@ -246,7 +267,11 @@
             background: var(--accent-color);
         }
 
-        /* ستون سبد خرید */
+        .add-btn:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+        }
+
         .cart-column {
             flex: 1;
             padding: 20px;
@@ -351,7 +376,6 @@
             color: #ccc;
         }
 
-        /* دکمه‌ها */
         .btn {
             padding: 10px 20px;
             border: none;
@@ -392,7 +416,6 @@
             transform: none;
         }
 
-        /* پیام‌ها */
         .message {
             padding: 12px;
             border-radius: 6px;
@@ -425,7 +448,6 @@
             display: none;
         }
 
-        /* رسپانسیو */
         @media (max-width: 768px) {
             .content-wrapper {
                 flex-direction: column;
@@ -466,7 +488,6 @@
             <p>جستجو و انتخاب کالاها برای تولید لیبل</p>
         </div>
 
-        <!-- نوار بالایی برای انتخاب شعبه و جستجو -->
         <div class="top-bar">
             <div class="branch-selector">
                 <select id="branch-select" class="branch-select">
@@ -491,7 +512,6 @@
         </div>
 
         <div class="content-wrapper">
-            <!-- ستون سمت راست: جستجو و نتایج -->
             <div class="search-column">
                 <h3 style="margin-bottom: 15px; color: var(--text-color);">
                     <i class="fas fa-search"></i>
@@ -505,7 +525,6 @@
                 </div>
             </div>
 
-            <!-- ستون سمت چپ: سبد خرید -->
             <div class="cart-column">
                 <div class="cart-header">
                     <div class="cart-title">
@@ -673,14 +692,29 @@
                 results.forEach(product => {
                     const price = parseInt(product.price) || 0;
                     const quantity = product.quantity || 0;
+                    const allowPrint = product.allow_print !== false;
+
+                    // تعیین استایل و دکمه بر اساس وضعیت اجازه چاپ
+                    const itemClass = allowPrint ? '' : 'disabled';
+                    const buttonHtml = allowPrint ?
+                        `<button class="add-btn" onclick="addToCart('${product.product_name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-plus"></i> افزودن
+                        </button>` :
+                        `<button class="add-btn" disabled style="background: #ccc; cursor: not-allowed;">
+                            <i class="fas fa-ban"></i> غیرفعال
+                        </button>`;
+
                     html += `
-                        <div class="search-result-item"
+                        <div class="search-result-item ${itemClass}"
                              data-product-name="${product.product_name}"
                              data-barcode="${product.barcode}"
                              data-price="${product.price}"
                              data-branch-id="${product.branch_id}">
                             <div class="product-info">
-                                <div class="product-name">${product.product_name}</div>
+                                <div class="product-name">
+                                    ${product.product_name}
+                                    ${!allowPrint ? '<span class="disabled-badge">غیرفعال</span>' : ''}
+                                </div>
                                 <div class="product-details">
                                     بارکد: ${product.barcode} | قیمت: ${price.toLocaleString()} تومان
                                 </div>
@@ -688,9 +722,7 @@
                                     موجودی: <span class="stock-quantity">${quantity}</span> عدد
                                 </div>
                             </div>
-                            <button class="add-btn" onclick="addToCart('${product.product_name.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-plus"></i> افزودن
-                            </button>
+                            ${buttonHtml}
                         </div>
                     `;
                 });

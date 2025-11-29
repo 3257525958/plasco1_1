@@ -102,3 +102,61 @@ class ExpenseImageAdmin(admin.ModelAdmin):
     list_display = ['expense', 'image']
     list_filter = ['expense__branch']
     search_fields = ['expense__user__firstname', 'expense__user__lastname']
+
+# -------------------------------------------------تاریخجه پرینت لیبل-----------------------------------------------
+# account_app/admin.py
+from django.contrib import admin
+from .models import ProductLabelSetting, LabelPrintItem
+
+
+class LabelPrintItemInline(admin.TabularInline):
+    """اینلاین برای نمایش آیتم‌های چاپ"""
+    model = LabelPrintItem
+    extra = 0
+    readonly_fields = ['print_date']
+    can_delete = False
+
+
+@admin.register(ProductLabelSetting)
+class ProductLabelSettingAdmin(admin.ModelAdmin):
+    list_display = [
+        'product_name',
+        'barcode',
+        'branch',
+        'allow_print'
+    ]
+
+    list_filter = [
+        'branch',
+        'allow_print'
+    ]
+
+    search_fields = [
+        'product_name',
+        'barcode'
+    ]
+
+    inlines = [LabelPrintItemInline]
+
+
+@admin.register(LabelPrintItem)
+class LabelPrintItemAdmin(admin.ModelAdmin):
+    list_display = [
+        'label_setting',
+        'print_quantity',
+        'user',
+        'print_date'
+    ]
+
+    list_filter = [
+        'print_date',
+        'user'
+    ]
+
+    readonly_fields = ['print_date']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

@@ -511,3 +511,38 @@ class StockTransaction(models.Model):
 
     class Meta:
         db_table = 'stock_transactions'
+
+
+
+# ---------------------------------------------مدل برای دخیره  برای تاریخجه چاپ لیبل ها------------------------------
+class ProductLabelSetting(models.Model):
+    """تنظیمات چاپ لیبل برای کالاها"""
+    product_name = models.CharField(max_length=100, verbose_name="نام کالا")
+    barcode = models.CharField(max_length=100, verbose_name="بارکد")
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, verbose_name="شعبه")
+    allow_print = models.BooleanField(default=True, verbose_name="اجازه چاپ")
+
+    class Meta:
+        verbose_name = "تنظیمات چاپ کالا"
+        verbose_name_plural = "تنظیمات چاپ کالاها"
+        unique_together = ['product_name', 'branch']
+
+    def __str__(self):
+        return f"{self.product_name} - {self.branch.name}"
+
+
+class LabelPrintItem(models.Model):
+    """آیتم‌های تاریخچه چاپ لیبل"""
+    label_setting = models.ForeignKey(ProductLabelSetting, on_delete=models.CASCADE,
+                                      related_name='print_items', verbose_name="تنظیمات کالا")
+    print_quantity = models.IntegerField(verbose_name="تعداد چاپ شده")
+    user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="کاربر چاپ کننده")
+    print_date = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ چاپ")
+
+    class Meta:
+        verbose_name = "آیتم چاپ لیبل"
+        verbose_name_plural = "آیتم‌های چاپ لیبل"
+        ordering = ['-print_date']
+
+    def __str__(self):
+        return f"{self.label_setting.product_name} - {self.print_quantity}"
