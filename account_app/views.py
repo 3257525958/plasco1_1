@@ -1778,3 +1778,218 @@ def label_print(request):
 def get_label_range(value):
     """تولید range برای template (برای استفاده در template tags)"""
     return range(int(value))
+
+
+# ------------------------------------------------------برای تعین درصد تعدیل----------------------------------------
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Subquery, OuterRef
+import json
+from decimal import Decimal
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
+
+from .models import ProductPricing, InventoryCount, Branch
+
+
+def product_pricing_list(request):
+    """صفحه اصلی نمایش لیست قیمت‌گذاری محصولات"""
+    return render(request, 'account_app/product_pricing_list.html')
+
+
+@require_http_methods(["GET"])
+def search_products(request):
+    """جستجوی محصولات بر اساس نام"""
+    try:
+        query = request.GET.get('q', '').strip()
+        logger.info(f"جستجوی محصولات با عبارت: {query}")
+
+        if len(query) < 2:
+            return JsonResponse({'results': []})
+
+        # دریافت تمام شعب
+        branches = Branch.objects.all()
+        logger.info(f"تعداد شعب یافت شده: {branches.count()}")
+
+        # جستجو در نام محصولات
+        products = ProductPricing.objects.filter(
+            product_name__icontains=query
+        ).order_by('product_name')
+
+        logger.info(f"تعداد محصولات یافت شده: {products.count()}")
+
+        results = []
+        for product in products:
+            product_data = {
+                'id': product.id,
+                'product_name': product.product_name,
+                'highest_purchase_price': float(
+                    product.highest_purchase_price) if product.highest_purchase_price else 0,
+                'invoice_date': product.invoice_date or '',
+                'invoice_number': product.invoice_number or '',
+                'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
+                'standard_price': float(product.standard_price) if product.standard_price else 0,
+                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
+                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
+                'branch_prices': {}
+            }
+
+            # دریافت قیمت فروش و درصد سود برای هر شعبه
+            for branch in branches:
+                try:
+                    latest_inventory = InventoryCount.objects.filter(
+                        product_name=product.product_name,
+                        branch=branch
+                    ).order_by('-created_at').first()
+
+                    if latest_inventory:
+                        product_data['branch_prices'][branch.id] = {
+                            'branch_name': branch.name,
+                            'selling_price': latest_inventory.selling_price if latest_inventory.selling_price else 0,
+                            'quantity': latest_inventory.quantity,
+                            'profit_percentage': float(
+                                latest_inventory.profit_percentage) if latest_inventory.profit_percentage else 70.0
+                        }
+                    else:
+                        product_data['branch_prices'][branch.id] = {
+                            'branch_name': branch.name,
+                            'selling_price': 0,
+                            'quantity': 0,
+                            'profit_percentage': 70.0  # مقدار پیش‌فرض
+                        }
+                except Exception as e:
+                    logger.error(
+                        f"خطا در دریافت موجودی برای محصول {product.product_name} در شعبه {branch.name}: {str(e)}")
+                    product_data['branch_prices'][branch.id] = {
+                        'branch_name': branch.name,
+                        'selling_price': 0,
+                        'quantity': 0,
+                        'profit_percentage': 70.0
+                    }
+
+            results.append(product_data)
+
+        return JsonResponse({
+            'results': results,
+            'branches': list(branches.values('id', 'name'))
+        })
+
+    except Exception as e:
+        logger.error(f"خطا در جستجوی محصولات: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["GET"])
+def get_all_products(request):
+    """دریافت تمام محصولات برای نمایش اولیه"""
+    try:
+        products = ProductPricing.objects.all().order_by('product_name')
+        logger.info(f"تعداد کل محصولات: {products.count()}")
+
+        # دریافت تمام شعب
+        branches = Branch.objects.all()
+        logger.info(f"تعداد شعب: {branches.count()}")
+
+        results = []
+        for product in products:
+            product_data = {
+                'id': product.id,
+                'product_name': product.product_name,
+                'highest_purchase_price': float(
+                    product.highest_purchase_price) if product.highest_purchase_price else 0,
+                'invoice_date': product.invoice_date or '',
+                'invoice_number': product.invoice_number or '',
+                'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
+                'standard_price': float(product.standard_price) if product.standard_price else 0,
+                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
+                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
+                'branch_prices': {}
+            }
+
+            # دریافت قیمت فروش و درصد سود برای هر شعبه
+            for branch in branches:
+                try:
+                    latest_inventory = InventoryCount.objects.filter(
+                        product_name=product.product_name,
+                        branch=branch
+                    ).order_by('-created_at').first()
+
+                    if latest_inventory:
+                        product_data['branch_prices'][branch.id] = {
+                            'branch_name': branch.name,
+                            'selling_price': latest_inventory.selling_price if latest_inventory.selling_price else 0,
+                            'quantity': latest_inventory.quantity,
+                            'profit_percentage': float(
+                                latest_inventory.profit_percentage) if latest_inventory.profit_percentage else 70.0
+                        }
+                    else:
+                        product_data['branch_prices'][branch.id] = {
+                            'branch_name': branch.name,
+                            'selling_price': 0,
+                            'quantity': 0,
+                            'profit_percentage': 70.0  # مقدار پیش‌فرض
+                        }
+                except Exception as e:
+                    logger.error(
+                        f"خطا در دریافت موجودی برای محصول {product.product_name} در شعبه {branch.name}: {str(e)}")
+                    product_data['branch_prices'][branch.id] = {
+                        'branch_name': branch.name,
+                        'selling_price': 0,
+                        'quantity': 0,
+                        'profit_percentage': 70.0
+                    }
+
+            results.append(product_data)
+
+        return JsonResponse({
+            'products': results,
+            'branches': list(branches.values('id', 'name'))
+        })
+
+    except Exception as e:
+        logger.error(f"خطا در دریافت تمام محصولات: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_adjustment_percentage(request):
+    """بروزرسانی درصد تعدیل و محاسبه قیمت معیار"""
+    try:
+        data = json.loads(request.body)
+        product_name = data.get('product_name')
+        adjustment_percentage = data.get('adjustment_percentage')
+
+        logger.info(f"بروزرسانی درصد تعدیل برای محصول {product_name}: {adjustment_percentage}")
+
+        # پیدا کردن محصول
+        try:
+            product = ProductPricing.objects.get(product_name=product_name)
+        except ProductPricing.DoesNotExist:
+            return JsonResponse({'error': 'محصول یافت نشد'}, status=404)
+
+        # بروزرسانی درصد تعدیل
+        product.adjustment_percentage = Decimal(str(adjustment_percentage))
+
+        # ذخیره کردن که متد save مدل محاسبات را انجام دهد
+        product.save()
+
+        # محاسبه قیمت معیار جدید
+        new_standard_price = product.standard_price
+
+        return JsonResponse({
+            'success': True,
+            'new_standard_price': float(new_standard_price) if new_standard_price else 0,
+            'message': 'درصد تعدیل با موفقیت بروزرسانی شد'
+        })
+
+    except Exception as e:
+        logger.error(f"خطا در بروزرسانی درصد تعدیل: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)

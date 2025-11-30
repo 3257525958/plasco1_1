@@ -32,7 +32,7 @@ class InventoryCount(models.Model):
         max_digits=5,
         decimal_places=2,
         verbose_name="درصد سود",
-        default=Decimal('30.00'),
+        default=Decimal('70.00'),
     )
 
     class Meta:
@@ -51,7 +51,7 @@ class InventoryCount(models.Model):
             if profit_value < Decimal('0.00') or profit_value > Decimal('10000.00'):
                 self.profit_percentage = Decimal('30.00')
         except (TypeError, ValueError, InvalidOperation):
-            self.profit_percentage = Decimal('30.00')
+            self.profit_percentage = Decimal('70.00')
 
     def generate_unique_numeric_barcode(self):
         """تولید بارکد ثابت ۱۲ رقمی بر اساس نام کالا"""
@@ -318,6 +318,8 @@ class ProductPricing(models.Model):
 
     def __str__(self):
         return f"{self.product_name} - {self.standard_price}"
+
+
 # ------------------------------------------------------------------------------
 from django.db import models
 from django.core.validators import RegexValidator  # این خط را اضافه کنید

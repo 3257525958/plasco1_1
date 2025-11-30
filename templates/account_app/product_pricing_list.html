@@ -1,0 +1,823 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت قیمت‌گذاری محصولات</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+            --red-light: #ffebee;
+            --red-dark: #d32f2f;
+            --green-light: #e8f5e9;
+            --green-dark: #2E7D32;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 12px;
+            font-size: 1rem;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            transition: all 0.3s;
+            background: var(--input-bg);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);
+            outline: none;
+        }
+
+        .search-btn {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .search-hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        .products-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        .products-table td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .products-table tr:nth-child(even) {
+            background-color: var(--light-bg);
+        }
+
+        .products-table tr:hover {
+            background-color: #e8f5e9;
+        }
+
+        .price-cell {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .selling-price-cell {
+            font-weight: bold;
+            color: var(--blue-dark);
+        }
+
+        .out-of-stock {
+            background-color: var(--red-light);
+            color: var(--red-dark);
+            font-weight: bold;
+        }
+
+        .percentage-cell {
+            color: var(--blue-dark);
+        }
+
+        .adjustment-input {
+            width: 80px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .adjustment-input:focus {
+            border-color: var(--blue-dark);
+            outline: none;
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--blue-dark);
+        }
+
+        .loading i {
+            margin-left: 10px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            border-left-color: #d32f2f;
+        }
+
+        .success-message {
+            color: #2E7D32;
+            background-color: #e8f5e9;
+            border-left-color: #2E7D32;
+        }
+
+        .info-message {
+            color: #1976d2;
+            background-color: #e3f2fd;
+            border-left-color: #1976d2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--blue-light);
+            border-radius: 8px;
+            border-right: 4px solid var(--blue-dark);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--blue-dark);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .branch-header {
+            background-color: var(--blue-dark) !important;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .quantity-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: var(--orange);
+            color: white;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .recalculating {
+            background-color: var(--green-light) !important;
+            transition: all 0.3s ease;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--blue-dark);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1976d2;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .products-table {
+                font-size: 0.9rem;
+            }
+            
+            .products-table th,
+            .products-table td {
+                padding: 6px 4px;
+            }
+            
+            .adjustment-input {
+                width: 60px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>مدیریت قیمت‌گذاری محصولات</h1>
+            <p>مشاهده و جستجوی اطلاعات قیمت‌گذاری محصولات و قیمت فروش در شعب مختلف</p>
+        </div>
+
+        <!-- بخش آمار -->
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-products">0</div>
+                <div class="stat-label">تعداد کل محصولات</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="visible-products">0</div>
+                <div class="stat-label">محصولات نمایش داده شده</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-branches">0</div>
+                <div class="stat-label">تعداد شعب</div>
+            </div>
+        </div>
+
+        <!-- بخش جستجو -->
+        <div class="search-section">
+            <div class="search-container">
+                <label class="search-label">جستجوی محصول:</label>
+                <input type="search" id="product-search" class="search-input" placeholder="نام محصول را وارد کنید..." aria-label="جستجوی محصول">
+                <button type="button" class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+                <div class="search-hint">برای جستجو، حداقل 2 کاراکتر وارد کنید</div>
+            </div>
+        </div>
+
+        <!-- بخش جدول محصولات -->
+        <div class="table-container">
+            <table class="products-table">
+                <thead>
+                    <tr>
+                        <th>نام کالا</th>
+                        <th>بالاترین قیمت خرید</th>
+                        <th>تاریخ فاکتور</th>
+                        <th>شماره فاکتور</th>
+                        <th>درصد تعدیل</th>
+                        <th>قیمت معیار</th>
+                        <th>تاریخ ایجاد</th>
+                        <th>آخرین بروزرسانی</th>
+                        <!-- ستون‌های شعب به صورت داینامیک اضافه می‌شوند -->
+                    </tr>
+                </thead>
+                <tbody id="products-table-body">
+                    <!-- داده‌های محصولات اینجا نمایش داده می‌شوند -->
+                </tbody>
+            </table>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <i class="fas fa-spinner fa-spin"></i>
+            در حال بارگذاری...
+        </div>
+
+        <div id="no-results" class="no-results hidden">
+            <i class="fas fa-search"></i>
+            محصولی یافت نشد
+        </div>
+
+        <div id="messages"></div>
+    </div>
+
+    <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
+    <script>
+        // متغیرهای global
+        let allProducts = [];
+        let filteredProducts = [];
+        let branches = [];
+        let searchTimeout = null;
+
+        // تابع برای دریافت CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // تابع برای نمایش پیام
+        function showMessage(message, type) {
+            const messageClass = type === 'error' ? 'error-message' :
+                                type === 'success' ? 'success-message' : 'info-message';
+            const icon = type === 'error' ? 'fa-exclamation-circle' :
+                        type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+
+            $('#messages').html(`
+                <div class="message ${messageClass}">
+                    <i class="fas ${icon}"></i> ${message}
+                </div>
+            `);
+
+            if (type !== 'error') {
+                setTimeout(() => {
+                    $('#messages').empty();
+                }, 5000);
+            }
+        }
+
+        // تابع برای ایجاد سرستون‌های شعب
+        function createBranchHeaders() {
+            try {
+                const $thead = $('.products-table thead tr');
+                
+                // حذف سرستون‌های قبلی شعب
+                $thead.find('.branch-header').remove();
+                
+                // اضافه کردن سرستون برای هر شعبه
+                branches.forEach(branch => {
+                    $thead.append(`<th class="branch-header">${branch.name}<br><small>قیمت فروش</small></th>`);
+                });
+                
+                console.log('سرستون‌های شعب ایجاد شد', { branches: branches.length });
+            } catch (error) {
+                console.error('خطا در ایجاد سرستون‌ها:', error);
+            }
+        }
+
+        // تابع برای محاسبه قیمت معیار بر اساس درصد تعدیل
+        function calculateStandardPrice(highestPurchasePrice, adjustmentPercentage) {
+            const highest = parseFloat(highestPurchasePrice) || 0;
+            const adjustment = parseFloat(adjustmentPercentage) || 0;
+            const adjustmentAmount = highest * (adjustment / 100);
+            return highest + adjustmentAmount;
+        }
+
+        // تابع برای محاسبه قیمت فروش بر اساس قیمت معیار و درصد سود
+        function calculateSellingPrice(standardPrice, profitPercentage) {
+            const standard = parseFloat(standardPrice) || 0;
+            const profit = parseFloat(profitPercentage) || 0;
+            const multiplier = 1 + (profit / 100);
+            let newPrice = standard * multiplier;
+            // گرد کردن به هزار تومان (مانند مدل InventoryCount)
+            newPrice = Math.ceil(newPrice / 1000) * 1000;
+            return newPrice;
+        }
+
+        // تابع برای محاسبه و نمایش قیمت‌های جدید هنگام تغییر درصد تعدیل
+        function recalculatePrices(productName, newAdjustmentPercentage) {
+            console.log(`محاسبه مجدد قیمت‌ها برای ${productName} با درصد تعدیل ${newAdjustmentPercentage}`);
+            
+            // پیدا کردن ردیف محصول در جدول
+            const $row = $(`tr[data-product-name="${productName}"]`);
+            if (!$row.length) {
+                console.error('ردیف محصول یافت نشد:', productName);
+                return;
+            }
+
+            // پیدا کردن محصول در داده‌ها
+            const product = allProducts.find(p => p.product_name === productName);
+            if (!product) {
+                console.error('محصول در داده‌ها یافت نشد:', productName);
+                return;
+            }
+
+            // محاسبه قیمت معیار جدید
+            const newStandardPrice = calculateStandardPrice(
+                product.highest_purchase_price,
+                newAdjustmentPercentage
+            );
+
+            // به‌روزرسانی قیمت معیار در جدول
+            $row.find('.standard-price-display').text(newStandardPrice.toLocaleString());
+
+            // محاسبه و به‌روزرسانی قیمت فروش برای هر شعبه
+            branches.forEach((branch, index) => {
+                const branchData = product.branch_prices[branch.id];
+                if (branchData) {
+                    const newSellingPrice = calculateSellingPrice(
+                        newStandardPrice,
+                        branchData.profit_percentage
+                    );
+
+                    // به‌روزرسانی قیمت فروش در جدول
+                    const $sellingPriceCell = $row.find(`.selling-price-cell[data-branch-id="${branch.id}"]`);
+                    if ($sellingPriceCell.length) {
+                        const quantityText = branchData.quantity > 0 ? 
+                            `<span class="quantity-badge">${branchData.quantity}</span>` : 
+                            '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
+                        
+                        $sellingPriceCell.html(`
+                            ${quantityText}
+                            <span class="selling-price-value">${newSellingPrice.toLocaleString()}</span>
+                        `);
+
+                        // اضافه کردن کلاس highlight برای نمایش تغییر
+                        $sellingPriceCell.addClass('recalculating');
+                        setTimeout(() => {
+                            $sellingPriceCell.removeClass('recalculating');
+                        }, 1000);
+                    }
+                }
+            });
+
+            console.log(`محاسبه مجدد تکمیل شد. قیمت معیار جدید: ${newStandardPrice}`);
+        }
+
+        // تابع برای ذخیره درصد تعدیل جدید در سرور
+        function saveAdjustmentPercentage(productName, newAdjustmentPercentage) {
+            console.log(`ذخیره درصد تعدیل برای ${productName}: ${newAdjustmentPercentage}`);
+            
+            $.ajax({
+                url: "{% url 'update_adjustment_percentage' %}",
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    product_name: productName,
+                    adjustment_percentage: newAdjustmentPercentage
+                }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(data) {
+                    if (data.success) {
+                        console.log('درصد تعدیل با موفقیت ذخیره شد');
+                        // به‌روزرسانی قیمت معیار با مقدار دقیق از سرور
+                        if (data.new_standard_price) {
+                            $(`tr[data-product-name="${productName}"] .standard-price-display`)
+                                .text(data.new_standard_price.toLocaleString());
+                        }
+                    } else {
+                        console.error('خطا در ذخیره درصد تعدیل:', data.error);
+                        showMessage('خطا در ذخیره درصد تعدیل: ' + data.error, 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('خطا در ارتباط با سرور:', error);
+                    showMessage('خطا در ارتباط با سرور برای ذخیره درصد تعدیل', 'error');
+                }
+            });
+        }
+
+        // تابع برای نمایش محصولات در جدول
+        function displayProducts(products) {
+            try {
+                const $tbody = $('#products-table-body');
+                $tbody.empty();
+                
+                if (products.length === 0) {
+                    $('#no-results').removeClass('hidden');
+                    $('.table-container').addClass('hidden');
+                } else {
+                    $('#no-results').addClass('hidden');
+                    $('.table-container').removeClass('hidden');
+                    
+                    products.forEach(product => {
+                        let row = `
+                            <tr data-product-name="${product.product_name}">
+                                <td><strong>${product.product_name}</strong></td>
+                                <td class="price-cell">${product.highest_purchase_price.toLocaleString()}</td>
+                                <td>${product.invoice_date || '-'}</td>
+                                <td>${product.invoice_number || '-'}</td>
+                                <td>
+                                    <input type="number" 
+                                           class="adjustment-input" 
+                                           value="${product.adjustment_percentage}" 
+                                           step="0.01" 
+                                           min="0" 
+                                           max="100"
+                                           data-product-name="${product.product_name}"
+                                           title="درصد تعدیل قیمت خرید">
+                                </td>
+                                <td class="price-cell standard-price-display">${product.standard_price.toLocaleString()}</td>
+                                <td>${product.created_at}</td>
+                                <td>${product.updated_at}</td>
+                        `;
+                        
+                        // اضافه کردن قیمت فروش برای هر شعبه
+                        branches.forEach(branch => {
+                            const branchPrice = product.branch_prices && product.branch_prices[branch.id];
+                            if (branchPrice && branchPrice.selling_price > 0) {
+                                const quantityText = branchPrice.quantity > 0 ? 
+                                    `<span class="quantity-badge">${branchPrice.quantity}</span>` : 
+                                    '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
+                                
+                                row += `
+                                    <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}" 
+                                        data-branch-id="${branch.id}">
+                                        ${quantityText}
+                                        <span class="selling-price-value">${branchPrice.selling_price.toLocaleString()}</span>
+                                    </td>
+                                `;
+                            } else {
+                                row += `
+                                    <td class="out-of-stock selling-price-cell" data-branch-id="${branch.id}">
+                                        <span class="quantity-badge" style="background-color: #d32f2f;">۰</span>
+                                        ناموجود
+                                    </td>
+                                `;
+                            }
+                        });
+                        
+                        row += `</tr>`;
+                        $tbody.append(row);
+                    });
+
+                    // اضافه کردن event listener برای inputهای درصد تعدیل
+                    $('.adjustment-input').on('change', function() {
+                        const productName = $(this).data('product-name');
+                        const newAdjustmentPercentage = $(this).val();
+                        
+                        // محاسبه و نمایش آنلاین قیمت‌های جدید
+                        recalculatePrices(productName, newAdjustmentPercentage);
+                        
+                        // ذخیره در سرور
+                        saveAdjustmentPercentage(productName, newAdjustmentPercentage);
+                    });
+
+                    // اضافه کردن event listener برای input (تغییر لحظه‌ای)
+                    $('.adjustment-input').on('input', function() {
+                        const productName = $(this).data('product-name');
+                        const newAdjustmentPercentage = $(this).val();
+                        
+                        // فقط محاسبه آنلاین (بدون ذخیره در سرور)
+                        recalculatePrices(productName, newAdjustmentPercentage);
+                    });
+                }
+                
+                // به روزرسانی آمار
+                updateStats(products.length);
+            } catch (error) {
+                console.error('خطا در نمایش محصولات:', error);
+                showMessage('خطا در نمایش اطلاعات جدول', 'error');
+            }
+        }
+
+        // تابع برای به روزرسانی آمار
+        function updateStats(visibleCount) {
+            try {
+                $('#total-products').text(allProducts.length.toLocaleString());
+                $('#visible-products').text(visibleCount.toLocaleString());
+                $('#total-branches').text(branches.length.toLocaleString());
+            } catch (error) {
+                console.error('خطا در به روزرسانی آمار:', error);
+            }
+        }
+
+        // تابع برای بارگذاری تمام محصولات
+        function loadAllProducts() {
+            $('#loading').removeClass('hidden');
+            
+            $.ajax({
+                url: "{% url 'get_all_products' %}",
+                method: 'GET',
+                timeout: 30000,
+                success: function(data) {
+                    $('#loading').addClass('hidden');
+                    
+                    if (data && data.products && data.branches) {
+                        allProducts = data.products;
+                        filteredProducts = [...allProducts];
+                        branches = data.branches;
+                        
+                        // ایجاد سرستون‌های شعب
+                        createBranchHeaders();
+                        
+                        // نمایش محصولات
+                        displayProducts(allProducts);
+                        
+                        showMessage('اطلاعات با موفقیت بارگذاری شد', 'success');
+                    } else if (data && data.error) {
+                        showMessage('خطا در سرور: ' + data.error, 'error');
+                    } else {
+                        showMessage('خطا: داده‌های نامعتبر از سرور دریافت شد', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').addClass('hidden');
+                    
+                    let errorMessage = 'خطا در ارتباط با سرور';
+                    
+                    if (xhr.status === 0) {
+                        errorMessage += ' - سرور در دسترس نیست یا ارتباط قطع شده';
+                    } else if (xhr.status === 404) {
+                        errorMessage += ' - آدرس درخواست یافت نشد (404)';
+                    } else if (xhr.status === 500) {
+                        errorMessage += ' - خطای داخلی سرور (500)';
+                    } else if (xhr.status === 403) {
+                        errorMessage += ' - دسترسی غیرمجاز (403)';
+                    } else if (status === 'timeout') {
+                        errorMessage += ' - زمان درخواست به پایان رسید';
+                    }
+                    
+                    showMessage(errorMessage, 'error');
+                }
+            });
+        }
+
+        // جستجوی محصولات
+        $('#product-search').on('input', function() {
+            const query = $(this).val().trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                filteredProducts = [...allProducts];
+                displayProducts(filteredProducts);
+                return;
+            }
+            
+            $('#loading').removeClass('hidden');
+            
+            searchTimeout = setTimeout(function() {
+                $.ajax({
+                    url: "{% url 'search_products' %}",
+                    data: { 
+                        q: query,
+                        timestamp: new Date().getTime()
+                    },
+                    timeout: 15000,
+                    success: function(data) {
+                        $('#loading').addClass('hidden');
+                        
+                        if (data && data.results && data.branches) {
+                            filteredProducts = data.results;
+                            branches = data.branches;
+                            
+                            createBranchHeaders();
+                            displayProducts(filteredProducts);
+                        } else if (data && data.error) {
+                            showMessage('خطا در جستجو: ' + data.error, 'error');
+                        } else {
+                            showMessage('خطا در پردازش نتایج جستجو', 'error');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#loading').addClass('hidden');
+                        
+                        let errorMessage = 'خطا در جستجو';
+                        if (xhr.status === 500) {
+                            errorMessage += ' - خطای سرور';
+                        } else if (status === 'timeout') {
+                            errorMessage += ' - زمان جستجو به پایان رسید';
+                        }
+                        
+                        showMessage(errorMessage, 'error');
+                    }
+                });
+            }, 500);
+        });
+
+        // بارگذاری اولیه محصولات هنگام لود صفحه
+        $(document).ready(function() {
+            loadAllProducts();
+            
+            setTimeout(() => {
+                $('#product-search').focus();
+            }, 100);
+        });
+
+        // بازنشانی جستجو با دابل کلیک روی فیلد جستجو
+        $('#product-search').on('dblclick', function() {
+            $(this).val('');
+            filteredProducts = [...allProducts];
+            displayProducts(filteredProducts);
+        });
+    </script>
+</body>
+</html>
