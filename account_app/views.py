@@ -1785,91 +1785,59 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Subquery, OuterRef
+from django.db.models import Max
 import json
 from decimal import Decimal
-import traceback
-import logging
+import time
+from django.utils import timezone
 
-logger = logging.getLogger(__name__)
-
+# Import مدل‌های خودتان
 from .models import ProductPricing, InventoryCount, Branch
 
 
+@require_http_methods(["GET"])
 def product_pricing_list(request):
     """صفحه اصلی نمایش لیست قیمت‌گذاری محصولات"""
     return render(request, 'account_app/product_pricing_list.html')
 
 
 @require_http_methods(["GET"])
-def search_products(request):
-    """جستجوی محصولات بر اساس نام"""
+def health_check(request):
+    """بررسی سلامت سرور"""
+    return JsonResponse({
+        'status': 'success',
+        'message': 'سرور در دسترس است',
+        'timestamp': timezone.now().isoformat()
+    })
+
+
+@require_http_methods(["GET"])
+def debug_products(request):
+    """تست سریع برای عیب‌یابی عملکرد"""
+    start_time = time.time()
+
     try:
-        query = request.GET.get('q', '').strip()
+        # تست تعداد محصولات
+        product_count = ProductPricing.objects.count()
 
-        if len(query) < 2:
-            return JsonResponse({'results': [], 'branches': []})
+        # تست تعداد شعب
+        branch_count = Branch.objects.count()
 
-        # دریافت تمام شعب
-        branches = Branch.objects.all()
+        # تست تعداد موجودی‌ها
+        inventory_count = InventoryCount.objects.count()
 
-        # جستجو در نام محصولات
-        products = ProductPricing.objects.filter(
-            product_name__icontains=query
-        ).order_by('product_name')
-
-        results = []
-        for product in products:
-            product_data = {
-                'id': product.id,
-                'product_name': product.product_name,
-                'highest_purchase_price': float(
-                    product.highest_purchase_price) if product.highest_purchase_price else 0,
-                'invoice_date': product.invoice_date or '',
-                'invoice_number': product.invoice_number or '',
-                'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
-                'standard_price': float(product.standard_price) if product.standard_price else 0,
-                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
-                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
-                'branch_prices': {}
-            }
-
-            # دریافت قیمت فروش و درصد سود برای هر شعبه
-            for branch in branches:
-                try:
-                    latest_inventory = InventoryCount.objects.filter(
-                        product_name=product.product_name,
-                        branch=branch
-                    ).order_by('-created_at').first()
-
-                    if latest_inventory:
-                        product_data['branch_prices'][branch.id] = {
-                            'branch_name': branch.name,
-                            'selling_price': latest_inventory.selling_price if latest_inventory.selling_price else 0,
-                            'quantity': latest_inventory.quantity,
-                            'profit_percentage': float(
-                                latest_inventory.profit_percentage) if latest_inventory.profit_percentage else 70.0
-                        }
-                    else:
-                        product_data['branch_prices'][branch.id] = {
-                            'branch_name': branch.name,
-                            'selling_price': 0,
-                            'quantity': 0,
-                            'profit_percentage': 70.0
-                        }
-                except Exception as e:
-                    product_data['branch_prices'][branch.id] = {
-                        'branch_name': branch.name,
-                        'selling_price': 0,
-                        'quantity': 0,
-                        'profit_percentage': 70.0
-                    }
-
-            results.append(product_data)
+        end_time = time.time()
+        response_time = end_time - start_time
 
         return JsonResponse({
-            'results': results,
-            'branches': list(branches.values('id', 'name'))
+            'status': 'success',
+            'metrics': {
+                'product_count': product_count,
+                'branch_count': branch_count,
+                'inventory_count': inventory_count,
+                'response_time_seconds': round(response_time, 2)
+            },
+            'message': f'پاسخ در {response_time:.2f} ثانیه'
         })
 
     except Exception as e:
@@ -1878,12 +1846,50 @@ def search_products(request):
 
 @require_http_methods(["GET"])
 def get_all_products(request):
-    """دریافت تمام محصولات برای نمایش اولیه"""
+    """دریافت تمام محصولات - نسخه بهینه‌شده"""
     try:
-        products = ProductPricing.objects.all().order_by('product_name')
+        # دریافت صفحه از پارامترهای URL
+        page = int(request.GET.get('page', 1))
+        per_page = 50  # محدود کردن تعداد در هر درخواست
+
+        start = (page - 1) * per_page
+        end = start + per_page
 
         # دریافت تمام شعب
         branches = Branch.objects.all()
+        branch_dict = {branch.id: branch for branch in branches}
+
+        # دریافت محصولات با محدودیت
+        products = ProductPricing.objects.all().order_by('product_name')[start:end]
+        total_products = ProductPricing.objects.count()
+
+        # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
+        product_names = [p.product_name for p in products]
+
+        # دریافت آخرین موجودی برای هر محصول و شعبه
+        latest_inventories = InventoryCount.objects.filter(
+            product_name__in=product_names
+        ).values('product_name', 'branch').annotate(
+            latest_created=Max('created_at')
+        )
+
+        # ایجاد lookup برای سریع‌تر کردن دسترسی
+        inventory_lookup = {}
+        for inv in latest_inventories:
+            key = f"{inv['product_name']}_{inv['branch']}"
+            inventory_lookup[key] = inv['latest_created']
+
+        # دریافت داده‌های کامل برای آخرین موجودی‌ها
+        latest_dates = list(inventory_lookup.values())
+        actual_inventories = InventoryCount.objects.filter(
+            created_at__in=latest_dates
+        ).select_related('branch')
+
+        # ایجاد دیکشنری برای دسترسی سریع
+        inventory_dict = {}
+        for inv in actual_inventories:
+            key = f"{inv.product_name}_{inv.branch.id}"
+            inventory_dict[key] = inv
 
         results = []
         for product in products:
@@ -1896,35 +1902,24 @@ def get_all_products(request):
                 'invoice_number': product.invoice_number or '',
                 'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
                 'standard_price': float(product.standard_price) if product.standard_price else 0,
-                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
-                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
+                'created_at': product.created_at.strftime('%Y-%m-%d') if product.created_at else '',
+                'updated_at': product.updated_at.strftime('%Y-%m-%d') if product.updated_at else '',
                 'branch_prices': {}
             }
 
-            # دریافت قیمت فروش و درصد سود برای هر شعبه
+            # پر کردن داده‌های شعب
             for branch in branches:
-                try:
-                    latest_inventory = InventoryCount.objects.filter(
-                        product_name=product.product_name,
-                        branch=branch
-                    ).order_by('-created_at').first()
+                lookup_key = f"{product.product_name}_{branch.id}"
+                inventory = inventory_dict.get(lookup_key)
 
-                    if latest_inventory:
-                        product_data['branch_prices'][branch.id] = {
-                            'branch_name': branch.name,
-                            'selling_price': latest_inventory.selling_price if latest_inventory.selling_price else 0,
-                            'quantity': latest_inventory.quantity,
-                            'profit_percentage': float(
-                                latest_inventory.profit_percentage) if latest_inventory.profit_percentage else 70.0
-                        }
-                    else:
-                        product_data['branch_prices'][branch.id] = {
-                            'branch_name': branch.name,
-                            'selling_price': 0,
-                            'quantity': 0,
-                            'profit_percentage': 70.0
-                        }
-                except Exception as e:
+                if inventory:
+                    product_data['branch_prices'][branch.id] = {
+                        'branch_name': branch.name,
+                        'selling_price': inventory.selling_price if inventory.selling_price else 0,
+                        'quantity': inventory.quantity,
+                        'profit_percentage': float(inventory.profit_percentage) if inventory.profit_percentage else 70.0
+                    }
+                else:
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': 0,
@@ -1936,7 +1931,104 @@ def get_all_products(request):
 
         return JsonResponse({
             'products': results,
-            'branches': list(branches.values('id', 'name'))
+            'branches': [{'id': b.id, 'name': b.name} for b in branches],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'has_next': len(results) == per_page,
+                'total_products': total_products
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': f'خطا در پردازش: {str(e)}'}, status=500)
+
+
+@require_http_methods(["GET"])
+def search_products(request):
+    """جستجوی محصولات - نسخه بهینه‌شده"""
+    try:
+        query = request.GET.get('q', '').strip()
+
+        if len(query) < 2:
+            return JsonResponse({'results': [], 'branches': []})
+
+        # محدود کردن نتایج جستجو
+        products = ProductPricing.objects.filter(
+            product_name__icontains=query
+        ).order_by('product_name')[:20]  # فقط 20 نتیجه
+
+        branches = Branch.objects.all()
+        branch_dict = {branch.id: branch for branch in branches}
+
+        # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
+        product_names = [p.product_name for p in products]
+
+        # دریافت آخرین موجودی برای هر محصول و شعبه
+        latest_inventories = InventoryCount.objects.filter(
+            product_name__in=product_names
+        ).values('product_name', 'branch').annotate(
+            latest_created=Max('created_at')
+        )
+
+        # ایجاد lookup برای سریع‌تر کردن دسترسی
+        inventory_lookup = {}
+        for inv in latest_inventories:
+            key = f"{inv['product_name']}_{inv['branch']}"
+            inventory_lookup[key] = inv['latest_created']
+
+        # دریافت داده‌های کامل برای آخرین موجودی‌ها
+        latest_dates = list(inventory_lookup.values())
+        actual_inventories = InventoryCount.objects.filter(
+            created_at__in=latest_dates
+        ).select_related('branch')
+
+        # ایجاد دیکشنری برای دسترسی سریع
+        inventory_dict = {}
+        for inv in actual_inventories:
+            key = f"{inv.product_name}_{inv.branch.id}"
+            inventory_dict[key] = inv
+
+        results = []
+        for product in products:
+            product_data = {
+                'id': product.id,
+                'product_name': product.product_name,
+                'highest_purchase_price': float(
+                    product.highest_purchase_price) if product.highest_purchase_price else 0,
+                'invoice_date': product.invoice_date or '',
+                'invoice_number': product.invoice_number or '',
+                'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
+                'standard_price': float(product.standard_price) if product.standard_price else 0,
+                'created_at': product.created_at.strftime('%Y-%m-%d') if product.created_at else '',
+                'updated_at': product.updated_at.strftime('%Y-%m-%d') if product.updated_at else '',
+                'branch_prices': {}
+            }
+
+            for branch in branches:
+                lookup_key = f"{product.product_name}_{branch.id}"
+                inventory = inventory_dict.get(lookup_key)
+
+                if inventory:
+                    product_data['branch_prices'][branch.id] = {
+                        'branch_name': branch.name,
+                        'selling_price': inventory.selling_price if inventory.selling_price else 0,
+                        'quantity': inventory.quantity,
+                        'profit_percentage': float(inventory.profit_percentage) if inventory.profit_percentage else 70.0
+                    }
+                else:
+                    product_data['branch_prices'][branch.id] = {
+                        'branch_name': branch.name,
+                        'selling_price': 0,
+                        'quantity': 0,
+                        'profit_percentage': 70.0
+                    }
+
+            results.append(product_data)
+
+        return JsonResponse({
+            'results': results,
+            'branches': [{'id': b.id, 'name': b.name} for b in branches]
         })
 
     except Exception as e:
@@ -1975,16 +2067,3 @@ def update_adjustment_percentage(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-
-@require_http_methods(["GET"])
-def test_connection(request):
-    """تست ساده برای بررسی اتصال"""
-    return JsonResponse({
-        'status': 'success',
-        'message': 'سرور در دسترس است',
-        'timestamp': timezone.now().isoformat()
-    })
