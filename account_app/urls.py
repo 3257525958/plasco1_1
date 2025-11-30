@@ -84,6 +84,7 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('search-products/', views.search_products, name='search_products'),
     path('get-all-products/', views.get_all_products, name='get_all_products'),
     path('update-adjustment-percentage/', views.update_adjustment_percentage, name='update_adjustment_percentage'),
+    path('test-connection/', views.test_connection, name='test_connection'),  # اضافه کردن تست
 
 
 ]

@@ -1975,3 +1975,16 @@ def update_adjustment_percentage(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["GET"])
+def test_connection(request):
+    """تست ساده برای بررسی اتصال"""
+    return JsonResponse({
+        'status': 'success',
+        'message': 'سرور در دسترس است',
+        'timestamp': timezone.now().isoformat()
+    })
