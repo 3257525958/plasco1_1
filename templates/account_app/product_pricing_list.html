@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <style>
+        /* استایل‌ها مانند قبل */
         :root {
             --primary-color: #4CAF50;
             --secondary-color: #388E3C;
@@ -472,8 +473,6 @@
                 branches.forEach(branch => {
                     $thead.append(`<th class="branch-header">${branch.name}<br><small>قیمت فروش</small></th>`);
                 });
-                
-                console.log('سرستون‌های شعب ایجاد شد', { branches: branches.length });
             } catch (error) {
                 console.error('خطا در ایجاد سرستون‌ها:', error);
             }
@@ -481,89 +480,98 @@
 
         // تابع برای محاسبه قیمت معیار بر اساس درصد تعدیل
         function calculateStandardPrice(highestPurchasePrice, adjustmentPercentage) {
-            const highest = parseFloat(highestPurchasePrice) || 0;
-            const adjustment = parseFloat(adjustmentPercentage) || 0;
-            const adjustmentAmount = highest * (adjustment / 100);
-            return highest + adjustmentAmount;
+            try {
+                const highest = parseFloat(highestPurchasePrice) || 0;
+                const adjustment = parseFloat(adjustmentPercentage) || 0;
+                const adjustmentAmount = highest * (adjustment / 100);
+                return highest + adjustmentAmount;
+            } catch (error) {
+                console.error('خطا در محاسبه قیمت معیار:', error);
+                return 0;
+            }
         }
 
         // تابع برای محاسبه قیمت فروش بر اساس قیمت معیار و درصد سود
         function calculateSellingPrice(standardPrice, profitPercentage) {
-            const standard = parseFloat(standardPrice) || 0;
-            const profit = parseFloat(profitPercentage) || 0;
-            const multiplier = 1 + (profit / 100);
-            let newPrice = standard * multiplier;
-            // گرد کردن به هزار تومان (مانند مدل InventoryCount)
-            newPrice = Math.ceil(newPrice / 1000) * 1000;
-            return newPrice;
+            try {
+                const standard = parseFloat(standardPrice) || 0;
+                const profit = parseFloat(profitPercentage) || 0;
+                const multiplier = 1 + (profit / 100);
+                let newPrice = standard * multiplier;
+                // گرد کردن به هزار تومان (مانند مدل InventoryCount)
+                newPrice = Math.ceil(newPrice / 1000) * 1000;
+                return Math.max(0, newPrice);
+            } catch (error) {
+                console.error('خطا در محاسبه قیمت فروش:', error);
+                return 0;
+            }
         }
 
         // تابع برای محاسبه و نمایش قیمت‌های جدید هنگام تغییر درصد تعدیل
         function recalculatePrices(productName, newAdjustmentPercentage) {
-            console.log(`محاسبه مجدد قیمت‌ها برای ${productName} با درصد تعدیل ${newAdjustmentPercentage}`);
-            
-            // پیدا کردن ردیف محصول در جدول
-            const $row = $(`tr[data-product-name="${productName}"]`);
-            if (!$row.length) {
-                console.error('ردیف محصول یافت نشد:', productName);
-                return;
-            }
-
-            // پیدا کردن محصول در داده‌ها
-            const product = allProducts.find(p => p.product_name === productName);
-            if (!product) {
-                console.error('محصول در داده‌ها یافت نشد:', productName);
-                return;
-            }
-
-            // محاسبه قیمت معیار جدید
-            const newStandardPrice = calculateStandardPrice(
-                product.highest_purchase_price,
-                newAdjustmentPercentage
-            );
-
-            // به‌روزرسانی قیمت معیار در جدول
-            $row.find('.standard-price-display').text(newStandardPrice.toLocaleString());
-
-            // محاسبه و به‌روزرسانی قیمت فروش برای هر شعبه
-            branches.forEach((branch, index) => {
-                const branchData = product.branch_prices[branch.id];
-                if (branchData) {
-                    const newSellingPrice = calculateSellingPrice(
-                        newStandardPrice,
-                        branchData.profit_percentage
-                    );
-
-                    // به‌روزرسانی قیمت فروش در جدول
-                    const $sellingPriceCell = $row.find(`.selling-price-cell[data-branch-id="${branch.id}"]`);
-                    if ($sellingPriceCell.length) {
-                        const quantityText = branchData.quantity > 0 ? 
-                            `<span class="quantity-badge">${branchData.quantity}</span>` : 
-                            '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-                        
-                        $sellingPriceCell.html(`
-                            ${quantityText}
-                            <span class="selling-price-value">${newSellingPrice.toLocaleString()}</span>
-                        `);
-
-                        // اضافه کردن کلاس highlight برای نمایش تغییر
-                        $sellingPriceCell.addClass('recalculating');
-                        setTimeout(() => {
-                            $sellingPriceCell.removeClass('recalculating');
-                        }, 1000);
-                    }
+            try {
+                // پیدا کردن ردیف محصول در جدول
+                const $row = $(`tr[data-product-name="${productName}"]`);
+                if (!$row.length) {
+                    console.error('ردیف محصول یافت نشد:', productName);
+                    return;
                 }
-            });
 
-            console.log(`محاسبه مجدد تکمیل شد. قیمت معیار جدید: ${newStandardPrice}`);
+                // پیدا کردن محصول در داده‌ها
+                const product = allProducts.find(p => p.product_name === productName);
+                if (!product) {
+                    console.error('محصول در داده‌ها یافت نشد:', productName);
+                    return;
+                }
+
+                // محاسبه قیمت معیار جدید
+                const newStandardPrice = calculateStandardPrice(
+                    product.highest_purchase_price,
+                    newAdjustmentPercentage
+                );
+
+                // به‌روزرسانی قیمت معیار در جدول
+                $row.find('.standard-price-display').text(newStandardPrice.toLocaleString());
+
+                // محاسبه و به‌روزرسانی قیمت فروش برای هر شعبه
+                branches.forEach((branch, index) => {
+                    const branchData = product.branch_prices && product.branch_prices[branch.id];
+                    if (branchData) {
+                        const newSellingPrice = calculateSellingPrice(
+                            newStandardPrice,
+                            branchData.profit_percentage
+                        );
+
+                        // به‌روزرسانی قیمت فروش در جدول
+                        const $sellingPriceCell = $row.find(`.selling-price-cell[data-branch-id="${branch.id}"]`);
+                        if ($sellingPriceCell.length) {
+                            const quantityText = branchData.quantity > 0 ? 
+                                `<span class="quantity-badge">${branchData.quantity}</span>` : 
+                                '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
+                            
+                            $sellingPriceCell.html(`
+                                ${quantityText}
+                                <span class="selling-price-value">${newSellingPrice.toLocaleString()}</span>
+                            `);
+
+                            // اضافه کردن کلاس highlight برای نمایش تغییر
+                            $sellingPriceCell.addClass('recalculating');
+                            setTimeout(() => {
+                                $sellingPriceCell.removeClass('recalculating');
+                            }, 1000);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('خطا در محاسبه مجدد قیمت‌ها:', error);
+                showMessage('خطا در محاسبه قیمت‌ها', 'error');
+            }
         }
 
         // تابع برای ذخیره درصد تعدیل جدید در سرور
         function saveAdjustmentPercentage(productName, newAdjustmentPercentage) {
-            console.log(`ذخیره درصد تعدیل برای ${productName}: ${newAdjustmentPercentage}`);
-            
             $.ajax({
-                url: "{% url 'update_adjustment_percentage' %}",
+                url: "/account/update-adjustment-percentage/", // استفاده از آدرس کامل
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
@@ -574,6 +582,7 @@
                     'X-CSRFToken': getCookie('csrftoken'),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
+                timeout: 10000,
                 success: function(data) {
                     if (data.success) {
                         console.log('درصد تعدیل با موفقیت ذخیره شد');
@@ -589,7 +598,11 @@
                 },
                 error: function(xhr, status, error) {
                     console.error('خطا در ارتباط با سرور:', error);
-                    showMessage('خطا در ارتباط با سرور برای ذخیره درصد تعدیل', 'error');
+                    if (status === 'timeout') {
+                        showMessage('زمان ذخیره‌سازی به پایان رسید', 'error');
+                    } else {
+                        showMessage('خطا در ارتباط با سرور برای ذخیره درصد تعدیل', 'error');
+                    }
                 }
             });
         }
@@ -704,7 +717,7 @@
             $('#loading').removeClass('hidden');
             
             $.ajax({
-                url: "{% url 'get_all_products' %}",
+                url: "/account/get-all-products/", // استفاده از آدرس کامل
                 method: 'GET',
                 timeout: 30000,
                 success: function(data) {
@@ -739,6 +752,9 @@
                         errorMessage += ' - آدرس درخواست یافت نشد (404)';
                     } else if (xhr.status === 500) {
                         errorMessage += ' - خطای داخلی سرور (500)';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage += ': ' + xhr.responseJSON.error;
+                        }
                     } else if (xhr.status === 403) {
                         errorMessage += ' - دسترسی غیرمجاز (403)';
                     } else if (status === 'timeout') {
@@ -746,6 +762,12 @@
                     }
                     
                     showMessage(errorMessage, 'error');
+                    
+                    // پیشنهاد راه‌حل
+                    console.error('راه‌حل‌های احتمالی:');
+                    console.error('1. مطمئن شوید سرور Django در حال اجراست');
+                    console.error('2. URLها را در urls.py بررسی کنید');
+                    console.error('3. مدل‌ها و migrationها را بررسی کنید');
                 }
             });
         }
@@ -766,7 +788,7 @@
             
             searchTimeout = setTimeout(function() {
                 $.ajax({
-                    url: "{% url 'search_products' %}",
+                    url: "/account/search-products/", // استفاده از آدرس کامل
                     data: { 
                         q: query,
                         timestamp: new Date().getTime()

@@ -1806,21 +1806,17 @@ def search_products(request):
     """جستجوی محصولات بر اساس نام"""
     try:
         query = request.GET.get('q', '').strip()
-        logger.info(f"جستجوی محصولات با عبارت: {query}")
 
         if len(query) < 2:
-            return JsonResponse({'results': []})
+            return JsonResponse({'results': [], 'branches': []})
 
         # دریافت تمام شعب
         branches = Branch.objects.all()
-        logger.info(f"تعداد شعب یافت شده: {branches.count()}")
 
         # جستجو در نام محصولات
         products = ProductPricing.objects.filter(
             product_name__icontains=query
         ).order_by('product_name')
-
-        logger.info(f"تعداد محصولات یافت شده: {products.count()}")
 
         results = []
         for product in products:
@@ -1859,11 +1855,9 @@ def search_products(request):
                             'branch_name': branch.name,
                             'selling_price': 0,
                             'quantity': 0,
-                            'profit_percentage': 70.0  # مقدار پیش‌فرض
+                            'profit_percentage': 70.0
                         }
                 except Exception as e:
-                    logger.error(
-                        f"خطا در دریافت موجودی برای محصول {product.product_name} در شعبه {branch.name}: {str(e)}")
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': 0,
@@ -1879,8 +1873,6 @@ def search_products(request):
         })
 
     except Exception as e:
-        logger.error(f"خطا در جستجوی محصولات: {str(e)}")
-        logger.error(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -1889,11 +1881,9 @@ def get_all_products(request):
     """دریافت تمام محصولات برای نمایش اولیه"""
     try:
         products = ProductPricing.objects.all().order_by('product_name')
-        logger.info(f"تعداد کل محصولات: {products.count()}")
 
         # دریافت تمام شعب
         branches = Branch.objects.all()
-        logger.info(f"تعداد شعب: {branches.count()}")
 
         results = []
         for product in products:
@@ -1932,11 +1922,9 @@ def get_all_products(request):
                             'branch_name': branch.name,
                             'selling_price': 0,
                             'quantity': 0,
-                            'profit_percentage': 70.0  # مقدار پیش‌فرض
+                            'profit_percentage': 70.0
                         }
                 except Exception as e:
-                    logger.error(
-                        f"خطا در دریافت موجودی برای محصول {product.product_name} در شعبه {branch.name}: {str(e)}")
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': 0,
@@ -1952,8 +1940,6 @@ def get_all_products(request):
         })
 
     except Exception as e:
-        logger.error(f"خطا در دریافت تمام محصولات: {str(e)}")
-        logger.error(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -1965,8 +1951,6 @@ def update_adjustment_percentage(request):
         data = json.loads(request.body)
         product_name = data.get('product_name')
         adjustment_percentage = data.get('adjustment_percentage')
-
-        logger.info(f"بروزرسانی درصد تعدیل برای محصول {product_name}: {adjustment_percentage}")
 
         # پیدا کردن محصول
         try:
@@ -1990,6 +1974,4 @@ def update_adjustment_percentage(request):
         })
 
     except Exception as e:
-        logger.error(f"خطا در بروزرسانی درصد تعدیل: {str(e)}")
-        logger.error(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
