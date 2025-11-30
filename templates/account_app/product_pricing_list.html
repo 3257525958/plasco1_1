@@ -124,6 +124,8 @@
             margin: 20px 0;
             border: 1px solid var(--border-color);
             border-radius: 8px;
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
         .products-table {
@@ -290,39 +292,13 @@
             transition: all 0.3s ease;
         }
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background-color: var(--blue-dark);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #1976d2;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.9rem;
-        }
-
-        .load-more-section {
+        .auto-load-indicator {
             text-align: center;
-            margin: 20px 0;
-            padding: 15px;
+            padding: 10px;
+            color: #666;
+            font-size: 0.9rem;
+            background-color: #f5f5f5;
+            border-top: 1px solid #ddd;
         }
 
         .pagination-info {
@@ -358,11 +334,6 @@
             .adjustment-input {
                 width: 60px;
                 font-size: 0.8rem;
-            }
-            
-            .btn {
-                width: 100%;
-                margin: 5px 0;
             }
         }
     </style>
@@ -412,7 +383,7 @@
         </div>
 
         <!-- بخش جدول محصولات -->
-        <div class="table-container">
+        <div class="table-container" id="products-table-container">
             <table class="products-table">
                 <thead>
                     <tr>
@@ -431,18 +402,13 @@
                     <!-- داده‌های محصولات اینجا نمایش داده می‌شوند -->
                 </tbody>
             </table>
-        </div>
-
-        <!-- بخش بارگذاری بیشتر -->
-        <div id="load-more-section" class="load-more-section hidden">
-            <button id="load-more-btn" class="btn btn-primary">
-                <i class="fas fa-plus"></i> بارگذاری محصولات بیشتر
-            </button>
+            <div id="auto-load-indicator" class="auto-load-indicator hidden">
+                <i class="fas fa-spinner fa-spin"></i> در حال بارگذاری محصولات بیشتر...
+            </div>
         </div>
 
         <div id="loading" class="loading hidden">
-            <i class="fas fa-spinner fa-spin"></i>
-            در حال بارگذاری...
+            <i class="fas fa-spinner fa-spin"></i> در حال بارگذاری...
         </div>
 
         <div id="no-results" class="no-results hidden">
@@ -464,6 +430,8 @@
         let hasMoreProducts = true;
         let totalProductsCount = 0;
         let isSearchMode = false;
+        let isLoading = false;
+        let autoLoadEnabled = true;
 
         // تابع برای دریافت CSRF token
         function getCookie(name) {
@@ -680,26 +648,25 @@
         }
 
         // تابع برای نمایش محصولات در جدول
-        function displayProducts(products) {
+        function displayProducts(products, append = false) {
             try {
                 const $tbody = $('#products-table-body');
                 
-                if (products.length === 0) {
+                if (products.length === 0 && !append) {
                     $('#no-results').removeClass('hidden');
                     $('.table-container').addClass('hidden');
-                    $('#load-more-section').addClass('hidden');
                     $('#pagination-info').addClass('hidden');
                     console.log('📭 هیچ محصولی برای نمایش یافت نشد');
                 } else {
                     $('#no-results').addClass('hidden');
                     $('.table-container').removeClass('hidden');
                     
-                    // اگر در حالت جستجو هستیم، کل جدول را پاک می‌کنیم
-                    if (isSearchMode || currentPage === 1) {
+                    // اگر حالت append نباشد، کل جدول را پاک می‌کنیم
+                    if (!append) {
                         $tbody.empty();
                     }
                     
-                    console.log(`📊 نمایش ${products.length} محصول در جدول`);
+                    console.log(`📊 نمایش ${products.length} محصول در جدول (${append ? 'اضافه شده' : 'جدید'})`);
                     
                     products.forEach(product => {
                         let row = `
@@ -790,7 +757,7 @@
                 }
                 
                 // به روزرسانی آمار و اطلاعات صفحه‌بندی
-                updateStats(products.length);
+                updateStats(products.length, append);
             } catch (error) {
                 console.error('❌ خطا در نمایش محصولات:', error);
                 showMessage('خطا در نمایش اطلاعات جدول', 'error');
@@ -798,16 +765,29 @@
         }
 
         // تابع برای به روزرسانی آمار
-        function updateStats(visibleCount) {
+        function updateStats(visibleCount, append = false) {
             try {
-                $('#total-products').text(totalProductsCount.toLocaleString());
-                $('#visible-products').text(visibleCount.toLocaleString());
+                if (!append) {
+                    // اگر داده‌های جدید هستند، آمار را ریست کنیم
+                    $('#total-products').text(totalProductsCount.toLocaleString());
+                    $('#visible-products').text(visibleCount.toLocaleString());
+                } else {
+                    // اگر داده‌ها اضافه شده‌اند، آمار را به روز کنیم
+                    const currentVisible = parseInt($('#visible-products').text().replace(/,/g, '')) || 0;
+                    $('#visible-products').text((currentVisible + visibleCount).toLocaleString());
+                }
+                
                 $('#total-branches').text(branches.length.toLocaleString());
                 $('#current-page').text(currentPage);
                 
                 // به روزرسانی اطلاعات صفحه‌بندی
                 if (totalProductsCount > 0) {
-                    $('#shown-products').text(visibleCount);
+                    const currentShown = parseInt($('#shown-products').text()) || 0;
+                    if (append) {
+                        $('#shown-products').text(currentShown + visibleCount);
+                    } else {
+                        $('#shown-products').text(visibleCount);
+                    }
                     $('#total-products-count').text(totalProductsCount);
                     $('#pagination-info').removeClass('hidden');
                 }
@@ -816,10 +796,46 @@
             }
         }
 
+        // تابع برای بارگذاری خودکار محصولات وقتی کاربر به انتهای صفحه می‌رسد
+        function setupAutoLoad() {
+            const $container = $('#products-table-container');
+            
+            $container.off('scroll').on('scroll', function() {
+                if (!autoLoadEnabled || isLoading || !hasMoreProducts || isSearchMode) {
+                    return;
+                }
+
+                const scrollTop = $container.scrollTop();
+                const scrollHeight = $container[0].scrollHeight;
+                const clientHeight = $container[0].clientHeight;
+                
+                // اگر کاربر به 80% انتهای لیست رسید، بارگذاری خودکار انجام شود
+                if (scrollTop + clientHeight >= scrollHeight * 0.8) {
+                    loadNextPageAuto();
+                }
+            });
+        }
+
+        // تابع برای بارگذاری خودکار صفحه بعدی
+        function loadNextPageAuto() {
+            if (hasMoreProducts && !isLoading && !isSearchMode) {
+                console.log(`🔄 بارگذاری خودکار صفحه ${currentPage + 1}`);
+                loadAllProducts(currentPage + 1, '', true);
+            }
+        }
+
         // تابع برای بارگذاری تمام محصولات
-        function loadAllProducts(page = 1, searchQuery = '') {
-            console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
-            $('#loading').removeClass('hidden');
+        function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            
+            if (autoLoad) {
+                $('#auto-load-indicator').removeClass('hidden');
+            } else {
+                console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
+                $('#loading').removeClass('hidden');
+            }
             
             const url = searchQuery ? "/account/search-products/" : "/account/get-all-products/";
             const data = searchQuery ? { q: searchQuery } : { page: page };
@@ -833,8 +849,26 @@
                     console.log('📤 ارسال درخواست دریافت محصولات');
                 },
                 success: function(response) {
-                    $('#loading').addClass('hidden');
+                    isLoading = false;
+                    
+                    if (autoLoad) {
+                        $('#auto-load-indicator').addClass('hidden');
+                    } else {
+                        $('#loading').addClass('hidden');
                     console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
+                    showMessage('اطلاعات با موفقیت بارگذاری شد', 'success');
+                    // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
+                    autoLoadEnabled = true;
+                    setupAutoLoad();
+                    // اسکرول به بالا برای نمایش داده‌های جدید
+                    $('#products-table-container').scrollTop(0);
+                    // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
+                    setTimeout(() => {
+                        if (hasMoreProducts && !isSearchMode) {
+                            loadNextPageAuto();
+                        }
+                    }, 3000);
+                    }
                     
                     if (response && ((response.products && response.branches) || (response.results && response.branches))) {
                         const products = response.products || response.results;
@@ -845,9 +879,11 @@
                             allProducts = products;
                             branches = newBranches;
                             isSearchMode = !!searchQuery;
+                            displayProducts(allProducts, false);
                         } else {
                             // صفحه بعدی - اضافه کردن به داده‌های موجود
                             allProducts = allProducts.concat(products);
+                            displayProducts(products, true);
                         }
                         
                         filteredProducts = [...allProducts];
@@ -857,24 +893,14 @@
                         
                         console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد`);
                         
-                        // ایجاد سرستون‌های شعب
-                        createBranchHeaders();
-                        
-                        // نمایش محصولات
-                        displayProducts(allProducts);
-                        
-                        // نمایش/مخفی کردن دکمه بارگذاری بیشتر
-                        if (hasMoreProducts && !isSearchMode) {
-                            $('#load-more-section').removeClass('hidden');
-                        } else {
-                            $('#load-more-section').addClass('hidden');
+                        // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
+                        if (page === 1) {
+                            createBranchHeaders();
                         }
                         
-                        if (page === 1) {
-                            const message = isSearchMode ? 
-                                `${products.length} نتیجه جستجو یافت شد` : 
-                                'اطلاعات با موفقیت بارگذاری شد';
-                            showMessage(message, 'success');
+                        // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن
+                        if (hasMoreProducts && !isSearchMode && autoLoadEnabled) {
+                            setTimeout(loadNextPageAuto, 1000);
                         }
                     } else if (response && response.error) {
                         console.error('❌ خطا از سمت سرور:', response.error);
@@ -885,7 +911,13 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    $('#loading').addClass('hidden');
+                    isLoading = false;
+                    
+                    if (autoLoad) {
+                        $('#auto-load-indicator').addClass('hidden');
+                    } else {
+                        $('#loading').addClass('hidden');
+                    }
                     
                     console.error('❌ خطای AJAX در دریافت محصولات:', {
                         status: xhr.status,
@@ -904,8 +936,6 @@
                         }
                     } else if (status === 'timeout') {
                         errorMessage = 'زمان درخواست به پایان رسید - داده‌ها زیاد هستند';
-                        // پیشنهاد بارگذاری مجدد با pagination
-                        showMessage('داده‌ها زیاد هستند. لطفاً مجدداً تلاش کنید.', 'info');
                     }
                     
                     showMessage(errorMessage, 'error');
@@ -913,23 +943,19 @@
             });
         }
 
-        // تابع برای بارگذاری صفحه بعدی
-        function loadNextPage() {
-            if (hasMoreProducts && !isSearchMode) {
-                loadAllProducts(currentPage + 1);
-            }
-        }
-
         // تابع برای جستجوی محصولات
         function searchProducts(query) {
             if (query.length < 2) {
                 // اگر کمتر از ۲ کاراکتر باشد، به حالت عادی برگرد
                 isSearchMode = false;
+                autoLoadEnabled = true;
                 loadAllProducts(1);
                 return;
             }
             
             console.log(`🔍 جستجو برای: "${query}"`);
+            isSearchMode = true;
+            autoLoadEnabled = false; // در حالت جستجو بارگذاری خودکار غیرفعال
             loadAllProducts(1, query);
         }
 
@@ -942,6 +968,7 @@
             if (query.length === 0) {
                 // اگر فیلد خالی شد، به حالت عادی برگرد
                 isSearchMode = false;
+                autoLoadEnabled = true;
                 loadAllProducts(1);
                 return;
             }
@@ -979,16 +1006,12 @@
                     $('#loading').addClass('hidden');
                 }
             });
-            
-            // Event listener برای دکمه بارگذاری بیشتر
-            $(document).on('click', '#load-more-btn', function() {
-                loadNextPage();
-            });
 
             // بازنشانی جستجو با دابل کلیک روی فیلد جستجو
             $('#product-search').on('dblclick', function() {
                 $(this).val('');
                 isSearchMode = false;
+                autoLoadEnabled = true;
                 loadAllProducts(1);
                 console.log('🔄 جستجو بازنشانی شد');
             });
@@ -997,22 +1020,6 @@
             setTimeout(() => {
                 $('#product-search').focus();
             }, 100);
-        });
-
-        // کلیدهای میانبر
-        $(document).on('keydown', function(e) {
-            // Ctrl + Enter برای بارگذاری بیشتر
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                loadNextPage();
-            }
-            
-            // Escape برای پاک کردن جستجو
-            if (e.key === 'Escape') {
-                $('#product-search').val('').focus();
-                isSearchMode = false;
-                loadAllProducts(1);
-            }
         });
     </script>
 </body>
