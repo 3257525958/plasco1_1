@@ -1794,7 +1794,8 @@ from django.utils import timezone
 from django.db import transaction
 
 # Import مدل‌های خودتان
-from .models import ProductPricing, InventoryCount, Branch, ProductLabelSetting
+from .models import ProductPricing, InventoryCount, Branch, ProductLabelSetting, Product
+from django.contrib.auth.models import User
 
 
 @require_http_methods(["GET"])
@@ -1861,13 +1862,15 @@ def get_all_products(request):
         start = (page - 1) * per_page
         end = start + per_page
 
+        # دریافت تعداد کل محصولات برای آمار
+        total_products = ProductPricing.objects.count()
+
         # دریافت تمام شعب
         branches = Branch.objects.all()
         branch_dict = {branch.id: branch for branch in branches}
 
         # دریافت محصولات با محدودیت
         products = ProductPricing.objects.all().order_by('product_name')[start:end]
-        total_products = ProductPricing.objects.count()
 
         # اگر محصولی نداریم، خالی برگردان
         if not products.exists():
@@ -1931,12 +1934,12 @@ def get_all_products(request):
                 'product_name': product.product_name,
                 'highest_purchase_price': float(
                     product.highest_purchase_price) if product.highest_purchase_price else 0,
-                'invoice_date': product.invoice_date or '',
+                'invoice_date': product.invoice_date.strftime('%Y-%m-%d') if product.invoice_date else '',
                 'invoice_number': product.invoice_number or '',
                 'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
                 'standard_price': float(product.standard_price) if product.standard_price else 0,
-                'created_at': product.created_at.strftime('%Y-%m-%d') if product.created_at else '',
-                'updated_at': product.updated_at.strftime('%Y-%m-%d') if product.updated_at else '',
+                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
+                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
                 'branch_prices': {}
             }
 
@@ -1976,7 +1979,7 @@ def get_all_products(request):
                 'page': page,
                 'per_page': per_page,
                 'has_next': len(results) == per_page,
-                'total_products': total_products
+                'total_products': total_products  # ارسال تعداد کل محصولات
             }
         })
 
@@ -2060,12 +2063,12 @@ def search_products(request):
                 'product_name': product.product_name,
                 'highest_purchase_price': float(
                     product.highest_purchase_price) if product.highest_purchase_price else 0,
-                'invoice_date': product.invoice_date or '',
+                'invoice_date': product.invoice_date.strftime('%Y-%m-%d') if product.invoice_date else '',
                 'invoice_number': product.invoice_number or '',
                 'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
                 'standard_price': float(product.standard_price) if product.standard_price else 0,
-                'created_at': product.created_at.strftime('%Y-%m-%d') if product.created_at else '',
-                'updated_at': product.updated_at.strftime('%Y-%m-%d') if product.updated_at else '',
+                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
+                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
                 'branch_prices': {}
             }
 
@@ -2099,7 +2102,10 @@ def search_products(request):
 
         return JsonResponse({
             'results': results,
-            'branches': [{'id': b.id, 'name': b.name} for b in branches]
+            'branches': [{'id': b.id, 'name': b.name} for b in branches],
+            'pagination': {
+                'total_products': len(results)  # ارسال تعداد نتایج جستجو
+            }
         })
 
     except Exception as e:
@@ -2112,7 +2118,7 @@ def search_products(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def update_adjustment_percentage(request):
-    """بروزرسانی درصد تعدیل و محاسبه قیمت معیار"""
+    """بروزرسانی درصد تعدیل و محاسبه قیمت معیار و فعال کردن چاپ لیبل"""
     try:
         data = json.loads(request.body)
         product_name = data.get('product_name')
@@ -2145,7 +2151,12 @@ def update_adjustment_percentage(request):
             # بروزرسانی درصد تعدیل
             product.adjustment_percentage = Decimal(str(adjustment_percentage))
 
-            # ذخیره کردن که متد save مدل محاسبات را انجام دهد
+            # محاسبه قیمت معیار جدید
+            if product.highest_purchase_price:
+                adjustment_amount = product.highest_purchase_price * (Decimal(str(adjustment_percentage)) / 100)
+                product.standard_price = product.highest_purchase_price + adjustment_amount
+
+            # ذخیره محصول
             product.save()
 
             updated_count = 0
@@ -2164,6 +2175,38 @@ def update_adjustment_percentage(request):
                         label_setting.save()
                         updated_count += 1
                         print(f"✅ تنظیمات چاپ لیبل برای {product_name} در شعبه {label_setting.branch.name} فعال شد")
+
+                # اگر تنظیمات چاپ لیبلی برای این محصول وجود نداشت، برای تمام شعب ایجاد کن
+                if updated_count == 0:
+                    # پیدا کردن تمام شعب
+                    branches = Branch.objects.all()
+
+                    # دریافت بارکد محصول از مدل Product (اگر وجود دارد)
+                    try:
+                        product_obj = Product.objects.filter(name=product_name).first()
+                        barcode = product_obj.barcode if product_obj and hasattr(product_obj, 'barcode') else ''
+                    except:
+                        barcode = ''
+
+                    for branch in branches:
+                        # ایجاد تنظیمات چاپ لیبل جدید
+                        label_setting, created = ProductLabelSetting.objects.get_or_create(
+                            product_name=product_name,
+                            branch=branch,
+                            defaults={
+                                'barcode': barcode,
+                                'allow_print': True
+                            }
+                        )
+
+                        if created:
+                            updated_count += 1
+                            print(f"✅ تنظیمات چاپ لیبل جدید برای {product_name} در شعبه {branch.name} ایجاد شد")
+                        elif not label_setting.allow_print:
+                            label_setting.allow_print = True
+                            label_setting.save()
+                            updated_count += 1
+                            print(f"✅ تنظیمات چاپ لیبل برای {product_name} در شعبه {branch.name} فعال شد")
 
                 print(f"📝 تعداد {updated_count} تنظیمات چاپ لیبل برای محصول {product_name} فعال شدند")
 

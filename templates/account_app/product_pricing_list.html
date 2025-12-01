@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <style>
+        /* استایل‌های قبلی بدون تغییر */
         :root {
             --primary-color: #4CAF50;
             --secondary-color: #388E3C;
@@ -572,7 +573,7 @@
         let searchTimeout = null;
         let currentPage = 1;
         let hasMoreProducts = true;
-        let totalProductsCount = 0;
+        let totalProductsCount = 0;  // تعداد کل محصولات از سرور
         let isSearchMode = false;
         let isLoading = false;
         let autoLoadEnabled = true;
@@ -992,7 +993,10 @@
                     } else {
                         $('#shown-products').text(visibleCount.toLocaleString());
                     }
-                    $('#total-products-count').text(totalProductsCount.toLocaleString());
+                    
+                    // تعیین تعداد کل برای نمایش در صفحه‌بندی
+                    const totalToShow = isSearchMode ? allProducts.length : totalProductsCount;
+                    $('#total-products-count').text(totalToShow.toLocaleString());
                     $('#pagination-info').removeClass('hidden');
                 }
             } catch (error) {
@@ -1072,6 +1076,15 @@
                             allProducts = products;
                             branches = newBranches;
                             isSearchMode = !!searchQuery;
+                            
+                            // دریافت تعداد کل محصولات از پاسخ سرور
+                            if (response.pagination && response.pagination.total_products) {
+                                totalProductsCount = response.pagination.total_products;
+                            } else if (isSearchMode) {
+                                // در حالت جستجو، تعداد نتایج جستجو را نمایش بده
+                                totalProductsCount = products.length;
+                            }
+                            
                             displayProducts(allProducts, false);
                         } else {
                             // صفحه بعدی - اضافه کردن به داده‌های موجود
@@ -1082,9 +1095,13 @@
                         filteredProducts = [...allProducts];
                         currentPage = page;
                         hasMoreProducts = response.pagination?.has_next || false;
-                        totalProductsCount = response.pagination?.total_products || products.length;
                         
-                        console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد`);
+                        // اگر در حالت عادی هستیم و totalProductsCount هنوز تنظیم نشده
+                        if (!isSearchMode && response.pagination?.total_products) {
+                            totalProductsCount = response.pagination.total_products;
+                        }
+                        
+                        console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);
                         
                         // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
                         if (page === 1) {
