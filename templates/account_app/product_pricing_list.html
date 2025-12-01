@@ -24,6 +24,8 @@
             --red-dark: #d32f2f;
             --green-light: #e8f5e9;
             --green-dark: #2E7D32;
+            --purple-light: #f3e5f5;
+            --purple-dark: #7b1fa2;
         }
 
         * {
@@ -62,6 +64,11 @@
             font-size: 2rem;
             color: var(--accent-color);
             margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1rem;
         }
 
         .search-section {
@@ -142,12 +149,14 @@
             position: sticky;
             top: 0;
             white-space: nowrap;
+            z-index: 10;
         }
 
         .products-table td {
             padding: 10px;
             border: 1px solid var(--border-color);
             text-align: center;
+            vertical-align: middle;
         }
 
         .products-table tr:nth-child(even) {
@@ -156,6 +165,7 @@
 
         .products-table tr:hover {
             background-color: #e8f5e9;
+            transition: background-color 0.2s;
         }
 
         .price-cell {
@@ -166,16 +176,13 @@
         .selling-price-cell {
             font-weight: bold;
             color: var(--blue-dark);
+            position: relative;
         }
 
         .out-of-stock {
             background-color: var(--red-light);
             color: var(--red-dark);
             font-weight: bold;
-        }
-
-        .percentage-cell {
-            color: var(--blue-dark);
         }
 
         .adjustment-input {
@@ -185,6 +192,7 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 0.9rem;
+            transition: all 0.3s;
         }
 
         .adjustment-input:focus {
@@ -193,14 +201,26 @@
             box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
         }
 
+        .adjustment-input.changed {
+            background-color: var(--green-light);
+            border-color: var(--green-dark);
+        }
+
         .loading {
             text-align: center;
             padding: 20px;
             color: var(--blue-dark);
+            font-size: 1.1rem;
         }
 
         .loading i {
             margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .no-results {
@@ -218,6 +238,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .error-message {
@@ -258,6 +284,10 @@
             text-align: center;
             flex: 1;
             min-width: 120px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .stat-value {
@@ -269,12 +299,14 @@
         .stat-label {
             font-size: 0.9rem;
             color: #666;
+            margin-top: 5px;
         }
 
         .branch-header {
             background-color: var(--blue-dark) !important;
             color: white;
             font-size: 0.9rem;
+            min-width: 120px;
         }
 
         .quantity-badge {
@@ -285,11 +317,41 @@
             border-radius: 10px;
             font-size: 0.8rem;
             margin-right: 5px;
+            font-weight: bold;
+        }
+
+        .print-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-right: 3px;
+            font-weight: bold;
+            border: 1px solid;
+        }
+        
+        .print-allowed {
+            background-color: var(--green-light);
+            color: var(--green-dark);
+            border-color: var(--green-dark);
+        }
+        
+        .print-not-allowed {
+            background-color: var(--red-light);
+            color: var(--red-dark);
+            border-color: var(--red-dark);
         }
 
         .recalculating {
             background-color: var(--green-light) !important;
             transition: all 0.3s ease;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { background-color: var(--green-light); }
+            50% { background-color: #c8e6c9; }
+            100% { background-color: var(--green-light); }
         }
 
         .auto-load-indicator {
@@ -306,6 +368,51 @@
             margin: 10px 0;
             color: #666;
             font-size: 0.9rem;
+            padding: 10px;
+            background-color: var(--light-bg);
+            border-radius: 6px;
+        }
+
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .info-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+        
+        .info-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .branch-price-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .print-indicator {
+            font-size: 0.7rem;
+            margin-bottom: 3px;
         }
 
         @media (max-width: 768px) {
@@ -335,6 +442,31 @@
                 width: 60px;
                 font-size: 0.8rem;
             }
+            
+            .branch-header {
+                font-size: 0.8rem;
+                min-width: 100px;
+            }
+        }
+
+        .system-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--purple-light);
+            border-radius: 8px;
+            border-right: 4px solid var(--purple-dark);
+        }
+
+        .system-info h3 {
+            color: var(--purple-dark);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .system-info p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -416,6 +548,18 @@
             محصولی یافت نشد
         </div>
 
+        <!-- بخش اطلاعات سیستم -->
+        <div class="system-info">
+            <h3>راهنمای سیستم:</h3>
+            <p>
+                1. تغییر درصد تعدیل باعث به‌روزرسانی خودکار قیمت معیار و قیمت فروش می‌شود.<br>
+                2. با تغییر درصد تعدیل، تنظیمات چاپ لیبل برای آن کالا در تمام شعب فعال می‌شود.<br>
+                3. رنگ سبز در سلول‌های قیمت فروش نشان‌دهنده فعال بودن چاپ لیبل است.<br>
+                4. رنگ قرمز در سلول‌های قیمت فروش نشان‌دهنده غیرفعال بودن چاپ لیبل است.<br>
+                5. دابل‌کلیک روی فیلد جستجو برای پاک کردن محتوا.
+            </p>
+        </div>
+
         <div id="messages"></div>
     </div>
 
@@ -432,6 +576,7 @@
         let isSearchMode = false;
         let isLoading = false;
         let autoLoadEnabled = true;
+        let isInitialLoad = true;
 
         // تابع برای دریافت CSRF token
         function getCookie(name) {
@@ -561,9 +706,20 @@
                                 `<span class="quantity-badge">${branchData.quantity}</span>` : 
                                 '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
                             
+                            // وضعیت چاپ لیبل
+                            const printStatus = branchData.allow_print ? 
+                                '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
+                                '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
+                            
+                            const sellingPrice = newSellingPrice > 0 ? 
+                                newSellingPrice.toLocaleString() : 'ناموجود';
+                            
                             $sellingPriceCell.html(`
-                                ${quantityText}
-                                <span class="selling-price-value">${newSellingPrice.toLocaleString()}</span>
+                                <div class="branch-price-container">
+                                    <div class="print-indicator">${printStatus}</div>
+                                    ${quantityText}
+                                    <span class="selling-price-value">${sellingPrice}</span>
+                                </div>
                             `);
 
                             // اضافه کردن کلاس highlight برای نمایش تغییر
@@ -592,7 +748,7 @@
             $input.prop('disabled', true).css('opacity', '0.7');
 
             $.ajax({
-                url: "/account/update-adjustment-percentage/",
+                url: "{% url 'account_app:update_adjustment_percentage' %}",
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
@@ -609,12 +765,30 @@
                     
                     if (data.success) {
                         console.log('✅ درصد تعدیل با موفقیت ذخیره شد');
+                        
+                        // علامت‌گذاری فیلد به عنوان تغییر یافته
+                        $input.addClass('changed');
+                        setTimeout(() => {
+                            $input.removeClass('changed');
+                        }, 2000);
+                        
                         // به‌روزرسانی قیمت معیار با مقدار دقیق از سرور
                         if (data.new_standard_price) {
                             $(`tr[data-product-name="${productName}"] .standard-price-display`)
                                 .text(data.new_standard_price.toLocaleString());
                         }
-                        showMessage(`درصد تعدیل برای ${productName} ذخیره شد`, 'success');
+                        
+                        let message = `درصد تعدیل برای ${productName} ذخیره شد`;
+                        if (data.print_settings_updated && data.print_settings_updated > 0) {
+                            message += ` و ${data.print_settings_updated} تنظیمات چاپ لیبل فعال شدند`;
+                        }
+                        showMessage(message, 'success');
+                        
+                        // اگر تنظیمات چاپ لیبل فعال شده‌اند، وضعیت نمایش را به روز کن
+                        if (data.print_settings_updated && data.print_settings_updated > 0) {
+                            // به‌روزرسانی وضعیت چاپ لیبل در جدول
+                            updatePrintStatus(productName, true);
+                        }
                     } else {
                         console.error('❌ خطا در ذخیره درصد تعدیل:', data.error);
                         showMessage('خطا در ذخیره درصد تعدیل: ' + data.error, 'error');
@@ -643,6 +817,20 @@
                     // بازگشت به مقدار قبلی
                     $input.val(originalValue);
                     recalculatePrices(productName, originalValue);
+                }
+            });
+        }
+
+        // تابع برای به‌روزرسانی وضعیت چاپ لیبل در جدول
+        function updatePrintStatus(productName, allowPrint) {
+            const $row = $(`tr[data-product-name="${productName}"]`);
+            if (!$row.length) return;
+            
+            $row.find('.print-status').each(function() {
+                if (allowPrint) {
+                    $(this).removeClass('print-not-allowed').addClass('print-allowed')
+                           .html('✔ چاپ فعال');
+                    $(this).closest('.branch-price-container').find('.print-indicator').html($(this).clone());
                 }
             });
         }
@@ -693,23 +881,39 @@
                         // اضافه کردن قیمت فروش برای هر شعبه
                         branches.forEach(branch => {
                             const branchPrice = product.branch_prices && product.branch_prices[branch.id];
-                            if (branchPrice && branchPrice.selling_price > 0) {
+                            if (branchPrice) {
                                 const quantityText = branchPrice.quantity > 0 ? 
                                     `<span class="quantity-badge">${branchPrice.quantity}</span>` : 
                                     '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
                                 
+                                // وضعیت چاپ لیبل
+                                const printStatus = branchPrice.allow_print ? 
+                                    '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
+                                    '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
+                                
+                                const sellingPrice = branchPrice.selling_price > 0 ? 
+                                    branchPrice.selling_price.toLocaleString() : 'ناموجود';
+                                
                                 row += `
                                     <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}" 
                                         data-branch-id="${branch.id}">
-                                        ${quantityText}
-                                        <span class="selling-price-value">${branchPrice.selling_price.toLocaleString()}</span>
+                                        <div class="branch-price-container">
+                                            <div class="print-indicator">${printStatus}</div>
+                                            ${quantityText}
+                                            <span class="selling-price-value">${sellingPrice}</span>
+                                        </div>
                                     </td>
                                 `;
                             } else {
                                 row += `
                                     <td class="out-of-stock selling-price-cell" data-branch-id="${branch.id}">
-                                        <span class="quantity-badge" style="background-color: #d32f2f;">۰</span>
-                                        ناموجود
+                                        <div class="branch-price-container">
+                                            <div class="print-indicator">
+                                                <span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>
+                                            </div>
+                                            <span class="quantity-badge" style="background-color: #d32f2f;">۰</span>
+                                            ناموجود
+                                        </div>
                                     </td>
                                 `;
                             }
@@ -784,11 +988,11 @@
                 if (totalProductsCount > 0) {
                     const currentShown = parseInt($('#shown-products').text()) || 0;
                     if (append) {
-                        $('#shown-products').text(currentShown + visibleCount);
+                        $('#shown-products').text((currentShown + visibleCount).toLocaleString());
                     } else {
-                        $('#shown-products').text(visibleCount);
+                        $('#shown-products').text(visibleCount.toLocaleString());
                     }
-                    $('#total-products-count').text(totalProductsCount);
+                    $('#total-products-count').text(totalProductsCount.toLocaleString());
                     $('#pagination-info').removeClass('hidden');
                 }
             } catch (error) {
@@ -837,7 +1041,7 @@
                 $('#loading').removeClass('hidden');
             }
             
-            const url = searchQuery ? "/account/search-products/" : "/account/get-all-products/";
+            const url = searchQuery ? "{% url 'account_app:search_products' %}" : "{% url 'account_app:get_all_products' %}";
             const data = searchQuery ? { q: searchQuery } : { page: page };
             
             $.ajax({
@@ -855,20 +1059,9 @@
                         $('#auto-load-indicator').addClass('hidden');
                     } else {
                         $('#loading').addClass('hidden');
-                    console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
-                    showMessage('اطلاعات با موفقیت بارگذاری شد', 'success');
-                    // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
-                    autoLoadEnabled = true;
-                    setupAutoLoad();
-                    // اسکرول به بالا برای نمایش داده‌های جدید
-                    $('#products-table-container').scrollTop(0);
-                    // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
-                    setTimeout(() => {
-                        if (hasMoreProducts && !isSearchMode) {
-                            loadNextPageAuto();
-                        }
-                    }, 3000);
                     }
+                    
+                    console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
                     
                     if (response && ((response.products && response.branches) || (response.results && response.branches))) {
                         const products = response.products || response.results;
@@ -898,8 +1091,25 @@
                             createBranchHeaders();
                         }
                         
+                        // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده
+                        if (isInitialLoad && page === 1 && !searchQuery) {
+                            showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');
+                            isInitialLoad = false;
+                            
+                            // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
+                            autoLoadEnabled = true;
+                            setupAutoLoad();
+                            
+                            // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
+                            setTimeout(() => {
+                                if (hasMoreProducts && !isSearchMode) {
+                                    loadNextPageAuto();
+                                }
+                            }, 3000);
+                        }
+                        
                         // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن
-                        if (hasMoreProducts && !isSearchMode && autoLoadEnabled) {
+                        if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {
                             setTimeout(loadNextPageAuto, 1000);
                         }
                     } else if (response && response.error) {
@@ -990,12 +1200,11 @@
             
             // تست اتصال اولیه
             $.ajax({
-                url: "/account/health/",
+                url: "{% url 'account_app:health_check' %}",
                 method: 'GET',
                 timeout: 5000,
                 success: function(response) {
                     console.log('✅ تست اتصال موفقیت‌آمیز بود:', response);
-                    showMessage('اتصال به سرور برقرار است', 'success');
                     
                     // بارگذاری اولیه محصولات
                     loadAllProducts(1);

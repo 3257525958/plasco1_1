@@ -86,6 +86,5 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('update-adjustment-percentage/', views.update_adjustment_percentage, name='update_adjustment_percentage'),
     path('health/', views.health_check, name='health_check'),
     path('debug-products/', views.debug_products, name='debug_products'),
-
 ]
 

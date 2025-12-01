@@ -1785,14 +1785,16 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Max
+from django.db.models import Max, Count
 import json
 from decimal import Decimal
 import time
 from django.utils import timezone
+from django.db import transaction
 
 # Import مدل‌های خودتان
-from .models import ProductPricing, InventoryCount, Branch
+from .models import ProductPricing, InventoryCount, Branch, ProductLabelSetting
+from django.contrib.auth.models import User
 
 
 @require_http_methods(["GET"])
@@ -1826,6 +1828,9 @@ def debug_products(request):
         # تست تعداد موجودی‌ها
         inventory_count = InventoryCount.objects.count()
 
+        # تست تعداد تنظیمات چاپ لیبل
+        label_count = ProductLabelSetting.objects.count()
+
         end_time = time.time()
         response_time = end_time - start_time
 
@@ -1835,6 +1840,7 @@ def debug_products(request):
                 'product_count': product_count,
                 'branch_count': branch_count,
                 'inventory_count': inventory_count,
+                'label_count': label_count,
                 'response_time_seconds': round(response_time, 2)
             },
             'message': f'پاسخ در {response_time:.2f} ثانیه'
@@ -1863,15 +1869,40 @@ def get_all_products(request):
         products = ProductPricing.objects.all().order_by('product_name')[start:end]
         total_products = ProductPricing.objects.count()
 
+        # اگر محصولی نداریم، خالی برگردان
+        if not products.exists():
+            return JsonResponse({
+                'products': [],
+                'branches': [{'id': b.id, 'name': b.name} for b in branches],
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'has_next': False,
+                    'total_products': total_products
+                }
+            })
+
         # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
         product_names = [p.product_name for p in products]
 
         # دریافت آخرین موجودی برای هر محصول و شعبه
+        from django.db.models import OuterRef, Subquery
         latest_inventories = InventoryCount.objects.filter(
             product_name__in=product_names
         ).values('product_name', 'branch').annotate(
             latest_created=Max('created_at')
         )
+
+        # دریافت آخرین تنظیمات چاپ لیبل برای هر محصول و شعبه
+        label_settings = ProductLabelSetting.objects.filter(
+            product_name__in=product_names
+        ).select_related('branch')
+
+        # ایجاد دیکشنری برای تنظیمات چاپ لیبل
+        label_dict = {}
+        for label in label_settings:
+            key = f"{label.product_name}_{label.branch.id}"
+            label_dict[key] = label.allow_print
 
         # ایجاد lookup برای سریع‌تر کردن دسترسی
         inventory_lookup = {}
@@ -1881,9 +1912,12 @@ def get_all_products(request):
 
         # دریافت داده‌های کامل برای آخرین موجودی‌ها
         latest_dates = list(inventory_lookup.values())
-        actual_inventories = InventoryCount.objects.filter(
-            created_at__in=latest_dates
-        ).select_related('branch')
+        if latest_dates:
+            actual_inventories = InventoryCount.objects.filter(
+                created_at__in=latest_dates
+            ).select_related('branch')
+        else:
+            actual_inventories = InventoryCount.objects.none()
 
         # ایجاد دیکشنری برای دسترسی سریع
         inventory_dict = {}
@@ -1912,19 +1946,26 @@ def get_all_products(request):
                 lookup_key = f"{product.product_name}_{branch.id}"
                 inventory = inventory_dict.get(lookup_key)
 
+                # بررسی وضعیت چاپ لیبل
+                allow_print_key = f"{product.product_name}_{branch.id}"
+                allow_print_status = label_dict.get(allow_print_key, True)
+
                 if inventory:
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': inventory.selling_price if inventory.selling_price else 0,
                         'quantity': inventory.quantity,
-                        'profit_percentage': float(inventory.profit_percentage) if inventory.profit_percentage else 70.0
+                        'profit_percentage': float(
+                            inventory.profit_percentage) if inventory.profit_percentage else 70.0,
+                        'allow_print': allow_print_status
                     }
                 else:
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': 0,
                         'quantity': 0,
-                        'profit_percentage': 70.0
+                        'profit_percentage': 70.0,
+                        'allow_print': allow_print_status
                     }
 
             results.append(product_data)
@@ -1941,6 +1982,9 @@ def get_all_products(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"❌ خطا در get_all_products: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'error': f'خطا در پردازش: {str(e)}'}, status=500)
 
 
@@ -1961,6 +2005,13 @@ def search_products(request):
         branches = Branch.objects.all()
         branch_dict = {branch.id: branch for branch in branches}
 
+        # اگر محصولی پیدا نشد
+        if not products.exists():
+            return JsonResponse({
+                'results': [],
+                'branches': [{'id': b.id, 'name': b.name} for b in branches]
+            })
+
         # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
         product_names = [p.product_name for p in products]
 
@@ -1971,6 +2022,17 @@ def search_products(request):
             latest_created=Max('created_at')
         )
 
+        # دریافت آخرین تنظیمات چاپ لیبل برای هر محصول و شعبه
+        label_settings = ProductLabelSetting.objects.filter(
+            product_name__in=product_names
+        ).select_related('branch')
+
+        # ایجاد دیکشنری برای تنظیمات چاپ لیبل
+        label_dict = {}
+        for label in label_settings:
+            key = f"{label.product_name}_{label.branch.id}"
+            label_dict[key] = label.allow_print
+
         # ایجاد lookup برای سریع‌تر کردن دسترسی
         inventory_lookup = {}
         for inv in latest_inventories:
@@ -1979,9 +2041,12 @@ def search_products(request):
 
         # دریافت داده‌های کامل برای آخرین موجودی‌ها
         latest_dates = list(inventory_lookup.values())
-        actual_inventories = InventoryCount.objects.filter(
-            created_at__in=latest_dates
-        ).select_related('branch')
+        if latest_dates:
+            actual_inventories = InventoryCount.objects.filter(
+                created_at__in=latest_dates
+            ).select_related('branch')
+        else:
+            actual_inventories = InventoryCount.objects.none()
 
         # ایجاد دیکشنری برای دسترسی سریع
         inventory_dict = {}
@@ -2009,19 +2074,26 @@ def search_products(request):
                 lookup_key = f"{product.product_name}_{branch.id}"
                 inventory = inventory_dict.get(lookup_key)
 
+                # بررسی وضعیت چاپ لیبل
+                allow_print_key = f"{product.product_name}_{branch.id}"
+                allow_print_status = label_dict.get(allow_print_key, True)
+
                 if inventory:
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': inventory.selling_price if inventory.selling_price else 0,
                         'quantity': inventory.quantity,
-                        'profit_percentage': float(inventory.profit_percentage) if inventory.profit_percentage else 70.0
+                        'profit_percentage': float(
+                            inventory.profit_percentage) if inventory.profit_percentage else 70.0,
+                        'allow_print': allow_print_status
                     }
                 else:
                     product_data['branch_prices'][branch.id] = {
                         'branch_name': branch.name,
                         'selling_price': 0,
                         'quantity': 0,
-                        'profit_percentage': 70.0
+                        'profit_percentage': 70.0,
+                        'allow_print': allow_print_status
                     }
 
             results.append(product_data)
@@ -2032,6 +2104,9 @@ def search_products(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"❌ خطا در search_products: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -2044,17 +2119,54 @@ def update_adjustment_percentage(request):
         product_name = data.get('product_name')
         adjustment_percentage = data.get('adjustment_percentage')
 
+        print(f"🔄 به‌روزرسانی درصد تعدیل برای محصول {product_name}: {adjustment_percentage}%")
+
+        # اعتبارسنجی داده‌ها
+        if not product_name:
+            return JsonResponse({'error': 'نام محصول الزامی است'}, status=400)
+
+        try:
+            adjustment_percentage = float(adjustment_percentage)
+            if adjustment_percentage < 0 or adjustment_percentage > 100:
+                return JsonResponse({'error': 'درصد تعدیل باید بین 0 تا 100 باشد'}, status=400)
+        except ValueError:
+            return JsonResponse({'error': 'درصد تعدیل باید عدد معتبر باشد'}, status=400)
+
         # پیدا کردن محصول
         try:
             product = ProductPricing.objects.get(product_name=product_name)
         except ProductPricing.DoesNotExist:
             return JsonResponse({'error': 'محصول یافت نشد'}, status=404)
 
-        # بروزرسانی درصد تعدیل
-        product.adjustment_percentage = Decimal(str(adjustment_percentage))
+        # ذخیره درصد تعدیل قبلی برای مقایسه
+        old_adjustment_percentage = product.adjustment_percentage
 
-        # ذخیره کردن که متد save مدل محاسبات را انجام دهد
-        product.save()
+        # بروزرسانی درصد تعدیل با استفاده از atomic transaction
+        with transaction.atomic():
+            # بروزرسانی درصد تعدیل
+            product.adjustment_percentage = Decimal(str(adjustment_percentage))
+
+            # ذخیره کردن که متد save مدل محاسبات را انجام دهد
+            product.save()
+
+            updated_count = 0
+
+            # اگر درصد تعدیل تغییر کرده باشد
+            if old_adjustment_percentage != product.adjustment_percentage:
+                print(
+                    f"📊 درصد تعدیل برای {product_name} از {old_adjustment_percentage} به {product.adjustment_percentage} تغییر کرد")
+
+                # پیدا کردن تمام تنظیمات چاپ لیبل برای این محصول
+                label_settings = ProductLabelSetting.objects.filter(product_name=product_name)
+
+                for label_setting in label_settings:
+                    if not label_setting.allow_print:
+                        label_setting.allow_print = True
+                        label_setting.save()
+                        updated_count += 1
+                        print(f"✅ تنظیمات چاپ لیبل برای {product_name} در شعبه {label_setting.branch.name} فعال شد")
+
+                print(f"📝 تعداد {updated_count} تنظیمات چاپ لیبل برای محصول {product_name} فعال شدند")
 
         # محاسبه قیمت معیار جدید
         new_standard_price = product.standard_price
@@ -2062,8 +2174,12 @@ def update_adjustment_percentage(request):
         return JsonResponse({
             'success': True,
             'new_standard_price': float(new_standard_price) if new_standard_price else 0,
-            'message': 'درصد تعدیل با موفقیت بروزرسانی شد'
+            'message': 'درصد تعدیل با موفقیت بروزرسانی شد',
+            'print_settings_updated': updated_count
         })
 
     except Exception as e:
+        import traceback
+        print(f"❌ خطا در بروزرسانی درصد تعدیل: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
