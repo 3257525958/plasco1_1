@@ -1781,11 +1781,12 @@ def get_label_range(value):
 
 
 # ------------------------------------------------------برای تعین درصد تعدیل----------------------------------------
+# account_app/views.py
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Max, Count
+from django.db.models import Max
 import json
 from decimal import Decimal
 import time
@@ -1794,7 +1795,6 @@ from django.db import transaction
 
 # Import مدل‌های خودتان
 from .models import ProductPricing, InventoryCount, Branch, ProductLabelSetting
-from django.contrib.auth.models import User
 
 
 @require_http_methods(["GET"])
@@ -1886,7 +1886,6 @@ def get_all_products(request):
         product_names = [p.product_name for p in products]
 
         # دریافت آخرین موجودی برای هر محصول و شعبه
-        from django.db.models import OuterRef, Subquery
         latest_inventories = InventoryCount.objects.filter(
             product_name__in=product_names
         ).values('product_name', 'branch').annotate(

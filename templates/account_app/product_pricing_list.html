@@ -748,7 +748,7 @@
             $input.prop('disabled', true).css('opacity', '0.7');
 
             $.ajax({
-                url: "{% url 'account_app:update_adjustment_percentage' %}",
+                url: "{% url 'update_adjustment_percentage' %}",
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
@@ -1041,7 +1041,7 @@
                 $('#loading').removeClass('hidden');
             }
             
-            const url = searchQuery ? "{% url 'account_app:search_products' %}" : "{% url 'account_app:get_all_products' %}";
+            const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
             const data = searchQuery ? { q: searchQuery } : { page: page };
             
             $.ajax({
@@ -1200,7 +1200,7 @@
             
             // تست اتصال اولیه
             $.ajax({
-                url: "{% url 'account_app:health_check' %}",
+                url: "{% url 'health_check' %}",
                 method: 'GET',
                 timeout: 5000,
                 success: function(response) {
@@ -1210,7 +1210,7 @@
                     loadAllProducts(1);
                 },
                 error: function(xhr, status, error) {
-                    console.error('❌ تست اتصال失败:', error);
+                    console.error('❌ تست اتصال ناموفق:', error);
                     showMessage('خطا در اتصال به سرور', 'error');
                     $('#loading').addClass('hidden');
                 }
