@@ -927,6 +927,61 @@ from .models import Froshande, ContactNumber, BankAccount
 
 
 # views.py
+def search_sellers(request):
+    query = request.GET.get('q', '')
+
+    # تبدیل اعداد فارسی و عربی به انگلیسی
+    query_english = convert_persian_arabic_to_english(query)
+
+    # جستجو با prefetch_related برای بهینه‌سازی
+    sellers = Froshande.objects.filter(
+        Q(name__icontains=query_english) |
+        Q(family__icontains=query_english) |
+        Q(store_name__icontains=query_english)
+    ).prefetch_related(
+        'contact_numbers',
+        'bank_accounts'
+    )[:10]
+
+    results = []
+    for seller in sellers:
+        # پیدا کردن شماره موبایل اصلی
+        mobile = None
+        for contact in seller.contact_numbers.all():
+            if contact.contact_type == 'mobile' and contact.is_primary:
+                mobile = contact.number
+                break
+
+        # اگر شماره موبایل اصلی پیدا نشد، اولین شماره موبایل را برمی‌گردانیم
+        if not mobile:
+            for contact in seller.contact_numbers.all():
+                if contact.contact_type == 'mobile':
+                    mobile = contact.number
+                    break
+
+        # پیدا کردن اطلاعات بانکی اصلی
+        sheba = None
+        card = None
+        for bank in seller.bank_accounts.all():
+            if bank.is_primary:
+                sheba = bank.sheba_number
+                card = bank.card_number
+                break
+
+        results.append({
+            'id': seller.id,
+            'text': f"{seller.name} {seller.family} - {seller.store_name or 'بدون نام فروشگاه'}",
+            'mobile': mobile or '---',
+            'sheba': sheba or '---',
+            'card': card or '---',
+            'name': seller.name,
+            'family': seller.family,
+            'store': seller.store_name or 'بدون نام فروشگاه',
+            'address': seller.address or '---'  # اضافه کردن آدرس
+        })
+    return JsonResponse({'results': results})
+
+
 def search_products(request):
     """جستجوی محصولات از مدل InvoiceItem"""
     query = request.GET.get('q', '').strip()
@@ -969,7 +1024,6 @@ def search_products(request):
         logger.error(f"خطا در جستجوی محصولات: {str(e)}", exc_info=True)
         # در صورت خطا، حداقل یک لیست خالی برگردان
         return JsonResponse({'results': []})
-
 # def search_products(request):
 #     query = request.GET.get('q', '')
 #
