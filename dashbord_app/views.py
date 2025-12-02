@@ -927,93 +927,49 @@ from .models import Froshande, ContactNumber, BankAccount
 
 
 # views.py
-def search_sellers(request):
-    query = request.GET.get('q', '')
-
-    # تبدیل اعداد فارسی و عربی به انگلیسی
-    query_english = convert_persian_arabic_to_english(query)
-
-    # جستجو با prefetch_related برای بهینه‌سازی
-    sellers = Froshande.objects.filter(
-        Q(name__icontains=query_english) |
-        Q(family__icontains=query_english) |
-        Q(store_name__icontains=query_english)
-    ).prefetch_related(
-        'contact_numbers',
-        'bank_accounts'
-    )[:10]
-
-    results = []
-    for seller in sellers:
-        # پیدا کردن شماره موبایل اصلی
-        mobile = None
-        for contact in seller.contact_numbers.all():
-            if contact.contact_type == 'mobile' and contact.is_primary:
-                mobile = contact.number
-                break
-
-        # اگر شماره موبایل اصلی پیدا نشد، اولین شماره موبایل را برمی‌گردانیم
-        if not mobile:
-            for contact in seller.contact_numbers.all():
-                if contact.contact_type == 'mobile':
-                    mobile = contact.number
-                    break
-
-        # پیدا کردن اطلاعات بانکی اصلی
-        sheba = None
-        card = None
-        for bank in seller.bank_accounts.all():
-            if bank.is_primary:
-                sheba = bank.sheba_number
-                card = bank.card_number
-                break
-
-        results.append({
-            'id': seller.id,
-            'text': f"{seller.name} {seller.family} - {seller.store_name or 'بدون نام فروشگاه'}",
-            'mobile': mobile or '---',
-            'sheba': sheba or '---',
-            'card': card or '---',
-            'name': seller.name,
-            'family': seller.family,
-            'store': seller.store_name or 'بدون نام فروشگاه',
-            'address': seller.address or '---'  # اضافه کردن آدرس
-        })
-    return JsonResponse({'results': results})
-
-
-
 def search_products(request):
-    query = request.GET.get('q', '')
+    """جستجوی محصولات از مدل InvoiceItem"""
+    query = request.GET.get('q', '').strip()
+
+    # لاگ برای دیباگ
+    logger.info(f"=== جستجوی محصولات: '{query}' (طول: {len(query)}) ===")
 
     # اگر کوئری کمتر از 2 کاراکتر باشد، نتیجه خالی برگردان
     if len(query) < 2:
         return JsonResponse({'results': []})
 
-    # تبدیل اعداد فارسی و عربی به انگلیسی
-    query_english = convert_persian_arabic_to_english(query)
-
     try:
-        # جستجو در فیلد product_name - بدون محدودیت
+        # جستجو در InvoiceItem برای نام کالا
         items = InvoiceItem.objects.filter(
-            product_name__icontains=query_english
-        ).values('product_name').distinct().order_by('product_name')
+            product_name__icontains=query
+        ).order_by('product_name')
 
-        # ساخت نتایج
+        # ساخت لیست منحصر به فرد از نام کالاها
+        unique_names = []
         results = []
-        for item in items:
-            results.append({
-                'id': None,  # چون از مدل Product نیست، ID نداریم
-                'text': item['product_name'],
-                'type': 'invoice_item'
-            })
 
-        logger.info(f"جستجوی محصول '{query}': {len(results)} نتیجه یافت شد")
+        for item in items:
+            if item.product_name and item.product_name not in unique_names:
+                unique_names.append(item.product_name)
+                results.append({
+                    'id': None,  # یا می‌توانید از item.id استفاده کنید
+                    'text': item.product_name,  # این مهم است: باید 'text' باشد
+                    'type': 'invoice_item'
+                })
+
+                # محدود کردن نتایج به 50 مورد برای جلوگیری از بار زیاد
+                if len(results) >= 50:
+                    break
+
+        logger.info(f"=== {len(results)} نتیجه برای '{query}' یافت شد ===")
+
         return JsonResponse({'results': results})
 
     except Exception as e:
-        logger.error(f"خطا در جستجوی محصولات: {str(e)}")
-        return JsonResponse({'results': [], 'error': str(e)})
+        logger.error(f"خطا در جستجوی محصولات: {str(e)}", exc_info=True)
+        # در صورت خطا، حداقل یک لیست خالی برگردان
+        return JsonResponse({'results': []})
+
 # def search_products(request):
 #     query = request.GET.get('q', '')
 #
