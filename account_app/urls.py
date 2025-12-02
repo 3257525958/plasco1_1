@@ -80,11 +80,14 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('label/get-branch-products/', views.get_branch_products_for_label, name='get_branch_products_for_label'),
 
     # ------------------------------------برای تعین درصد تعدیل-------------------------------------------------------------
-    path('product-pricing/', views.product_pricing_list, name='product_pricing_list'),
+path('product-pricing/', views.product_pricing_list, name='product_pricing_list'),
     path('search-products/', views.search_products, name='search_products'),
     path('get-all-products/', views.get_all_products, name='get_all_products'),
     path('update-adjustment-percentage/', views.update_adjustment_percentage, name='update_adjustment_percentage'),
+    path('bulk-update-adjustment-percentage/', views.bulk_update_adjustment_percentage, name='bulk_update_adjustment_percentage'),
     path('health/', views.health_check, name='health_check'),
     path('debug-products/', views.debug_products, name='debug_products'),
+
+
 ]
 
