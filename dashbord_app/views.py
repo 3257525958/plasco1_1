@@ -981,28 +981,64 @@ def search_sellers(request):
         })
     return JsonResponse({'results': results})
 
+
+
 def search_products(request):
     query = request.GET.get('q', '')
+
+    # اگر کوئری کمتر از 2 کاراکتر باشد، نتیجه خالی برگردان
+    if len(query) < 2:
+        return JsonResponse({'results': []})
 
     # تبدیل اعداد فارسی و عربی به انگلیسی
     query_english = convert_persian_arabic_to_english(query)
 
-    # جستجو فقط در مدل InvoiceItem برای نام‌های کالا
-    items = InvoiceItem.objects.filter(
-        product_name__icontains=query_english
-    ).values('product_name').distinct().order_by('product_name')[:10]
+    try:
+        # جستجو در فیلد product_name - بدون محدودیت
+        items = InvoiceItem.objects.filter(
+            product_name__icontains=query_english
+        ).values('product_name').distinct().order_by('product_name')
 
-    # ساخت نتایج
-    results = [
-        {
-            'id': None,  # چون از مدل Product نیست، ID نداریم
-            'text': item['product_name'],
-            'type': 'invoice_item'
-        }
-        for item in items
-    ]
+        # ساخت نتایج
+        results = []
+        for item in items:
+            results.append({
+                'id': None,  # چون از مدل Product نیست، ID نداریم
+                'text': item['product_name'],
+                'type': 'invoice_item'
+            })
 
-    return JsonResponse({'results': results})
+        logger.info(f"جستجوی محصول '{query}': {len(results)} نتیجه یافت شد")
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        logger.error(f"خطا در جستجوی محصولات: {str(e)}")
+        return JsonResponse({'results': [], 'error': str(e)})
+# def search_products(request):
+#     query = request.GET.get('q', '')
+#
+#     # تبدیل اعداد فارسی و عربی به انگلیسی
+#     query_english = convert_persian_arabic_to_english(query)
+#
+#     # جستجو فقط در مدل InvoiceItem برای نام‌های کالا
+#     items = InvoiceItem.objects.filter(
+#         product_name__icontains=query_english
+#     ).values('product_name').distinct().order_by('product_name')[:10]
+#
+#     # ساخت نتایج
+#     results = [
+#         {
+#             'id': None,  # چون از مدل Product نیست، ID نداریم
+#             'text': item['product_name'],
+#             'type': 'invoice_item'
+#         }
+#         for item in items
+#     ]
+#
+#     return JsonResponse({'results': results})
+
+
+
 
 def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)

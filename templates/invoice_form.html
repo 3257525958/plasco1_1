@@ -404,7 +404,7 @@
             box-shadow: 0 6px 15px rgba(0,0,0,0.15);
             z-index: 1003;
             display: none;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
@@ -444,6 +444,73 @@
 
         .pdatepicker-gui .pdatepicker-day {
             cursor: pointer !important;
+        }
+
+        /* استایل‌های اضافی برای جستجوی محصولات */
+        .search-result-item.highlighted {
+            background-color: #e8f5e9 !important;
+            transform: translateX(-5px);
+            transition: all 0.2s ease;
+        }
+
+        .search-result-item.product-item:hover {
+            background-color: #f1f8e9;
+        }
+
+        .search-result-item.new-product:hover {
+            background-color: #d4edda !important;
+            transform: translateX(-5px);
+        }
+
+        .search-results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-results::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb:hover {
+            background: #388E3C;
+        }
+
+        .search-header {
+            cursor: default !important;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f8f9fa !important;
+            font-weight: bold !important;
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+
+        .no-results {
+            color: #dc3545 !important;
+            text-align: center;
+            padding: 20px !important;
+            cursor: default !important;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .product-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .product-item .product-name {
+            flex: 1;
         }
 
         @media (max-width: 992px) {
@@ -614,18 +681,18 @@
                     </div>
                     
                     <!-- فیلد تاریخ صدور فاکتور -->
-<div class="header-item">
-    <span class="header-label">تاریخ صدور فاکتور</span>
-    <div class="date-input-container">
-        <input type="text" id="issue-date-picker" class="shamsi-date-input" 
-               placeholder="برای انتخاب تاریخ کلیک کنید" 
-               value="{{ today_jalali }}" name="issue_date" autocomplete="off">
-        <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
-    </div>
-    <small style="display: block; margin-top: 5px; color: #666; font-size: 12px;">
-        <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
-    </small>
-</div>                    
+                    <div class="header-item">
+                        <span class="header-label">تاریخ صدور فاکتور</span>
+                        <div class="date-input-container">
+                            <input type="text" id="issue-date-picker" class="shamsi-date-input" 
+                                   placeholder="برای انتخاب تاریخ کلیک کنید" 
+                                   value="{{ today_jalali }}" name="issue_date" autocomplete="off">
+                            <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
+                        </div>
+                        <small style="display: block; margin-top: 5px; color: #666; font-size: 12px;">
+                            <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
+                        </small>
+                    </div>                    
                     
                 </div>
                 
@@ -1018,82 +1085,247 @@ function updatePriceWords(input) {
                 }
             });
 
-            // تابع برای جستجوی محصولات
+            // تابع کامل برای جستجوی محصولات با نمایش تمام نتایج
             function initProductSearch($input) {
                 const $results = $input.siblings('.search-results');
                 const $row = $input.closest('.item-row');
                 
+                // تنظیمات Debounce برای کاهش درخواست‌های AJAX
+                let searchTimeout;
+                let lastQuery = '';
+                
                 $input.on('input', function() {
-                    let query = $(this).val().trim();
-                    query = convertPersianToEnglishNumbers(query);
+                    clearTimeout(searchTimeout);
                     
-                    if (query.length < 2) {
+                    const query = $(this).val().trim();
+                    const englishQuery = convertPersianToEnglishNumbers(query);
+                    
+                    // اگر کوئری تغییر نکرده، جستجو نکن
+                    if (englishQuery === lastQuery) return;
+                    lastQuery = englishQuery;
+                    
+                    if (englishQuery.length < 2) {
                         $results.empty().hide();
                         return;
                     }
                     
-                    $.ajax({
-                        url: "{% url 'search_products' %}",
-                        data: { q: query },
-                        dataType: 'json',
-                        success: function(data) {
-                            $results.empty();
-                            
-                            // ایجاد یک شیء برای ذخیره نام‌های منحصر به فرد
-                            const uniqueProducts = {};
-                            
-                            if (data.results.length > 0) {
-                                data.results.forEach(item => {
-                                    // اگر این نام محصول قبلاً نیامده باشد، اضافه کن
-                                    if (!uniqueProducts[item.text]) {
-                                        uniqueProducts[item.text] = true;
-                                        $results.append(`
-                                            <div class="search-result-item" 
-                                                 data-name="${item.text}">
-                                                <i class="fas fa-file-invoice"></i>
-                                                ${item.text}
-                                            </div>
-                                        `);
-                                    }
-                                });
-                            }
-                            
-                            // اطمینان از اینکه محصول جدید نیز تکراری نباشد
-                            if (!uniqueProducts[query]) {
-                                $results.append(`
-                                    <div class="search-result-item new-product" 
-                                         data-name="${query}">
-                                        <i class="fas fa-plus-circle"></i> 
-                                        ایجاد کالای جدید: "${query}"
+                    // نمایش حالت بارگذاری
+                    $results.html(`
+                        <div class="search-result-item" style="text-align: center; color: #666;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            در حال جستجو...
+                        </div>
+                    `).show();
+                    
+                    // Debounce با تاخیر 300ms
+                    searchTimeout = setTimeout(() => {
+                        $.ajax({
+                            url: "{% url 'search_products' %}",
+                            data: { q: englishQuery },
+                            dataType: 'json',
+                            success: function(data) {
+                                $results.empty();
+                                
+                                // بررسی وجود خطا
+                                if (data.error) {
+                                    console.error('خطا در جستجوی محصولات:', data.error);
+                                    $results.append(`
+                                        <div class="search-result-item">
+                                            <i class="fas fa-exclamation-triangle"></i> 
+                                            خطا در جستجو
+                                        </div>
+                                    `);
+                                    $results.show();
+                                    return;
+                                }
+                                
+                                // ایجاد یک شیء برای ذخیره نام‌های منحصر به فرد
+                                const uniqueProducts = {};
+                                
+                                if (data.results && data.results.length > 0) {
+                                    // نمایش تعداد نتایج
+                                    $results.append(`
+                                        <div class="search-result-item search-header" 
+                                             style="background: #f8f9fa; font-weight: bold; border-bottom: 2px solid #dee2e6;">
+                                            <i class="fas fa-list"></i>
+                                            ${data.results.length} نتیجه یافت شد
+                                        </div>
+                                    `);
+                                    
+                                    // نمایش تمام نتایج
+                                    data.results.forEach(item => {
+                                        // اگر این نام محصول قبلاً نیامده باشد، اضافه کن
+                                        if (!uniqueProducts[item.text]) {
+                                            uniqueProducts[item.text] = true;
+                                            $results.append(`
+                                                <div class="search-result-item product-item" 
+                                                     data-name="${item.text}">
+                                                    <i class="fas fa-box"></i>
+                                                    <span class="product-name">${item.text}</span>
+                                                </div>
+                                            `);
+                                        }
+                                    });
+                                } else {
+                                    $results.append(`
+                                        <div class="search-result-item no-results">
+                                            <i class="fas fa-search"></i>
+                                            نتیجه‌ای یافت نشد
+                                        </div>
+                                    `);
+                                }
+                                
+                                // افزودن گزینه ایجاد کالای جدید (همیشه در انتها)
+                                if (query.length >= 2 && !uniqueProducts[query]) {
+                                    $results.append(`
+                                        <div class="search-result-item new-product" 
+                                             data-name="${query}"
+                                             style="background: #e8f5e9; border-top: 2px solid #4CAF50;">
+                                            <i class="fas fa-plus-circle" style="color: #4CAF50;"></i> 
+                                            <span style="font-weight: bold; color: #2E7D32;">
+                                                ایجاد کالای جدید: "${query}"
+                                            </span>
+                                        </div>
+                                    `);
+                                }
+                                
+                                // تنظیم ارتفاع برای اسکرول
+                                if (data.results && data.results.length > 5) {
+                                    $results.css({
+                                        'max-height': '400px',
+                                        'overflow-y': 'auto'
+                                    });
+                                } else {
+                                    $results.css({
+                                        'max-height': 'none',
+                                        'overflow-y': 'visible'
+                                    });
+                                }
+                                
+                                $results.show();
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Error in product search:', error);
+                                $results.empty().append(`
+                                    <div class="search-result-item">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        خطا در اتصال به سرور
                                     </div>
-                                `);
+                                `).show();
                             }
-                            
-                            $results.show();
-                        }
-                    });
+                        });
+                    }, 300); // تاخیر 300 میلی‌ثانیه
                 });
                 
                 // انتخاب نتیجه جستجو
-                $results.on('click', '.search-result-item', function() {
-                    if ($(this).hasClass('new-product')) {
-                        $row.find('.product-id').val('');
-                        $row.find('.product-name').val($(this).data('name'));
-                        $row.find('.unit-price').val('').focus();
+                $results.on('click', '.search-result-item:not(.search-header):not(.no-results)', function(e) {
+                    e.stopPropagation();
+                    
+                    const selectedName = $(this).data('name');
+                    const isNewProduct = $(this).hasClass('new-product');
+                    
+                    $row.find('.product-id').val('');
+                    $row.find('.product-name').val(selectedName);
+                    
+                    if (isNewProduct) {
+                        // تأیید برای ایجاد کالای جدید
+                        if (confirm(`آیا می‌خواهید کالای جدید "${selectedName}" ایجاد کنید؟`)) {
+                            $row.find('.product-name').css('border-color', '#28a745');
+                            $row.find('.unit-price').val('').focus();
+                        } else {
+                            $row.find('.product-name').val('');
+                            $results.show();
+                            return;
+                        }
                     } else {
-                        $row.find('.product-id').val('');
-                        $row.find('.product-name').val($(this).data('name'));
                         $row.find('.unit-price').val('').focus();
                     }
                     
                     $results.empty().hide();
+                    calculateTotals();
+                });
+                
+                // پیمایش با کیبورد در نتایج
+                $input.on('keydown', function(e) {
+                    const $visibleItems = $results.find('.product-item, .new-product');
+                    
+                    if ($visibleItems.length === 0) return;
+                    
+                    let $current = $results.find('.highlighted');
+                    let index = $visibleItems.index($current);
+                    
+                    switch(e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            if (index === -1 || index >= $visibleItems.length - 1) {
+                                index = 0;
+                            } else {
+                                index++;
+                            }
+                            break;
+                            
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            if (index === -1 || index <= 0) {
+                                index = $visibleItems.length - 1;
+                            } else {
+                                index--;
+                            }
+                            break;
+                            
+                        case 'Enter':
+                            e.preventDefault();
+                            if ($current.length) {
+                                $current.click();
+                            }
+                            return;
+                            
+                        case 'Escape':
+                            $results.hide();
+                            return;
+                            
+                        default:
+                            return;
+                    }
+                    
+                    $visibleItems.removeClass('highlighted');
+                    $current = $visibleItems.eq(index);
+                    $current.addClass('highlighted');
+                    
+                    // اسکرول به آیتم انتخاب شده
+                    const resultsScroll = $results.scrollTop();
+                    const itemPosition = $current.position().top;
+                    const itemHeight = $current.outerHeight();
+                    const resultsHeight = $results.height();
+                    
+                    if (itemPosition < 0) {
+                        $results.scrollTop(resultsScroll + itemPosition);
+                    } else if (itemPosition + itemHeight > resultsHeight) {
+                        $results.scrollTop(resultsScroll + (itemPosition + itemHeight - resultsHeight));
+                    }
                 });
                 
                 // مخفی کردن نتایج هنگام کلیک خارج
                 $(document).on('click', function(e) {
-                    if (!$results.is(e.target) && $results.has(e.target).length === 0) {
+                    if (!$results.is(e.target) && 
+                        $results.has(e.target).length === 0 && 
+                        !$input.is(e.target)) {
                         $results.hide();
                     }
+                });
+                
+                // بستن نتایج با ESC
+                $(document).on('keydown', function(e) {
+                    if (e.key === 'Escape' && $results.is(':visible')) {
+                        $results.hide();
+                    }
+                });
+                
+                // هاور کردن روی آیتم‌ها
+                $results.on('mouseenter', '.search-result-item:not(.search-header):not(.no-results)', function() {
+                    $(this).addClass('highlighted');
+                }).on('mouseleave', '.search-result-item:not(.search-header):not(.no-results)', function() {
+                    $(this).removeClass('highlighted');
                 });
             }
 
