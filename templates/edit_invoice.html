@@ -118,7 +118,7 @@
             border: 1px solid var(--border-color);
             border-radius: 5px;
             max-height: 500px;
-            min-height: 300px; /* حداقل ارتفاع برای نمایش ۵ نتیجه */
+            min-height: 300px;
             overflow-y: auto;
             margin-top: 8px;
             background: white;
@@ -212,6 +212,75 @@
             border-radius: 5px;
         }
 
+        /* استایل‌های جدید برای جستجوی کالا */
+        .product-search-container {
+            position: relative;
+            width: 100%;
+        }
+        
+        .product-search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+        }
+        
+        .product-search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+            outline: none;
+        }
+        
+        .product-search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            z-index: 1003;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 5px;
+        }
+        
+        .product-search-result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 16px;
+            text-align: right;
+        }
+        
+        .product-search-result-item:hover {
+            background-color: #f1f8e9;
+        }
+        
+        .product-search-result-item.new-product {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .product-search-result-item.error {
+            color: #dc3545;
+        }
+        
+        .search-loading {
+            padding: 15px;
+            text-align: center;
+            color: var(--primary-color);
+        }
+        
+        .search-loading i {
+            margin-left: 8px;
+        }
+
         /* استایل برای تضمین نمایش صحیح تقویم */
         .pdatepicker-gui {
             z-index: 10000 !important;
@@ -241,6 +310,7 @@
             padding: 12px 15px;
             border-bottom: 1px solid var(--border-color);
             text-align: center;
+            vertical-align: middle;
         }
 
         .invoice-table input {
@@ -353,6 +423,10 @@
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
         }
 
+        .btn:active {
+            transform: translateY(0);
+        }
+
         .error-message {
             color: #d32f2f;
             background-color: #ffebee;
@@ -373,14 +447,35 @@
             font-size: 18px;
         }
 
-        /* استایل برای تضمین نمایش صحیح تقویم */
-        .pdatepicker-gui {
-            z-index: 10000 !important;
-            font-family: 'Vazirmatn', sans-serif !important;
+        /* استایل برای وضعیت خالی */
+        .empty-results {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
         }
 
-        .pdatepicker-gui .pdatepicker-day {
-            cursor: pointer !important;
+        /* استایل برای اسکرول بار */
+        .search-results::-webkit-scrollbar,
+        .product-search-results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-results::-webkit-scrollbar-track,
+        .product-search-results::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb,
+        .product-search-results::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb:hover,
+        .product-search-results::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
         }
 
         @media (max-width: 768px) {
@@ -393,6 +488,43 @@
                 display: block;
                 width: 100%;
                 overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .invoice-table thead {
+                display: none;
+            }
+            
+            .invoice-table tbody {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .item-row {
+                display: flex;
+                flex-direction: column;
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                padding: 15px;
+                background: #f9f9f9;
+            }
+            
+            .invoice-table td {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 5px;
+                border: none;
+                text-align: right;
+                width: 100% !important;
+            }
+            
+            .invoice-table td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                margin-bottom: 8px;
+                color: var(--primary-color);
+                font-size: 16px;
             }
 
             .btn {
@@ -409,7 +541,7 @@
             }
 
             .search-results {
-                min-height: 250px; /* کاهش حداقل ارتفاع در موبایل */
+                min-height: 250px;
             }
 
             .invoice-header {
@@ -423,31 +555,29 @@
             }
         }
 
-        /* استایل برای وضعیت خالی */
-        .empty-results {
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            font-style: italic;
-        }
-
-        /* استایل برای اسکرول بار */
-        .search-results::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .search-results::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .search-results::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 4px;
-        }
-
-        .search-results::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-color);
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .edit-invoice-container {
+                padding: 10px;
+                border-radius: 10px;
+            }
+            
+            .search-input, .product-search-input {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .invoice-table td {
+                padding: 8px 0;
+            }
         }
     </style>
 </head>
@@ -466,7 +596,6 @@
                     <i class="fas fa-search"></i>
                 </button>
                 <div id="edit-invoice-search-results" class="search-results">
-                    <!-- نتایج جستجو در اینجا نمایش داده می‌شود -->
                     <div class="empty-results">برای جستجو، حداقل ۲ کاراکتر وارد کنید</div>
                 </div>
             </div>
@@ -485,12 +614,12 @@
             <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th width="30%">نام کالا</th>
-                        <th width="15%">قیمت خرید (تومان)</th>
-                        <th width="10%">تعداد</th>
-                        <th width="15%">جمع کل (تومان)</th>
-                        <th width="15%">تخفیف (تومان)</th>
-                        <th width="15%">عملیات</th>
+                        <th width="30%" data-label="نام کالا">نام کالا</th>
+                        <th width="15%" data-label="قیمت خرید">قیمت خرید (تومان)</th>
+                        <th width="10%" data-label="تعداد">تعداد</th>
+                        <th width="15%" data-label="جمع کل">جمع کل (تومان)</th>
+                        <th width="15%" data-label="تخفیف">تخفیف (تومان)</th>
+                        <th width="15%" data-label="عملیات">عملیات</th>
                     </tr>
                 </thead>
                 <tbody id="invoice-items-list">
@@ -544,53 +673,53 @@
         let editingInvoice = null;
         let editingInvoiceItems = [];
         let invoiceSearchTimeout = null;
-
+        
         // تابع تبدیل اعداد فارسی و عربی به انگلیسی
         function convertPersianToEnglishNumbers(input) {
             if (!input) return input;
-
+            
             const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-
+            
             let output = input;
             for (let i = 0; i < 10; i++) {
                 let persianRegex = new RegExp(persianNumbers[i], 'g');
                 let arabicRegex = new RegExp(arabicNumbers[i], 'g');
                 output = output.replace(persianRegex, i).replace(arabicRegex, i);
             }
-
+            
             return output;
         }
-
+        
         // تابع تبدیل عدد به حروف فارسی
         function numberToWords(number) {
             if (number === 0) return "صفر";
-
+            
             const ones = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];
-            const tens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", 'نود'];
-            const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصد", "نهصد"];
+            const tens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];
+            const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصd", "نهصد"];
             const teens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];
-
+            
             let result = "";
-
+            
             // میلیون‌ها
             if (number >= 1000000) {
                 result += numberToWords(Math.floor(number / 1000000)) + " میلیون ";
                 number %= 1000000;
             }
-
+            
             // هزارها
             if (number >= 1000) {
                 result += numberToWords(Math.floor(number / 1000)) + " هزار ";
                 number %= 1000;
             }
-
+            
             // صدها
             if (number >= 100) {
                 result += hundreds[Math.floor(number / 100)] + " و ";
                 number %= 100;
             }
-
+            
             // دهگان و یکان
             if (number >= 10 && number < 20) {
                 result += teens[number - 10];
@@ -600,129 +729,264 @@
                     number %= 10;
                     if (number > 0) result += " و ";
                 }
-
+                
                 if (number > 0) {
                     result += ones[number];
                 }
             }
-
+            
             return result.trim().replace(/ و $/, "");
         }
-
+        
         // تابع به‌روزرسانی مبلغ به حروف
         function updatePriceWords(input) {
             const value = parseInt(input.val()) || 0;
             const words = numberToWords(value);
             input.siblings('.price-words').text(words + " تومان");
         }
-
+        
         // محاسبه جمع‌های فاکتور
         function calculateTotals() {
             let totalItems = 0;
             let totalAmount = 0;
             let totalDiscount = 0;
-
+            
             $('.item-row').each(function() {
                 const quantity = parseInt($(this).find('input[name="quantity[]"]').val()) || 0;
                 const unitPrice = parseFloat($(this).find('input[name="unit_price[]"]').val()) || 0;
                 const discount = parseFloat($(this).find('input[name="discount[]"]').val()) || 0;
                 const lineTotal = quantity * unitPrice;
-
+                
                 // به‌روزرسانی جمع کل خط
                 $(this).find('.line-total-input').val(lineTotal);
                 updatePriceWords($(this).find('.line-total-input'));
-
+                
                 totalItems += quantity;
                 totalAmount += lineTotal;
                 totalDiscount += discount;
             });
-
+            
             $('#total-items').text(totalItems);
             $('#total-amount').text(totalAmount.toLocaleString('fa-IR') + ' تومان');
             $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');
             $('#final-amount').text((totalAmount - totalDiscount).toLocaleString('fa-IR') + ' تومان');
         }
-
+        
         // تابع برای نمایش پیام
         function showMessage(message, type) {
             const messageClass = type === 'error' ? 'error-message' : 'success-message';
             const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-
+            
             $('#messages').html(`
                 <div class="${messageClass}">
                     <i class="fas ${icon}"></i> ${message}
                 </div>
             `);
-
+            
             if (type !== 'error') {
                 setTimeout(() => {
                     $('#messages').empty();
                 }, 5000);
             }
         }
-
-        // جستجوی فاکتور برای ویرایش
-        // جستجوی فاکتور برای ویرایش
+        
+        // تابع جستجوی کالا برای ویرایش فاکتور
+        function initProductSearchForEdit($input) {
+            const $container = $input.closest('td');
+            let $results = $container.find('.product-search-results');
+            
+            // اگر نتایج جستجو وجود ندارد، ایجاد کن
+            if ($results.length === 0) {
+                $results = $('<div class="product-search-results"></div>');
+                $container.append($results);
+            }
+            
+            // جستجوی تاخیری
+            let searchTimeout;
+            
+            $input.on('input', function() {
+                clearTimeout(searchTimeout);
+                
+                const query = $(this).val().trim();
+                const queryEnglish = convertPersianToEnglishNumbers(query);
+                
+                if (queryEnglish.length < 2) {
+                    $results.empty().hide();
+                    return;
+                }
+                
+                $results.html('<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> در حال جستجو...</div>').show();
+                
+                searchTimeout = setTimeout(() => {
+                    performProductSearch(queryEnglish, $results, $input);
+                }, 300);
+            });
+            
+            // انتخاب نتیجه
+            $results.on('click', '.product-search-result-item', function() {
+                const productName = $(this).data('name');
+                $input.val(productName);
+                $results.empty().hide();
+                
+                // فوکوس روی قیمت
+                $input.closest('tr').find('.unit-price').focus();
+            });
+            
+            // مخفی کردن نتایج
+            $(document).on('click', function(e) {
+                if (!$results.is(e.target) && 
+                    $results.has(e.target).length === 0 &&
+                    !$input.is(e.target)) {
+                    $results.hide();
+                }
+            });
+            
+            // نمایش نتایج هنگام فوکوس
+            $input.on('focus', function() {
+                if ($results.children().length > 0) {
+                    $results.show();
+                }
+            });
+        }
+        
+        // اجرای جستجوی کالا
+        function performProductSearch(query, $results, $input) {
+            $.ajax({
+                url: "{% url 'search_products_invoice_edit' %}",
+                data: { 
+                    q: query,
+                    _: new Date().getTime()
+                },
+                dataType: 'json',
+                timeout: 5000,
+                success: function(data) {
+                    console.log('نتایج جستجوی کالا:', data);
+                    
+                    $results.empty();
+                    
+                    if (data.error) {
+                        $results.append(`
+                            <div class="product-search-result-item error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                خطا: ${data.error}
+                            </div>
+                        `);
+                        return;
+                    }
+                    
+                    if (!data.results || data.results.length === 0) {
+                        $results.append(`
+                            <div class="product-search-result-item new-product" data-name="${query.replace(/"/g, '&quot;')}">
+                                <i class="fas fa-plus-circle"></i>
+                                ایجاد کالای جدید: "${query}"
+                            </div>
+                        `);
+                        return;
+                    }
+                    
+                    const uniqueProducts = {};
+                    data.results.forEach(item => {
+                        if (item && item.text && !uniqueProducts[item.text]) {
+                            uniqueProducts[item.text] = true;
+                            
+                            const isNew = item.type === 'new_product';
+                            const icon = isNew ? 'fa-plus-circle' : 'fa-box';
+                            const label = isNew ? ' (جدید)' : '';
+                            
+                            $results.append(`
+                                <div class="product-search-result-item ${isNew ? 'new-product' : ''}" 
+                                     data-name="${String(item.text).replace(/"/g, '&quot;')}">
+                                    <i class="fas ${icon}"></i>
+                                    ${item.text}${label}
+                                </div>
+                            `);
+                        }
+                    });
+                    
+                    // اگر هیچ نتیجه‌ای نبود
+                    if (Object.keys(uniqueProducts).length === 0) {
+                        $results.append(`
+                            <div class="product-search-result-item new-product" data-name="${query.replace(/"/g, '&quot;')}">
+                                <i class="fas fa-plus-circle"></i>
+                                ایجاد کالای جدید: "${query}"
+                            </div>
+                        `);
+                    }
+                    
+                    $results.show();
+                },
+                error: function(xhr, status, error) {
+                    console.error('خطا در جستجوی کالا:', error);
+                    $results.html(`
+                        <div class="product-search-result-item error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            خطا در اتصال به سرور
+                        </div>
+                    `);
+                }
+            });
+        }
+        
         // جستجوی فاکتور برای ویرایش
         $('#edit-invoice-search').on('input', function() {
-    const query = $(this).val().trim();
-    const convertedQuery = convertPersianToEnglishNumbers(query);
-
-    if (convertedQuery.length < 2) {
-        $('#edit-invoice-search-results').hide().empty();
-        return;
-    }
-
-    clearTimeout(invoiceSearchTimeout);
-    invoiceSearchTimeout = setTimeout(function() {
-        $.ajax({
-            url: "{% url 'search_invoices_for_edit' %}",
-            data: { q: convertedQuery },
-            dataType: 'json',
-            success: function(data) {
-                if (data.results && data.results.length > 0) {
-                    let html = '';
-                    data.results.forEach(invoice => {
-                        html += `
-                            <div class="search-result-item" data-invoice-id="${invoice.id}">
-                                <div class="invoice-header">
-                                    <strong class="invoice-number">${invoice.serial_number}</strong>
-                                    <span class="invoice-date">${invoice.date}</span>
-                                </div>
-                                <div class="invoice-details">
-                                    <div class="seller-info">
-                                        <i class="fas fa-user"></i> ${invoice.seller_name}
-                                    </div>
-                                    <div class="store-info">
-                                        <i class="fas fa-store"></i> ${invoice.store_name}
-                                    </div>
-                                    <div class="products-info">
-                                        <i class="fas fa-box"></i> ${invoice.products}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    $('#edit-invoice-search-results').html(html).show();
-                } else {
-                    $('#edit-invoice-search-results').html('<div class="search-result-item">هیچ فاکتوری یافت نشد</div>').show();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error in invoice search for edit:', error);
-                showMessage('خطا در جستجوی فاکتورها', 'error');
+            const query = $(this).val().trim();
+            const convertedQuery = convertPersianToEnglishNumbers(query);
+            
+            if (convertedQuery.length < 2) {
+                $('#edit-invoice-search-results').hide().empty();
+                return;
             }
+            
+            clearTimeout(invoiceSearchTimeout);
+            invoiceSearchTimeout = setTimeout(function() {
+                $.ajax({
+                    url: "{% url 'search_invoices_for_edit' %}",
+                    data: { q: convertedQuery },
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.results && data.results.length > 0) {
+                            let html = '';
+                            data.results.forEach(invoice => {
+                                html += `
+                                    <div class="search-result-item" data-invoice-id="${invoice.id}">
+                                        <div class="invoice-header">
+                                            <strong class="invoice-number">${invoice.serial_number}</strong>
+                                            <span class="invoice-date">${invoice.date}</span>
+                                        </div>
+                                        <div class="invoice-details">
+                                            <div class="seller-info">
+                                                <i class="fas fa-user"></i> ${invoice.seller_name}
+                                            </div>
+                                            <div class="store-info">
+                                                <i class="fas fa-store"></i> ${invoice.store_name}
+                                            </div>
+                                            <div class="products-info">
+                                                <i class="fas fa-box"></i> ${invoice.products}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            $('#edit-invoice-search-results').html(html).show();
+                        } else {
+                            $('#edit-invoice-search-results').html('<div class="search-result-item">هیچ فاکتوری یافت نشد</div>').show();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error in invoice search for edit:', error);
+                        showMessage('خطا در جستجوی فاکتورها', 'error');
+                    }
+                });
+            }, 300);
         });
-    }, 300);
-});
-
+        
         // انتخاب فاکتور از نتایج جستجو
         $(document).on('click', '#edit-invoice-search-results .search-result-item', function() {
             const invoiceId = $(this).data('invoice-id');
             const invoiceText = $(this).find('strong').text();
             $('#edit-invoice-search').val(invoiceText);
             $('#edit-invoice-search-results').hide();
-
+            
             // دریافت جزئیات فاکتور
             $.ajax({
                 url: "{% url 'get_invoice_for_edit' %}",
@@ -732,7 +996,7 @@
                     if (data.success) {
                         editingInvoice = data.invoice;
                         editingInvoiceItems = data.items;
-
+                        
                         // نمایش اطلاعات فاکتور
                         $('#invoice-info').html(`
                             <div class="info-item"><strong>شماره فاکتور:</strong> ${editingInvoice.serial_number}</div>
@@ -751,7 +1015,7 @@
                             </div>
                             <input type="hidden" id="invoice-id" value="${editingInvoice.id}">
                         `);
-
+                        
                         // مقداردهی اولیه تقویم شمسی برای فیلد تاریخ
                         $("#edit-issue-date").persianDatepicker({
                             observer: true,
@@ -765,15 +1029,15 @@
                                 document.getElementById('edit-issue-date').value = formattedDate;
                             }
                         });
-
+                        
                         // نمایش تقویم هنگام کلیک روی آیکون تقویم
                         document.getElementById('edit-calendar-trigger').addEventListener('click', function () {
                             $("#edit-issue-date").persianDatepicker('show');
                         });
-
+                        
                         // نمایش آیتم‌های فاکتور
                         updateInvoiceItemsList();
-
+                        
                         $('#invoice-details').show();
                     } else {
                         showMessage(data.error, 'error');
@@ -785,33 +1049,35 @@
                 }
             });
         });
-
+        
         // به روزرسانی لیست آیتم‌های فاکتور
         function updateInvoiceItemsList() {
             const $itemsList = $('#invoice-items-list');
             $itemsList.empty();
-
+            
             editingInvoiceItems.forEach((item, index) => {
                 const row = `
                     <tr class="item-row" data-item-index="${index}">
-                        <td>
-                            <input type="text" class="product-name" name="product_name[]" value="${item.product_name}" required>
+                        <td data-label="نام کالا">
+                            <div class="product-search-container">
+                                <input type="text" class="product-search-input product-name" name="product_name[]" value="${item.product_name}" placeholder="جستجوی نام کالا" required>
+                            </div>
                         </td>
-                        <td>
+                        <td data-label="قیمت خرید">
                             <input type="number" class="unit-price price-input" name="unit_price[]" value="${item.unit_price}" min="0" step="100" required>
                             <div class="price-words"></div>
                         </td>
-                        <td>
+                        <td data-label="تعداد">
                             <input type="number" name="quantity[]" value="${item.quantity}" min="1" required>
                         </td>
-                        <td>
+                        <td data-label="جمع کل">
                             <input type="number" class="line-total-input" readonly>
                             <div class="price-words"></div>
                         </td>
-                        <td>
+                        <td data-label="تخفیف">
                             <input type="number" name="discount[]" value="${item.discount}" min="0" step="100">
                         </td>
-                        <td>
+                        <td data-label="عملیات">
                             <button type="button" class="btn btn-danger remove-item" data-index="${index}">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -819,49 +1085,55 @@
                     </tr>
                 `;
                 $itemsList.append(row);
-
+                
                 // محاسبه اولیه برای این سطر
                 const quantity = parseInt(item.quantity) || 0;
                 const unitPrice = parseFloat(item.unit_price) || 0;
                 const lineTotal = quantity * unitPrice;
-
+                
                 $itemsList.find('tr:last-child .line-total-input').val(lineTotal);
                 updatePriceWords($itemsList.find('tr:last-child .line-total-input'));
                 updatePriceWords($itemsList.find('tr:last-child .unit-price'));
+                
+                // فعال‌سازی جستجوی کالا برای این سطر
+                initProductSearchForEdit($itemsList.find('tr:last-child .product-name'));
             });
-
+            
             calculateTotals();
         }
-
+        
         // افزودن آیتم جدید
         $('#add-item-btn').click(function() {
+            const newIndex = editingInvoiceItems.length;
             const newRow = `
-                <tr class="item-row" data-item-index="${editingInvoiceItems.length}">
-                    <td>
-                        <input type="text" class="product-name" name="product_name[]" placeholder="نام کالا" required>
+                <tr class="item-row" data-item-index="${newIndex}">
+                    <td data-label="نام کالا">
+                        <div class="product-search-container">
+                            <input type="text" class="product-search-input product-name" name="product_name[]" placeholder="جستجوی نام کالا" required>
+                        </div>
                     </td>
-                    <td>
+                    <td data-label="قیمت خرید">
                         <input type="number" class="unit-price price-input" name="unit_price[]" min="0" step="100" value="0" required>
                         <div class="price-words"></div>
                     </td>
-                    <td>
+                    <td data-label="تعداد">
                         <input type="number" name="quantity[]" value="1" min="1" required>
                     </td>
-                    <td>
+                    <td data-label="جمع کل">
                         <input type="number" class="line-total-input" readonly>
                         <div class="price-words"></div>
                     </td>
-                    <td>
+                    <td data-label="تخفیف">
                         <input type="number" name="discount[]" value="0" min="0" step="100">
                     </td>
-                    <td>
-                        <button type="button" class="btn btn-danger remove-item" data-index="${editingInvoiceItems.length}">
+                    <td data-label="عملیات">
+                        <button type="button" class="btn btn-danger remove-item" data-index="${newIndex}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
             `;
-
+            
             $('#invoice-items-list').append(newRow);
             editingInvoiceItems.push({
                 product_name: '',
@@ -869,63 +1141,76 @@
                 unit_price: 0,
                 discount: 0
             });
-
+            
+            // فعال‌سازی جستجوی کالا برای سطر جدید
+            initProductSearchForEdit($('#invoice-items-list tr:last-child .product-name'));
+            
             // افزودن رویداد برای محاسبه
             $('#invoice-items-list tr:last-child input').on('input', calculateTotals);
+            
+            // فعال‌سازی نمایش مبلغ به حروف
+            $('#invoice-items-list tr:last-child .unit-price').on('input', function() {
+                updatePriceWords($(this));
+            });
         });
-
+        
         // حذف آیتم
         $(document).on('click', '.remove-item', function() {
             const index = $(this).data('index');
             if (editingInvoiceItems.length > 1) {
                 $(this).closest('tr').remove();
                 editingInvoiceItems.splice(index, 1);
-
+                
                 // به روزرسانی index برای همه سطرها
                 $('.item-row').each(function(i) {
                     $(this).attr('data-item-index', i);
                     $(this).find('.remove-item').attr('data-index', i);
                 });
-
+                
                 calculateTotals();
             } else {
                 showMessage('حداقل یک کالا باید وجود داشته باشد', 'error');
             }
         });
-
+        
         // محاسبه هنگام تغییر مقادیر
         $(document).on('input', 'input[name="quantity[]"], input[name="unit_price[]"], input[name="discount[]"]', function() {
             calculateTotals();
         });
-
+        
+        // به‌روزرسانی مبلغ به حروف هنگام تغییر قیمت
+        $(document).on('input', '.unit-price', function() {
+            updatePriceWords($(this));
+        });
+        
         // ثبت تغییرات
         $('#edit-invoice-submit-btn').click(function() {
             if (!editingInvoice) {
                 showMessage('لطفاً ابتدا یک فاکتور انتخاب کنید', 'error');
                 return;
             }
-
+            
             // جمع‌آوری داده‌های فرم
-             const formData = {
-        invoice_id: $('#invoice-id').val(),
-        issue_date: $('#edit-issue-date').val(),  // اینجا باید issue_date باشد
-        items: []
-    };
-
+            const formData = {
+                invoice_id: $('#invoice-id').val(),
+                issue_date: $('#edit-issue-date').val(),
+                items: []
+            };
+            
             let isValid = true;
-
+            
             $('.item-row').each(function() {
                 const productName = $(this).find('input[name="product_name[]"]').val();
                 const quantity = $(this).find('input[name="quantity[]"]').val();
                 const unitPrice = $(this).find('input[name="unit_price[]"]').val();
                 const discount = $(this).find('input[name="discount[]"]').val();
-
+                
                 if (!productName || !quantity || !unitPrice) {
                     isValid = false;
                     showMessage('لطفاً تمام فیلدهای ضروری را پر کنید', 'error');
                     return false;
                 }
-
+                
                 formData.items.push({
                     product_name: productName,
                     quantity: quantity,
@@ -933,9 +1218,9 @@
                     discount: discount || 0
                 });
             });
-
+            
             if (!isValid) return;
-
+            
             // ارسال درخواست به سرور
             $.ajax({
                 url: "{% url 'update_invoice' %}",
@@ -961,22 +1246,45 @@
                 }
             });
         });
-
+        
         // بازگشت
         $('#edit-invoice-back-btn').click(function() {
             if (confirm('تغییرات ذخیره نشده از بین خواهند رفت. آیا مطمئن هستید؟')) {
                 window.location.href = "{% url 'home' %}";
             }
         });
-
+        
         // مخفی کردن نتایج جستجو هنگام کلیک خارج
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.search-container').length) {
                 $('#edit-invoice-search-results').hide();
             }
+            
+            // مخفی کردن نتایج جستجوی کالا
+            $('.product-search-results').each(function() {
+                if (!$(this).is(e.target) && $(this).has(e.target).length === 0) {
+                    $(this).hide();
+                }
+            });
+        });
+        
+        $(document).ready(function() {
+            console.log('صفحه ویرایش فاکتور لود شد');
+            
+            // مدیریت نمایش ریسپانسیو در موبایل
+            function checkMobileView() {
+                if ($(window).width() <= 768) {
+                    $('.invoice-table thead').hide();
+                    $('.item-row').addClass('mobile-view');
+                } else {
+                    $('.invoice-table thead').show();
+                    $('.item-row').removeClass('mobile-view');
+                }
+            }
+            
+            // بررسی هنگام لود و تغییر سایز صفحه
+            $(window).on('load resize', checkMobileView);
         });
     </script>
-
-
 </body>
 </html>

@@ -45,4 +45,5 @@ urlpatterns = [
     path('search-invoices-for-edit/', views.search_invoices_for_edit, name='search_invoices_for_edit'),
     path('get-invoice-for-edit/', views.get_invoice_for_edit, name='get_invoice_for_edit'),
     path('update-invoice/', views.update_invoice, name='update_invoice'),
+    path('search-products-invoice-edit/', views.search_products_for_invoice_edit, name='search_products_invoice_edit'),
 ]

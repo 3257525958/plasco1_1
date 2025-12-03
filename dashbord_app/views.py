@@ -1826,3 +1826,39 @@ def edit_invoice_page(request):
     return render(request, 'edit_invoice.html')
 
 
+def search_products_for_invoice_edit(request):
+    """جستجوی کالاها برای ویرایش فاکتور"""
+    query = request.GET.get('q', '').strip()
+
+    logger.info(f"دریافت درخواست جستجوی کالا (برای ویرایش فاکتور): '{query}'")
+
+    # اگر کوئری کمتر از 2 کاراکتر باشد
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+
+    try:
+        # تبدیل اعداد فارسی/عربی به انگلیسی
+        query_english = convert_persian_arabic_to_english(query)
+
+        # جستجو در InvoiceItem
+        items = InvoiceItem.objects.filter(
+            product_name__icontains=query_english
+        ).values('product_name').distinct().order_by('product_name')[:10]
+
+        results = []
+        for item in items:
+            product_name = item.get('product_name')
+            if product_name:
+                results.append({
+                    'id': None,
+                    'text': product_name,
+                    'type': 'invoice_item'
+                })
+
+        logger.info(f"برای '{query}' تعداد {len(results)} نتیجه یافت شد")
+
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        logger.error(f"خطا در جستجوی کالا (برای ویرایش فاکتور) '{query}': {str(e)}", exc_info=True)
+        return JsonResponse({'results': [], 'error': str(e)})
