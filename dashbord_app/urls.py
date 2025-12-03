@@ -1,5 +1,3 @@
-
-
 from django.urls import path
 from . import views
 
@@ -11,10 +9,10 @@ urlpatterns = [
     path('sana/froshande/<int:froshande_id>/delete-ajax/', views.froshande_delete_ajax, name='froshande_delete_ajax'),
     path('sana/froshande/list/', views.froshande_list_view, name='froshande_list'),
 
-
     path('create-invoice/', views.create_invoice, name='create_invoice'),
     path('search-sellers/', views.search_sellers, name='search_sellers'),
-    path('search-products/', views.search_products, name='search_products'),
+    # تغییر نام تابع به search_products_for_invoice
+    path('search-products-for-invoice/', views.search_products_for_invoice, name='search_products_for_invoice'),
     path('invoice/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
     path('confirm-invoice/', views.confirm_invoice, name='confirm_invoice'),
 
@@ -22,12 +20,8 @@ urlpatterns = [
     path('edit-invoice/<int:invoice_id>/', views.edit_invoice, name='edit_invoice'),
     path('print-labels/<int:invoice_id>/', views.print_labels, name='print_labels'),
 
-
-    # path('print-settings/', views.print_settings, name='print_settings'),
-    # تغییر مسیر چاپ به پیش‌نمایش
     path('print-preview/<int:invoice_id>/', views.print_preview, name='print_preview_invoice'),
     path('print-preview/', views.print_preview, name='print_preview_inventory'),
-    # مسیر تنظیمات چاپ
     path('print-settings/', views.print_settings, name='print_settings'),
 
     path('usb/',views.usb_view, name='usb'),
@@ -51,6 +45,4 @@ urlpatterns = [
     path('search-invoices-for-edit/', views.search_invoices_for_edit, name='search_invoices_for_edit'),
     path('get-invoice-for-edit/', views.get_invoice_for_edit, name='get_invoice_for_edit'),
     path('update-invoice/', views.update_invoice, name='update_invoice'),
-
-
 ]

@@ -746,12 +746,6 @@ def generate_barcode_base64(barcode_value, module_width=0.2, module_height=15):
         logger.error(f"Error generating barcode: {str(e)}")
         return None
 # توابع کمکی برای تبدیل اعداد
-def convert_persian_arabic_to_english(text):
-    persian_numbers = '۰۱۲۳۴۵۶۷۸۹'
-    arabic_numbers = '٠١٢٣٤٥٦٧٨٩'
-    english_numbers = '0123456789'
-    translation_table = str.maketrans(persian_numbers + arabic_numbers, english_numbers * 2)
-    return text.translate(translation_table)
 def convert_to_persian_digits(text):
     """تبدیل اعداد انگلیسی به فارسی"""
     persian_digits = '۰۱۲۳۴۵۶۷۸۹'
@@ -982,48 +976,104 @@ def search_sellers(request):
     return JsonResponse({'results': results})
 
 
-def search_products(request):
-    """جستجوی محصولات از مدل InvoiceItem"""
+# ... سایر import ها ...
+from django.db.models import Q
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+# تابع تبدیل اعداد فارسی و عربی به انگلیسی
+def convert_persian_arabic_to_english(text):
+    persian_numbers = '۰۱۲۳۴۵۶۷۸۹'
+    arabic_numbers = '٠١٢٣٤٥٦٧٨٩'
+    english_numbers = '0123456789'
+    translation_table = str.maketrans(persian_numbers + arabic_numbers, english_numbers * 2)
+    return text.translate(translation_table)
+
+
+# تابع جستجوی کالا برای فاکتور (اسم جدید)
+def search_products_for_invoice(request):
+    """جستجوی کالاها از فاکتورهای قبلی - برای فرم فاکتور"""
     query = request.GET.get('q', '').strip()
 
-    # لاگ برای دیباگ
-    logger.info(f"=== جستجوی محصولات: '{query}' (طول: {len(query)}) ===")
+    logger.info(f"دریافت درخواست جستجوی کالا (برای فاکتور): '{query}'")
 
-    # اگر کوئری کمتر از 2 کاراکتر باشد، نتیجه خالی برگردان
+    # اگر کوئری کمتر از 2 کاراکتر باشد
     if len(query) < 2:
         return JsonResponse({'results': []})
 
     try:
-        # جستجو در InvoiceItem برای نام کالا
+        # تبدیل اعداد فارسی/عربی به انگلیسی
+        query_english = convert_persian_arabic_to_english(query)
+
+        # جستجو در InvoiceItem
         items = InvoiceItem.objects.filter(
-            product_name__icontains=query
-        ).order_by('product_name')
+            product_name__icontains=query_english
+        ).values('product_name').distinct().order_by('product_name')[:10]
 
-        # ساخت لیست منحصر به فرد از نام کالاها
-        unique_names = []
         results = []
-
         for item in items:
-            if item.product_name and item.product_name not in unique_names:
-                unique_names.append(item.product_name)
+            product_name = item.get('product_name')
+            if product_name:
                 results.append({
-                    'id': None,  # یا می‌توانید از item.id استفاده کنید
-                    'text': item.product_name,  # این مهم است: باید 'text' باشد
+                    'id': None,
+                    'text': product_name,
                     'type': 'invoice_item'
                 })
 
-                # محدود کردن نتایج به 50 مورد برای جلوگیری از بار زیاد
-                if len(results) >= 50:
-                    break
-
-        logger.info(f"=== {len(results)} نتیجه برای '{query}' یافت شد ===")
+        logger.info(f"برای '{query}' تعداد {len(results)} نتیجه یافت شد")
 
         return JsonResponse({'results': results})
 
     except Exception as e:
-        logger.error(f"خطا در جستجوی محصولات: {str(e)}", exc_info=True)
-        # در صورت خطا، حداقل یک لیست خالی برگردان
-        return JsonResponse({'results': []})
+        logger.error(f"خطا در جستجوی کالا (برای فاکتور) '{query}': {str(e)}", exc_info=True)
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
+# ... سایر توابع ...
+# def search_products(request):
+#     """جستجوی محصولات از مدل InvoiceItem"""
+#     query = request.GET.get('q', '').strip()
+#
+#     # لاگ برای دیباگ
+#     logger.info(f"=== جستجوی محصولات: '{query}' (طول: {len(query)}) ===")
+#
+#     # اگر کوئری کمتر از 2 کاراکتر باشد، نتیجه خالی برگردان
+#     if len(query) < 2:
+#         return JsonResponse({'results': []})
+#
+#     try:
+#         # جستجو در InvoiceItem برای نام کالا
+#         items = InvoiceItem.objects.filter(
+#             product_name__icontains=query
+#         ).order_by('product_name')
+#
+#         # ساخت لیست منحصر به فرد از نام کالاها
+#         unique_names = []
+#         results = []
+#
+#         for item in items:
+#             if item.product_name and item.product_name not in unique_names:
+#                 unique_names.append(item.product_name)
+#                 results.append({
+#                     'id': None,  # یا می‌توانید از item.id استفاده کنید
+#                     'text': item.product_name,  # این مهم است: باید 'text' باشد
+#                     'type': 'invoice_item'
+#                 })
+#
+#                 # محدود کردن نتایج به 50 مورد برای جلوگیری از بار زیاد
+#                 if len(results) >= 50:
+#                     break
+#
+#         logger.info(f"=== {len(results)} نتیجه برای '{query}' یافت شد ===")
+#
+#         return JsonResponse({'results': results})
+#
+#     except Exception as e:
+#         logger.error(f"خطا در جستجوی محصولات: {str(e)}", exc_info=True)
+#         # در صورت خطا، حداقل یک لیست خالی برگردان
+#         return JsonResponse({'results': []})
 # def search_products(request):
 #     query = request.GET.get('q', '')
 #
