@@ -2484,3 +2484,18 @@ def bulk_update_adjustment_percentage(request):
         print(f"❌ خطا در بروزرسانی گروهی درصد تعدیل: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
+
+
+def test_error_view(request):
+    """تست مستقیم خطا"""
+    try:
+        # یک Query که ممکنه خطا بده
+        from .models import ProductPricing
+        products = ProductPricing.objects.all()[:10]
+        return JsonResponse({'count': products.count()})
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e),
+            'type': type(e).__name__,
+            'traceback': str(traceback.format_exc())  # خطای کامل
+        }, status=500)
