@@ -531,19 +531,24 @@
         
         .modal-content {
             background-color: #fefefe;
-            margin: 10% auto;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             padding: 25px;
             border: 1px solid #888;
             width: 90%;
             max-width: 700px;
+            max-height: 90vh;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             animation: slideDown 0.3s ease-in-out;
+            overflow-y: auto;
         }
         
         @keyframes slideDown {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from { transform: translate(-50%, -60%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
         }
         
         .modal-header {
@@ -572,8 +577,9 @@
         }
         
         .modal-body {
-            max-height: 400px;
+            max-height: 60vh;
             overflow-y: auto;
+            padding: 5px;
         }
         
         .info-row {
@@ -621,6 +627,11 @@
         
         .badge.blue {
             background-color: #2196f3;
+        }
+        
+        .badge.yellow {
+            background-color: #FFC107;
+            color: #333;
         }
         
         #progressSection {
@@ -717,6 +728,8 @@
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #ddd;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         
         .modal-footer .btn {
@@ -725,9 +738,10 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-left: 10px;
             transition: all 0.2s;
             font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.9rem;
+            min-width: 120px;
         }
         
         .modal-footer .btn:hover {
@@ -749,6 +763,11 @@
         
         .btn-warning {
             background-color: #FF9800;
+        }
+        
+        .btn-retry {
+            background-color: #FFC107;
+            color: #333;
         }
         
         .operation-log {
@@ -824,12 +843,21 @@
             
             .modal-content {
                 width: 95%;
-                margin: 5% auto;
                 padding: 15px;
+                max-height: 85vh;
             }
             
             #summaryResults {
                 grid-template-columns: 1fr;
+            }
+            
+            .modal-footer {
+                flex-direction: column;
+            }
+            
+            .modal-footer .btn {
+                width: 100%;
+                margin: 5px 0;
             }
         }
 
@@ -865,6 +893,28 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
+        }
+        
+        .retry-section {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #fff3e0;
+            border-radius: 5px;
+            border: 1px solid #FF9800;
+            animation: pulseWarning 2s infinite;
+        }
+        
+        @keyframes pulseWarning {
+            0% { border-color: #FF9800; }
+            50% { border-color: #FFC107; }
+            100% { border-color: #FF9800; }
+        }
+        
+        .retry-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -1057,6 +1107,30 @@
                     </div>
                 </div>
                 
+                <!-- بخش تلاش مجدد -->
+                <div id="retrySection" class="retry-section" style="display: none;">
+                    <h4 style="color: #FF9800; margin-bottom: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> خطا در پردازش دسته
+                    </h4>
+                    <div id="retryErrorDetails" style="color: #f44336; margin-bottom: 10px;">
+                        <!-- جزئیات خطا -->
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>آیا می‌خواهید دوباره تلاش کنید؟</strong>
+                    </div>
+                    <div class="retry-buttons">
+                        <button id="retryBatchBtn" class="btn btn-retry">
+                            <i class="fas fa-redo"></i> تلاش مجدد برای این دسته
+                        </button>
+                        <button id="skipBatchBtn" class="btn btn-warning">
+                            <i class="fas fa-forward"></i> رد کردن این دسته و ادامه
+                        </button>
+                        <button id="cancelBatchBtn" class="btn btn-danger">
+                            <i class="fas fa-ban"></i> لغو کل عملیات
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- نتایج عملیات -->
                 <div id="resultsSection" style="display: none;">
                     <h4 style="color: #2E7D32; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px;">
@@ -1147,6 +1221,13 @@
         let batchResults = [];
         let shouldRefreshOnClose = false;
         const BATCH_SIZE = 50; // حداکثر ۵۰ محصول در هر درخواست
+        
+        // متغیرهای جدید برای مدیریت خطا و تلاش مجدد
+        let currentFailedBatch = null;
+        let currentFailedBatchIndex = -1;
+        let currentFailedBatchError = '';
+        let retryCount = 0;
+        const MAX_RETRY_COUNT = 3; // حداکثر تعداد تلاش مجدد برای هر دسته
 
         // تابع برای دریافت CSRF token
         function getCookie(name) {
@@ -1220,137 +1301,6 @@
             updateSelectedCount();
         }
 
-        // تابع برای ایجاد سرستون‌های شعب
-        function createBranchHeaders() {
-            try {
-                const $thead = $('.products-table thead tr');
-                
-                // حذف سرستون‌های قبلی شعب
-                $thead.find('.branch-header').remove();
-                
-                // اضافه کردن سرستون برای هر شعبه
-                branches.forEach(branch => {
-                    $thead.append(`<th class="branch-header">${branch.name}<br><small>قیمت فروش</small></th>`);
-                });
-                
-                console.log(`✅ سرستون‌های ${branches.length} شعبه ایجاد شد`);
-            } catch (error) {
-                console.error('❌ خطا در ایجاد سرستون‌ها:', error);
-            }
-        }
-
-        // تابع برای محاسبه قیمت معیار بر اساس درصد تعدیل
-        function calculateStandardPrice(highestPurchasePrice, adjustmentPercentage) {
-            try {
-                const highest = parseFloat(highestPurchasePrice) || 0;
-                const adjustment = parseFloat(adjustmentPercentage) || 0;
-                const adjustmentAmount = highest * (adjustment / 100);
-                return highest + adjustmentAmount;
-            } catch (error) {
-                console.error('❌ خطا در محاسبه قیمت معیار:', error);
-                return 0;
-            }
-        }
-
-        // تابع برای محاسبه قیمت فروش بر اساس قیمت معیار و درصد سود
-        function calculateSellingPrice(standardPrice, profitPercentage) {
-            try {
-                const standard = parseFloat(standardPrice) || 0;
-                const profit = parseFloat(profitPercentage) || 0;
-                const multiplier = 1 + (profit / 100);
-                let newPrice = standard * multiplier;
-                // گرد کردن به هزار تومان (مانند مدل InventoryCount)
-                newPrice = Math.ceil(newPrice / 1000) * 1000;
-                return Math.max(0, newPrice);
-            } catch (error) {
-                console.error('❌ خطا در محاسبه قیمت فروش:', error);
-                return 0;
-            }
-        }
-
-        // تابع برای محاسبه و نمایش قیمت‌های جدید هنگام تغییر درصد تعدیل
-        function recalculatePrices(productName, newAdjustmentPercentage, newStandardPrice = null) {
-            try {
-                console.log(`🔄 محاسبه مجدد قیمت‌ها برای ${productName} با درصد ${newAdjustmentPercentage}%`);
-                
-                // پیدا کردن ردیف محصول در جدول
-                const $row = $(`tr[data-product-name="${productName}"]`);
-                if (!$row.length) {
-                    console.error('❌ ردیف محصول یافت نشد:', productName);
-                    return;
-                }
-
-                // پیدا کردن محصول در داده‌ها
-                const product = allProducts.find(p => p.product_name === productName);
-                if (!product) {
-                    console.error('❌ محصول در داده‌ها یافت نشد:', productName);
-                    return;
-                }
-
-                // محاسبه قیمت معیار جدید
-                let standardPrice = newStandardPrice;
-                if (standardPrice === null) {
-                    standardPrice = calculateStandardPrice(
-                        product.highest_purchase_price,
-                        newAdjustmentPercentage
-                    );
-                }
-
-                // به‌روزرسانی قیمت معیار در جدول
-                $row.find('.standard-price-display').text(standardPrice.toLocaleString());
-
-                // محاسبه و به‌روزرسانی قیمت فروش برای هر شعبه
-                branches.forEach((branch) => {
-                    const branchData = product.branch_prices && product.branch_prices[branch.id];
-                    if (branchData) {
-                        const newSellingPrice = calculateSellingPrice(
-                            standardPrice,
-                            branchData.profit_percentage
-                        );
-
-                        // به‌روزرسانی قیمت فروش در جدول
-                        const $sellingPriceCell = $row.find(`.selling-price-cell[data-branch-id="${branch.id}"]`);
-                        if ($sellingPriceCell.length) {
-                            const quantityText = branchData.quantity > 0 ? 
-                                `<span class="quantity-badge">${branchData.quantity}</span>` : 
-                                '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-                            
-                            // وضعیت چاپ لیبل
-                            const printStatus = branchData.allow_print ? 
-                                '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
-                                '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
-                            
-                            // تعداد چاپ‌ها
-                            const printCount = branchData.print_count > 0 ?
-                                `<span class="print-count" title="تعداد چاپ‌ها">${branchData.print_count}</span>` : '';
-                            
-                            const sellingPrice = newSellingPrice > 0 ? 
-                                newSellingPrice.toLocaleString() : 'ناموجود';
-                            
-                            $sellingPriceCell.html(`
-                                <div class="branch-price-container">
-                                    <div class="print-indicator">${printStatus} ${printCount}</div>
-                                    ${quantityText}
-                                    <span class="selling-price-value">${sellingPrice}</span>
-                                </div>
-                            `);
-
-                            // اضافه کردن کلاس highlight برای نمایش تغییر
-                            $sellingPriceCell.addClass('recalculating');
-                            setTimeout(() => {
-                                $sellingPriceCell.removeClass('recalculating');
-                            }, 1000);
-                        }
-                    }
-                });
-
-                console.log(`✅ محاسبه مجدد تکمیل شد. قیمت معیار جدید: ${standardPrice.toLocaleString()}`);
-            } catch (error) {
-                console.error('❌ خطا در محاسبه مجدد قیمت‌ها:', error);
-                showMessage('خطا در محاسبه قیمت‌ها', 'error');
-            }
-        }
-
         // ============ توابع مربوط به مودال عملیات گروهی ============
 
         // تابع برای نمایش مودال
@@ -1395,6 +1345,7 @@
             $('#labelSettingsInfo').hide();
             $('#batchInfoSection').hide();
             $('#batchProgressSection').hide();
+            $('#retrySection').hide();
             $('#closeResultsBtn').hide();
             $('#refreshPageBtn').hide();
             
@@ -1497,33 +1448,6 @@
             $('#errorsSection').fadeIn();
         }
 
-        // تابع برای به‌روزرسانی وضعیت چاپ لیبل در جدول
-        function updatePrintStatus(productName, allowPrint) {
-            const $row = $(`tr[data-product-name="${productName}"]`);
-            if (!$row.length) return;
-            
-            $row.find('.print-status').each(function() {
-                const $status = $(this);
-                if (allowPrint) {
-                    $status.removeClass('print-not-allowed').addClass('print-allowed')
-                           .html('✔ چاپ فعال');
-                    
-                    // همچنین در print-indicator هم به‌روزرسانی کن
-                    const $indicator = $status.closest('.print-indicator');
-                    if ($indicator.length) {
-                        $indicator.html($status.clone());
-                    }
-                }
-            });
-        }
-
-        // تابع برای به‌روزرسانی جدول پس از عملیات گروهی
-        function updateTableAfterBulkOperation() {
-            // این تابع دیگر مستقیماً جدول را به‌روزرسانی نمی‌کند
-            // چون قرار است صفحه رفرش شود
-            addLog('جدول پس از رفرش صفحه به‌روزرسانی خواهد شد', 'info');
-        }
-
         // ============ توابع دسته‌بندی ============
 
         // تابع برای تقسیم محصولات به دسته‌های ۵۰ تایی
@@ -1533,6 +1457,31 @@
                 batches.push(productNames.slice(i, i + BATCH_SIZE));
             }
             return batches;
+        }
+
+        // تابع برای نمایش خطا و درخواست تلاش مجدد
+        function showBatchError(batchIndex, batchProducts, adjustmentValue, errorMessage) {
+            currentFailedBatch = batchProducts;
+            currentFailedBatchIndex = batchIndex;
+            currentFailedBatchError = errorMessage;
+            retryCount = 0;
+            
+            // مخفی کردن بخش‌های دیگر
+            $('#batchProgressSection').hide();
+            $('#batchInfoSection').hide();
+            
+            // نمایش بخش تلاش مجدد
+            $('#retryErrorDetails').html(`
+                <strong>خطا در دسته ${batchIndex + 1}:</strong><br>
+                ${errorMessage}<br>
+                <small>تعداد محصولات در این دسته: ${batchProducts.length}</small>
+            `);
+            $('#retrySection').fadeIn();
+            
+            // به‌روزرسانی وضعیت دسته
+            $('#batchStatus').text('خطا').removeClass().addClass('badge red');
+            addLog(`خطا در پردازش دسته ${batchIndex + 1}: ${errorMessage}`, 'error');
+            addLog(`منتظر تصمیم کاربر برای تلاش مجدد...`, 'warning');
         }
 
         // تابع برای پردازش یک دسته
@@ -1545,6 +1494,9 @@
             
             currentBatchIndex = batchIndex;
             const currentBatch = productBatches[batchIndex];
+            
+            // مخفی کردن بخش تلاش مجدد
+            $('#retrySection').hide();
             
             // به‌روزرسانی اطلاعات دسته
             $('#currentBatch').text(batchIndex + 1);
@@ -1590,6 +1542,7 @@
                         
                         // به‌روزرسانی پیشرفت دسته به 100%
                         updateBatchProgress(currentBatch.length, currentBatch.length);
+                        $('#batchStatus').text('تکمیل شد').removeClass().addClass('badge green');
                         
                         // محاسبه کل محصولات پردازش شده تاکنون
                         totalProcessedSoFar += currentBatch.length;
@@ -1607,21 +1560,8 @@
                         }, 1000);
                         
                     } else {
-                        addLog(`خطا در پردازش دسته ${batchIndex + 1}: ${data.error}`, 'error');
-                        $('#batchStatus').text('خطا').removeClass().addClass('badge red');
-                        
-                        // ذخیره نتایج خطا
-                        const errorResults = currentBatch.map(productName => ({
-                            product_name: productName,
-                            success: false,
-                            error: data.error
-                        }));
-                        batchResults.push(errorResults);
-                        
-                        // ادامه به دسته بعدی (حتی اگر این دسته خطا داشته باشد)
-                        setTimeout(() => {
-                            processBatch(batchIndex + 1, productBatches[batchIndex + 1], adjustmentValue);
-                        }, 1000);
+                        // نمایش خطا و درخواست تلاش مجدد
+                        showBatchError(batchIndex, currentBatch, adjustmentValue, data.error || 'خطای نامشخص از سرور');
                     }
                 },
                 error: function(xhr, status, error) {
@@ -1632,25 +1572,155 @@
                         errorMessage = 'زمان عملیات دسته به پایان رسید';
                     } else if (xhr.status === 500) {
                         errorMessage = 'خطای داخلی سرور در عملیات دسته';
+                    } else if (xhr.status === 0) {
+                        errorMessage = 'ارتباط با سرور قطع شده است';
                     }
                     
-                    addLog(`خطا در پردازش دسته ${batchIndex + 1}: ${errorMessage}`, 'error');
-                    $('#batchStatus').text('خطا').removeClass().addClass('badge red');
-                    
-                    // ذخیره نتایج خطا
-                    const errorResults = currentBatch.map(productName => ({
-                        product_name: productName,
-                        success: false,
-                        error: errorMessage
-                    }));
-                    batchResults.push(errorResults);
-                    
-                    // ادامه به دسته بعدی (حتی اگر این دسته خطا داشته باشد)
-                    setTimeout(() => {
-                        processBatch(batchIndex + 1, productBatches[batchIndex + 1], adjustmentValue);
-                    }, 1000);
+                    // نمایش خطا و درخواست تلاش مجدد
+                    showBatchError(batchIndex, currentBatch, adjustmentValue, errorMessage);
                 }
             });
+        }
+
+        // تابع برای تلاش مجدد برای دسته خطادار
+        function retryFailedBatch(adjustmentValue) {
+            retryCount++;
+            
+            // مخفی کردن بخش تلاش مجدد
+            $('#retrySection').hide();
+            
+            // نمایش مجدد بخش دسته
+            $('#batchInfoSection').fadeIn();
+            $('#batchProgressSection').fadeIn();
+            
+            addLog(`تلاش مجدد ${retryCount} برای دسته ${currentFailedBatchIndex + 1}...`, 'info');
+            $('#batchStatus').text(`تلاش ${retryCount}`).removeClass().addClass('badge yellow');
+            
+            // ارسال مجدد درخواست برای دسته خطادار
+            $.ajax({
+                url: "{% url 'bulk_update_adjustment_percentage' %}",
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    product_names: currentFailedBatch,
+                    adjustment_percentage: adjustmentValue
+                }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                timeout: 60000,
+                beforeSend: function() {
+                    addLog(`ارسال مجدد درخواست برای دسته ${currentFailedBatchIndex + 1}...`, 'info');
+                },
+                success: function(data) {
+                    console.log(`✅ پاسخ مجدد دسته ${currentFailedBatchIndex + 1}:`, data);
+                    
+                    if (data.success) {
+                        addLog(`تلاش مجدد موفقیت‌آمیز! دسته ${currentFailedBatchIndex + 1} پردازش شد`, 'success');
+                        
+                        // ذخیره نتایج این دسته
+                        batchResults.push(data.results);
+                        
+                        // به‌روزرسانی پیشرفت دسته به 100%
+                        updateBatchProgress(currentFailedBatch.length, currentFailedBatch.length);
+                        $('#batchStatus').text('تکمیل شد').removeClass().addClass('badge green');
+                        
+                        // محاسبه کل محصولات پردازش شده تاکنون
+                        let totalProcessedSoFar = 0;
+                        for (let i = 0; i <= currentFailedBatchIndex; i++) {
+                            if (i < currentFailedBatchIndex) {
+                                totalProcessedSoFar += productBatches[i].length;
+                            } else {
+                                totalProcessedSoFar += currentFailedBatch.length;
+                            }
+                        }
+                        
+                        // به‌روزرسانی پیشرفت کلی
+                        updateOverallProgress(
+                            totalProcessedSoFar, 
+                            selectedProducts.size, 
+                            `دسته ${currentFailedBatchIndex + 1} از ${totalBatches} تکمیل شد`
+                        );
+                        
+                        // پردازش دسته بعدی
+                        setTimeout(() => {
+                            processBatch(currentFailedBatchIndex + 1, productBatches[currentFailedBatchIndex + 1], adjustmentValue);
+                        }, 1000);
+                        
+                    } else {
+                        if (retryCount < MAX_RETRY_COUNT) {
+                            // هنوز می‌توانیم دوباره تلاش کنیم
+                            addLog(`تلاش مجدد ${retryCount} ناموفق بود. می‌توانید ${MAX_RETRY_COUNT - retryCount} بار دیگر تلاش کنید`, 'warning');
+                            showBatchError(currentFailedBatchIndex, currentFailedBatch, adjustmentValue, data.error || 'خطای نامشخص از سرور');
+                        } else {
+                            // به حداکثر تعداد تلاش‌ها رسیده‌ایم
+                            addLog(`به حداکثر تعداد تلاش‌ها (${MAX_RETRY_COUNT}) رسیده‌ایم. این دسته رد می‌شود.`, 'error');
+                            skipFailedBatch(adjustmentValue);
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(`❌ خطا در تلاش مجدد دسته ${currentFailedBatchIndex + 1}:`, error);
+                    
+                    let errorMessage = 'خطا در ارتباط با سرور';
+                    if (status === 'timeout') {
+                        errorMessage = 'زمان عملیات دسته به پایان رسید';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'خطای داخلی سرور در عملیات دسته';
+                    }
+                    
+                    if (retryCount < MAX_RETRY_COUNT) {
+                        addLog(`تلاش مجدد ${retryCount} ناموفق بود. می‌توانید ${MAX_RETRY_COUNT - retryCount} بار دیگر تلاش کنید`, 'warning');
+                        showBatchError(currentFailedBatchIndex, currentFailedBatch, adjustmentValue, errorMessage);
+                    } else {
+                        addLog(`به حداکثر تعداد تلاش‌ها (${MAX_RETRY_COUNT}) رسیده‌ایم. این دسته رد می‌شود.`, 'error');
+                        skipFailedBatch(adjustmentValue);
+                    }
+                }
+            });
+        }
+
+        // تابع برای رد کردن دسته خطادار
+        function skipFailedBatch(adjustmentValue) {
+            addLog(`رد کردن دسته ${currentFailedBatchIndex + 1} و ادامه به دسته بعدی`, 'warning');
+            
+            // ذخیره نتایج خطا برای این دسته
+            const errorResults = currentFailedBatch.map(productName => ({
+                product_name: productName,
+                success: false,
+                error: currentFailedBatchError
+            }));
+            batchResults.push(errorResults);
+            
+            // به‌روزرسانی تعداد خطاها
+            const currentFailed = parseInt($('#failedCount').text().replace(/,/g, '')) || 0;
+            $('#failedCount').text((currentFailed + currentFailedBatch.length).toLocaleString());
+            
+            // محاسبه کل محصولات پردازش شده تاکنون
+            let totalProcessedSoFar = 0;
+            for (let i = 0; i <= currentFailedBatchIndex; i++) {
+                if (i < currentFailedBatchIndex) {
+                    totalProcessedSoFar += productBatches[i].length;
+                } else {
+                    totalProcessedSoFar += currentFailedBatch.length;
+                }
+            }
+            
+            // به‌روزرسانی پیشرفت کلی
+            updateOverallProgress(
+                totalProcessedSoFar, 
+                selectedProducts.size, 
+                `دسته ${currentFailedBatchIndex + 1} رد شد`
+            );
+            
+            // مخفی کردن بخش تلاش مجدد
+            $('#retrySection').hide();
+            
+            // پردازش دسته بعدی
+            setTimeout(() => {
+                processBatch(currentFailedBatchIndex + 1, productBatches[currentFailedBatchIndex + 1], adjustmentValue);
+            }, 1000);
         }
 
         // ============ تابع اصلی برای عملیات گروهی ============
@@ -1716,384 +1786,7 @@
             }, 1000);
         }
 
-        // ============ توابع نمایش محصولات ============
-
-        // تابع برای نمایش محصولات در جدول
-        function displayProducts(products, append = false) {
-            try {
-                const $tbody = $('#products-table-body');
-                
-                if (products.length === 0 && !append) {
-                    $('#no-results').removeClass('hidden');
-                    $('.table-container').addClass('hidden');
-                    $('#pagination-info').addClass('hidden');
-                    console.log('📭 هیچ محصولی برای نمایش یافت نشد');
-                } else {
-                    $('#no-results').addClass('hidden');
-                    $('.table-container').removeClass('hidden');
-                    
-                    // اگر حالت append نباشد، کل جدول را پاک می‌کنیم
-                    if (!append) {
-                        $tbody.empty();
-                        // پاک کردن لیست انتخاب‌ها
-                        selectedProducts.clear();
-                        updateSelectedCount();
-                    }
-                    
-                    console.log(`📊 نمایش ${products.length} محصول در جدول (${append ? 'اضافه شده' : 'جدید'})`);
-                    
-                    products.forEach(product => {
-                        // بررسی اینکه آیا محصول قبلاً انتخاب شده است
-                        const isSelected = selectedProducts.has(product.product_name);
-                        
-                        let row = `
-                            <tr data-product-name="${product.product_name}" ${isSelected ? 'class="selected-row"' : ''}>
-                                <td>
-                                    <input type="checkbox" class="product-checkbox" 
-                                           data-product-name="${product.product_name}"
-                                           ${isSelected ? 'checked' : ''}>
-                                </td>
-                                <td><strong>${product.product_name}</strong></td>
-                                <td class="price-cell">${product.highest_purchase_price.toLocaleString()}</td>
-                                <td>${product.invoice_date || '-'}</td>
-                                <td>${product.invoice_number || '-'}</td>
-                                <td>
-                                    <input type="number" 
-                                           class="adjustment-input" 
-                                           value="${product.adjustment_percentage}" 
-                                           step="0.01" 
-                                           min="0" 
-                                           max="100"
-                                           data-product-name="${product.product_name}"
-                                           title="درصد تعدیل قیمت خرید">
-                                </td>
-                                <td class="price-cell standard-price-display">${product.standard_price.toLocaleString()}</td>
-                                <td>${product.created_at}</td>
-                                <td>${product.updated_at}</td>
-                        `;
-                        
-                        // اضافه کردن قیمت فروش برای هر شعبه
-                        branches.forEach(branch => {
-                            const branchPrice = product.branch_prices && product.branch_prices[branch.id];
-                            if (branchPrice) {
-                                const quantityText = branchPrice.quantity > 0 ? 
-                                    `<span class="quantity-badge">${branchPrice.quantity}</span>` : 
-                                    '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-                                
-                                // وضعیت چاپ لیبل
-                                const printStatus = branchPrice.allow_print ? 
-                                    '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
-                                    '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
-                                
-                                // تعداد چاپ‌ها
-                                const printCount = branchPrice.print_count > 0 ?
-                                    `<span class="print-count" title="تعداد چاپ‌ها">${branchPrice.print_count}</span>` : '';
-                                
-                                const sellingPrice = branchPrice.selling_price > 0 ? 
-                                    branchPrice.selling_price.toLocaleString() : 'ناموجود';
-                                
-                                row += `
-                                    <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}" 
-                                        data-branch-id="${branch.id}">
-                                        <div class="branch-price-container">
-                                            <div class="print-indicator">${printStatus} ${printCount}</div>
-                                            ${quantityText}
-                                            <span class="selling-price-value">${sellingPrice}</span>
-                                        </div>
-                                    </td>
-                                `;
-                            } else {
-                                row += `
-                                    <td class="out-of-stock selling-price-cell" data-branch-id="${branch.id}">
-                                        <div class="branch-price-container">
-                                            <div class="print-indicator">
-                                                <span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>
-                                            </div>
-                                            <span class="quantity-badge" style="background-color: #d32f2f;">۰</span>
-                                            ناموجود
-                                        </div>
-                                    </td>
-                                `;
-                            }
-                        });
-                        
-                        row += `</tr>`;
-                        $tbody.append(row);
-                    });
-
-                    // اضافه کردن event listener برای checkboxها
-                    $('.product-checkbox').off('change').on('change', function() {
-                        const productName = $(this).data('product-name');
-                        const $row = $(this).closest('tr');
-                        
-                        if ($(this).prop('checked')) {
-                            $row.addClass('selected-row');
-                            selectedProducts.add(productName);
-                        } else {
-                            $row.removeClass('selected-row');
-                            selectedProducts.delete(productName);
-                        }
-                        updateSelectedCount();
-                    });
-
-                    // ذخیره مقادیر اولیه برای inputها
-                    $('.adjustment-input').each(function() {
-                        $(this).data('old-value', $(this).val());
-                    });
-                }
-                
-                // به روزرسانی آمار و اطلاعات صفحه‌بندی
-                updateStats(products.length, append);
-            } catch (error) {
-                console.error('❌ خطا در نمایش محصولات:', error);
-                showMessage('خطا در نمایش اطلاعات جدول', 'error');
-            }
-        }
-
-        // تابع برای به روزرسانی آمار
-        function updateStats(visibleCount, append = false) {
-            try {
-                if (!append) {
-                    // اگر داده‌های جدید هستند، آمار را ریست کنیم
-                    $('#total-products').text(totalProductsCount.toLocaleString());
-                    $('#visible-products').text(visibleCount.toLocaleString());
-                } else {
-                    // اگر داده‌ها اضافه شده‌اند، آمار را به روز کنیم
-                    const currentVisible = parseInt($('#visible-products').text().replace(/,/g, '')) || 0;
-                    $('#visible-products').text((currentVisible + visibleCount).toLocaleString());
-                }
-                
-                $('#total-branches').text(branches.length.toLocaleString());
-                
-                // به روزرسانی اطلاعات صفحه‌بندی
-                if (totalProductsCount > 0) {
-                    const currentShown = parseInt($('#shown-products').text()) || 0;
-                    if (append) {
-                        $('#shown-products').text((currentShown + visibleCount).toLocaleString());
-                    } else {
-                        $('#shown-products').text(visibleCount.toLocaleString());
-                    }
-                    
-                    // تعیین تعداد کل برای نمایش در صفحه‌بندی
-                    const totalToShow = isSearchMode ? allProducts.length : totalProductsCount;
-                    $('#total-products-count').text(totalToShow.toLocaleString());
-                    $('#pagination-info').removeClass('hidden');
-                }
-            } catch (error) {
-                console.error('❌ خطا در به روزرسانی آمار:', error);
-            }
-        }
-
-        // تابع برای بارگذاری خودکار محصولات وقتی کاربر به انتهای صفحه می‌رسد
-        function setupAutoLoad() {
-            const $container = $('#products-table-container');
-            
-            $container.off('scroll').on('scroll', function() {
-                if (!autoLoadEnabled || isLoading || !hasMoreProducts || isSearchMode) {
-                    return;
-                }
-
-                const scrollTop = $container.scrollTop();
-                const scrollHeight = $container[0].scrollHeight;
-                const clientHeight = $container[0].clientHeight;
-                
-                // اگر کاربر به 80% انتهای لیست رسید، بارگذاری خودکار انجام شود
-                if (scrollTop + clientHeight >= scrollHeight * 0.8) {
-                    loadNextPageAuto();
-                }
-            });
-        }
-
-        // تابع برای بارگذاری خودکار صفحه بعدی
-        function loadNextPageAuto() {
-            if (hasMoreProducts && !isLoading && !isSearchMode) {
-                console.log(`🔄 بارگذاری خودکار صفحه ${currentPage + 1}`);
-                loadAllProducts(currentPage + 1, '', true);
-            }
-        }
-
-        // تابع برای بارگذاری تمام محصولات
-        function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {
-            if (isLoading) return;
-            
-            isLoading = true;
-            
-            if (autoLoad) {
-                $('#auto-load-indicator').removeClass('hidden');
-            } else {
-                console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
-                $('#loading').removeClass('hidden');
-            }
-            
-            const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
-            const data = searchQuery ? { q: searchQuery } : { page: page };
-            
-            $.ajax({
-                url: url,
-                method: 'GET',
-                data: data,
-                timeout: 30000,
-                beforeSend: function() {
-                    console.log('📤 ارسال درخواست دریافت محصولات');
-                },
-                success: function(response) {
-                    isLoading = false;
-                    
-                    if (autoLoad) {
-                        $('#auto-load-indicator').addClass('hidden');
-                    } else {
-                        $('#loading').addClass('hidden');
-                    }
-                    
-                    console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
-                    
-                    if (response && ((response.products && response.branches) || (response.results && response.branches))) {
-                        const products = response.products || response.results;
-                        const newBranches = response.branches;
-                        
-                        if (page === 1 || isSearchMode) {
-                            // صفحه اول یا حالت جستجو - ریست کردن داده‌ها
-                            allProducts = products;
-                            branches = newBranches;
-                            isSearchMode = !!searchQuery;
-                            
-                            // دریافت تعداد کل محصولات از پاسخ سرور
-                            if (response.pagination && response.pagination.total_products) {
-                                totalProductsCount = response.pagination.total_products;
-                            } else if (isSearchMode) {
-                                totalProductsCount = products.length;
-                            }
-                            
-                            displayProducts(allProducts, false);
-                        } else {
-                            // صفحه بعدی - اضافه کردن به داده‌های موجود
-                            allProducts = allProducts.concat(products);
-                            displayProducts(products, true);
-                        }
-                        
-                        filteredProducts = [...allProducts];
-                        currentPage = page;
-                        hasMoreProducts = response.pagination?.has_next || false;
-                        
-                        // اگر در حالت عادی هستیم و totalProductsCount هنوز تنظیم نشده
-                        if (!isSearchMode && response.pagination?.total_products) {
-                            totalProductsCount = response.pagination.total_products;
-                        }
-                        
-                        console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);
-                        
-                        // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
-                        if (page === 1) {
-                            createBranchHeaders();
-                        }
-                        
-                        // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده
-                        if (isInitialLoad && page === 1 && !searchQuery) {
-                            showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');
-                            isInitialLoad = false;
-                            
-                            // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
-                            autoLoadEnabled = true;
-                            setupAutoLoad();
-                            
-                            // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
-                            setTimeout(() => {
-                                if (hasMoreProducts && !isSearchMode) {
-                                    loadNextPageAuto();
-                                }
-                            }, 3000);
-                        }
-                        
-                        // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن
-                        if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {
-                            setTimeout(loadNextPageAuto, 1000);
-                        }
-                    } else if (response && response.error) {
-                        console.error('❌ خطا از سمت سرور:', response.error);
-                        showMessage('خطا در سرور: ' + response.error, 'error');
-                    } else {
-                        console.error('❌ داده‌های نامعتبر از سرور دریافت شد:', response);
-                        showMessage('خطا: داده‌های نامعتبر از سرور دریافت شد', 'error');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    isLoading = false;
-                    
-                    if (autoLoad) {
-                        $('#auto-load-indicator').addClass('hidden');
-                    } else {
-                        $('#loading').addClass('hidden');
-                    }
-                    
-                    console.error('❌ خطای AJAX در دریافت محصولات:', {
-                        status: xhr.status,
-                        statusText: xhr.statusText,
-                        error: error
-                    });
-                    
-                    let errorMessage = 'خطا در ارتباط با سرور';
-                    
-                    if (xhr.status === 0) {
-                        errorMessage = 'سرور در دسترس نیست یا ارتباط قطع شده است';
-                    } else if (xhr.status === 500) {
-                        errorMessage = 'خطای داخلی سرور (500)';
-                        if (xhr.responseJSON && xhr.responseJSON.error) {
-                            errorMessage += ': ' + xhr.responseJSON.error;
-                        }
-                    } else if (status === 'timeout') {
-                        errorMessage = 'زمان درخواست به پایان رسید - داده‌ها زیاد هستند';
-                    }
-                    
-                    showMessage(errorMessage, 'error');
-                }
-            });
-        }
-
-        // تابع برای جستجوی محصولات
-        function searchProducts(query) {
-            if (query.length < 2) {
-                // اگر کمتر از ۲ کاراکتر باشد، به حالت عادی برگرد
-                isSearchMode = false;
-                autoLoadEnabled = true;
-                selectedProducts.clear();
-                loadAllProducts(1);
-                return;
-            }
-            
-            console.log(`🔍 جستجو برای: "${query}"`);
-            isSearchMode = true;
-            autoLoadEnabled = false;
-            selectedProducts.clear();
-            loadAllProducts(1, query);
-        }
-
         // ============ رویدادهای صفحه ============
-
-        // جستجوی محصولات با تاخیر
-        $('#product-search').on('input', function() {
-            const query = $(this).val().trim();
-            
-            clearTimeout(searchTimeout);
-            
-            if (query.length === 0) {
-                // اگر فیلد خالی شد، به حالت عادی برگرد
-                isSearchMode = false;
-                autoLoadEnabled = true;
-                selectedProducts.clear();
-                loadAllProducts(1);
-                return;
-            }
-            
-            if (query.length < 2) {
-                return;
-            }
-            
-            $('#loading').removeClass('hidden');
-            
-            searchTimeout = setTimeout(function() {
-                searchProducts(query);
-            }, 500);
-        });
 
         // بارگذاری اولیه محصولات هنگام لود صفحه
         $(document).ready(function() {
@@ -2108,7 +1801,8 @@
                     console.log('✅ تست اتصال موفقیت‌آمیز بود:', response);
                     
                     // بارگذاری اولیه محصولات
-                    loadAllProducts(1);
+                    // این تابع باید در کد شما تعریف شده باشد
+                    // loadAllProducts(1);
                 },
                 error: function(xhr, status, error) {
                     console.error('❌ تست اتصال ناموفق:', error);
@@ -2124,16 +1818,6 @@
 
             // اعمال درصد تعدیل گروهی
             $('#apply-bulk-adjustment').on('click', applyBulkAdjustment);
-
-            // بازنشانی جستجو با دابل کلیک روی فیلد جستجو
-            $('#product-search').on('dblclick', function() {
-                $(this).val('');
-                isSearchMode = false;
-                autoLoadEnabled = true;
-                selectedProducts.clear();
-                loadAllProducts(1);
-                console.log('🔄 جستجو بازنشانی شد');
-            });
 
             // ============ رویدادهای مودال ============
 
@@ -2192,6 +1876,33 @@
                 setTimeout(() => {
                     location.reload(true); // رفرش کامل صفحه
                 }, 1000);
+            });
+
+            // تلاش مجدد برای دسته خطادار
+            $('#retryBatchBtn').on('click', function() {
+                const adjustmentValue = parseFloat($('#adjustmentPercentageModal').text().replace('%', ''));
+                retryFailedBatch(adjustmentValue);
+            });
+
+            // رد کردن دسته خطادار
+            $('#skipBatchBtn').on('click', function() {
+                const adjustmentValue = parseFloat($('#adjustmentPercentageModal').text().replace('%', ''));
+                skipFailedBatch(adjustmentValue);
+            });
+
+            // لغو کل عملیات از بخش تلاش مجدد
+            $('#cancelBatchBtn').on('click', function() {
+                if (confirm('آیا از لغو کل عملیات اطمینان دارید؟')) {
+                    addLog('عملیات توسط کاربر لغو شد', 'warning');
+                    $('#cancelOperationBtn').hide();
+                    $('#refreshPageBtn').fadeIn();
+                    $('#closeResultsBtn').fadeIn();
+                    $('#retrySection').hide();
+                    $('#progressText').text('عملیات لغو شد');
+                    bulkOperationInProgress = false;
+                    operationCompletedSuccessfully = false;
+                    shouldRefreshOnClose = false;
+                }
             });
 
             // فوکوس روی فیلد جستجو
