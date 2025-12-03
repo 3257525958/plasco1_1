@@ -1317,141 +1317,141 @@
         }
 
         // تابع برای بارگذاری تمام محصولات
-        {#function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {#}
-        {#    if (isLoading) return;#}
-        {#    #}
-        {#    isLoading = true;#}
-        {#    #}
-        {#    if (autoLoad) {#}
-        {#        $('#auto-load-indicator').removeClass('hidden');#}
-        {#    } else {#}
-        {#        console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);#}
-        {#        $('#loading').removeClass('hidden');#}
-        {#    }#}
-        {#    #}
-        {#    const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";#}
-        {#    const data = searchQuery ? { q: searchQuery } : { page: page };#}
-        {#    #}
-        {#    $.ajax({#}
-        {#        url: url,#}
-        {#        method: 'GET',#}
-        {#        data: data,#}
-        {#        timeout: 30000,#}
-        {#        beforeSend: function() {#}
-        {#            console.log('📤 ارسال درخواست دریافت محصولات');#}
-        {#        },#}
-        {#        success: function(response) {#}
-        {#            isLoading = false;#}
-        {#            #}
-        {#            if (autoLoad) {#}
-        {#                $('#auto-load-indicator').addClass('hidden');#}
-        {#            } else {#}
-        {#                $('#loading').addClass('hidden');#}
-        {#            }#}
-        {#            #}
-        {#            console.log('✅ پاسخ دریافت محصولات دریافت شد', response);#}
-        {#            #}
-        {#            if (response && ((response.products && response.branches) || (response.results && response.branches))) {#}
-        {#                const products = response.products || response.results;#}
-        {#                const newBranches = response.branches;#}
-        {#                #}
-        {#                if (page === 1 || isSearchMode) {#}
-        {#                    // صفحه اول یا حالت جستجو - ریست کردن داده‌ها#}
-        {#                    allProducts = products;#}
-        {#                    branches = newBranches;#}
-        {#                    isSearchMode = !!searchQuery;#}
-        {#                    #}
-        {#                    // دریافت تعداد کل محصولات از پاسخ سرور#}
-        {#                    if (response.pagination && response.pagination.total_products) {#}
-        {#                        totalProductsCount = response.pagination.total_products;#}
-        {#                    } else if (isSearchMode) {#}
-        {#                        totalProductsCount = products.length;#}
-        {#                    }#}
-        {#                    #}
-        {#                    displayProducts(allProducts, false);#}
-        {#                } else {#}
-        {#                    // صفحه بعدی - اضافه کردن به داده‌های موجود#}
-        {#                    allProducts = allProducts.concat(products);#}
-        {#                    displayProducts(products, true);#}
-        {#                }#}
-        {#                #}
-        {#                filteredProducts = [...allProducts];#}
-        {#                currentPage = page;#}
-        {#                hasMoreProducts = response.pagination?.has_next || false;#}
-        {#                #}
-        {#                // اگر در حالت عادی هستیم و totalProductsCount هنوز تنظیم نشده#}
-        {#                if (!isSearchMode && response.pagination?.total_products) {#}
-        {#                    totalProductsCount = response.pagination.total_products;#}
-        {#                }#}
-        {#                #}
-        {#                console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);#}
-        {#                #}
-        {#                // ایجاد سرستون‌های شعب (فقط برای صفحه اول)#}
-        {#                if (page === 1) {#}
-        {#                    createBranchHeaders();#}
-        {#                }#}
-        {#                #}
-        {#                // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده#}
-        {#                if (isInitialLoad && page === 1 && !searchQuery) {#}
-        {#                    showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');#}
-        {#                    isInitialLoad = false;#}
-        {#                    #}
-        {#                    // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه#}
-        {#                    autoLoadEnabled = true;#}
-        {#                    setupAutoLoad();#}
-        {#                    #}
-        {#                    // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده#}
-        {#                    setTimeout(() => {#}
-        {#                        if (hasMoreProducts && !isSearchMode) {#}
-        {#                            loadNextPageAuto();#}
-        {#                        }#}
-        {#                    }, 3000);#}
-        {#                }#}
-        {#                #}
-        {#                // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن#}
-        {#                if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {#}
-        {#                    setTimeout(loadNextPageAuto, 1000);#}
-        {#                }#}
-        {#            } else if (response && response.error) {#}
-        {#                console.error('❌ خطا از سمت سرور:', response.error);#}
-        {#                showMessage('خطا در سرور: ' + response.error, 'error');#}
-        {#            } else {#}
-        {#                console.error('❌ داده‌های نامعتبر از سرور دریافت شد:', response);#}
-        {#                showMessage('خطا: داده‌های نامعتبر از سرور دریافت شد', 'error');#}
-        {#            }#}
-        {#        },#}
-        {#        error: function(xhr, status, error) {#}
-        {#            isLoading = false;#}
-        {#            #}
-        {#            if (autoLoad) {#}
-        {#                $('#auto-load-indicator').addClass('hidden');#}
-        {#            } else {#}
-        {#                $('#loading').addClass('hidden');#}
-        {#            }#}
-        {#            #}
-        {#            console.error('❌ خطای AJAX در دریافت محصولات:', {#}
-        {#                status: xhr.status,#}
-        {#                statusText: xhr.statusText,#}
-        {#                error: error#}
-        {#            });#}
-        {#            #}
-        {#            let errorMessage = 'خطا در ارتباط با سرور';#}
-        {#            #}
-        {#            if (xhr.status === 0) {#}
-        {#                errorMessage = 'سرور در دسترس نیست یا ارتباط قطع شده است';#}
-        {#            } else if (xhr.status === 500) {#}
-        {#                errorMessage = 'خطای داخلی سرور (500)';#}
-        {#                if (xhr.responseJSON && xhr.responseJSON.error) {#}
-        {#                    errorMessage += ': ' + xhr.responseJSON.error;#}
-        {#                }#}
-        {#            } else if (status === 'timeout') {#}
-        {#                errorMessage = 'زمان درخواست به پایان رسید - داده‌ها زیاد هستند';#}
-        {#            }#}
-        {#            #}
-        {#            showMessage(errorMessage, 'error');#}
-        {#        }#}
-        {#    });#}
-        {#}#}
+        function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            
+            if (autoLoad) {
+                $('#auto-load-indicator').removeClass('hidden');
+            } else {
+                console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
+                $('#loading').removeClass('hidden');
+            }
+            
+            const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
+            const data = searchQuery ? { q: searchQuery } : { page: page };
+            
+            $.ajax({
+                url: url,
+                method: 'GET',
+                data: data,
+                timeout: 30000,
+                beforeSend: function() {
+                    console.log('📤 ارسال درخواست دریافت محصولات');
+                },
+                success: function(response) {
+                    isLoading = false;
+                    
+                    if (autoLoad) {
+                        $('#auto-load-indicator').addClass('hidden');
+                    } else {
+                        $('#loading').addClass('hidden');
+                    }
+                    
+                    console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
+                    
+                    if (response && ((response.products && response.branches) || (response.results && response.branches))) {
+                        const products = response.products || response.results;
+                        const newBranches = response.branches;
+                        
+                        if (page === 1 || isSearchMode) {
+                            // صفحه اول یا حالت جستجو - ریست کردن داده‌ها
+                            allProducts = products;
+                            branches = newBranches;
+                            isSearchMode = !!searchQuery;
+                            
+                            // دریافت تعداد کل محصولات از پاسخ سرور
+                            if (response.pagination && response.pagination.total_products) {
+                                totalProductsCount = response.pagination.total_products;
+                            } else if (isSearchMode) {
+                                totalProductsCount = products.length;
+                            }
+                            
+                            displayProducts(allProducts, false);
+                        } else {
+                            // صفحه بعدی - اضافه کردن به داده‌های موجود
+                            allProducts = allProducts.concat(products);
+                            displayProducts(products, true);
+                        }
+                        
+                        filteredProducts = [...allProducts];
+                        currentPage = page;
+                        hasMoreProducts = response.pagination?.has_next || false;
+                        
+                        // اگر در حالت عادی هستیم و totalProductsCount هنوز تنظیم نشده
+                        if (!isSearchMode && response.pagination?.total_products) {
+                            totalProductsCount = response.pagination.total_products;
+                        }
+                        
+                        console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);
+                        
+                        // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
+                        if (page === 1) {
+                            createBranchHeaders();
+                        }
+                        
+                        // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده
+                        if (isInitialLoad && page === 1 && !searchQuery) {
+                            showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');
+                            isInitialLoad = false;
+                            
+                            // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
+                            autoLoadEnabled = true;
+                            setupAutoLoad();
+                            
+                            // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
+                            setTimeout(() => {
+                                if (hasMoreProducts && !isSearchMode) {
+                                    loadNextPageAuto();
+                                }
+                            }, 3000);
+                        }
+                        
+                        // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن
+                        if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {
+                            setTimeout(loadNextPageAuto, 1000);
+                        }
+                    } else if (response && response.error) {
+                        console.error('❌ خطا از سمت سرور:', response.error);
+                        showMessage('خطا در سرور: ' + response.error, 'error');
+                    } else {
+                        console.error('❌ داده‌های نامعتبر از سرور دریافت شد:', response);
+                        showMessage('خطا: داده‌های نامعتبر از سرور دریافت شد', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    isLoading = false;
+                    
+                    if (autoLoad) {
+                        $('#auto-load-indicator').addClass('hidden');
+                    } else {
+                        $('#loading').addClass('hidden');
+                    }
+                    
+                    console.error('❌ خطای AJAX در دریافت محصولات:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        error: error
+                    });
+                    
+                    let errorMessage = 'خطا در ارتباط با سرور';
+                    
+                    if (xhr.status === 0) {
+                        errorMessage = 'سرور در دسترس نیست یا ارتباط قطع شده است';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'خطای داخلی سرور (500)';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage += ': ' + xhr.responseJSON.error;
+                        }
+                    } else if (status === 'timeout') {
+                        errorMessage = 'زمان درخواست به پایان رسید - داده‌ها زیاد هستند';
+                    }
+                    
+                    showMessage(errorMessage, 'error');
+                }
+            });
+        }
 
         // تابع برای جستجوی محصولات
         function searchProducts(query) {
@@ -1542,150 +1542,6 @@
                 $('#product-search').focus();
             }, 100);
         });
-        
-        
-        // در تابع loadAllProducts، timeout را افزایش دهید
-function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {
-    if (isLoading) return;
-    
-    isLoading = true;
-    
-    if (autoLoad) {
-        $('#auto-load-indicator').removeClass('hidden');
-    } else {
-        console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
-        $('#loading').removeClass('hidden');
-    }
-    
-    const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
-    const data = searchQuery ? { q: searchQuery } : { page: page };
-    
-    $.ajax({
-        url: url,
-        method: 'GET',
-        data: data,
-        timeout: 60000, // افزایش timeout به 60 ثانیه
-        beforeSend: function() {
-            console.log('📤 ارسال درخواست دریافت محصولات');
-        },
-        success: function(response) {
-            isLoading = false;
-            
-            if (autoLoad) {
-                $('#auto-load-indicator').addClass('hidden');
-            } else {
-                $('#loading').addClass('hidden');
-            }
-            
-            console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
-            
-            if (response && response.products && response.branches) {
-                const products = response.products;
-                const newBranches = response.branches;
-                
-                if (page === 1 || isSearchMode) {
-                    // صفحه اول یا حالت جستجو - ریست کردن داده‌ها
-                    allProducts = products;
-                    branches = newBranches;
-                    isSearchMode = !!searchQuery;
-                    currentPage = 1;
-                    
-                    // دریافت تعداد کل محصولات
-                    if (response.pagination && response.pagination.total_products) {
-                        totalProductsCount = response.pagination.total_products;
-                    } else if (isSearchMode) {
-                        totalProductsCount = products.length;
-                    }
-                    
-                    displayProducts(allProducts, false);
-                } else {
-                    // صفحه بعدی - اضافه کردن به داده‌های موجود
-                    allProducts = allProducts.concat(products);
-                    currentPage = page;
-                    displayProducts(products, true);
-                }
-                
-                filteredProducts = [...allProducts];
-                hasMoreProducts = response.pagination?.has_next || false;
-                
-                console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);
-                
-                // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
-                if (page === 1) {
-                    createBranchHeaders();
-                }
-                
-                // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده
-                if (isInitialLoad && page === 1 && !searchQuery) {
-                    showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');
-                    isInitialLoad = false;
-                    
-                    // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
-                    autoLoadEnabled = true;
-                    setupAutoLoad();
-                    
-                    // بعد از 2 ثانیه اولین بارگذاری خودکار را انجام بده
-                    setTimeout(() => {
-                        if (hasMoreProducts && !isSearchMode) {
-                            loadNextPageAuto();
-                        }
-                    }, 2000);
-                }
-                
-                // اگر محصول بیشتری برای بارگذاری وجود دارد
-                if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {
-                    setTimeout(() => {
-                        if (hasMoreProducts && !isLoading && !isSearchMode) {
-                            loadNextPageAuto();
-                        }
-                    }, 1000);
-                }
-            } else if (response && response.error) {
-                console.error('❌ خطا از سمت سرور:', response.error);
-                showMessage('خطا در سرور: ' + response.error, 'error');
-            } else {
-                console.error('❌ داده‌های نامعتبر از سرور دریافت شد:', response);
-                showMessage('خطا: داده‌های نامعتبر از سرور دریافت شد', 'error');
-            }
-        },
-        error: function(xhr, status, error) {
-            isLoading = false;
-            
-            if (autoLoad) {
-                $('#auto-load-indicator').addClass('hidden');
-            } else {
-                $('#loading').addClass('hidden');
-            }
-            
-            console.error('❌ خطای AJAX در دریافت محصولات:', {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                error: error
-            });
-            
-            let errorMessage = 'خطا در ارتباط با سرور';
-            
-            if (xhr.status === 0) {
-                errorMessage = 'سرور در دسترس نیست یا ارتباط قطع شده است';
-            } else if (xhr.status === 500) {
-                errorMessage = 'خطای داخلی سرور (500)';
-                if (xhr.responseJSON && xhr.responseJSON.error) {
-                    errorMessage += ': ' + xhr.responseJSON.error;
-                }
-            } else if (status === 'timeout') {
-                errorMessage = 'زمان درخواست به پایان رسید - لطفاً مجدداً تلاش کنید';
-            }
-            
-            showMessage(errorMessage, 'error');
-            
-            // اگر خطا به دلیل timeout بود، autoLoadEnabled را غیرفعال کن
-            if (status === 'timeout') {
-                autoLoadEnabled = false;
-                showMessage('بارگذاری خودکار غیرفعال شد', 'warning');
-            }
-        }
-    });
-}
     </script>
 </body>
 </html>
