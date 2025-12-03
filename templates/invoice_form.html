@@ -4,15 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فرم فاکتور فروش</title>
-    
+    <title>فرم فاکتور فروش - فروشگاه پلاستیک و لوازم آشپرخانه موسوی</title>
+
+
     <!-- کتابخانه‌های تاریخ شمسی -->
     <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
-    
+
+
     <!-- فونت‌ها و آیکون‌ها -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
-    
+
+    <!-- کتابخانه‌های تاریخ شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+
     <style>
         :root {
             --primary-color: #4CAF50;
@@ -89,6 +94,13 @@
             font-size: 20px;
         }
 
+        .jalali-date {
+            font-size: 16px;
+            color: #388E3C;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
         .serial-breakdown {
             margin-top: 8px;
             font-size: 14px;
@@ -105,12 +117,13 @@
             position: relative;
         }
 
+        /* استایل‌های مربوط به فیلد تاریخ */
         .date-input-container {
             position: relative;
             display: flex;
             align-items: center;
         }
-        
+
         .shamsi-date-input {
             width: 100%;
             padding: 12px 15px;
@@ -124,7 +137,7 @@
             font-family: 'Vazirmatn', sans-serif;
             height: 50px;
         }
-        
+
         .calendar-icon {
             position: absolute;
             left: 15px;
@@ -135,7 +148,12 @@
             top: 50%;
             transform: translateY(-50%);
         }
-        
+
+        .shamsi-date-input:hover {
+            border-color: var(--accent-color);
+        }
+
+        /* استایل‌های جدول و سایر عناصر */
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
@@ -324,6 +342,7 @@
             display: none;
             max-height: 400px;
             overflow-y: auto;
+            margin-top: 5px;
         }
 
         .seller-result-item {
@@ -385,19 +404,16 @@
             box-shadow: 0 6px 15px rgba(0,0,0,0.15);
             z-index: 1003;
             display: none;
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
         .search-result-item {
-            padding: 12px 15px;
+            padding: 15px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
             transition: background 0.3s;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 18px;
         }
 
         .search-result-item:hover {
@@ -420,81 +436,65 @@
             vertical-align: middle !important;
         }
 
-        /* استایل‌های اضافی */
-        .search-result-item.highlighted {
-            background-color: #e8f5e9 !important;
-            transform: translateX(-5px);
+        /* استایل برای تضمین نمایش صحیح تقویم */
+        .pdatepicker-gui {
+            z-index: 10000 !important;
+            font-family: 'Vazirmatn', sans-serif !important;
         }
 
-        .search-results::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .search-results::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .search-results::-webkit-scrollbar-thumb {
-            background: #4CAF50;
-            border-radius: 4px;
-        }
-
-        .search-results::-webkit-scrollbar-thumb:hover {
-            background: #388E3C;
-        }
-
-        .search-header {
-            cursor: default !important;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background: #f8f9fa !important;
-            font-weight: bold !important;
-            border-bottom: 2px solid #dee2e6 !important;
-        }
-
-        .no-results {
-            color: #dc3545 !important;
-            text-align: center;
-            padding: 20px !important;
-            cursor: default !important;
+        .pdatepicker-gui .pdatepicker-day {
+            cursor: pointer !important;
         }
 
         @media (max-width: 992px) {
             .header-section {
                 flex-direction: column;
+                align-items: flex-start;
             }
-            
+
+            .header-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+
             .seller-select-container {
                 width: 100%;
+            }
+
+            .invoice-table {
+                display: block;
+                overflow-x: auto;
             }
         }
 
         @media (max-width: 768px) {
             .invoice-container {
                 padding: 15px;
+                border-radius: 15px;
             }
-            
+
             .header-info {
                 flex-direction: column;
+                gap: 15px;
             }
-            
+
             .invoice-table {
                 display: block;
+                width: 100%;
                 overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
-            
+
             .invoice-table thead {
                 display: none;
             }
-            
+
             .invoice-table tbody {
                 display: flex;
                 flex-direction: column;
                 gap: 15px;
             }
-            
+
             .item-row {
                 display: flex;
                 flex-direction: column;
@@ -503,7 +503,7 @@
                 padding: 15px;
                 background: #f9f9f9;
             }
-            
+
             .invoice-table td {
                 display: flex;
                 flex-direction: column;
@@ -512,7 +512,7 @@
                 text-align: right;
                 width: 100% !important;
             }
-            
+
             .invoice-table td::before {
                 content: attr(data-label);
                 font-weight: bold;
@@ -520,7 +520,20 @@
                 color: var(--primary-color);
                 font-size: 16px;
             }
-            
+
+            .invoice-table input {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+            }
+
+            .price-input {
+                font-size: 18px !important;
+                padding: 12px !important;
+            }
+
             .btn {
                 padding: 12px 20px;
                 font-size: 16px;
@@ -528,10 +541,20 @@
                 justify-content: center;
                 margin-bottom: 10px;
             }
-            
+
             .actions {
                 flex-direction: column-reverse;
                 gap: 10px;
+            }
+
+            .seller-result-item,
+            .search-result-item {
+                font-size: 16px;
+                padding: 12px;
+            }
+
+            .seller-details {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -539,13 +562,37 @@
             body {
                 padding: 10px;
             }
-            
+
             .invoice-container {
                 padding: 10px;
+                border-radius: 10px;
             }
-            
+
             .header-item {
                 min-width: 100%;
+            }
+
+            .header-value {
+                font-size: 18px;
+            }
+
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+
+            .invoice-table td {
+                padding: 8px 0;
+            }
+
+            .invoice-table input {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .price-input {
+                font-size: 16px !important;
+                padding: 10px !important;
             }
         }
     </style>
@@ -565,22 +612,23 @@
                         </div>
                         <input type="hidden" name="serial_number" value="{{ serial_number }}">
                     </div>
-                    
-                    <div class="header-item">
-                        <span class="header-label">تاریخ صدور فاکتور</span>
-                        <div class="date-input-container">
-                            <input type="text" id="issue-date-picker" class="shamsi-date-input" 
-                                   placeholder="برای انتخاب تاریخ کلیک کنید" 
-                                   value="{{ today_jalali }}" name="issue_date" autocomplete="off">
-                            <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
-                        </div>
-                        <small style="display: block; margin-top: 5px; color: #666; font-size: 12px;">
-                            <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
-                        </small>
-                    </div>                    
-                    
+
+                    <!-- فیلد تاریخ صدور فاکتور -->
+<div class="header-item">
+    <span class="header-label">تاریخ صدور فاکتور</span>
+    <div class="date-input-container">
+        <input type="text" id="issue-date-picker" class="shamsi-date-input"
+               placeholder="برای انتخاب تاریخ کلیک کنید"
+               value="{{ today_jalali }}" name="issue_date" autocomplete="off">
+        <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
+    </div>
+    <small style="display: block; margin-top: 5px; color: #666; font-size: 12px;">
+        <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
+    </small>
+</div>
+
                 </div>
-                
+
                 <div class="seller-select-container">
                     <span class="header-label">فروشنده</span>
                     <div class="seller-search-container">
@@ -646,6 +694,7 @@
                 </tbody>
             </table>
 
+            <!-- خلاصه فاکتور -->
             <div class="invoice-summary">
                 <div class="summary-item">
                     <span>تعداد اقلام:</span>
@@ -679,12 +728,13 @@
         </form>
     </div>
 
+    <!-- کتابخانه‌های JavaScript -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 
     <script>
-    // مقداردهی اولیه تقویم شمسی
+    // مقداردهی اولیه تقویم شمسی برای فیلد تاریخ
     $("#issue-date-picker").persianDatepicker({
         observer: true,
         format: 'YYYY/MM/DD',
@@ -698,468 +748,476 @@
         }
     });
 
-    // نمایش تقویم هنگام کلیک روی آیکون
+    // نمایش تقویم هنگام کلیک روی آیکون تقویم
     document.getElementById('calendar-trigger').addEventListener('click', function () {
         $("#issue-date-picker").persianDatepicker('show');
     });
 
-    $(document).ready(function() {
-        // تابع تبدیل اعداد فارسی و عربی به انگلیسی
-        function convertPersianToEnglishNumbers(input) {
-            if (!input) return input;
-            
-            const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-            const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-            
-            let output = input;
-            for (let i = 0; i < 10; i++) {
-                let persianRegex = new RegExp(persianNumbers[i], 'g');
-                let arabicRegex = new RegExp(arabicNumbers[i], 'g');
-                output = output.replace(persianRegex, i).replace(arabicRegex, i);
+        // فعال کردن datepicker برای فیلد تاریخ شمسی
+        $(document).ready(function() {
+            // ایجاد تقویم شمسی
+ var datepicker = $("#issue-date-picker").pDatepicker({
+        format: 'YYYY/MM/DD',
+        initialValue: true,
+        initialValueType: 'persian',
+        autoClose: true,
+        observer: true,
+        position: {x: 0, y: 0},
+        calendar: {
+            persian: {
+                locale: 'fa',
+                showHint: true
             }
-            
-            return output;
+        },
+        toolbox: {
+            calendarSwitch: {
+                enabled: false
+            }
+        },
+        onSelect: function(unixDate) {
+            var selectedDate = new persianDate(unixDate);
+            $("#issue-date-picker").val(selectedDate.format('YYYY/MM/DD'));
         }
+    });
 
-        // تابع تبدیل عدد به حروف فارسی
-        function numberToWords(number) {
-            if (number === 0) return "صفر";
-            
-            const ones = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];
-            const tens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];
-            const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصد", "نهصد"];
-            const teens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];
-            
-            let result = "";
-            
-            // میلیون‌ها
-            if (number >= 1000000) {
-                result += numberToWords(Math.floor(number / 1000000)) + " میلیون ";
-                number %= 1000000;
-            }
-            
-            // هزارها
-            if (number >= 1000) {
-                result += numberToWords(Math.floor(number / 1000)) + " هزار ";
-                number %= 1000;
-            }
-            
-            // صدها
-            if (number >= 100) {
-                result += hundreds[Math.floor(number / 100)] + " و ";
-                number %= 100;
-            }
-            
-            // دهگان و یکان
-            if (number >= 10 && number < 20) {
-                result += teens[number - 10];
-            } else {
-                if (number >= 20) {
-                    result += tens[Math.floor(number / 10)];
-                    number %= 10;
-                    if (number > 0) result += " و ";
-                }
-                
-                if (number > 0) {
-                    result += ones[number];
-                }
-            }
-            
-            return result.trim().replace(/ و $/, "");
+    // نمایش تقویم هنگام کلیک روی آیکون - روش درست
+    $("#calendar-trigger").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // اگر تقویم در حال حاضر نمایش داده شده است، آن را مخفی کنید
+        if ($(".pdatepicker-gui:visible").length > 0) {
+            datepicker.pDatepicker('hide');
+        } else {
+            // در غیر این صورت تقویم را نمایش دهید
+            datepicker.pDatepicker('show');
         }
+        return false;
+    });
 
-        // تابع به‌روزرسانی مبلغ به حروف
-        function updatePriceWords(input) {
-            const value = parseInt(input.val()) || 0;
-            const words = numberToWords(value);
-            input.siblings('.price-words').text(words + " تومان");
-        }
-
-        // محاسبه جمع‌های فاکتور
-        function calculateTotals() {
-            let totalItems = 0;
-            let totalAmount = 0;
-            let totalDiscount = 0;
-            
-            $('.item-row').each(function() {
-                const quantity = parseInt($(this).find('input[name="quantity[]"]').val()) || 0;
-                const unitPrice = parseFloat($(this).find('input[name="unit_price[]"]').val()) || 0;
-                const discount = parseFloat($(this).find('input[name="discount[]"]').val()) || 0;
-                const lineTotal = quantity * unitPrice;
-                
-                // به‌روزرسانی جمع کل خط
-                $(this).find('.line-total-input').val(lineTotal);
-                updatePriceWords($(this).find('.line-total-input'));
-                
-                totalItems += quantity;
-                totalAmount += lineTotal;
-                totalDiscount += discount;
+    // نمایش تقویم هنگام کلیک روی فیلد تاریخ
+    $("#issue-date-picker").click(function() {
+        datepicker.pDatepicker('show');
+    });
+            // نمایش تقویم هنگام کلیک روی آیکون
+            $("#calendar-trigger").click(function() {
+                $("#issue-date-picker").pDatepicker("show");
             });
-            
-            $('#total-items').text(totalItems);
-            $('#total-amount').text(totalAmount.toLocaleString('fa-IR') + ' تومان');
-            $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');
-            $('#final-amount').text((totalAmount - totalDiscount).toLocaleString('fa-IR') + ' تومان');
+
+            // تغییر ظاهر فیلد هنگام فوکوس
+            $("#issue-date-picker").focus(function() {
+                $(this).css('border-color', 'var(--accent-color)');
+                $(this).css('box-shadow', '0 0 0 3px rgba(46, 125, 50, 0.3)');
+            }).blur(function() {
+                $(this).css('border-color', 'var(--primary-color)');
+                $(this).css('box-shadow', 'none');
+            });
+
+            // جلوگیری از تایپ دستی در فیلد تاریخ
+            $("#issue-date-picker").on('keydown', function(e) {
+                e.preventDefault();
+                return false;
+            });
+
+            // تابع تبدیل اعداد فارسی و عربی به انگلیسی
+            function convertPersianToEnglishNumbers(input) {
+                if (!input) return input;
+
+                const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+                const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+                let output = input;
+                for (let i = 0; i < 10; i++) {
+                    let persianRegex = new RegExp(persianNumbers[i], 'g');
+                    let arabicRegex = new RegExp(arabicNumbers[i], 'g');
+                    output = output.replace(persianRegex, i).replace(arabicRegex, i);
+                }
+
+                return output;
+            }
+
+// تابع تبدیل عدد به حروف فارسی
+function numberToWords(number) {
+    if (number === 0) return "صفر";
+
+    const ones = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];
+    const tens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];
+    const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصد", "نهصد"];
+    const teens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];
+
+    let result = "";
+
+    // میلیون‌ها
+    if (number >= 1000000) {
+        result += numberToWords(Math.floor(number / 1000000)) + " میلیون ";
+        number %= 1000000;
+    }
+
+    // هزارها
+    if (number >= 1000) {
+        result += numberToWords(Math.floor(number / 1000)) + " هزار ";
+        number %= 1000;
+    }
+
+    // صدها
+    if (number >= 100) {
+        result += hundreds[Math.floor(number / 100)] + " و ";
+        number %= 100;
+    }
+
+    // دهگان و یکان
+    if (number >= 10 && number < 20) {
+        result += teens[number - 10];
+    } else {
+        if (number >= 20) {
+            result += tens[Math.floor(number / 10)];
+            number %= 10;
+            if (number > 0) result += " و ";
         }
 
-        // محاسبه اولیه هنگام لود صفحه
-        calculateTotals();
+        if (number > 0) {
+            result += ones[number];
+        }
+    }
 
-        // جستجوی فروشنده
-        $('#seller-search').on('input', function() {
-            let query = $(this).val().trim();
-            query = convertPersianToEnglishNumbers(query);
-            const $results = $('#seller-results');
-            
-            if (query.length < 2) {
-                $results.empty().hide();
-                return;
-            }
-            
-            $.ajax({
-                url: "{% url 'search_sellers' %}",
-                data: { q: query },
-                dataType: 'json',
-                success: function(data) {
-                    $results.empty();
-                    
-                    if (data.results && data.results.length > 0) {
-                        data.results.forEach(seller => {
-                            let sellerHtml = `
-                                <div class="seller-result-item" 
-                                     data-id="${seller.id}"
-                                     data-name="${seller.name} ${seller.family} - ${seller.store || 'بدون نام فروشگاه'}">
-                                    <div class="seller-info">
-                                        <div class="seller-name">
-                                            <i class="fas fa-store"></i> 
-                                            ${seller.store || 'بدون نام فروشگاه'}
-                                        </div>
-                                        <div class="seller-details">`;
-                            
-                            if (seller.name || seller.family) {
-                                sellerHtml += `<div><i class="fas fa-user"></i> ${seller.name} ${seller.family}</div>`;
-                            }
-                            
-                            if (seller.mobile) {
-                                sellerHtml += `<div><i class="fas fa-mobile-alt"></i> ${seller.mobile}</div>`;
-                            }
-                            if (seller.address && seller.address !== '---') {
-                                sellerHtml += `<div><i class="fas fa-map-marker-alt"></i> ${seller.address}</div>`;
-                            }
-                            
-                            if (seller.card) {
-                                sellerHtml += `<div><i class="fas fa-credit-card"></i> ${seller.card || '---'}</div>`;
-                            }
-                            
-                            if (seller.sheba) {
-                                sellerHtml += `<div><i class="fas fa-bank"></i> ${seller.sheba || '---'}</div>`;
-                            }
-                            
-                            sellerHtml += `</div></div></div>`;
-                            
-                            $results.append(sellerHtml);
-                        });
-                    } else {
-                        $results.append(`
-                            <div class="seller-result-item new-seller" 
-                                 data-name="${query}">
-                                <i class="fas fa-plus-circle"></i> 
-                                ایجاد فروشنده جدید: "${query}"
-                            </div>
-                        `);
-                    }
-                    
-                    $results.show();
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error in seller search:', error);
-                    $results.empty().append(`
-                        <div class="seller-result-item">
-                            <i class="fas fa-exclamation-triangle"></i> 
-                            خطا در دریافت اطلاعات فروشندگان
-                        </div>
-                    `).show();
-                }
-            });
-        });
-        
-        // انتخاب فروشنده
-        $('#seller-results').on('click', '.seller-result-item', function() {
-            if ($(this).hasClass('new-seller')) {
-                alert('ایجاد فروشنده جدید در این نسخه پشتیبانی نمی‌شود');
-            } else {
-                $('#selected-seller').val($(this).data('id'));
-                $('#seller-search').val($(this).data('name'));
-                $('#seller-results').empty().hide();
-            }
-        });
-        
-        // مخفی کردن نتایج فروشنده
-        $(document).on('click', function(e) {
-            if (!$('#seller-results').is(e.target) && 
-                $('#seller-results').has(e.target).length === 0 &&
-                !$('#seller-search').is(e.target)) {
-                $('#seller-results').hide();
-            }
-        });
+    return result.trim().replace(/ و $/, "");
+}
 
-        // تابع برای جستجوی محصولات - نسخه ساده و کارآمد
-        function initProductSearch($input) {
-            const $results = $input.siblings('.search-results');
-            const $row = $input.closest('.item-row');
-            let searchTimeout;
-            
-            $input.on('input', function() {
-                clearTimeout(searchTimeout);
-                const query = $(this).val().trim();
-                
+// تابع به‌روزرسانی مبلغ به حروف
+function updatePriceWords(input) {
+    const value = parseInt(input.val()) || 0;
+    const words = numberToWords(value);
+    input.siblings('.price-words').text(words + " تومان");
+}
+
+            // محاسبه جمع‌های فاکتور
+            function calculateTotals() {
+                let totalItems = 0;
+                let totalAmount = 0;
+                let totalDiscount = 0;
+
+                $('.item-row').each(function() {
+                    const quantity = parseInt($(this).find('input[name="quantity[]"]').val()) || 0;
+                    const unitPrice = parseFloat($(this).find('input[name="unit_price[]"]').val()) || 0;
+                    const discount = parseFloat($(this).find('input[name="discount[]"]').val()) || 0;
+                    const lineTotal = quantity * unitPrice;
+
+                    // به‌روزرسانی جمع کل خط
+                    $(this).find('.line-total-input').val(lineTotal);
+                    updatePriceWords($(this).find('.line-total-input'));
+
+                    totalItems += quantity;
+                    totalAmount += lineTotal;
+                    totalDiscount += discount;
+                });
+
+                $('#total-items').text(totalItems);
+                $('#total-amount').text(totalAmount.toLocaleString('fa-IR') + ' تومان');
+                $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');
+                $('#final-amount').text((totalAmount - totalDiscount).toLocaleString('fa-IR') + ' تومان');
+            }
+
+            // محاسبه اولیه هنگام لود صفحه
+            calculateTotals();
+
+            // جستجوی فروشنده
+            $('#seller-search').on('input', function() {
+                let query = $(this).val().trim();
+                query = convertPersianToEnglishNumbers(query);
+                const $results = $('#seller-results');
+
                 if (query.length < 2) {
                     $results.empty().hide();
                     return;
                 }
-                
-                // نمایش حالت بارگذاری
-                $results.html(`
-                    <div class="search-result-item">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        در حال جستجو...
-                    </div>
-                `).show();
-                
-                searchTimeout = setTimeout(function() {
-                    console.log('جستجو برای:', query); // برای دیباگ
-                    
+
+                $.ajax({
+                    url: "{% url 'search_sellers' %}",
+                    data: { q: query },
+                    dataType: 'json',
+                    success: function(data) {
+                        $results.empty();
+
+                        if (data.results && data.results.length > 0) {
+                            data.results.forEach(seller => {
+                                let sellerHtml = `
+                                    <div class="seller-result-item"
+                                         data-id="${seller.id}"
+                                         data-name="${seller.name} ${seller.family} - ${seller.store || 'بدون نام فروشگاه'}">
+                                        <div class="seller-info">
+                                            <div class="seller-name">
+                                                <i class="fas fa-store"></i>
+                                                ${seller.store || 'بدون نام فروشگاه'}
+                                            </div>
+                                            <div class="seller-details">`;
+
+                                if (seller.name || seller.family) {
+                                    sellerHtml += `<div><i class="fas fa-user"></i> ${seller.name} ${seller.family}</div>`;
+                                }
+
+                                if (seller.mobile) {
+                                    sellerHtml += `<div><i class="fas fa-mobile-alt"></i> ${seller.mobile}</div>`;
+                                }
+                                if (seller.address && seller.address !== '---') {
+                                    sellerHtml += `<div><i class="fas fa-map-marker-alt"></i> ${seller.address}</div>`;
+                                }
+
+                                if (seller.card) {
+                                    sellerHtml += `<div><i class="fas fa-credit-card"></i> ${seller.card || '---'}</div>`;
+                                }
+
+                                if (seller.sheba) {
+                                    sellerHtml += `<div><i class="fas fa-bank"></i> ${seller.sheba || '---'}</div>`;
+                                }
+
+                                sellerHtml += `</div></div></div>`;
+
+                                $results.append(sellerHtml);
+                            });
+                        } else {
+                            $results.append(`
+                                <div class="seller-result-item new-seller"
+                                     data-name="${query}">
+                                    <i class="fas fa-plus-circle"></i>
+                                    ایجاد فروشنده جدید: "${query}"
+                                </div>
+                            `);
+                        }
+
+                        $results.show();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error in seller search:', error);
+                        $results.empty().append(`
+                            <div class="seller-result-item">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                خطا در دریافت اطلاعات فروشندگان
+                            </div>
+                        `).show();
+                    }
+                });
+            });
+
+            // انتخاب فروشنده
+            $('#seller-results').on('click', '.seller-result-item', function() {
+                if ($(this).hasClass('new-seller')) {
+                    alert('ایجاد فروشنده جدید در این نسخه پشتیبانی نمی‌شود');
+                } else {
+                    $('#selected-seller').val($(this).data('id'));
+                    $('#seller-search').val($(this).data('name'));
+                    $('#seller-results').empty().hide();
+                }
+            });
+
+            // مخفی کردن نتایج فروشنده
+            $(document).on('click', function(e) {
+                if (!$('#seller-results').is(e.target) &&
+                    $('#seller-results').has(e.target).length === 0 &&
+                    !$('#seller-search').is(e.target)) {
+                    $('#seller-results').hide();
+                }
+            });
+
+            // تابع برای جستجوی محصولات
+            function initProductSearch($input) {
+                const $results = $input.siblings('.search-results');
+                const $row = $input.closest('.item-row');
+
+                $input.on('input', function() {
+                    let query = $(this).val().trim();
+                    query = convertPersianToEnglishNumbers(query);
+
+                    if (query.length < 2) {
+                        $results.empty().hide();
+                        return;
+                    }
+
                     $.ajax({
                         url: "{% url 'search_products' %}",
                         data: { q: query },
                         dataType: 'json',
                         success: function(data) {
-                            console.log('داده دریافتی:', data); // برای دیباگ
-                            
                             $results.empty();
-                            
-                            // بررسی وجود خطا
-                            if (data.error) {
-                                console.error('خطا از سرور:', data.error);
-                                $results.append(`
-                                    <div class="search-result-item">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        خطا در جستجو
-                                    </div>
-                                `);
-                                $results.show();
-                                return;
-                            }
-                            
-                            // بررسی ساختار داده‌ها
-                            if (!data.results) {
-                                console.error('داده‌های نامعتبر: results وجود ندارد');
-                                $results.append(`
-                                    <div class="search-result-item">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        ساختار داده‌ها نامعتبر است
-                                    </div>
-                                `);
-                                $results.show();
-                                return;
-                            }
-                            
+
                             // ایجاد یک شیء برای ذخیره نام‌های منحصر به فرد
                             const uniqueProducts = {};
-                            
-                            if (data.results && data.results.length > 0) {
-                                // نمایش تعداد نتایج
-                                $results.append(`
-                                    <div class="search-result-item search-header">
-                                        <i class="fas fa-list"></i>
-                                        ${data.results.length} نتیجه یافت شد
-                                    </div>
-                                `);
-                                
-                                // نمایش نتایج
-                                data.results.forEach(function(item) {
-                                    if (item && item.text && !uniqueProducts[item.text]) {
+
+                            if (data.results.length > 0) {
+                                data.results.forEach(item => {
+                                    // اگر این نام محصول قبلاً نیامده باشد، اضافه کن
+                                    if (!uniqueProducts[item.text]) {
                                         uniqueProducts[item.text] = true;
                                         $results.append(`
-                                            <div class="search-result-item" data-name="${item.text}">
-                                                <i class="fas fa-box"></i>
+                                            <div class="search-result-item"
+                                                 data-name="${item.text}">
+                                                <i class="fas fa-file-invoice"></i>
                                                 ${item.text}
                                             </div>
                                         `);
                                     }
                                 });
-                            } else {
-                                $results.append(`
-                                    <div class="search-result-item no-results">
-                                        <i class="fas fa-search"></i>
-                                        نتیجه‌ای یافت نشد
-                                    </div>
-                                `);
                             }
-                            
-                            // گزینه ایجاد کالای جدید
-                            if (query.length >= 2 && !uniqueProducts[query]) {
+
+                            // اطمینان از اینکه محصول جدید نیز تکراری نباشد
+                            if (!uniqueProducts[query]) {
                                 $results.append(`
-                                    <div class="search-result-item new-product" data-name="${query}">
-                                        <i class="fas fa-plus-circle" style="color: #4CAF50;"></i>
+                                    <div class="search-result-item new-product"
+                                         data-name="${query}">
+                                        <i class="fas fa-plus-circle"></i>
                                         ایجاد کالای جدید: "${query}"
                                     </div>
                                 `);
                             }
-                            
+
                             $results.show();
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('خطای AJAX:', error);
-                            $results.html(`
-                                <div class="search-result-item">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    خطا در اتصال به سرور
-                                </div>
-                            `).show();
                         }
                     });
-                }, 300); // تاخیر 300 میلی‌ثانیه
-            });
-            
-            // انتخاب آیتم
-            $results.on('click', '.search-result-item:not(.search-header):not(.no-results)', function() {
-                const productName = $(this).data('name');
-                const isNewProduct = $(this).hasClass('new-product');
-                
-                $row.find('.product-id').val('');
-                $row.find('.product-name').val(productName);
-                
-                if (isNewProduct) {
-                    // تأیید برای ایجاد کالای جدید
-                    if (confirm(`آیا می‌خواهید کالای جدید "${productName}" ایجاد کنید؟`)) {
-                        $row.find('.product-name').css('border-color', '#28a745');
+                });
+
+                // انتخاب نتیجه جستجو
+                $results.on('click', '.search-result-item', function() {
+                    if ($(this).hasClass('new-product')) {
+                        $row.find('.product-id').val('');
+                        $row.find('.product-name').val($(this).data('name'));
                         $row.find('.unit-price').val('').focus();
                     } else {
-                        $row.find('.product-name').val('');
-                        $results.show();
-                        return;
+                        $row.find('.product-id').val('');
+                        $row.find('.product-name').val($(this).data('name'));
+                        $row.find('.unit-price').val('').focus();
                     }
+
+                    $results.empty().hide();
+                });
+
+                // مخفی کردن نتایج هنگام کلیک خارج
+                $(document).on('click', function(e) {
+                    if (!$results.is(e.target) && $results.has(e.target).length === 0) {
+                        $results.hide();
+                    }
+                });
+            }
+
+            // فعال‌سازی جستجو برای کالای اول
+            initProductSearch($('.product-name'));
+
+            // افزودن سطر جدید
+            $('#add-item').click(function() {
+                const newRow = $('<tr class="item-row">').html(`
+                    <td data-label="نام کالا">
+                        <div class="product-search-container">
+                            <input type="hidden" name="product_id[]" class="product-id">
+                            <input type="text" name="product_name[]" class="product-name"
+                                   placeholder="جستجو یا وارد کردن کالای جدید" required>
+                            <div class="search-results"></div>
+                        </div>
+                    </td>
+                    <td data-label="قیمت خرید">
+                        <input type="number" name="unit_price[]" class="unit-price price-input" min="0"required>
+                        <div class="price-words"></div>
+                    </td>
+                    <td data-label="تعداد">
+                        <input type="number" name="quantity[]" min="1" value="1" required>
+                    </td>
+                    <td data-label="جمع کل">
+                        <input type="number" name="line_total[]" class="line-total-input" readonly>
+                        <div class="price-words"></div>
+                    </td>
+                    <td data-label="تخفیف">
+                        <input type="number" name="discount[]" min="0" value="0" step="100">
+                    </td>
+                    <td data-label="عملیات">
+                        <button type="button" class="btn btn-danger remove-item">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `);
+
+                $('#items-container').append(newRow);
+                initProductSearch(newRow.find('.product-name'));
+
+                // افزودن رویداد برای به‌روزرسانی قیمت و جمع کل
+                newRow.find('.unit-price, input[name="quantity[]"]').on('input', function() {
+                    const row = $(this).closest('.item-row');
+                    const quantity = parseInt(row.find('input[name="quantity[]"]').val()) || 0;
+                    const unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
+                    const lineTotal = quantity * unitPrice;
+
+                    row.find('.line-total-input').val(lineTotal);
+                    updatePriceWords(row.find('.line-total-input'));
+                    calculateTotals();
+                });
+
+                calculateTotals();
+            });
+
+            // حذف سطر
+            $(document).on('click', '.remove-item', function() {
+                if ($('#items-container tr').length > 1) {
+                    $(this).closest('tr').remove();
+                    calculateTotals();
                 } else {
-                    $row.find('.unit-price').val('').focus();
-                }
-                
-                $results.hide();
-                calculateTotals();
-            });
-            
-            // مخفی کردن نتایج
-            $(document).on('click', function(e) {
-                if (!$results.is(e.target) && $results.has(e.target).length === 0) {
-                    $results.hide();
+                    alert('حداقل یک کالا باید وجود داشته باشد');
                 }
             });
-        }
 
-        // فعال‌سازی جستجو برای کالای اول
-        initProductSearch($('.product-name'));
-
-        // افزودن سطر جدید
-        $('#add-item').click(function() {
-            const newRow = $('<tr class="item-row">').html(`
-                <td data-label="نام کالا">
-                    <div class="product-search-container">
-                        <input type="hidden" name="product_id[]" class="product-id">
-                        <input type="text" name="product_name[]" class="product-name" 
-                               placeholder="جستجو یا وارد کردن کالای جدید" required>
-                        <div class="search-results"></div>
-                    </div>
-                </td>
-                <td data-label="قیمت خرید">
-                    <input type="number" name="unit_price[]" class="unit-price price-input" min="0"required>
-                    <div class="price-words"></div>
-                </td>
-                <td data-label="تعداد">
-                    <input type="number" name="quantity[]" min="1" value="1" required>
-                </td>
-                <td data-label="جمع کل">
-                    <input type="number" name="line_total[]" class="line-total-input" readonly>
-                    <div class="price-words"></div>
-                </td>
-                <td data-label="تخفیف">
-                    <input type="number" name="discount[]" min="0" value="0" step="100">
-                </td>
-                <td data-label="عملیات">
-                    <button type="button" class="btn btn-danger remove-item">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            `);
-            
-            $('#items-container').append(newRow);
-            initProductSearch(newRow.find('.product-name'));
-            
-            // افزودن رویداد برای به‌روزرسانی قیمت و جمع کل
-            newRow.find('.unit-price, input[name="quantity[]"]').on('input', function() {
-                const row = $(this).closest('.item-row');
-                const quantity = parseInt(row.find('input[name="quantity[]"]').val()) || 0;
-                const unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
-                const lineTotal = quantity * unitPrice;
-                
-                row.find('.line-total-input').val(lineTotal);
-                updatePriceWords(row.find('.line-total-input'));
+            // محاسبه مجدد هنگام تغییر مقادیر
+            $(document).on('input', 'input[name="quantity[]"], input[name="unit_price[]"], input[name="discount[]"]', function() {
                 calculateTotals();
             });
-            
-            calculateTotals();
-        });
-        
-        // حذف سطر
-        $(document).on('click', '.remove-item', function() {
-            if ($('#items-container tr').length > 1) {
-                $(this).closest('tr').remove();
-                calculateTotals();
-            } else {
-                alert('حداقل یک کالا باید وجود داشته باشد');
-            }
-        });
-        
-        // محاسبه مجدد هنگام تغییر مقادیر
-        $(document).on('input', 'input[name="quantity[]"], input[name="unit_price[]"], input[name="discount[]"]', function() {
-            calculateTotals();
-        });
-        
-        // به‌روزرسانی مبلغ به حروف هنگام تغییر قیمت
-        $(document).on('input', '.unit-price', function() {
-            updatePriceWords($(this));
-        });
-        
-        // اعتبارسنجی فرم
-        $('#invoice-form').submit(function(e) {
-            const seller = $('#selected-seller').val();
-            if (!seller) {
-                alert('لطفاً فروشنده را انتخاب کنید');
-                e.preventDefault();
-                return;
-            }
-            
-            let valid = true;
-            $('.product-name').each(function() {
-                if (!$(this).val()) {
-                    valid = false;
-                    $(this).css('border-color', 'red');
+
+            // به‌روزرسانی مبلغ به حروف هنگام تغییر قیمت
+            $(document).on('input', '.unit-price', function() {
+                updatePriceWords($(this));
+            });
+
+            // اعتبارسنجی فرم
+            $('#invoice-form').submit(function(e) {
+                const seller = $('#selected-seller').val();
+                if (!seller) {
+                    alert('لطفاً فروشنده را انتخاب کنید');
+                    e.preventDefault();
+                    return;
+                }
+
+                let valid = true;
+                $('.product-name').each(function() {
+                    if (!$(this).val()) {
+                        valid = false;
+                        $(this).css('border-color', 'red');
+                    }
+                });
+
+                if (!valid) {
+                    alert('لطفاً تمام کالاها را انتخاب کنید');
+                    e.preventDefault();
                 }
             });
-            
-            if (!valid) {
-                alert('لطفاً تمام کالاها را انتخاب کنید');
-                e.preventDefault();
+
+            // دکمه بازگشت به صفحه اصلی
+            $('#back-to-home').click(function() {
+                if (confirm('اطلاعات وارد شده ثبت نشده و با خارج شدن از صفحه از بین خواهند رفت. آیا مطمئن هستید؟')) {
+                    window.location.href = "{% url 'home' %}";
+                }
+            });
+
+            // مدیریت نمایش فرم در موبایل
+            function checkMobileView() {
+                if ($(window).width() <= 768) {
+                    $('.invoice-table thead').hide();
+                    $('.item-row').addClass('mobile-view');
+                } else {
+                    $('.invoice-table thead').show();
+                    $('.item-row').removeClass('mobile-view');
+                }
             }
+
+            // بررسی هنگام لود و تغییر سایز صفحه
+            $(window).on('load resize', checkMobileView);
         });
         
-        // دکمه بازگشت به صفحه اصلی
-        $('#back-to-home').click(function() {
-            if (confirm('اطلاعات وارد شده ثبت نشده و با خارج شدن از صفحه از بین خواهند رفت. آیا مطمئن هستید؟')) {
-                window.location.href = "{% url 'home' %}";
-            }
-        });
-    });
-        // تابع تبدیل اعداد فارسی و عربی به انگلیسی
+        
+        
+            // تابع تبدیل اعداد فارسی و عربی به انگلیسی
     function convertPersianToEnglishNumbers(input) {
         if (!input) return input;
         
@@ -1661,7 +1719,7 @@
             }
         });
     });
-
+    </script>
     </script>
 </body>
 </html>
