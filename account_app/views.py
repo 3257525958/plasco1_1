@@ -1852,30 +1852,28 @@ def debug_products(request):
 
 @require_http_methods(["GET"])
 def get_all_products(request):
-    """دریافت تمام محصولات - نسخه بهینه‌شده"""
+    """دریافت تمام محصولات - نسخه فوق‌بهینه"""
     try:
-        # دریافت صفحه از پارامترهای URL
         page = int(request.GET.get('page', 1))
-        per_page = 50  # محدود کردن تعداد در هر درخواست
+        per_page = 30  # کاهش از 50 به 30
 
         start = (page - 1) * per_page
-        end = start + per_page
 
-        # دریافت تعداد کل محصولات برای آمار
+        # 1. فقط فیلدهای مورد نیاز رو بگیریم
+        products = ProductPricing.objects.all().only(
+            'product_name', 'highest_purchase_price', 'invoice_date',
+            'invoice_number', 'adjustment_percentage', 'standard_price',
+            'created_at', 'updated_at'
+        ).order_by('product_name')[start:start + per_page]
+
         total_products = ProductPricing.objects.count()
 
-        # دریافت تمام شعب
-        branches = Branch.objects.all()
-        branch_dict = {branch.id: branch for branch in branches}
-
-        # دریافت محصولات با محدودیت
-        products = ProductPricing.objects.all().order_by('product_name')[start:end]
-
-        # اگر محصولی نداریم، خالی برگردان
-        if not products.exists():
+        # 2. شعب رو ساده بگیریم
+        branches = list(Branch.objects.values('id', 'name'))
+        if not branches:
             return JsonResponse({
                 'products': [],
-                'branches': [{'id': b.id, 'name': b.name} for b in branches],
+                'branches': [],
                 'pagination': {
                     'page': page,
                     'per_page': per_page,
@@ -1884,53 +1882,65 @@ def get_all_products(request):
                 }
             })
 
-        # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
-        product_names = [p.product_name for p in products]
+        # 3. محصولات رو به لیست تبدیل کنیم
+        product_list = list(products)
+        if not product_list:
+            return JsonResponse({
+                'products': [],
+                'branches': branches,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'has_next': False,
+                    'total_products': total_products
+                }
+            })
 
-        # دریافت آخرین موجودی برای هر محصول و شعبه
-        latest_inventories = InventoryCount.objects.filter(
+        product_names = [p.product_name for p in product_list]
+
+        # 4. بهینه‌سازی: همه داده‌های مرتبط رو در یک query بگیریم
+        from django.db.models import Subquery, OuterRef
+
+        # آخرین موجودی هر محصول در هر شعبه
+        latest_inventory_subquery = InventoryCount.objects.filter(
+            product_name=OuterRef('product_name'),
+            branch_id=OuterRef('branch_id')
+        ).order_by('-created_at')
+
+        # 5. داده‌های InventoryCount رو بهینه بگیریم
+        inventory_data = {}
+        # فقط محصولات این صفحه رو بررسی کنیم
+        inventories = InventoryCount.objects.filter(
             product_name__in=product_names
-        ).values('product_name', 'branch').annotate(
-            latest_created=Max('created_at')
-        )
+        ).select_related('branch').order_by('product_name', 'branch', '-created_at')
 
-        # دریافت تنظیمات چاپ لیبل برای هر محصول و شعبه
-        label_settings = ProductLabelSetting.objects.filter(
+        for inv in inventories:
+            key = f"{inv.product_name}_{inv.branch_id}"
+            if key not in inventory_data:  # فقط آخرین رو بگیر
+                inventory_data[key] = {
+                    'selling_price': float(inv.selling_price) if inv.selling_price else 0,
+                    'quantity': inv.quantity,
+                    'profit_percentage': float(inv.profit_percentage) if inv.profit_percentage else 70.0
+                }
+
+        # 6. تنظیمات چاپ لیبل رو بهینه بگیریم
+        label_data = {}
+        labels = ProductLabelSetting.objects.filter(
             product_name__in=product_names
-        ).select_related('branch')
+        ).select_related('branch').only('product_name', 'branch_id', 'allow_print')
 
-        # ایجاد دیکشنری برای تنظیمات چاپ لیبل
-        label_dict = {}
-        for label in label_settings:
-            key = f"{label.product_name}_{label.branch.id}"
-            label_dict[key] = {
+        for label in labels:
+            key = f"{label.product_name}_{label.branch_id}"
+            label_data[key] = {
                 'allow_print': label.allow_print,
-                'print_count': LabelPrintItem.objects.filter(label_setting=label).count()
+                'print_count': LabelPrintItem.objects.filter(
+                    label_setting=label
+                ).count() if hasattr(LabelPrintItem, 'objects') else 0
             }
 
-        # ایجاد lookup برای سریع‌تر کردن دسترسی
-        inventory_lookup = {}
-        for inv in latest_inventories:
-            key = f"{inv['product_name']}_{inv['branch']}"
-            inventory_lookup[key] = inv['latest_created']
-
-        # دریافت داده‌های کامل برای آخرین موجودی‌ها
-        latest_dates = list(inventory_lookup.values())
-        if latest_dates:
-            actual_inventories = InventoryCount.objects.filter(
-                created_at__in=latest_dates
-            ).select_related('branch')
-        else:
-            actual_inventories = InventoryCount.objects.none()
-
-        # ایجاد دیکشنری برای دسترسی سریع
-        inventory_dict = {}
-        for inv in actual_inventories:
-            key = f"{inv.product_name}_{inv.branch.id}"
-            inventory_dict[key] = inv
-
+        # 7. سریع‌سازی ساخت results
         results = []
-        for product in products:
+        for product in product_list:
             product_data = {
                 'id': product.id,
                 'product_name': product.product_name,
@@ -1945,27 +1955,32 @@ def get_all_products(request):
                 'branch_prices': {}
             }
 
-            # پر کردن داده‌های شعب
+            # پر کردن داده‌های شعب به صورت بهینه
             for branch in branches:
-                lookup_key = f"{product.product_name}_{branch.id}"
-                inventory = inventory_dict.get(lookup_key)
+                branch_id = branch['id']
+                lookup_key = f"{product.product_name}_{branch_id}"
 
-                # بررسی وضعیت چاپ لیبل از دیکشنری
-                label_info = label_dict.get(lookup_key, {'allow_print': False, 'print_count': 0})
+                # پیدا کردن موجودی
+                inventory = inventory_data.get(lookup_key)
+
+                # پیدا کردن تنظیمات چاپ
+                label_info = label_data.get(lookup_key, {
+                    'allow_print': False,
+                    'print_count': 0
+                })
 
                 if inventory:
-                    product_data['branch_prices'][branch.id] = {
-                        'branch_name': branch.name,
-                        'selling_price': inventory.selling_price if inventory.selling_price else 0,
-                        'quantity': inventory.quantity,
-                        'profit_percentage': float(
-                            inventory.profit_percentage) if inventory.profit_percentage else 70.0,
+                    product_data['branch_prices'][branch_id] = {
+                        'branch_name': branch['name'],
+                        'selling_price': inventory['selling_price'],
+                        'quantity': inventory['quantity'],
+                        'profit_percentage': inventory['profit_percentage'],
                         'allow_print': label_info['allow_print'],
                         'print_count': label_info['print_count']
                     }
                 else:
-                    product_data['branch_prices'][branch.id] = {
-                        'branch_name': branch.name,
+                    product_data['branch_prices'][branch_id] = {
+                        'branch_name': branch['name'],
                         'selling_price': 0,
                         'quantity': 0,
                         'profit_percentage': 70.0,
@@ -1975,9 +1990,11 @@ def get_all_products(request):
 
             results.append(product_data)
 
+        print(f"✅ صفحه {page}: {len(results)} محصول پردازش شد")
+
         return JsonResponse({
             'products': results,
-            'branches': [{'id': b.id, 'name': b.name} for b in branches],
+            'branches': branches,
             'pagination': {
                 'page': page,
                 'per_page': per_page,
@@ -1988,9 +2005,154 @@ def get_all_products(request):
 
     except Exception as e:
         import traceback
-        print(f"❌ خطا در get_all_products: {str(e)}")
-        print(traceback.format_exc())
-        return JsonResponse({'error': f'خطا در پردازش: {str(e)}'}, status=500)
+        print(f"❌ خطا در get_all_products صفحه {page}: {str(e)}")
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'خطا در پردازش درخواست',
+            'page': page,
+            'suggestion': 'لطفا صفحه را مجدداً بارگذاری کنید'
+        }, status=500)
+# @require_http_methods(["GET"])
+# def get_all_products(request):
+#     """دریافت تمام محصولات - نسخه بهینه‌شده"""
+#     try:
+#         # دریافت صفحه از پارامترهای URL
+#         page = int(request.GET.get('page', 1))
+#         per_page = 50  # محدود کردن تعداد در هر درخواست
+#
+#         start = (page - 1) * per_page
+#         end = start + per_page
+#
+#         # دریافت تعداد کل محصولات برای آمار
+#         total_products = ProductPricing.objects.count()
+#
+#         # دریافت تمام شعب
+#         branches = Branch.objects.all()
+#         branch_dict = {branch.id: branch for branch in branches}
+#
+#         # دریافت محصولات با محدودیت
+#         products = ProductPricing.objects.all().order_by('product_name')[start:end]
+#
+#         # اگر محصولی نداریم، خالی برگردان
+#         if not products.exists():
+#             return JsonResponse({
+#                 'products': [],
+#                 'branches': [{'id': b.id, 'name': b.name} for b in branches],
+#                 'pagination': {
+#                     'page': page,
+#                     'per_page': per_page,
+#                     'has_next': False,
+#                     'total_products': total_products
+#                 }
+#             })
+#
+#         # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
+#         product_names = [p.product_name for p in products]
+#
+#         # دریافت آخرین موجودی برای هر محصول و شعبه
+#         latest_inventories = InventoryCount.objects.filter(
+#             product_name__in=product_names
+#         ).values('product_name', 'branch').annotate(
+#             latest_created=Max('created_at')
+#         )
+#
+#         # دریافت تنظیمات چاپ لیبل برای هر محصول و شعبه
+#         label_settings = ProductLabelSetting.objects.filter(
+#             product_name__in=product_names
+#         ).select_related('branch')
+#
+#         # ایجاد دیکشنری برای تنظیمات چاپ لیبل
+#         label_dict = {}
+#         for label in label_settings:
+#             key = f"{label.product_name}_{label.branch.id}"
+#             label_dict[key] = {
+#                 'allow_print': label.allow_print,
+#                 'print_count': LabelPrintItem.objects.filter(label_setting=label).count()
+#             }
+#
+#         # ایجاد lookup برای سریع‌تر کردن دسترسی
+#         inventory_lookup = {}
+#         for inv in latest_inventories:
+#             key = f"{inv['product_name']}_{inv['branch']}"
+#             inventory_lookup[key] = inv['latest_created']
+#
+#         # دریافت داده‌های کامل برای آخرین موجودی‌ها
+#         latest_dates = list(inventory_lookup.values())
+#         if latest_dates:
+#             actual_inventories = InventoryCount.objects.filter(
+#                 created_at__in=latest_dates
+#             ).select_related('branch')
+#         else:
+#             actual_inventories = InventoryCount.objects.none()
+#
+#         # ایجاد دیکشنری برای دسترسی سریع
+#         inventory_dict = {}
+#         for inv in actual_inventories:
+#             key = f"{inv.product_name}_{inv.branch.id}"
+#             inventory_dict[key] = inv
+#
+#         results = []
+#         for product in products:
+#             product_data = {
+#                 'id': product.id,
+#                 'product_name': product.product_name,
+#                 'highest_purchase_price': float(
+#                     product.highest_purchase_price) if product.highest_purchase_price else 0,
+#                 'invoice_date': product.invoice_date.strftime('%Y-%m-%d') if product.invoice_date else '',
+#                 'invoice_number': product.invoice_number or '',
+#                 'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
+#                 'standard_price': float(product.standard_price) if product.standard_price else 0,
+#                 'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
+#                 'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
+#                 'branch_prices': {}
+#             }
+#
+#             # پر کردن داده‌های شعب
+#             for branch in branches:
+#                 lookup_key = f"{product.product_name}_{branch.id}"
+#                 inventory = inventory_dict.get(lookup_key)
+#
+#                 # بررسی وضعیت چاپ لیبل از دیکشنری
+#                 label_info = label_dict.get(lookup_key, {'allow_print': False, 'print_count': 0})
+#
+#                 if inventory:
+#                     product_data['branch_prices'][branch.id] = {
+#                         'branch_name': branch.name,
+#                         'selling_price': inventory.selling_price if inventory.selling_price else 0,
+#                         'quantity': inventory.quantity,
+#                         'profit_percentage': float(
+#                             inventory.profit_percentage) if inventory.profit_percentage else 70.0,
+#                         'allow_print': label_info['allow_print'],
+#                         'print_count': label_info['print_count']
+#                     }
+#                 else:
+#                     product_data['branch_prices'][branch.id] = {
+#                         'branch_name': branch.name,
+#                         'selling_price': 0,
+#                         'quantity': 0,
+#                         'profit_percentage': 70.0,
+#                         'allow_print': label_info['allow_print'],
+#                         'print_count': label_info['print_count']
+#                     }
+#
+#             results.append(product_data)
+#
+#         return JsonResponse({
+#             'products': results,
+#             'branches': [{'id': b.id, 'name': b.name} for b in branches],
+#             'pagination': {
+#                 'page': page,
+#                 'per_page': per_page,
+#                 'has_next': len(results) == per_page,
+#                 'total_products': total_products
+#             }
+#         })
+#
+#     except Exception as e:
+#         import traceback
+#         print(f"❌ خطا در get_all_products: {str(e)}")
+#         print(traceback.format_exc())
+#         return JsonResponse({'error': f'خطا در پردازش: {str(e)}'}, status=500)
 
 
 @require_http_methods(["GET"])
