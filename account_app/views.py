@@ -1849,6 +1849,7 @@ def debug_products(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 @require_http_methods(["GET"])
 def get_all_products(request):
     """دریافت تمام محصولات - نسخه بهینه‌شده"""

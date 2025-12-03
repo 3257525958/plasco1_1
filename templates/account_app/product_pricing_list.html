@@ -409,13 +409,13 @@
             font-weight: bold;
             border: 1px solid;
         }
-
+        
         .print-allowed {
             background-color: var(--green-light);
             color: var(--green-dark);
             border-color: var(--green-dark);
         }
-
+        
         .print-not-allowed {
             background-color: var(--red-light);
             color: var(--red-dark);
@@ -469,7 +469,7 @@
             display: inline-block;
             cursor: help;
         }
-
+        
         .info-tooltip .tooltip-text {
             visibility: hidden;
             width: 200px;
@@ -488,7 +488,7 @@
             font-size: 0.8rem;
             pointer-events: none;
         }
-
+        
         .info-tooltip:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
@@ -520,35 +520,35 @@
             .container {
                 padding: 15px;
             }
-
+            
             .header h1 {
                 font-size: 1.5rem;
             }
-
+            
             .stats {
                 flex-direction: column;
                 gap: 15px;
             }
-
+            
             .products-table {
                 font-size: 0.9rem;
             }
-
+            
             .products-table th,
             .products-table td {
                 padding: 6px 4px;
             }
-
+            
             .adjustment-input {
                 width: 60px;
                 font-size: 0.8rem;
             }
-
+            
             .branch-header {
                 font-size: 0.8rem;
                 min-width: 100px;
             }
-
+            
             .bulk-actions-container {
                 flex-direction: column;
                 align-items: flex-start;
@@ -621,10 +621,10 @@
                         <input type="checkbox" id="select-all-products">
                         <label for="select-all-products">انتخاب همه محصولات نمایش داده شده</label>
                     </div>
-
+                    
                     <div class="bulk-adjustment-controls">
                         <label for="bulk-adjustment">درصد تعدیل برای انتخاب‌ها:</label>
-                        <input type="number" id="bulk-adjustment" class="adjustment-input"
+                        <input type="number" id="bulk-adjustment" class="adjustment-input" 
                                step="0.01" min="0" max="100" placeholder="0.00"
                                style="width: 100px;">
                         <button id="apply-bulk-adjustment" class="bulk-adjustment-btn">
@@ -729,10 +729,10 @@
         // تابع برای نمایش پیام
         function showMessage(message, type) {
             const messageClass = type === 'error' ? 'error-message' :
-                                type === 'success' ? 'success-message' :
+                                type === 'success' ? 'success-message' : 
                                 type === 'warning' ? 'warning-message' : 'info-message';
             const icon = type === 'error' ? 'fa-exclamation-circle' :
-                        type === 'success' ? 'fa-check-circle' :
+                        type === 'success' ? 'fa-check-circle' : 
                         type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
 
             $('#messages').html(`
@@ -753,7 +753,7 @@
             const selectedCount = selectedProducts.size;
             $('#selected-count').text(`${selectedCount.toLocaleString()} محصول انتخاب شده`);
             $('#selected-products-count').text(selectedCount.toLocaleString());
-
+            
             // به‌روزرسانی وضعیت checkbox انتخاب همه
             const allVisibleProducts = allProducts.length;
             const $selectAll = $('#select-all-products');
@@ -786,15 +786,15 @@
         function createBranchHeaders() {
             try {
                 const $thead = $('.products-table thead tr');
-
+                
                 // حذف سرستون‌های قبلی شعب
                 $thead.find('.branch-header').remove();
-
+                
                 // اضافه کردن سرستون برای هر شعبه
                 branches.forEach(branch => {
                     $thead.append(`<th class="branch-header">${branch.name}<br><small>قیمت فروش</small></th>`);
                 });
-
+                
                 console.log(`✅ سرستون‌های ${branches.length} شعبه ایجاد شد`);
             } catch (error) {
                 console.error('❌ خطا در ایجاد سرستون‌ها:', error);
@@ -834,7 +834,7 @@
         function recalculatePrices(productName, newAdjustmentPercentage) {
             try {
                 console.log(`🔄 محاسبه مجدد قیمت‌ها برای ${productName} با درصد ${newAdjustmentPercentage}%`);
-
+                
                 // پیدا کردن ردیف محصول در جدول
                 const $row = $(`tr[data-product-name="${productName}"]`);
                 if (!$row.length) {
@@ -870,22 +870,22 @@
                         // به‌روزرسانی قیمت فروش در جدول
                         const $sellingPriceCell = $row.find(`.selling-price-cell[data-branch-id="${branch.id}"]`);
                         if ($sellingPriceCell.length) {
-                            const quantityText = branchData.quantity > 0 ?
-                                `<span class="quantity-badge">${branchData.quantity}</span>` :
+                            const quantityText = branchData.quantity > 0 ? 
+                                `<span class="quantity-badge">${branchData.quantity}</span>` : 
                                 '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-
+                            
                             // وضعیت چاپ لیبل
-                            const printStatus = branchData.allow_print ?
-                                '<span class="print-status print-allowed">✔ چاپ فعال</span>' :
+                            const printStatus = branchData.allow_print ? 
+                                '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
                                 '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
-
+                            
                             // تعداد چاپ‌ها
                             const printCount = branchData.print_count > 0 ?
                                 `<span class="print-count" title="تعداد چاپ‌ها">${branchData.print_count}</span>` : '';
-
-                            const sellingPrice = newSellingPrice > 0 ?
+                            
+                            const sellingPrice = newSellingPrice > 0 ? 
                                 newSellingPrice.toLocaleString() : 'ناموجود';
-
+                            
                             $sellingPriceCell.html(`
                                 <div class="branch-price-container">
                                     <div class="print-indicator">${printStatus} ${printCount}</div>
@@ -913,7 +913,7 @@
         // تابع برای ذخیره درصد تعدیل جدید در سرور
         function saveAdjustmentPercentage(productName, newAdjustmentPercentage) {
             console.log(`💾 ذخیره درصد تعدیل برای ${productName}: ${newAdjustmentPercentage}%`);
-
+            
             // نمایش حالت در حال پردازش
             const $input = $(`input[data-product-name="${productName}"]`);
             const originalValue = $input.val();
@@ -934,28 +934,28 @@
                 timeout: 10000,
                 success: function(data) {
                     $input.prop('disabled', false).css('opacity', '1');
-
+                    
                     if (data.success) {
                         console.log('✅ درصد تعدیل با موفقیت ذخیره شد');
-
+                        
                         // علامت‌گذاری فیلد به عنوان تغییر یافته
                         $input.addClass('changed');
                         setTimeout(() => {
                             $input.removeClass('changed');
                         }, 2000);
-
+                        
                         // به‌روزرسانی قیمت معیار با مقدار دقیق از سرور
                         if (data.new_standard_price) {
                             $(`tr[data-product-name="${productName}"] .standard-price-display`)
                                 .text(data.new_standard_price.toLocaleString());
                         }
-
+                        
                         let message = `درصد تعدیل برای ${productName} ذخیره شد`;
                         if (data.print_settings_updated && data.print_settings_updated > 0) {
                             message += ` و ${data.print_settings_updated} تنظیمات چاپ لیبل فعال شدند`;
                         }
                         showMessage(message, 'success');
-
+                        
                         // اگر تنظیمات چاپ لیبل فعال شده‌اند، وضعیت نمایش را به روز کن
                         if (data.print_settings_updated && data.print_settings_updated > 0) {
                             // به‌روزرسانی وضعیت چاپ لیبل در جدول
@@ -971,13 +971,13 @@
                 },
                 error: function(xhr, status, error) {
                     $input.prop('disabled', false).css('opacity', '1');
-
+                    
                     console.error('❌ خطا در ارتباط با سرور:', {
                         status: xhr.status,
                         statusText: xhr.statusText,
                         error: error
                     });
-
+                    
                     if (status === 'timeout') {
                         showMessage('زمان ذخیره‌سازی به پایان رسید', 'error');
                     } else if (xhr.status === 0) {
@@ -985,7 +985,7 @@
                     } else {
                         showMessage('خطا در ارتباط با سرور برای ذخیره درصد تعدیل', 'error');
                     }
-
+                    
                     // بازگشت به مقدار قبلی
                     $input.val(originalValue);
                     recalculatePrices(productName, originalValue);
@@ -996,33 +996,33 @@
         // تابع برای اعمال درصد تعدیل روی محصولات انتخاب شده
         function applyBulkAdjustment() {
             const bulkAdjustment = $('#bulk-adjustment').val().trim();
-
+            
             if (!bulkAdjustment) {
                 showMessage('لطفا درصد تعدیل را وارد کنید', 'error');
                 return;
             }
-
+            
             const adjustmentValue = parseFloat(bulkAdjustment);
             if (isNaN(adjustmentValue) || adjustmentValue < 0 || adjustmentValue > 100) {
                 showMessage('درصد تعدیل باید عددی بین 0 تا 100 باشد', 'error');
                 return;
             }
-
+            
             const selectedCount = selectedProducts.size;
             if (selectedCount === 0) {
                 showMessage('لطفا حداقل یک محصول را انتخاب کنید', 'error');
                 return;
             }
-
+            
             if (!confirm(`آیا می‌خواهید درصد تعدیل ${adjustmentValue}% روی ${selectedCount} محصول اعمال شود؟`)) {
                 return;
             }
-
+            
             const productNames = Array.from(selectedProducts);
-
+            
             // نمایش پیام در حال پردازش
             showMessage(`در حال اعمال درصد تعدیل ${adjustmentValue}% روی ${selectedCount} محصول...`, 'info');
-
+            
             $.ajax({
                 url: "{% url 'bulk_update_adjustment_percentage' %}",
                 method: 'POST',
@@ -1043,17 +1043,17 @@
                             if (result.success) {
                                 const $input = $(`input[data-product-name="${result.product_name}"]`);
                                 $input.val(adjustmentValue).addClass('changed');
-
+                                
                                 // محاسبه مجدد قیمت‌ها
                                 recalculatePrices(result.product_name, adjustmentValue);
-
+                                
                                 // اگر تنظیمات چاپ لیبل فعال شده‌اند
                                 if (result.label_settings_updated && result.label_settings_updated > 0) {
                                     updatePrintStatus(result.product_name, true);
                                 }
                             }
                         });
-
+                        
                         let message = `✅ درصد تعدیل ${adjustmentValue}% با موفقیت روی ${data.total_updated} از ${data.total_attempted} محصول اعمال شد`;
                         if (data.total_updated < data.total_attempted) {
                             message += ` (${data.total_attempted - data.total_updated} خطا)`;
@@ -1067,7 +1067,7 @@
                 },
                 error: function(xhr, status, error) {
                     console.error('❌ خطا در اعمال گروهی:', error);
-
+                    
                     if (status === 'timeout') {
                         showMessage('زمان عملیات گروهی به پایان رسید', 'error');
                     } else {
@@ -1081,7 +1081,7 @@
         function updatePrintStatus(productName, allowPrint) {
             const $row = $(`tr[data-product-name="${productName}"]`);
             if (!$row.length) return;
-
+            
             $row.find('.print-status').each(function() {
                 if (allowPrint) {
                     $(this).removeClass('print-not-allowed').addClass('print-allowed')
@@ -1095,7 +1095,7 @@
         function displayProducts(products, append = false) {
             try {
                 const $tbody = $('#products-table-body');
-
+                
                 if (products.length === 0 && !append) {
                     $('#no-results').removeClass('hidden');
                     $('.table-container').addClass('hidden');
@@ -1104,7 +1104,7 @@
                 } else {
                     $('#no-results').addClass('hidden');
                     $('.table-container').removeClass('hidden');
-
+                    
                     // اگر حالت append نباشد، کل جدول را پاک می‌کنیم
                     if (!append) {
                         $tbody.empty();
@@ -1112,17 +1112,17 @@
                         selectedProducts.clear();
                         updateSelectedCount();
                     }
-
+                    
                     console.log(`📊 نمایش ${products.length} محصول در جدول (${append ? 'اضافه شده' : 'جدید'})`);
-
+                    
                     products.forEach(product => {
                         // بررسی اینکه آیا محصول قبلاً انتخاب شده است
                         const isSelected = selectedProducts.has(product.product_name);
-
+                        
                         let row = `
                             <tr data-product-name="${product.product_name}" ${isSelected ? 'class="selected-row"' : ''}>
                                 <td>
-                                    <input type="checkbox" class="product-checkbox"
+                                    <input type="checkbox" class="product-checkbox" 
                                            data-product-name="${product.product_name}"
                                            ${isSelected ? 'checked' : ''}>
                                 </td>
@@ -1131,11 +1131,11 @@
                                 <td>${product.invoice_date || '-'}</td>
                                 <td>${product.invoice_number || '-'}</td>
                                 <td>
-                                    <input type="number"
-                                           class="adjustment-input"
-                                           value="${product.adjustment_percentage}"
-                                           step="0.01"
-                                           min="0"
+                                    <input type="number" 
+                                           class="adjustment-input" 
+                                           value="${product.adjustment_percentage}" 
+                                           step="0.01" 
+                                           min="0" 
                                            max="100"
                                            data-product-name="${product.product_name}"
                                            title="درصد تعدیل قیمت خرید">
@@ -1144,29 +1144,29 @@
                                 <td>${product.created_at}</td>
                                 <td>${product.updated_at}</td>
                         `;
-
+                        
                         // اضافه کردن قیمت فروش برای هر شعبه
                         branches.forEach(branch => {
                             const branchPrice = product.branch_prices && product.branch_prices[branch.id];
                             if (branchPrice) {
-                                const quantityText = branchPrice.quantity > 0 ?
-                                    `<span class="quantity-badge">${branchPrice.quantity}</span>` :
+                                const quantityText = branchPrice.quantity > 0 ? 
+                                    `<span class="quantity-badge">${branchPrice.quantity}</span>` : 
                                     '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-
+                                
                                 // وضعیت چاپ لیبل
-                                const printStatus = branchPrice.allow_print ?
-                                    '<span class="print-status print-allowed">✔ چاپ فعال</span>' :
+                                const printStatus = branchPrice.allow_print ? 
+                                    '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
                                     '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
-
+                                
                                 // تعداد چاپ‌ها
                                 const printCount = branchPrice.print_count > 0 ?
                                     `<span class="print-count" title="تعداد چاپ‌ها">${branchPrice.print_count}</span>` : '';
-
-                                const sellingPrice = branchPrice.selling_price > 0 ?
+                                
+                                const sellingPrice = branchPrice.selling_price > 0 ? 
                                     branchPrice.selling_price.toLocaleString() : 'ناموجود';
-
+                                
                                 row += `
-                                    <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}"
+                                    <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}" 
                                         data-branch-id="${branch.id}">
                                         <div class="branch-price-container">
                                             <div class="print-indicator">${printStatus} ${printCount}</div>
@@ -1189,7 +1189,7 @@
                                 `;
                             }
                         });
-
+                        
                         row += `</tr>`;
                         $tbody.append(row);
                     });
@@ -1198,7 +1198,7 @@
                     $('.product-checkbox').off('change').on('change', function() {
                         const productName = $(this).data('product-name');
                         const $row = $(this).closest('tr');
-
+                        
                         if ($(this).prop('checked')) {
                             $row.addClass('selected-row');
                             selectedProducts.add(productName);
@@ -1213,20 +1213,20 @@
                     $('.adjustment-input').off('change').on('change', function() {
                         const productName = $(this).data('product-name');
                         const newAdjustmentPercentage = $(this).val();
-
+                        
                         // اعتبارسنجی
                         if (newAdjustmentPercentage < 0 || newAdjustmentPercentage > 100) {
                             showMessage('درصد تعدیل باید بین 0 تا 100 باشد', 'error');
                             $(this).val($(this).data('old-value') || 0);
                             return;
                         }
-
+                        
                         // ذخیره مقدار قبلی
                         $(this).data('old-value', $(this).val());
-
+                        
                         // محاسبه و نمایش آنلاین قیمت‌های جدید
                         recalculatePrices(productName, newAdjustmentPercentage);
-
+                        
                         // ذخیره در سرور
                         saveAdjustmentPercentage(productName, newAdjustmentPercentage);
                     });
@@ -1235,7 +1235,7 @@
                     $('.adjustment-input').off('input').on('input', function() {
                         const productName = $(this).data('product-name');
                         const newAdjustmentPercentage = $(this).val();
-
+                        
                         // فقط محاسبه آنلاین (بدون ذخیره در سرور)
                         recalculatePrices(productName, newAdjustmentPercentage);
                     });
@@ -1245,7 +1245,7 @@
                         $(this).data('old-value', $(this).val());
                     });
                 }
-
+                
                 // به روزرسانی آمار و اطلاعات صفحه‌بندی
                 updateStats(products.length, append);
             } catch (error) {
@@ -1266,9 +1266,9 @@
                     const currentVisible = parseInt($('#visible-products').text().replace(/,/g, '')) || 0;
                     $('#visible-products').text((currentVisible + visibleCount).toLocaleString());
                 }
-
+                
                 $('#total-branches').text(branches.length.toLocaleString());
-
+                
                 // به روزرسانی اطلاعات صفحه‌بندی
                 if (totalProductsCount > 0) {
                     const currentShown = parseInt($('#shown-products').text()) || 0;
@@ -1277,7 +1277,7 @@
                     } else {
                         $('#shown-products').text(visibleCount.toLocaleString());
                     }
-
+                    
                     // تعیین تعداد کل برای نمایش در صفحه‌بندی
                     const totalToShow = isSearchMode ? allProducts.length : totalProductsCount;
                     $('#total-products-count').text(totalToShow.toLocaleString());
@@ -1291,7 +1291,7 @@
         // تابع برای بارگذاری خودکار محصولات وقتی کاربر به انتهای صفحه می‌رسد
         function setupAutoLoad() {
             const $container = $('#products-table-container');
-
+            
             $container.off('scroll').on('scroll', function() {
                 if (!autoLoadEnabled || isLoading || !hasMoreProducts || isSearchMode) {
                     return;
@@ -1300,7 +1300,7 @@
                 const scrollTop = $container.scrollTop();
                 const scrollHeight = $container[0].scrollHeight;
                 const clientHeight = $container[0].clientHeight;
-
+                
                 // اگر کاربر به 80% انتهای لیست رسید، بارگذاری خودکار انجام شود
                 if (scrollTop + clientHeight >= scrollHeight * 0.8) {
                     loadNextPageAuto();
@@ -1317,87 +1317,142 @@
         }
 
         // تابع برای بارگذاری تمام محصولات
-// در تابع loadAllProducts:
         function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {
-    if (isLoading) return;
-    
-    isLoading = true;
-    
-    if (autoLoad) {
-        $('#auto-load-indicator').removeClass('hidden');
-    } else {
-        console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
-        $('#loading').removeClass('hidden');
-    }
-    
-    // استفاده از نسخه ساده‌تر برای تست
-    const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
-    const data = searchQuery ? { q: searchQuery, page: page } : { page: page };
-    
-    $.ajax({
-        url: url,
-        method: 'GET',
-        data: data,
-        timeout: 45000,  // افزایش timeout
-        beforeSend: function() {
-            console.log(`📤 ارسال درخواست صفحه ${page}`);
-        },
-        success: function(response) {
-            isLoading = false;
+            if (isLoading) return;
+            
+            isLoading = true;
             
             if (autoLoad) {
-                $('#auto-load-indicator').addClass('hidden');
+                $('#auto-load-indicator').removeClass('hidden');
             } else {
-                $('#loading').addClass('hidden');
+                console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
+                $('#loading').removeClass('hidden');
             }
             
-            if (response.error) {
-                console.error(`❌ خطا در صفحه ${page}:`, response.error);
-                
-                if (page > 1) {
-                    // اگر خطا در صفحه بعدی بود، auto-load رو متوقف کن
-                    hasMoreProducts = false;
-                    showMessage(`بارگذاری محصولات بیشتر متوقف شد: ${response.error}`, 'warning');
-                } else {
-                    showMessage(response.error, 'error');
+            const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
+            const data = searchQuery ? { q: searchQuery } : { page: page };
+            
+            $.ajax({
+                url: url,
+                method: 'GET',
+                data: data,
+                timeout: 30000,
+                beforeSend: function() {
+                    console.log('📤 ارسال درخواست دریافت محصولات');
+                },
+                success: function(response) {
+                    isLoading = false;
+                    
+                    if (autoLoad) {
+                        $('#auto-load-indicator').addClass('hidden');
+                    } else {
+                        $('#loading').addClass('hidden');
+                    }
+                    
+                    console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
+                    
+                    if (response && ((response.products && response.branches) || (response.results && response.branches))) {
+                        const products = response.products || response.results;
+                        const newBranches = response.branches;
+                        
+                        if (page === 1 || isSearchMode) {
+                            // صفحه اول یا حالت جستجو - ریست کردن داده‌ها
+                            allProducts = products;
+                            branches = newBranches;
+                            isSearchMode = !!searchQuery;
+                            
+                            // دریافت تعداد کل محصولات از پاسخ سرور
+                            if (response.pagination && response.pagination.total_products) {
+                                totalProductsCount = response.pagination.total_products;
+                            } else if (isSearchMode) {
+                                totalProductsCount = products.length;
+                            }
+                            
+                            displayProducts(allProducts, false);
+                        } else {
+                            // صفحه بعدی - اضافه کردن به داده‌های موجود
+                            allProducts = allProducts.concat(products);
+                            displayProducts(products, true);
+                        }
+                        
+                        filteredProducts = [...allProducts];
+                        currentPage = page;
+                        hasMoreProducts = response.pagination?.has_next || false;
+                        
+                        // اگر در حالت عادی هستیم و totalProductsCount هنوز تنظیم نشده
+                        if (!isSearchMode && response.pagination?.total_products) {
+                            totalProductsCount = response.pagination.total_products;
+                        }
+                        
+                        console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);
+                        
+                        // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
+                        if (page === 1) {
+                            createBranchHeaders();
+                        }
+                        
+                        // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده
+                        if (isInitialLoad && page === 1 && !searchQuery) {
+                            showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');
+                            isInitialLoad = false;
+                            
+                            // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
+                            autoLoadEnabled = true;
+                            setupAutoLoad();
+                            
+                            // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
+                            setTimeout(() => {
+                                if (hasMoreProducts && !isSearchMode) {
+                                    loadNextPageAuto();
+                                }
+                            }, 3000);
+                        }
+                        
+                        // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن
+                        if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {
+                            setTimeout(loadNextPageAuto, 1000);
+                        }
+                    } else if (response && response.error) {
+                        console.error('❌ خطا از سمت سرور:', response.error);
+                        showMessage('خطا در سرور: ' + response.error, 'error');
+                    } else {
+                        console.error('❌ داده‌های نامعتبر از سرور دریافت شد:', response);
+                        showMessage('خطا: داده‌های نامعتبر از سرور دریافت شد', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    isLoading = false;
+                    
+                    if (autoLoad) {
+                        $('#auto-load-indicator').addClass('hidden');
+                    } else {
+                        $('#loading').addClass('hidden');
+                    }
+                    
+                    console.error('❌ خطای AJAX در دریافت محصولات:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        error: error
+                    });
+                    
+                    let errorMessage = 'خطا در ارتباط با سرور';
+                    
+                    if (xhr.status === 0) {
+                        errorMessage = 'سرور در دسترس نیست یا ارتباط قطع شده است';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'خطای داخلی سرور (500)';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage += ': ' + xhr.responseJSON.error;
+                        }
+                    } else if (status === 'timeout') {
+                        errorMessage = 'زمان درخواست به پایان رسید - داده‌ها زیاد هستند';
+                    }
+                    
+                    showMessage(errorMessage, 'error');
                 }
-                return;
-            }
-            
-            // بقیه کدهای success...
-        },
-        error: function(xhr, status, error) {
-            isLoading = false;
-            
-            if (autoLoad) {
-                $('#auto-load-indicator').addClass('hidden');
-            } else {
-                $('#loading').addClass('hidden');
-            }
-            
-            let errorMessage = 'خطا در ارتباط با سرور';
-            
-            if (status === 'timeout') {
-                errorMessage = 'سرور پاسخ نداد. ممکن است داده‌ها زیاد باشند.';
-                // کاهش per_page برای درخواست‌های بعدی
-                if (page > 1) {
-                    hasMoreProducts = false;
-                    showMessage('بارگذاری خودکار به دلیل زمان‌بر بودن متوقف شد', 'warning');
-                }
-            } else if (xhr.status === 500) {
-                errorMessage = 'خطای داخلی سرور';
-            } else if (xhr.status === 0) {
-                errorMessage = 'ارتباط با سرور قطع شد';
-            }
-            
-            console.error(`❌ AJAX error صفحه ${page}:`, { status, error });
-            
-            if (page === 1) {
-                showMessage(errorMessage, 'error');
-            }
+            });
         }
-    });
-}
+
         // تابع برای جستجوی محصولات
         function searchProducts(query) {
             if (query.length < 2) {
@@ -1408,7 +1463,7 @@
                 loadAllProducts(1);
                 return;
             }
-
+            
             console.log(`🔍 جستجو برای: "${query}"`);
             isSearchMode = true;
             autoLoadEnabled = false;
@@ -1419,9 +1474,9 @@
         // جستجوی محصولات با تاخیر
         $('#product-search').on('input', function() {
             const query = $(this).val().trim();
-
+            
             clearTimeout(searchTimeout);
-
+            
             if (query.length === 0) {
                 // اگر فیلد خالی شد، به حالت عادی برگرد
                 isSearchMode = false;
@@ -1430,13 +1485,13 @@
                 loadAllProducts(1);
                 return;
             }
-
+            
             if (query.length < 2) {
                 return;
             }
-
+            
             $('#loading').removeClass('hidden');
-
+            
             searchTimeout = setTimeout(function() {
                 searchProducts(query);
             }, 500);
@@ -1445,7 +1500,7 @@
         // بارگذاری اولیه محصولات هنگام لود صفحه
         $(document).ready(function() {
             console.log('🚀 صفحه بارگذاری شد - شروع فرآیند راه‌اندازی');
-
+            
             // تست اتصال اولیه
             $.ajax({
                 url: "{% url 'health_check' %}",
@@ -1453,7 +1508,7 @@
                 timeout: 5000,
                 success: function(response) {
                     console.log('✅ تست اتصال موفقیت‌آمیز بود:', response);
-
+                    
                     // بارگذاری اولیه محصولات
                     loadAllProducts(1);
                 },
