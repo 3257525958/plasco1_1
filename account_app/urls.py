@@ -87,11 +87,6 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('bulk-update-adjustment-percentage/', views.bulk_update_adjustment_percentage,name='bulk_update_adjustment_percentage'),
     path('health/', views.health_check, name='health_check'),
     path('debug-products/', views.debug_products, name='debug_products'),
-
-
-
-
-path('test-error/', views.test_error_view, name='test_error'),
 ]
 
 

@@ -1852,165 +1852,43 @@ def debug_products(request):
 
 @require_http_methods(["GET"])
 def get_all_products(request):
-    """دریافت تمام محصولات - نسخه فوق‌بهینه"""
+    """تست ساده برای پیدا کردن مشکل"""
     try:
-        page = int(request.GET.get('page', 1))
-        per_page = 30  # کاهش از 50 به 30
+        print("🎯 درخواست get_all_products دریافت شد")
 
-        start = (page - 1) * per_page
+        # فقط ۵ محصول اول رو برگردون
+        from .models import ProductPricing
+        products = list(ProductPricing.objects.all()[:5])
 
-        # 1. فقط فیلدهای مورد نیاز رو بگیریم
-        products = ProductPricing.objects.all().only(
-            'product_name', 'highest_purchase_price', 'invoice_date',
-            'invoice_number', 'adjustment_percentage', 'standard_price',
-            'created_at', 'updated_at'
-        ).order_by('product_name')[start:start + per_page]
-
-        total_products = ProductPricing.objects.count()
-
-        # 2. شعب رو ساده بگیریم
-        branches = list(Branch.objects.values('id', 'name'))
-        if not branches:
-            return JsonResponse({
-                'products': [],
-                'branches': [],
-                'pagination': {
-                    'page': page,
-                    'per_page': per_page,
-                    'has_next': False,
-                    'total_products': total_products
-                }
+        # خیلی ساده
+        result = []
+        for p in products:
+            result.append({
+                'product_name': p.product_name,
+                'price': float(p.highest_purchase_price) if p.highest_purchase_price else 0
             })
-
-        # 3. محصولات رو به لیست تبدیل کنیم
-        product_list = list(products)
-        if not product_list:
-            return JsonResponse({
-                'products': [],
-                'branches': branches,
-                'pagination': {
-                    'page': page,
-                    'per_page': per_page,
-                    'has_next': False,
-                    'total_products': total_products
-                }
-            })
-
-        product_names = [p.product_name for p in product_list]
-
-        # 4. بهینه‌سازی: همه داده‌های مرتبط رو در یک query بگیریم
-        from django.db.models import Subquery, OuterRef
-
-        # آخرین موجودی هر محصول در هر شعبه
-        latest_inventory_subquery = InventoryCount.objects.filter(
-            product_name=OuterRef('product_name'),
-            branch_id=OuterRef('branch_id')
-        ).order_by('-created_at')
-
-        # 5. داده‌های InventoryCount رو بهینه بگیریم
-        inventory_data = {}
-        # فقط محصولات این صفحه رو بررسی کنیم
-        inventories = InventoryCount.objects.filter(
-            product_name__in=product_names
-        ).select_related('branch').order_by('product_name', 'branch', '-created_at')
-
-        for inv in inventories:
-            key = f"{inv.product_name}_{inv.branch_id}"
-            if key not in inventory_data:  # فقط آخرین رو بگیر
-                inventory_data[key] = {
-                    'selling_price': float(inv.selling_price) if inv.selling_price else 0,
-                    'quantity': inv.quantity,
-                    'profit_percentage': float(inv.profit_percentage) if inv.profit_percentage else 70.0
-                }
-
-        # 6. تنظیمات چاپ لیبل رو بهینه بگیریم
-        label_data = {}
-        labels = ProductLabelSetting.objects.filter(
-            product_name__in=product_names
-        ).select_related('branch').only('product_name', 'branch_id', 'allow_print')
-
-        for label in labels:
-            key = f"{label.product_name}_{label.branch_id}"
-            label_data[key] = {
-                'allow_print': label.allow_print,
-                'print_count': LabelPrintItem.objects.filter(
-                    label_setting=label
-                ).count() if hasattr(LabelPrintItem, 'objects') else 0
-            }
-
-        # 7. سریع‌سازی ساخت results
-        results = []
-        for product in product_list:
-            product_data = {
-                'id': product.id,
-                'product_name': product.product_name,
-                'highest_purchase_price': float(
-                    product.highest_purchase_price) if product.highest_purchase_price else 0,
-                'invoice_date': product.invoice_date.strftime('%Y-%m-%d') if product.invoice_date else '',
-                'invoice_number': product.invoice_number or '',
-                'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
-                'standard_price': float(product.standard_price) if product.standard_price else 0,
-                'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
-                'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
-                'branch_prices': {}
-            }
-
-            # پر کردن داده‌های شعب به صورت بهینه
-            for branch in branches:
-                branch_id = branch['id']
-                lookup_key = f"{product.product_name}_{branch_id}"
-
-                # پیدا کردن موجودی
-                inventory = inventory_data.get(lookup_key)
-
-                # پیدا کردن تنظیمات چاپ
-                label_info = label_data.get(lookup_key, {
-                    'allow_print': False,
-                    'print_count': 0
-                })
-
-                if inventory:
-                    product_data['branch_prices'][branch_id] = {
-                        'branch_name': branch['name'],
-                        'selling_price': inventory['selling_price'],
-                        'quantity': inventory['quantity'],
-                        'profit_percentage': inventory['profit_percentage'],
-                        'allow_print': label_info['allow_print'],
-                        'print_count': label_info['print_count']
-                    }
-                else:
-                    product_data['branch_prices'][branch_id] = {
-                        'branch_name': branch['name'],
-                        'selling_price': 0,
-                        'quantity': 0,
-                        'profit_percentage': 70.0,
-                        'allow_print': label_info['allow_print'],
-                        'print_count': label_info['print_count']
-                    }
-
-            results.append(product_data)
-
-        print(f"✅ صفحه {page}: {len(results)} محصول پردازش شد")
 
         return JsonResponse({
-            'products': results,
-            'branches': branches,
-            'pagination': {
-                'page': page,
-                'per_page': per_page,
-                'has_next': len(results) == per_page,
-                'total_products': total_products
-            }
+            'success': True,
+            'test': 'ساده',
+            'products': result,
+            'count': len(result)
         })
 
     except Exception as e:
+        # خطای کامل رو برگردون
         import traceback
-        print(f"❌ خطا در get_all_products صفحه {page}: {str(e)}")
-        traceback.print_exc()
+        error_details = traceback.format_exc()
+
+        # توی لاگ چاپ کن
+        print("🔥 خطا در get_all_products:")
+        print(error_details)
+
+        # به کاربر هم نمایش بده
         return JsonResponse({
-            'error': 'خطا در پردازش درخواست',
-            'page': page,
-            'suggestion': 'لطفا صفحه را مجدداً بارگذاری کنید'
+            'error': str(e),
+            'error_details': error_details if DEBUG else None,
+            'test_mode': True
         }, status=500)
 # @require_http_methods(["GET"])
 # def get_all_products(request):
@@ -2484,18 +2362,3 @@ def bulk_update_adjustment_percentage(request):
         print(f"❌ خطا در بروزرسانی گروهی درصد تعدیل: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
-
-
-def test_error_view(request):
-    """تست مستقیم خطا"""
-    try:
-        # یک Query که ممکنه خطا بده
-        from .models import ProductPricing
-        products = ProductPricing.objects.all()[:10]
-        return JsonResponse({'count': products.count()})
-    except Exception as e:
-        return JsonResponse({
-            'error': str(e),
-            'type': type(e).__name__,
-            'traceback': str(traceback.format_exc())  # خطای کامل
-        }, status=500)
