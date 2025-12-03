@@ -279,61 +279,61 @@ ONLINE_SERVER_URL = "https://plasmarket.ir"
 OFFLINE_MODE = False
 
 # ------------------------------------------------اوکال و محلی---------------------------------------------
-# #
-# # from pathlib import Path
-# # import os
-# #
-# # import locale
-# # import sys
-# # import io
-# #
-# # # Fix Unicode encoding in Windows terminal
-# # if sys.platform == "win32":
-# #     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-# #     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-# #
-# # # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# # BASE_DIR = Path(__file__).resolve().parent.parent
-# #
-# #
-# # # Quick-start development settings - unsuitable for production
-# # # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-# #
-# # # SECURITY WARNING: keep the secret key used in production secret!
-# # SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
-# #
-# # # SECURITY WARNING: don't run with debug turned on in production!
-# # DEBUG = True
-# # # ALLOWED_HOSTS = ['http://plasmarket.ir','plasmarket.ir','www.plasmarket.ir','https://plasmarket.ir','192.168.1.157']
-# # # CSRF_TRUSTED_ORIGINS = ["https://plasmarket.ir",'http://plasmarket.ir','https://www.plasmarket.ir','http://www.plasmarket.ir']
-# #
-# # ALLOWED_HOSTS = []
-# #
-# #
-# # # Application definition
-# #
-# # INSTALLED_APPS = [
-# #     'django.contrib.admin',
-# #     'django.contrib.auth',
-# #     'django.contrib.contenttypes',
-# #     'django.contrib.sessions',
-# #     'django.contrib.messages',
-# #     'django.contrib.staticfiles',
-# #     'rest_framework',
-# #     'rest_framework.authtoken',
-# #     'corsheaders',
-# #     'account_app.apps.AccountAppConfig',
-# #     'dashbord_app.apps.DashbordAppConfig',
-# #     'cantact_app.apps.CantactAppConfig',
-# #     'invoice_app.apps.InvoiceAppConfig',
-# #     'it_app.apps.ItAppConfig',
-# #     'pos_payment.apps.PosPaymentConfig',
-# #     'sync_app',
-# #     'sync_api',
-# #     'control_panel',
-# #     'offline_ins',
-# #     'ip_manager'
-# # ]
+#
+# from pathlib import Path
+# import os
+#
+# import locale
+# import sys
+# import io
+#
+# # Fix Unicode encoding in Windows terminal
+# if sys.platform == "win32":
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+#     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+#
+# # Build paths inside the project like this: BASE_DIR / 'subdir'.
+# BASE_DIR = Path(__file__).resolve().parent.parent
+#
+#
+# # Quick-start development settings - unsuitable for production
+# # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+#
+# # SECURITY WARNING: keep the secret key used in production secret!
+# SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
+#
+# # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG = True
+# # ALLOWED_HOSTS = ['http://plasmarket.ir','plasmarket.ir','www.plasmarket.ir','https://plasmarket.ir','192.168.1.157']
+# # CSRF_TRUSTED_ORIGINS = ["https://plasmarket.ir",'http://plasmarket.ir','https://www.plasmarket.ir','http://www.plasmarket.ir']
+#
+# ALLOWED_HOSTS = []
+#
+#
+# # Application definition
+#
+# INSTALLED_APPS = [
+#     'django.contrib.admin',
+#     'django.contrib.auth',
+#     'django.contrib.contenttypes',
+#     'django.contrib.sessions',
+#     'django.contrib.messages',
+#     'django.contrib.staticfiles',
+#     'rest_framework',
+#     'rest_framework.authtoken',
+#     'corsheaders',
+#     'account_app.apps.AccountAppConfig',
+#     'dashbord_app.apps.DashbordAppConfig',
+#     'cantact_app.apps.CantactAppConfig',
+#     'invoice_app.apps.InvoiceAppConfig',
+#     'it_app.apps.ItAppConfig',
+#     'pos_payment.apps.PosPaymentConfig',
+#     'sync_app',
+#     'sync_api',
+#     'control_panel',
+#     'offline_ins',
+#     'ip_manager'
+# ]
 #
 #
 #
