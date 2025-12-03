@@ -994,102 +994,147 @@
         }
 
         // تابع برای اعمال درصد تعدیل روی محصولات انتخاب شده
-        function applyBulkAdjustment() {
-            const bulkAdjustment = $('#bulk-adjustment').val().trim();
+        // تابع برای اعمال درصد تعدیل روی انتخاب‌ها
+function applyBulkAdjustment() {
+    const bulkAdjustment = $('#bulk-adjustment').val().trim();
+    
+    if (!bulkAdjustment) {
+        showMessage('لطفا درصد تعدیل را وارد کنید', 'error');
+        return;
+    }
+    
+    const adjustmentValue = parseFloat(bulkAdjustment);
+    if (isNaN(adjustmentValue) || adjustmentValue < 0 || adjustmentValue > 100) {
+        showMessage('درصد تعدیل باید عددی بین 0 تا 100 باشد', 'error');
+        return;
+    }
+    
+    const selectedCount = selectedProducts.size;
+    if (selectedCount === 0) {
+        showMessage('لطفا حداقل یک محصول را انتخاب کنید', 'error');
+        return;
+    }
+    
+    if (!confirm(`آیا می‌خواهید درصد تعدیل ${adjustmentValue}% روی ${selectedCount} محصول اعمال شود؟`)) {
+        return;
+    }
+    
+    const productNames = Array.from(selectedProducts);
+    
+    // نمایش پیام در حال پردازش
+    showMessage(`در حال اعمال درصد تعدیل ${adjustmentValue}% روی ${selectedCount} محصول...`, 'info');
+    
+    $.ajax({
+        url: "{% url 'bulk_update_adjustment_percentage' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            product_names: productNames,
+            adjustment_percentage: adjustmentValue
+        }),
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        timeout: 60000,  // افزایش timeout
+        beforeSend: function() {
+            console.log(`📤 ارسال درخواست bulk update برای ${selectedCount} محصول`);
+        },
+        success: function(data) {
+            console.log('✅ پاسخ bulk update:', data);
             
-            if (!bulkAdjustment) {
-                showMessage('لطفا درصد تعدیل را وارد کنید', 'error');
-                return;
-            }
-            
-            const adjustmentValue = parseFloat(bulkAdjustment);
-            if (isNaN(adjustmentValue) || adjustmentValue < 0 || adjustmentValue > 100) {
-                showMessage('درصد تعدیل باید عددی بین 0 تا 100 باشد', 'error');
-                return;
-            }
-            
-            const selectedCount = selectedProducts.size;
-            if (selectedCount === 0) {
-                showMessage('لطفا حداقل یک محصول را انتخاب کنید', 'error');
-                return;
-            }
-            
-            if (!confirm(`آیا می‌خواهید درصد تعدیل ${adjustmentValue}% روی ${selectedCount} محصول اعمال شود؟`)) {
-                return;
-            }
-            
-            const productNames = Array.from(selectedProducts);
-            
-            // نمایش پیام در حال پردازش
-            showMessage(`در حال اعمال درصد تعدیل ${adjustmentValue}% روی ${selectedCount} محصول...`, 'info');
-            
-            $.ajax({
-                url: "{% url 'bulk_update_adjustment_percentage' %}",
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    product_names: productNames,
-                    adjustment_percentage: adjustmentValue
-                }),
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                timeout: 30000,
-                success: function(data) {
-                    if (data.success) {
-                        // به‌روزرسانی مقادیر در جدول
-                        data.results.forEach(result => {
-                            if (result.success) {
-                                const $input = $(`input[data-product-name="${result.product_name}"]`);
-                                $input.val(adjustmentValue).addClass('changed');
-                                
-                                // محاسبه مجدد قیمت‌ها
-                                recalculatePrices(result.product_name, adjustmentValue);
-                                
-                                // اگر تنظیمات چاپ لیبل فعال شده‌اند
-                                if (result.label_settings_updated && result.label_settings_updated > 0) {
-                                    updatePrintStatus(result.product_name, true);
-                                }
-                            }
-                        });
+            if (data.success) {
+                // به‌روزرسانی مقادیر در جدول
+                data.results.forEach(result => {
+                    if (result.success) {
+                        const productName = result.product_name;
                         
-                        let message = `✅ درصد تعدیل ${adjustmentValue}% با موفقیت روی ${data.total_updated} از ${data.total_attempted} محصول اعمال شد`;
-                        if (data.total_updated < data.total_attempted) {
-                            message += ` (${data.total_attempted - data.total_updated} خطا)`;
-                            showMessage(message, 'warning');
-                        } else {
-                            showMessage(message, 'success');
+                        // 1. به‌روزرسانی مقدار input
+                        const $input = $(`input[data-product-name="${productName}"]`);
+                        if ($input.length) {
+                            $input.val(adjustmentValue).addClass('changed');
+                            setTimeout(() => {
+                                $input.removeClass('changed');
+                            }, 3000);
                         }
-                    } else {
-                        showMessage('خطا در اعمال گروهی: ' + data.error, 'error');
+                        
+                        // 2. به‌روزرسانی قیمت معیار
+                        if (result.new_standard_price) {
+                            $(`tr[data-product-name="${productName}"] .standard-price-display`)
+                                .text(result.new_standard_price.toLocaleString());
+                        }
+                        
+                        // 3. محاسبه مجدد قیمت فروش
+                        recalculatePrices(productName, adjustmentValue);
+                        
+                        // 4. فعال کردن وضعیت چاپ لیبل
+                        if (result.label_settings_updated && result.label_settings_updated > 0) {
+                            updatePrintStatus(productName, true);
+                        }
                     }
-                },
-                error: function(xhr, status, error) {
-                    console.error('❌ خطا در اعمال گروهی:', error);
-                    
-                    if (status === 'timeout') {
-                        showMessage('زمان عملیات گروهی به پایان رسید', 'error');
-                    } else {
-                        showMessage('خطا در ارتباط با سرور برای عملیات گروهی', 'error');
-                    }
+                });
+                
+                let message = `✅ درصد تعدیل ${adjustmentValue}% با موفقیت روی ${data.total_updated} محصول اعمال شد`;
+                if (data.total_labels_updated && data.total_labels_updated > 0) {
+                    message += ` و ${data.total_labels_updated} تنظیمات چاپ لیبل فعال شدند`;
                 }
-            });
+                
+                if (data.total_updated < data.total_attempted) {
+                    message += ` (${data.total_attempted - data.total_updated} خطا)`;
+                    showMessage(message, 'warning');
+                } else {
+                    showMessage(message, 'success');
+                }
+                
+                // ریست کردن انتخاب‌ها (اختیاری)
+                // $('#select-all-products').prop('checked', false);
+                // toggleSelectAll(false);
+                
+            } else {
+                showMessage('خطا در اعمال گروهی: ' + data.error, 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ خطا در اعمال گروهی:', error);
+            
+            let errorMessage = 'خطا در ارتباط با سرور';
+            if (status === 'timeout') {
+                errorMessage = 'زمان عملیات گروهی به پایان رسید';
+            } else if (xhr.status === 500) {
+                errorMessage = 'خطای داخلی سرور در عملیات گروهی';
+            }
+            
+            showMessage(errorMessage, 'error');
+        },
+        complete: function() {
+            // حذف پیام در حال پردازش
+            setTimeout(() => {
+                $('#messages .info-message').fadeOut();
+            }, 1000);
         }
+    });
+}
 
         // تابع برای به‌روزرسانی وضعیت چاپ لیبل در جدول
-        function updatePrintStatus(productName, allowPrint) {
-            const $row = $(`tr[data-product-name="${productName}"]`);
-            if (!$row.length) return;
+        // تابع برای به‌روزرسانی وضعیت چاپ لیبل در جدول
+function updatePrintStatus(productName, allowPrint) {
+    const $row = $(`tr[data-product-name="${productName}"]`);
+    if (!$row.length) return;
+    
+    $row.find('.print-status').each(function() {
+        const $status = $(this);
+        if (allowPrint) {
+            $status.removeClass('print-not-allowed').addClass('print-allowed')
+                   .html('✔ چاپ فعال');
             
-            $row.find('.print-status').each(function() {
-                if (allowPrint) {
-                    $(this).removeClass('print-not-allowed').addClass('print-allowed')
-                           .html('✔ چاپ فعال');
-                    $(this).closest('.branch-price-container').find('.print-indicator').html($(this).clone());
-                }
-            });
+            // همچنین در print-indicator هم به‌روزرسانی کن
+            const $indicator = $status.closest('.print-indicator');
+            if ($indicator.length) {
+                $indicator.html($status.clone());
+            }
         }
+    });
+}
 
         // تابع برای نمایش محصولات در جدول
         function displayProducts(products, append = false) {

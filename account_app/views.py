@@ -2027,147 +2027,6 @@ def get_all_products(request):
         print(f"❌ خطا در get_all_products: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({'error': f'خطا در پردازش: {str(e)}'}, status=500)
-# @require_http_methods(["GET"])
-# def get_all_products(request):
-#     """دریافت تمام محصولات - نسخه بهینه‌شده"""
-#     try:
-#         # دریافت صفحه از پارامترهای URL
-#         page = int(request.GET.get('page', 1))
-#         per_page = 50  # محدود کردن تعداد در هر درخواست
-#
-#         start = (page - 1) * per_page
-#         end = start + per_page
-#
-#         # دریافت تعداد کل محصولات برای آمار
-#         total_products = ProductPricing.objects.count()
-#
-#         # دریافت تمام شعب
-#         branches = Branch.objects.all()
-#         branch_dict = {branch.id: branch for branch in branches}
-#
-#         # دریافت محصولات با محدودیت
-#         products = ProductPricing.objects.all().order_by('product_name')[start:end]
-#
-#         # اگر محصولی نداریم، خالی برگردان
-#         if not products.exists():
-#             return JsonResponse({
-#                 'products': [],
-#                 'branches': [{'id': b.id, 'name': b.name} for b in branches],
-#                 'pagination': {
-#                     'page': page,
-#                     'per_page': per_page,
-#                     'has_next': False,
-#                     'total_products': total_products
-#                 }
-#             })
-#
-#         # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
-#         product_names = [p.product_name for p in products]
-#
-#         # دریافت آخرین موجودی برای هر محصول و شعبه
-#         latest_inventories = InventoryCount.objects.filter(
-#             product_name__in=product_names
-#         ).values('product_name', 'branch').annotate(
-#             latest_created=Max('created_at')
-#         )
-#
-#         # دریافت تنظیمات چاپ لیبل برای هر محصول و شعبه
-#         label_settings = ProductLabelSetting.objects.filter(
-#             product_name__in=product_names
-#         ).select_related('branch')
-#
-#         # ایجاد دیکشنری برای تنظیمات چاپ لیبل
-#         label_dict = {}
-#         for label in label_settings:
-#             key = f"{label.product_name}_{label.branch.id}"
-#             label_dict[key] = {
-#                 'allow_print': label.allow_print,
-#                 'print_count': LabelPrintItem.objects.filter(label_setting=label).count()
-#             }
-#
-#         # ایجاد lookup برای سریع‌تر کردن دسترسی
-#         inventory_lookup = {}
-#         for inv in latest_inventories:
-#             key = f"{inv['product_name']}_{inv['branch']}"
-#             inventory_lookup[key] = inv['latest_created']
-#
-#         # دریافت داده‌های کامل برای آخرین موجودی‌ها
-#         latest_dates = list(inventory_lookup.values())
-#         if latest_dates:
-#             actual_inventories = InventoryCount.objects.filter(
-#                 created_at__in=latest_dates
-#             ).select_related('branch')
-#         else:
-#             actual_inventories = InventoryCount.objects.none()
-#
-#         # ایجاد دیکشنری برای دسترسی سریع
-#         inventory_dict = {}
-#         for inv in actual_inventories:
-#             key = f"{inv.product_name}_{inv.branch.id}"
-#             inventory_dict[key] = inv
-#
-#         results = []
-#         for product in products:
-#             product_data = {
-#                 'id': product.id,
-#                 'product_name': product.product_name,
-#                 'highest_purchase_price': float(
-#                     product.highest_purchase_price) if product.highest_purchase_price else 0,
-#                 'invoice_date': product.invoice_date.strftime('%Y-%m-%d') if product.invoice_date else '',
-#                 'invoice_number': product.invoice_number or '',
-#                 'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
-#                 'standard_price': float(product.standard_price) if product.standard_price else 0,
-#                 'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
-#                 'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
-#                 'branch_prices': {}
-#             }
-#
-#             # پر کردن داده‌های شعب
-#             for branch in branches:
-#                 lookup_key = f"{product.product_name}_{branch.id}"
-#                 inventory = inventory_dict.get(lookup_key)
-#
-#                 # بررسی وضعیت چاپ لیبل از دیکشنری
-#                 label_info = label_dict.get(lookup_key, {'allow_print': False, 'print_count': 0})
-#
-#                 if inventory:
-#                     product_data['branch_prices'][branch.id] = {
-#                         'branch_name': branch.name,
-#                         'selling_price': inventory.selling_price if inventory.selling_price else 0,
-#                         'quantity': inventory.quantity,
-#                         'profit_percentage': float(
-#                             inventory.profit_percentage) if inventory.profit_percentage else 70.0,
-#                         'allow_print': label_info['allow_print'],
-#                         'print_count': label_info['print_count']
-#                     }
-#                 else:
-#                     product_data['branch_prices'][branch.id] = {
-#                         'branch_name': branch.name,
-#                         'selling_price': 0,
-#                         'quantity': 0,
-#                         'profit_percentage': 70.0,
-#                         'allow_print': label_info['allow_print'],
-#                         'print_count': label_info['print_count']
-#                     }
-#
-#             results.append(product_data)
-#
-#         return JsonResponse({
-#             'products': results,
-#             'branches': [{'id': b.id, 'name': b.name} for b in branches],
-#             'pagination': {
-#                 'page': page,
-#                 'per_page': per_page,
-#                 'has_next': len(results) == per_page,
-#                 'total_products': total_products
-#             }
-#         })
-#
-#     except Exception as e:
-#         import traceback
-#         print(f"❌ خطا در get_all_products: {str(e)}")
-#         print(traceback.format_exc())
-#         return JsonResponse({'error': f'خطا در پردازش: {str(e)}'}, status=500)
 
 
 @require_http_methods(["GET"])
@@ -2290,134 +2149,6 @@ def search_products(request):
         print(f"❌ خطا در search_products: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
-
-# @require_http_methods(["GET"])
-# def search_products(request):
-#     """جستجوی محصولات - نسخه بهینه‌شده"""
-#     try:
-#         query = request.GET.get('q', '').strip()
-#
-#         if len(query) < 2:
-#             return JsonResponse({'results': [], 'branches': []})
-#
-#         # محدود کردن نتایج جستجو
-#         products = ProductPricing.objects.filter(
-#             product_name__icontains=query
-#         ).order_by('product_name')[:20]
-#
-#         branches = Branch.objects.all()
-#         branch_dict = {branch.id: branch for branch in branches}
-#
-#         # اگر محصولی پیدا نشد
-#         if not products.exists():
-#             return JsonResponse({
-#                 'results': [],
-#                 'branches': [{'id': b.id, 'name': b.name} for b in branches]
-#             })
-#
-#         # پیش‌پردازش داده‌های InventoryCount برای بهینه‌سازی
-#         product_names = [p.product_name for p in products]
-#
-#         # دریافت آخرین موجودی برای هر محصول و شعبه
-#         latest_inventories = InventoryCount.objects.filter(
-#             product_name__in=product_names
-#         ).values('product_name', 'branch').annotate(
-#             latest_created=Max('created_at')
-#         )
-#
-#         # دریافت تنظیمات چاپ لیبل برای هر محصول و شعبه
-#         label_settings = ProductLabelSetting.objects.filter(
-#             product_name__in=product_names
-#         ).select_related('branch')
-#
-#         # ایجاد دیکشنری برای تنظیمات چاپ لیبل
-#         label_dict = {}
-#         for label in label_settings:
-#             key = f"{label.product_name}_{label.branch.id}"
-#             label_dict[key] = {
-#                 'allow_print': label.allow_print,
-#                 'print_count': LabelPrintItem.objects.filter(label_setting=label).count()
-#             }
-#
-#         # ایجاد lookup برای سریع‌تر کردن دسترسی
-#         inventory_lookup = {}
-#         for inv in latest_inventories:
-#             key = f"{inv['product_name']}_{inv['branch']}"
-#             inventory_lookup[key] = inv['latest_created']
-#
-#         # دریافت داده‌های کامل برای آخرین موجودی‌ها
-#         latest_dates = list(inventory_lookup.values())
-#         if latest_dates:
-#             actual_inventories = InventoryCount.objects.filter(
-#                 created_at__in=latest_dates
-#             ).select_related('branch')
-#         else:
-#             actual_inventories = InventoryCount.objects.none()
-#
-#         # ایجاد دیکشنری برای دسترسی سریع
-#         inventory_dict = {}
-#         for inv in actual_inventories:
-#             key = f"{inv.product_name}_{inv.branch.id}"
-#             inventory_dict[key] = inv
-#
-#         results = []
-#         for product in products:
-#             product_data = {
-#                 'id': product.id,
-#                 'product_name': product.product_name,
-#                 'highest_purchase_price': float(
-#                     product.highest_purchase_price) if product.highest_purchase_price else 0,
-#                 'invoice_date': product.invoice_date.strftime('%Y-%m-%d') if product.invoice_date else '',
-#                 'invoice_number': product.invoice_number or '',
-#                 'adjustment_percentage': float(product.adjustment_percentage) if product.adjustment_percentage else 0,
-#                 'standard_price': float(product.standard_price) if product.standard_price else 0,
-#                 'created_at': product.created_at.strftime('%Y-%m-%d %H:%M') if product.created_at else '',
-#                 'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M') if product.updated_at else '',
-#                 'branch_prices': {}
-#             }
-#
-#             for branch in branches:
-#                 lookup_key = f"{product.product_name}_{branch.id}"
-#                 inventory = inventory_dict.get(lookup_key)
-#
-#                 # بررسی وضعیت چاپ لیبل از دیکشنری
-#                 label_info = label_dict.get(lookup_key, {'allow_print': False, 'print_count': 0})
-#
-#                 if inventory:
-#                     product_data['branch_prices'][branch.id] = {
-#                         'branch_name': branch.name,
-#                         'selling_price': inventory.selling_price if inventory.selling_price else 0,
-#                         'quantity': inventory.quantity,
-#                         'profit_percentage': float(
-#                             inventory.profit_percentage) if inventory.profit_percentage else 70.0,
-#                         'allow_print': label_info['allow_print'],
-#                         'print_count': label_info['print_count']
-#                     }
-#                 else:
-#                     product_data['branch_prices'][branch.id] = {
-#                         'branch_name': branch.name,
-#                         'selling_price': 0,
-#                         'quantity': 0,
-#                         'profit_percentage': 70.0,
-#                         'allow_print': label_info['allow_print'],
-#                         'print_count': label_info['print_count']
-#                     }
-#
-#             results.append(product_data)
-#
-#         return JsonResponse({
-#             'results': results,
-#             'branches': [{'id': b.id, 'name': b.name} for b in branches],
-#             'pagination': {
-#                 'total_products': len(results)
-#             }
-#         })
-#
-#     except Exception as e:
-#         import traceback
-#         print(f"❌ خطا در search_products: {str(e)}")
-#         print(traceback.format_exc())
-#         return JsonResponse({'error': str(e)}, status=500)
 
 
 @csrf_exempt
@@ -2557,62 +2288,93 @@ def bulk_update_adjustment_percentage(request):
 
         results = []
         total_updated = 0
+        total_labels_updated = 0
 
-        # بروزرسانی هر محصول
-        for product_name in product_names:
-            try:
-                product = ProductPricing.objects.get(product_name=product_name)
-                old_adjustment_percentage = product.adjustment_percentage
+        with transaction.atomic():
+            # بروزرسانی هر محصول
+            for product_name in product_names:
+                try:
+                    product = ProductPricing.objects.get(product_name=product_name)
+                    old_adjustment_percentage = product.adjustment_percentage
 
-                # بروزرسانی درصد تعدیل
-                product.adjustment_percentage = Decimal(str(adjustment_percentage))
+                    # بروزرسانی درصد تعدیل
+                    product.adjustment_percentage = Decimal(str(adjustment_percentage))
 
-                # محاسبه قیمت معیار جدید
-                if product.highest_purchase_price:
-                    adjustment_amount = product.highest_purchase_price * (Decimal(str(adjustment_percentage)) / 100)
-                    product.standard_price = product.highest_purchase_price + adjustment_amount
+                    # محاسبه قیمت معیار جدید
+                    if product.highest_purchase_price:
+                        adjustment_amount = product.highest_purchase_price * (Decimal(str(adjustment_percentage)) / 100)
+                        product.standard_price = product.highest_purchase_price + adjustment_amount
 
-                # ذخیره محصول
-                product.save()
+                    # ذخیره محصول
+                    product.save()
 
-                # فعال کردن چاپ لیبل
-                label_updated_count = 0
-                if old_adjustment_percentage != product.adjustment_percentage:
-                    label_settings = ProductLabelSetting.objects.filter(product_name=product_name)
+                    # فعال کردن چاپ لیبل
+                    label_updated_count = 0
 
-                    for label_setting in label_settings:
-                        if not label_setting.allow_print:
-                            label_setting.allow_print = True
-                            label_setting.save()
-                            label_updated_count += 1
+                    # اگر درصد تعدیل تغییر کرده
+                    if old_adjustment_percentage != product.adjustment_percentage:
+                        # پیدا کردن تمام تنظیمات چاپ لیبل برای این محصول
+                        label_settings = ProductLabelSetting.objects.filter(product_name=product_name)
 
-                results.append({
-                    'product_name': product_name,
-                    'success': True,
-                    'new_standard_price': float(product.standard_price) if product.standard_price else 0,
-                    'label_settings_updated': label_updated_count
-                })
-                total_updated += 1
+                        # فعال کردن allow_print برای همه
+                        for label_setting in label_settings:
+                            if not label_setting.allow_print:
+                                label_setting.allow_print = True
+                                label_setting.save()
+                                label_updated_count += 1
 
-            except ProductPricing.DoesNotExist:
-                results.append({
-                    'product_name': product_name,
-                    'success': False,
-                    'error': 'محصول یافت نشد'
-                })
-            except Exception as e:
-                results.append({
-                    'product_name': product_name,
-                    'success': False,
-                    'error': str(e)
-                })
+                        # اگر تنظیمات چاپ لیبل وجود نداشت، برای تمام شعب ایجاد کن
+                        if label_updated_count == 0:
+                            branches = Branch.objects.all()
+
+                            for branch in branches:
+                                # سعی کن رکورد رو پیدا کنی
+                                label_setting, created = ProductLabelSetting.objects.get_or_create(
+                                    product_name=product_name,
+                                    branch=branch,
+                                    defaults={
+                                        'barcode': '',
+                                        'allow_print': True
+                                    }
+                                )
+
+                                if created:
+                                    label_updated_count += 1
+                                elif not label_setting.allow_print:
+                                    label_setting.allow_print = True
+                                    label_setting.save()
+                                    label_updated_count += 1
+
+                    total_labels_updated += label_updated_count
+
+                    results.append({
+                        'product_name': product_name,
+                        'success': True,
+                        'new_standard_price': float(product.standard_price) if product.standard_price else 0,
+                        'label_settings_updated': label_updated_count
+                    })
+                    total_updated += 1
+
+                except ProductPricing.DoesNotExist:
+                    results.append({
+                        'product_name': product_name,
+                        'success': False,
+                        'error': 'محصول یافت نشد'
+                    })
+                except Exception as e:
+                    results.append({
+                        'product_name': product_name,
+                        'success': False,
+                        'error': str(e)
+                    })
 
         return JsonResponse({
             'success': True,
             'total_updated': total_updated,
+            'total_labels_updated': total_labels_updated,
             'total_attempted': len(product_names),
             'results': results,
-            'message': f'درصد تعدیل {adjustment_percentage}% برای {total_updated} از {len(product_names)} محصول اعمال شد'
+            'message': f'درصد تعدیل {adjustment_percentage}% برای {total_updated} محصول اعمال شد و {total_labels_updated} تنظیمات چاپ لیبل فعال شدند'
         })
 
     except Exception as e:
