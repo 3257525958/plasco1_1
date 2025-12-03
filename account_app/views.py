@@ -1850,47 +1850,72 @@ def debug_products(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+import time
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+import traceback
+
+
 @require_http_methods(["GET"])
 def get_all_products(request):
-    """تست ساده برای پیدا کردن مشکل"""
+    """نسخه فوق‌ساده برای دیباگ"""
+    print("🎯 درخواست دریافت شد - شروع پردازش")
+    start_time = time.time()
+
     try:
-        print("🎯 درخواست get_all_products دریافت شد")
+        # 1. فقط شمارش
+        from .models import ProductPricing, Branch
+        product_count = ProductPricing.objects.count()
+        branch_count = Branch.objects.count()
 
-        # فقط ۵ محصول اول رو برگردون
-        from .models import ProductPricing
-        products = list(ProductPricing.objects.all()[:5])
+        print(f"📊 تعداد محصولات: {product_count}")
+        print(f"🏢 تعداد شعب: {branch_count}")
 
-        # خیلی ساده
-        result = []
-        for p in products:
-            result.append({
+        # 2. فقط 5 محصول ساده
+        products = []
+        for p in ProductPricing.objects.all()[:5]:
+            products.append({
+                'id': p.id,
                 'product_name': p.product_name,
-                'price': float(p.highest_purchase_price) if p.highest_purchase_price else 0
+                'price': float(p.highest_purchase_price) if p.highest_purchase_price else 0,
+                'adjustment': float(p.adjustment_percentage) if p.adjustment_percentage else 0
             })
+
+        # 3. فقط 2 شعبه ساده
+        branches = []
+        for b in Branch.objects.all()[:2]:
+            branches.append({
+                'id': b.id,
+                'name': b.name
+            })
+
+        processing_time = time.time() - start_time
+        print(f"✅ پردازش کامل در {processing_time:.2f} ثانیه")
 
         return JsonResponse({
             'success': True,
-            'test': 'ساده',
-            'products': result,
-            'count': len(result)
+            'test_mode': 'ساده',
+            'processing_time': processing_time,
+            'products': products,
+            'branches': branches,
+            'stats': {
+                'total_products': product_count,
+                'total_branches': branch_count
+            }
         })
 
     except Exception as e:
-        # خطای کامل رو برگردون
-        import traceback
+        processing_time = time.time() - start_time
         error_details = traceback.format_exc()
 
-        # توی لاگ چاپ کن
-        print("🔥 خطا در get_all_products:")
+        print(f"🔥 خطا بعد از {processing_time:.2f} ثانیه:")
         print(error_details)
 
-        # به کاربر هم نمایش بده
         return JsonResponse({
             'error': str(e),
-            'error_details': error_details if DEBUG else None,
+            'processing_time': processing_time,
             'test_mode': True
-        }, status=500)
-# @require_http_methods(["GET"])
+        }, status=500)# @require_http_methods(["GET"])
 # def get_all_products(request):
 #     """دریافت تمام محصولات - نسخه بهینه‌شده"""
 #     try:
