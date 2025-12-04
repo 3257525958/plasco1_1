@@ -1,5 +1,3 @@
-[file name]: product_pricing_list.html
-[file content begin]
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -411,13 +409,13 @@
             font-weight: bold;
             border: 1px solid;
         }
-        
+
         .print-allowed {
             background-color: var(--green-light);
             color: var(--green-dark);
             border-color: var(--green-dark);
         }
-        
+
         .print-not-allowed {
             background-color: var(--red-light);
             color: var(--red-dark);
@@ -471,7 +469,7 @@
             display: inline-block;
             cursor: help;
         }
-        
+
         .info-tooltip .tooltip-text {
             visibility: hidden;
             width: 200px;
@@ -490,7 +488,7 @@
             font-size: 0.8rem;
             pointer-events: none;
         }
-        
+
         .info-tooltip:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
@@ -532,7 +530,7 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .modal-content {
             background-color: #fefefe;
             margin: auto;
@@ -548,12 +546,12 @@
             position: relative;
             transform: translateY(0);
         }
-        
+
         @keyframes slideDown {
             from { transform: translateY(-50px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -562,13 +560,13 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
-        
+
         .modal-header h3 {
             color: #2E7D32;
             margin: 0;
             font-size: 1.5rem;
         }
-        
+
         .modal-header button {
             background: none;
             border: none;
@@ -578,12 +576,12 @@
             padding: 0;
             line-height: 1;
         }
-        
+
         .modal-body {
             max-height: 50vh;
             overflow-y: auto;
         }
-        
+
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -592,7 +590,7 @@
             background-color: #f0f8ff;
             border-radius: 5px;
         }
-        
+
         .batch-info {
             display: flex;
             justify-content: space-between;
@@ -602,7 +600,7 @@
             border-radius: 5px;
             border: 1px solid #4CAF50;
         }
-        
+
         .badge {
             background-color: #2196f3;
             color: white;
@@ -610,31 +608,31 @@
             border-radius: 10px;
             font-size: 0.9rem;
         }
-        
+
         .badge.orange {
             background-color: #FF9800;
         }
-        
+
         .badge.green {
             background-color: #4CAF50;
         }
-        
+
         .badge.red {
             background-color: #f44336;
         }
-        
+
         .badge.purple {
             background-color: #6a1b9a;
         }
-        
+
         .badge.blue {
             background-color: #2196f3;
         }
-        
+
         #progressSection {
             margin: 20px 0;
         }
-        
+
         .progress-bar-container {
             width: 100%;
             background-color: #e0e0e0;
@@ -643,73 +641,73 @@
             height: 20px;
             margin-bottom: 10px;
         }
-        
+
         #progressBar {
             width: 0%;
             height: 100%;
             background: linear-gradient(90deg, #4CAF50, #8BC34A);
             transition: width 0.3s ease-in-out;
         }
-        
+
         .progress-text {
             text-align: center;
             margin-top: 10px;
             color: #666;
             font-size: 0.9rem;
         }
-        
+
         .result-card {
             background-color: #e8f5e9;
             padding: 15px;
             border-radius: 8px;
             border-right: 4px solid #4CAF50;
         }
-        
+
         .result-card.warning {
             background-color: #fff3e0;
             border-right: 4px solid #FF9800;
         }
-        
+
         .result-card.error {
             background-color: #ffebee;
             border-right: 4px solid #f44336;
         }
-        
+
         .result-card.info {
             background-color: #e3f2fd;
             border-right: 4px solid #2196f3;
         }
-        
+
         .result-title {
             font-size: 0.9rem;
             color: #666;
         }
-        
+
         .result-value {
             font-size: 2rem;
             font-weight: bold;
             color: #2E7D32;
         }
-        
+
         .result-value.warning {
             color: #FF9800;
         }
-        
+
         .result-value.error {
             color: #f44336;
         }
-        
+
         .result-value.info {
             color: #2196f3;
         }
-        
+
         #summaryResults {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
         }
-        
+
         #errorsList {
             background-color: #ffebee;
             padding: 10px;
@@ -718,7 +716,7 @@
             overflow-y: auto;
             font-size: 0.9rem;
         }
-        
+
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -726,7 +724,7 @@
             padding-top: 20px;
             border-top: 1px solid #ddd;
         }
-        
+
         .modal-footer .btn {
             color: white;
             padding: 10px 20px;
@@ -737,36 +735,36 @@
             transition: all 0.2s;
             font-family: 'Vazirmatn', sans-serif;
         }
-        
+
         .modal-footer .btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
         }
-        
+
         .btn-danger {
             background-color: #f44336;
         }
-        
+
         .btn-success {
             background-color: #4CAF50;
         }
-        
+
         .btn-primary {
             background-color: #2196f3;
         }
-        
+
         .btn-warning {
             background-color: #FF9800;
         }
-        
+
         .btn-retry {
             background-color: #FF9800;
         }
-        
+
         .btn-skip {
             background-color: #607D8B;
         }
-        
+
         .operation-log {
             margin-top: 20px;
             max-height: 200px;
@@ -777,25 +775,25 @@
             font-size: 0.85rem;
             font-family: monospace;
         }
-        
+
         .log-entry {
             padding: 5px 0;
             border-bottom: 1px dashed #ddd;
             color: #555;
         }
-        
+
         .log-entry.success {
             color: #2E7D32;
         }
-        
+
         .log-entry.error {
             color: #f44336;
         }
-        
+
         .log-entry.warning {
             color: #FF9800;
         }
-        
+
         .log-entry.info {
             color: #2196f3;
         }
@@ -809,12 +807,12 @@
             text-align: center;
             animation: pulse 1.5s infinite;
         }
-        
+
         .retry-prompt h4 {
             color: #FF9800;
             margin-bottom: 10px;
         }
-        
+
         .retry-buttons {
             display: flex;
             justify-content: center;
@@ -827,66 +825,66 @@
             .container {
                 padding: 15px;
             }
-            
+
             .header h1 {
                 font-size: 1.5rem;
             }
-            
+
             .stats {
                 flex-direction: column;
                 gap: 15px;
             }
-            
+
             .products-table {
                 font-size: 0.9rem;
             }
-            
+
             .products-table th,
             .products-table td {
                 padding: 6px 4px;
             }
-            
+
             .adjustment-input {
                 width: 60px;
                 font-size: 0.8rem;
             }
-            
+
             .branch-header {
                 font-size: 0.8rem;
                 min-width: 100px;
             }
-            
+
             .bulk-actions-container {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .modal-content {
                 width: 95%;
                 margin: 5% auto;
                 padding: 15px;
                 max-height: 90vh;
             }
-            
+
             #summaryResults {
                 grid-template-columns: 1fr;
             }
-            
+
             .modal-footer {
                 flex-wrap: wrap;
                 justify-content: center;
             }
-            
+
             .modal-footer .btn {
                 margin: 5px;
                 flex: 1;
                 min-width: 120px;
             }
-            
+
             .retry-buttons {
                 flex-direction: column;
             }
-            
+
             .retry-buttons .btn {
                 width: 100%;
             }
@@ -911,7 +909,7 @@
             font-size: 0.9rem;
             line-height: 1.5;
         }
-        
+
         .batch-progress {
             margin-top: 15px;
             padding: 10px;
@@ -919,13 +917,13 @@
             border-radius: 5px;
             border: 1px solid #2196f3;
         }
-        
+
         .batch-status {
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
         }
-        
+
         .batch-error-details {
             background-color: #ffebee;
             padding: 10px;
@@ -980,10 +978,10 @@
                         <input type="checkbox" id="select-all-products">
                         <label for="select-all-products">انتخاب همه محصولات نمایش داده شده</label>
                     </div>
-                    
+
                     <div class="bulk-adjustment-controls">
                         <label for="bulk-adjustment">درصد تعدیل برای انتخاب‌ها:</label>
-                        <input type="number" id="bulk-adjustment" class="adjustment-input" 
+                        <input type="number" id="bulk-adjustment" class="adjustment-input"
                                step="0.01" min="0" max="100" placeholder="0.00"
                                style="width: 100px;">
                         <button id="apply-bulk-adjustment" class="bulk-adjustment-btn">
@@ -1065,7 +1063,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <div class="modal-body">
                 <!-- اطلاعات عملیات -->
                 <div id="operationInfo">
@@ -1082,7 +1080,7 @@
                         <span class="badge blue">۵۰ محصول</span>
                     </div>
                 </div>
-                
+
                 <!-- اطلاعات دسته‌بندی -->
                 <div id="batchInfoSection" class="batch-progress" style="display: none;">
                     <div class="batch-status">
@@ -1103,7 +1101,7 @@
                         <p id="batchErrorMessage" style="margin-top: 5px;"></p>
                     </div>
                 </div>
-                
+
                 <!-- بخش درخواست تلاش مجدد -->
                 <div id="retryPromptSection" class="retry-prompt" style="display: none;">
                     <h4><i class="fas fa-exclamation-circle"></i> خطا در پردازش دسته</h4>
@@ -1120,7 +1118,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- نوار پیشرفت کلی -->
                 <div id="progressSection">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -1134,7 +1132,7 @@
                         <span id="progressText">در حال آماده‌سازی...</span>
                     </div>
                 </div>
-                
+
                 <!-- نوار پیشرفت دسته فعلی -->
                 <div id="batchProgressSection" style="margin: 15px 0; display: none;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
@@ -1145,13 +1143,13 @@
                         <div id="batchProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #FF9800, #FFC107); transition: width 0.3s ease-in-out;"></div>
                     </div>
                 </div>
-                
+
                 <!-- نتایج عملیات -->
                 <div id="resultsSection" style="display: none;">
                     <h4 style="color: #2E7D32; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px;">
                         <i class="fas fa-chart-bar"></i> نتایج عملیات
                     </h4>
-                    
+
                     <div id="summaryResults">
                         <div class="result-card">
                             <div class="result-title">موفقیت‌آمیز</div>
@@ -1166,7 +1164,7 @@
                             <div class="result-value error" id="failedCount">0</div>
                         </div>
                     </div>
-                    
+
                     <!-- جزئیات خطاها (فقط اگر خطایی وجود داشته باشد) -->
                     <div id="errorsSection" style="display: none; margin-top: 20px;">
                         <h5 style="color: #f44336;">
@@ -1176,7 +1174,7 @@
                             <!-- لیست خطاها اینجا نمایش داده می‌شود -->
                         </div>
                     </div>
-                    
+
                     <!-- اطلاعات تنظیمات چاپ لیبل -->
                     <div id="labelSettingsInfo" style="display: none; margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-right: 4px solid #2196f3;">
                         <h5 style="color: #1976d2;">
@@ -1188,7 +1186,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- لاگ عملیات -->
                 <div id="operationLog" class="operation-log">
                     <div id="logContent">
@@ -1196,7 +1194,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button id="cancelOperationBtn" class="btn btn-danger" style="display: none;">
                     <i class="fas fa-ban"></i> لغو عملیات
@@ -1231,7 +1229,7 @@
         let selectedProducts = new Set();
         let bulkOperationInProgress = false;
         let operationCompletedSuccessfully = false;
-        
+
         // متغیرهای جدید برای مدیریت دسته‌بندی
         let productBatches = [];
         let currentBatchIndex = 0;
@@ -1239,7 +1237,7 @@
         let batchResults = [];
         let shouldRefreshOnClose = false;
         const BATCH_SIZE = 50; // حداکثر ۵۰ محصول در هر درخواست
-        
+
         // متغیرهای جدید برای مدیریت خطا و تلاش مجدد
         let currentBatchError = null;
         let retryAttempts = 0;
@@ -1264,10 +1262,10 @@
         // تابع برای نمایش پیام
         function showMessage(message, type) {
             const messageClass = type === 'error' ? 'error-message' :
-                                type === 'success' ? 'success-message' : 
+                                type === 'success' ? 'success-message' :
                                 type === 'warning' ? 'warning-message' : 'info-message';
             const icon = type === 'error' ? 'fa-exclamation-circle' :
-                        type === 'success' ? 'fa-check-circle' : 
+                        type === 'success' ? 'fa-check-circle' :
                         type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
 
             $('#messages').html(`
@@ -1288,7 +1286,7 @@
             const selectedCount = selectedProducts.size;
             $('#selected-count').text(`${selectedCount.toLocaleString()} محصول انتخاب شده`);
             $('#selected-products-count').text(selectedCount.toLocaleString());
-            
+
             // به‌روزرسانی وضعیت checkbox انتخاب همه
             const allVisibleProducts = allProducts.length;
             const $selectAll = $('#select-all-products');
@@ -1321,15 +1319,15 @@
         function createBranchHeaders() {
             try {
                 const $thead = $('.products-table thead tr');
-                
+
                 // حذف سرستون‌های قبلی شعب
                 $thead.find('.branch-header').remove();
-                
+
                 // اضافه کردن سرستون برای هر شعبه
                 branches.forEach(branch => {
                     $thead.append(`<th class="branch-header">${branch.name}<br><small>قیمت فروش</small></th>`);
                 });
-                
+
                 console.log(`✅ سرستون‌های ${branches.length} شعبه ایجاد شد`);
             } catch (error) {
                 console.error('❌ خطا در ایجاد سرستون‌ها:', error);
@@ -1369,7 +1367,7 @@
         function recalculatePrices(productName, newAdjustmentPercentage, newStandardPrice = null) {
             try {
                 console.log(`🔄 محاسبه مجدد قیمت‌ها برای ${productName} با درصد ${newAdjustmentPercentage}%`);
-                
+
                 // پیدا کردن ردیف محصول در جدول
                 const $row = $(`tr[data-product-name="${productName}"]`);
                 if (!$row.length) {
@@ -1408,22 +1406,22 @@
                         // به‌روزرسانی قیمت فروش در جدول
                         const $sellingPriceCell = $row.find(`.selling-price-cell[data-branch-id="${branch.id}"]`);
                         if ($sellingPriceCell.length) {
-                            const quantityText = branchData.quantity > 0 ? 
-                                `<span class="quantity-badge">${branchData.quantity}</span>` : 
+                            const quantityText = branchData.quantity > 0 ?
+                                `<span class="quantity-badge">${branchData.quantity}</span>` :
                                 '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-                            
+
                             // وضعیت چاپ لیبل
-                            const printStatus = branchData.allow_print ? 
-                                '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
+                            const printStatus = branchData.allow_print ?
+                                '<span class="print-status print-allowed">✔ چاپ فعال</span>' :
                                 '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
-                            
+
                             // تعداد چاپ‌ها
                             const printCount = branchData.print_count > 0 ?
                                 `<span class="print-count" title="تعداد چاپ‌ها">${branchData.print_count}</span>` : '';
-                            
-                            const sellingPrice = newSellingPrice > 0 ? 
+
+                            const sellingPrice = newSellingPrice > 0 ?
                                 newSellingPrice.toLocaleString() : 'ناموجود';
-                            
+
                             $sellingPriceCell.html(`
                                 <div class="branch-price-container">
                                     <div class="print-indicator">${printStatus} ${printCount}</div>
@@ -1461,7 +1459,7 @@
             $('#bulkOperationModal').fadeOut(300);
             $('body').css('overflow', 'auto');
             bulkOperationInProgress = false;
-            
+
             // اگر عملیات با موفقیت تمام شده و کاربر تایید کرده، صفحه را رفرش کن
             if (shouldRefreshOnClose) {
                 console.log('🔄 رفرش صفحه به دلیل اتمام موفقیت‌آمیز عملیات');
@@ -1479,13 +1477,13 @@
             $('#progressBar').css('width', '0%');
             $('#progressPercentage').text('0%');
             $('#progressText').text('در حال آماده‌سازی...');
-            
+
             // ریست کردن نتایج
             $('#successCount').text('0');
             $('#processingCount').text(selectedCount.toLocaleString());
             $('#failedCount').text('0');
             $('#labelSettingsCount').text('0');
-            
+
             // مخفی کردن بخش‌های غیرضروری
             $('#resultsSection').hide();
             $('#errorsSection').hide();
@@ -1500,16 +1498,16 @@
             $('#retryBatchBtn').show();
             $('#skipBatchBtn').show();
             $('#cancelAllBtn').show();
-            
+
             // نمایش دکمه لغو
             $('#cancelOperationBtn').show();
-            
+
             // پاک کردن لاگ قبلی
             $('#logContent').empty();
-            
+
             // ریست کردن شماره تلاش‌های مجدد
             retryAttempts = 0;
-            
+
             // اضافه کردن لاگ اولیه
             addLog(`شروع عملیات گروهی برای ${selectedCount} محصول`, 'info');
             addLog(`درصد تعدیل: ${adjustmentValue}%`, 'info');
@@ -1522,7 +1520,7 @@
             const logEntry = `<div class="log-entry ${type}">
                 <span style="color: #999;">[${timestamp}]</span> ${message}
             </div>`;
-            
+
             $('#logContent').append(logEntry);
             $('#operationLog').scrollTop($('#operationLog')[0].scrollHeight);
         }
@@ -1533,7 +1531,7 @@
             $('#progressBar').css('width', percentage + '%');
             $('#progressPercentage').text(percentage + '%');
             $('#progressText').text(message);
-            
+
             // به‌روزرسانی تعداد محصولات در حال پردازش
             const remaining = totalCount - processedCount;
             $('#processingCount').text(remaining.toLocaleString());
@@ -1554,36 +1552,36 @@
             const successCount = allResults.filter(r => r.success).length;
             const failedCount = allResults.filter(r => !r.success).length;
             const totalLabelsUpdated = allResults.reduce((sum, r) => sum + (r.label_settings_updated || 0), 0);
-            
+
             // به‌روزرسانی اعداد
             $('#successCount').text(successCount.toLocaleString());
             $('#failedCount').text(failedCount.toLocaleString());
             $('#processingCount').text('0');
-            
+
             // نمایش نتایج
             $('#resultsSection').fadeIn();
-            
+
             // نمایش خطاها اگر وجود داشته باشد
             if (failedCount > 0) {
                 showErrors(allResults.filter(r => !r.success));
             }
-            
+
             // نمایش اطلاعات تنظیمات چاپ لیبل
             if (totalLabelsUpdated > 0) {
                 $('#labelSettingsCount').text(totalLabelsUpdated.toLocaleString());
                 $('#labelSettingsInfo').fadeIn();
                 addLog(`${totalLabelsUpdated} تنظیمات چاپ لیبل فعال شدند`, 'success');
             }
-            
+
             // تغییر دکمه‌ها
             $('#cancelOperationBtn').hide();
             $('#refreshPageBtn').fadeIn();
             $('#closeResultsBtn').fadeIn();
-            
+
             // اضافه کردن لاگ نهایی
-            addLog(`عملیات تکمیل شد! ${successCount} موفق، ${failedCount} ناموفق`, 
+            addLog(`عملیات تکمیل شد! ${successCount} موفق، ${failedCount} ناموفق`,
                    failedCount > 0 ? 'warning' : 'success');
-            
+
             // علامت‌گذاری برای رفرش صفحه هنگام بستن مودال
             shouldRefreshOnClose = true;
             operationCompletedSuccessfully = true;
@@ -1592,14 +1590,14 @@
         // تابع برای نمایش خطاها
         function showErrors(failedResults) {
             $('#errorsList').empty();
-            
+
             failedResults.forEach(result => {
                 const errorItem = `<div style="padding: 5px 0; border-bottom: 1px solid #ffcdd2;">
                     <strong>${result.product_name}</strong>: ${result.error || 'خطای نامشخص'}
                 </div>`;
                 $('#errorsList').append(errorItem);
             });
-            
+
             $('#errorsSection').fadeIn();
         }
 
@@ -1607,13 +1605,13 @@
         function updatePrintStatus(productName, allowPrint) {
             const $row = $(`tr[data-product-name="${productName}"]`);
             if (!$row.length) return;
-            
+
             $row.find('.print-status').each(function() {
                 const $status = $(this);
                 if (allowPrint) {
                     $status.removeClass('print-not-allowed').addClass('print-allowed')
                            .html('✔ چاپ فعال');
-                    
+
                     // همچنین در print-indicator هم به‌روزرسانی کن
                     const $indicator = $status.closest('.print-indicator');
                     if ($indicator.length) {
@@ -1630,24 +1628,24 @@
                 errorMessage: errorMessage,
                 batchProducts: batchProducts
             };
-            
+
             // نمایش بخش درخواست تلاش مجدد
             $('#retryPromptSection').fadeIn();
             $('#retryBatchNumber').text(batchIndex + 1);
             $('#retryPromptMessage').html(`دسته <strong>${batchIndex + 1}</strong> از <strong>${totalBatches}</strong> با خطا مواجه شد.<br>خطا: ${errorMessage}<br>آیا می‌خواهید دوباره تلاش کنید؟`);
-            
+
             // نمایش جزئیات خطا در بخش batch info
             $('#batchErrorMessage').html(`<strong>${errorMessage}</strong><br>تعداد محصولات در این دسته: ${batchProducts.length}`);
             $('#batchErrorDetails').fadeIn();
-            
+
             // مخفی کردن دکمه لغو عملیات اصلی
             $('#cancelOperationBtn').hide();
             $('#continueAfterErrorBtn').show();
-            
+
             // غیرفعال کردن سایر بخش‌ها
             $('#batchProgressSection').hide();
             $('#progressSection').css('opacity', '0.5');
-            
+
             addLog(`خطا در پردازش دسته ${batchIndex + 1}: ${errorMessage}`, 'error');
             addLog(`درخواست تلاش مجدد از کاربر... (تلاش ${retryAttempts + 1} از ${MAX_RETRY_ATTEMPTS})`, 'warning');
         }
@@ -1670,10 +1668,10 @@
                 showFinalResults();
                 return;
             }
-            
+
             currentBatchIndex = batchIndex;
             const currentBatch = productBatches[batchIndex];
-            
+
             // به‌روزرسانی اطلاعات دسته
             $('#currentBatch').text(batchIndex + 1);
             $('#totalBatches').text(totalBatches);
@@ -1681,24 +1679,24 @@
             $('#batchStatus').text('در حال پردازش').removeClass().addClass('badge orange');
             $('#batchInfoSection').fadeIn();
             $('#batchProgressSection').fadeIn();
-            
+
             // مخفی کردن بخش درخواست تلاش مجدد اگر نمایش داده می‌شد
             $('#retryPromptSection').hide();
             $('#batchErrorDetails').hide();
             $('#continueAfterErrorBtn').hide();
             $('#cancelOperationBtn').show();
-            
+
             // فعال کردن مجدد بخش پیشرفت
             $('#progressSection').css('opacity', '1');
-            
+
             addLog(`شروع پردازش دسته ${batchIndex + 1} از ${totalBatches} (${currentBatch.length} محصول)`, 'info');
-            
+
             // محاسبه محصولات پردازش شده تاکنون
             let totalProcessedSoFar = 0;
             for (let i = 0; i < batchIndex; i++) {
                 totalProcessedSoFar += productBatches[i].length;
             }
-            
+
             // ارسال درخواست برای دسته فعلی
             $.ajax({
                 url: "{% url 'bulk_update_adjustment_percentage' %}",
@@ -1718,38 +1716,38 @@
                 },
                 success: function(data) {
                     console.log(`✅ پاسخ دسته ${batchIndex + 1}:`, data);
-                    
+
                     if (data.success) {
                         addLog(`دسته ${batchIndex + 1} با موفقیت پردازش شد (${data.total_updated} به‌روزرسانی شد)`, 'success');
-                        
+
                         // ذخیره نتایج این دسته
                         batchResults.push(data.results);
-                        
+
                         // به‌روزرسانی پیشرفت دسته به 100%
                         updateBatchProgress(currentBatch.length, currentBatch.length);
-                        
+
                         // محاسبه کل محصولات پردازش شده تاکنون
                         totalProcessedSoFar += currentBatch.length;
-                        
+
                         // به‌روزرسانی پیشرفت کلی
                         updateOverallProgress(
-                            totalProcessedSoFar, 
-                            selectedProducts.size, 
+                            totalProcessedSoFar,
+                            selectedProducts.size,
                             `دسته ${batchIndex + 1} از ${totalBatches} تکمیل شد`
                         );
-                        
+
                         // ریست کردن شماره تلاش‌های مجدد
                         retryAttempts = 0;
-                        
+
                         // پردازش دسته بعدی با تاخیر 1 ثانیه برای کاهش فشار بر سرور
                         setTimeout(() => {
                             processBatch(batchIndex + 1, productBatches[batchIndex + 1], adjustmentValue);
                         }, 1000);
-                        
+
                     } else {
                         // افزایش شماره تلاش‌های مجدد
                         retryAttempts++;
-                        
+
                         // اگر تعداد تلاش‌ها از حد مجاز بیشتر شد، نمایش درخواست تلاش مجدد
                         if (retryAttempts >= MAX_RETRY_ATTEMPTS) {
                             addLog(`حداکثر تعداد تلاش‌های مجدد (${MAX_RETRY_ATTEMPTS}) برای دسته ${batchIndex + 1} انجام شد`, 'error');
@@ -1765,7 +1763,7 @@
                 },
                 error: function(xhr, status, error) {
                     console.error(`❌ خطا در پردازش دسته ${batchIndex + 1}:`, error);
-                    
+
                     let errorMessage = 'خطا در ارتباط با سرور';
                     if (status === 'timeout') {
                         errorMessage = 'زمان عملیات دسته به پایان رسید';
@@ -1774,10 +1772,10 @@
                     } else if (xhr.status === 400) {
                         errorMessage = 'درخواست نامعتبر (400)';
                     }
-                    
+
                     // افزایش شماره تلاش‌های مجدد
                     retryAttempts++;
-                    
+
                     // اگر تعداد تلاش‌ها از حد مجاز بیشتر شد، نمایش درخواست تلاش مجدد
                     if (retryAttempts >= MAX_RETRY_ATTEMPTS) {
                         addLog(`حداکثر تعداد تلاش‌های مجدد (${MAX_RETRY_ATTEMPTS}) برای دسته ${batchIndex + 1} انجام شد`, 'error');
@@ -1798,24 +1796,24 @@
         // تابع برای اعمال درصد تعدیل روی انتخاب‌ها
         function applyBulkAdjustment() {
             const bulkAdjustment = $('#bulk-adjustment').val().trim();
-            
+
             if (!bulkAdjustment) {
                 showMessage('لطفا درصد تعدیل را وارد کنید', 'error');
                 return;
             }
-            
+
             const adjustmentValue = parseFloat(bulkAdjustment);
             if (isNaN(adjustmentValue) || adjustmentValue < 0 || adjustmentValue > 100) {
                 showMessage('درصد تعدیل باید عددی بین 0 تا 100 باشد', 'error');
                 return;
             }
-            
+
             const selectedCount = selectedProducts.size;
             if (selectedCount === 0) {
                 showMessage('لطفا حداقل یک محصول را انتخاب کنید', 'error');
                 return;
             }
-            
+
             // هشدار برای تعداد زیاد محصولات
             if (selectedCount > 100) {
                 const confirmMessage = `شما ${selectedCount.toLocaleString()} محصول را انتخاب کرده‌اید. عملیات به صورت دسته‌ای (هر دسته حداکثر ${BATCH_SIZE} محصول) انجام خواهد شد. این عملیات ممکن است چند دقیقه زمان ببرد. آیا ادامه می‌دهید؟`;
@@ -1827,29 +1825,29 @@
                     return;
                 }
             }
-            
+
             // تنظیم فلگ عملیات در حال انجام
             bulkOperationInProgress = true;
             operationCompletedSuccessfully = false;
             shouldRefreshOnClose = false;
-            
+
             // آماده‌سازی مودال
             prepareModalForOperation(selectedCount, adjustmentValue);
-            
+
             // نمایش مودال
             showOperationModal();
-            
+
             // لیست محصولات انتخاب شده
             const productNames = Array.from(selectedProducts);
-            
+
             // ایجاد دسته‌های ۵۰ تایی
             productBatches = createBatches(productNames);
             totalBatches = productBatches.length;
             currentBatchIndex = 0;
             batchResults = [];
-            
+
             addLog(`تعداد ${selectedCount} محصول به ${totalBatches} دسته تقسیم شد`, 'info');
-            
+
             // شروع پردازش اولین دسته
             setTimeout(() => {
                 processBatch(0, productBatches[0], adjustmentValue);
@@ -1862,7 +1860,7 @@
         function displayProducts(products, append = false) {
             try {
                 const $tbody = $('#products-table-body');
-                
+
                 if (products.length === 0 && !append) {
                     $('#no-results').removeClass('hidden');
                     $('.table-container').addClass('hidden');
@@ -1871,7 +1869,7 @@
                 } else {
                     $('#no-results').addClass('hidden');
                     $('.table-container').removeClass('hidden');
-                    
+
                     // اگر حالت append نباشد، کل جدول را پاک می‌کنیم
                     if (!append) {
                         $tbody.empty();
@@ -1879,17 +1877,17 @@
                         selectedProducts.clear();
                         updateSelectedCount();
                     }
-                    
+
                     console.log(`📊 نمایش ${products.length} محصول در جدول (${append ? 'اضافه شده' : 'جدید'})`);
-                    
+
                     products.forEach(product => {
                         // بررسی اینکه آیا محصول قبلاً انتخاب شده است
                         const isSelected = selectedProducts.has(product.product_name);
-                        
+
                         let row = `
                             <tr data-product-name="${product.product_name}" ${isSelected ? 'class="selected-row"' : ''}>
                                 <td>
-                                    <input type="checkbox" class="product-checkbox" 
+                                    <input type="checkbox" class="product-checkbox"
                                            data-product-name="${product.product_name}"
                                            ${isSelected ? 'checked' : ''}>
                                 </td>
@@ -1898,11 +1896,11 @@
                                 <td>${product.invoice_date || '-'}</td>
                                 <td>${product.invoice_number || '-'}</td>
                                 <td>
-                                    <input type="number" 
-                                           class="adjustment-input" 
-                                           value="${product.adjustment_percentage}" 
-                                           step="0.01" 
-                                           min="0" 
+                                    <input type="number"
+                                           class="adjustment-input"
+                                           value="${product.adjustment_percentage}"
+                                           step="0.01"
+                                           min="0"
                                            max="100"
                                            data-product-name="${product.product_name}"
                                            title="درصد تعدیل قیمت خرید">
@@ -1911,29 +1909,29 @@
                                 <td>${product.created_at}</td>
                                 <td>${product.updated_at}</td>
                         `;
-                        
+
                         // اضافه کردن قیمت فروش برای هر شعبه
                         branches.forEach(branch => {
                             const branchPrice = product.branch_prices && product.branch_prices[branch.id];
                             if (branchPrice) {
-                                const quantityText = branchPrice.quantity > 0 ? 
-                                    `<span class="quantity-badge">${branchPrice.quantity}</span>` : 
+                                const quantityText = branchPrice.quantity > 0 ?
+                                    `<span class="quantity-badge">${branchPrice.quantity}</span>` :
                                     '<span class="quantity-badge" style="background-color: #d32f2f;">۰</span>';
-                                
+
                                 // وضعیت چاپ لیبل
-                                const printStatus = branchPrice.allow_print ? 
-                                    '<span class="print-status print-allowed">✔ چاپ فعال</span>' : 
+                                const printStatus = branchPrice.allow_print ?
+                                    '<span class="print-status print-allowed">✔ چاپ فعال</span>' :
                                     '<span class="print-status print-not-allowed">✘ چاپ غیرفعال</span>';
-                                
+
                                 // تعداد چاپ‌ها
                                 const printCount = branchPrice.print_count > 0 ?
                                     `<span class="print-count" title="تعداد چاپ‌ها">${branchPrice.print_count}</span>` : '';
-                                
-                                const sellingPrice = branchPrice.selling_price > 0 ? 
+
+                                const sellingPrice = branchPrice.selling_price > 0 ?
                                     branchPrice.selling_price.toLocaleString() : 'ناموجود';
-                                
+
                                 row += `
-                                    <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}" 
+                                    <td class="selling-price-cell ${branchPrice.quantity === 0 ? 'out-of-stock' : ''}"
                                         data-branch-id="${branch.id}">
                                         <div class="branch-price-container">
                                             <div class="print-indicator">${printStatus} ${printCount}</div>
@@ -1956,7 +1954,7 @@
                                 `;
                             }
                         });
-                        
+
                         row += `</tr>`;
                         $tbody.append(row);
                     });
@@ -1965,7 +1963,7 @@
                     $('.product-checkbox').off('change').on('change', function() {
                         const productName = $(this).data('product-name');
                         const $row = $(this).closest('tr');
-                        
+
                         if ($(this).prop('checked')) {
                             $row.addClass('selected-row');
                             selectedProducts.add(productName);
@@ -1981,7 +1979,7 @@
                         $(this).data('old-value', $(this).val());
                     });
                 }
-                
+
                 // به روزرسانی آمار و اطلاعات صفحه‌بندی
                 updateStats(products.length, append);
             } catch (error) {
@@ -2002,9 +2000,9 @@
                     const currentVisible = parseInt($('#visible-products').text().replace(/,/g, '')) || 0;
                     $('#visible-products').text((currentVisible + visibleCount).toLocaleString());
                 }
-                
+
                 $('#total-branches').text(branches.length.toLocaleString());
-                
+
                 // به روزرسانی اطلاعات صفحه‌بندی
                 if (totalProductsCount > 0) {
                     const currentShown = parseInt($('#shown-products').text()) || 0;
@@ -2013,7 +2011,7 @@
                     } else {
                         $('#shown-products').text(visibleCount.toLocaleString());
                     }
-                    
+
                     // تعیین تعداد کل برای نمایش در صفحه‌بندی
                     const totalToShow = isSearchMode ? allProducts.length : totalProductsCount;
                     $('#total-products-count').text(totalToShow.toLocaleString());
@@ -2027,7 +2025,7 @@
         // تابع برای بارگذاری خودکار محصولات وقتی کاربر به انتهای صفحه می‌رسد
         function setupAutoLoad() {
             const $container = $('#products-table-container');
-            
+
             $container.off('scroll').on('scroll', function() {
                 if (!autoLoadEnabled || isLoading || !hasMoreProducts || isSearchMode) {
                     return;
@@ -2036,7 +2034,7 @@
                 const scrollTop = $container.scrollTop();
                 const scrollHeight = $container[0].scrollHeight;
                 const clientHeight = $container[0].clientHeight;
-                
+
                 // اگر کاربر به 80% انتهای لیست رسید، بارگذاری خودکار انجام شود
                 if (scrollTop + clientHeight >= scrollHeight * 0.8) {
                     loadNextPageAuto();
@@ -2055,19 +2053,19 @@
         // تابع برای بارگذاری تمام محصولات
         function loadAllProducts(page = 1, searchQuery = '', autoLoad = false) {
             if (isLoading) return;
-            
+
             isLoading = true;
-            
+
             if (autoLoad) {
                 $('#auto-load-indicator').removeClass('hidden');
             } else {
                 console.log(`🔄 بارگذاری صفحه ${page} محصولات...`);
                 $('#loading').removeClass('hidden');
             }
-            
+
             const url = searchQuery ? "{% url 'search_products' %}" : "{% url 'get_all_products' %}";
             const data = searchQuery ? { q: searchQuery } : { page: page };
-            
+
             $.ajax({
                 url: url,
                 method: 'GET',
@@ -2078,64 +2076,64 @@
                 },
                 success: function(response) {
                     isLoading = false;
-                    
+
                     if (autoLoad) {
                         $('#auto-load-indicator').addClass('hidden');
                     } else {
                         $('#loading').addClass('hidden');
                     }
-                    
+
                     console.log('✅ پاسخ دریافت محصولات دریافت شد', response);
-                    
+
                     if (response && ((response.products && response.branches) || (response.results && response.branches))) {
                         const products = response.products || response.results;
                         const newBranches = response.branches;
-                        
+
                         if (page === 1 || isSearchMode) {
                             // صفحه اول یا حالت جستجو - ریست کردن داده‌ها
                             allProducts = products;
                             branches = newBranches;
                             isSearchMode = !!searchQuery;
-                            
+
                             // دریافت تعداد کل محصولات از پاسخ سرور
                             if (response.pagination && response.pagination.total_products) {
                                 totalProductsCount = response.pagination.total_products;
                             } else if (isSearchMode) {
                                 totalProductsCount = products.length;
                             }
-                            
+
                             displayProducts(allProducts, false);
                         } else {
                             // صفحه بعدی - اضافه کردن به داده‌های موجود
                             allProducts = allProducts.concat(products);
                             displayProducts(products, true);
                         }
-                        
+
                         filteredProducts = [...allProducts];
                         currentPage = page;
                         hasMoreProducts = response.pagination?.has_next || false;
-                        
+
                         // اگر در حالت عادی هستیم و totalProductsCount هنوز تنظیم نشده
                         if (!isSearchMode && response.pagination?.total_products) {
                             totalProductsCount = response.pagination.total_products;
                         }
-                        
+
                         console.log(`📦 ${allProducts.length} محصول و ${branches.length} شعبه دریافت شد - کل محصولات: ${totalProductsCount}`);
-                        
+
                         // ایجاد سرستون‌های شعب (فقط برای صفحه اول)
                         if (page === 1) {
                             createBranchHeaders();
                         }
-                        
+
                         // اگر اولین بار است که لود می‌شود، پیام موفقیت نشان بده
                         if (isInitialLoad && page === 1 && !searchQuery) {
                             showMessage(`✅ ${totalProductsCount} محصول با موفقیت بارگذاری شدند`, 'success');
                             isInitialLoad = false;
-                            
+
                             // فعال کردن بارگذاری خودکار پس از بارگذاری اولیه
                             autoLoadEnabled = true;
                             setupAutoLoad();
-                            
+
                             // بعد از 3 ثانیه اولین بارگذاری خودکار را انجام بده
                             setTimeout(() => {
                                 if (hasMoreProducts && !isSearchMode) {
@@ -2143,7 +2141,7 @@
                                 }
                             }, 3000);
                         }
-                        
+
                         // اگر محصول بیشتری برای بارگذاری وجود دارد و در حالت عادی هستیم، خودکار بارگذاری کن
                         if (hasMoreProducts && !isSearchMode && autoLoadEnabled && page > 1) {
                             setTimeout(loadNextPageAuto, 1000);
@@ -2158,21 +2156,21 @@
                 },
                 error: function(xhr, status, error) {
                     isLoading = false;
-                    
+
                     if (autoLoad) {
                         $('#auto-load-indicator').addClass('hidden');
                     } else {
                         $('#loading').addClass('hidden');
                     }
-                    
+
                     console.error('❌ خطای AJAX در دریافت محصولات:', {
                         status: xhr.status,
                         statusText: xhr.statusText,
                         error: error
                     });
-                    
+
                     let errorMessage = 'خطا در ارتباط با سرور';
-                    
+
                     if (xhr.status === 0) {
                         errorMessage = 'سرور در دسترس نیست یا ارتباط قطع شده است';
                     } else if (xhr.status === 500) {
@@ -2183,7 +2181,7 @@
                     } else if (status === 'timeout') {
                         errorMessage = 'زمان درخواست به پایان رسید - داده‌ها زیاد هستند';
                     }
-                    
+
                     showMessage(errorMessage, 'error');
                 }
             });
@@ -2199,7 +2197,7 @@
                 loadAllProducts(1);
                 return;
             }
-            
+
             console.log(`🔍 جستجو برای: "${query}"`);
             isSearchMode = true;
             autoLoadEnabled = false;
@@ -2212,9 +2210,9 @@
         // جستجوی محصولات با تاخیر
         $('#product-search').on('input', function() {
             const query = $(this).val().trim();
-            
+
             clearTimeout(searchTimeout);
-            
+
             if (query.length === 0) {
                 // اگر فیلد خالی شد، به حالت عادی برگرد
                 isSearchMode = false;
@@ -2223,13 +2221,13 @@
                 loadAllProducts(1);
                 return;
             }
-            
+
             if (query.length < 2) {
                 return;
             }
-            
+
             $('#loading').removeClass('hidden');
-            
+
             searchTimeout = setTimeout(function() {
                 searchProducts(query);
             }, 500);
@@ -2238,7 +2236,7 @@
         // بارگذاری اولیه محصولات هنگام لود صفحه
         $(document).ready(function() {
             console.log('🚀 صفحه بارگذاری شد - شروع فرآیند راه‌اندازی');
-            
+
             // تست اتصال اولیه
             $.ajax({
                 url: "{% url 'health_check' %}",
@@ -2246,7 +2244,7 @@
                 timeout: 5000,
                 success: function(response) {
                     console.log('✅ تست اتصال موفقیت‌آمیز بود:', response);
-                    
+
                     // بارگذاری اولیه محصولات
                     loadAllProducts(1);
                 },
@@ -2341,12 +2339,12 @@
                 $('#continueAfterErrorBtn').hide();
                 $('#cancelOperationBtn').show();
                 $('#progressSection').css('opacity', '1');
-                
+
                 // ادامه از دسته بعدی
                 if (currentBatchError) {
                     const nextBatchIndex = currentBatchError.batchIndex + 1;
                     addLog(`رد کردن دسته ${currentBatchError.batchIndex + 1} و ادامه از دسته ${nextBatchIndex + 1}`, 'warning');
-                    
+
                     // ذخیره نتایج خطا برای این دسته
                     const errorResults = currentBatchError.batchProducts.map(productName => ({
                         product_name: productName,
@@ -2354,10 +2352,10 @@
                         error: currentBatchError.errorMessage
                     }));
                     batchResults.push(errorResults);
-                    
+
                     // ادامه به دسته بعدی
                     setTimeout(() => {
-                        processBatch(nextBatchIndex, productBatches[nextBatchIndex], 
+                        processBatch(nextBatchIndex, productBatches[nextBatchIndex],
                                    $('#adjustmentPercentageModal').text().replace('%', ''));
                     }, 1000);
                 }
@@ -2369,14 +2367,14 @@
                 $('#retryPromptSection').hide();
                 $('#continueAfterErrorBtn').hide();
                 $('#cancelOperationBtn').show();
-                
+
                 if (currentBatchError) {
                     // ریست کردن شماره تلاش‌های مجدد
                     retryAttempts = 0;
-                    
+
                     // تلاش مجدد برای همان دسته
                     setTimeout(() => {
-                        processBatch(currentBatchError.batchIndex, 
+                        processBatch(currentBatchError.batchIndex,
                                    currentBatchError.batchProducts,
                                    $('#adjustmentPercentageModal').text().replace('%', ''));
                     }, 1000);
@@ -2389,7 +2387,7 @@
                 $('#retryPromptSection').hide();
                 $('#continueAfterErrorBtn').hide();
                 $('#cancelOperationBtn').show();
-                
+
                 if (currentBatchError) {
                     // ذخیره نتایج خطا برای این دسته
                     const errorResults = currentBatchError.batchProducts.map(productName => ({
@@ -2398,11 +2396,11 @@
                         error: currentBatchError.errorMessage
                     }));
                     batchResults.push(errorResults);
-                    
+
                     // ادامه به دسته بعدی
                     const nextBatchIndex = currentBatchError.batchIndex + 1;
                     setTimeout(() => {
-                        processBatch(nextBatchIndex, productBatches[nextBatchIndex], 
+                        processBatch(nextBatchIndex, productBatches[nextBatchIndex],
                                    $('#adjustmentPercentageModal').text().replace('%', ''));
                     }, 1000);
                 }
@@ -2431,4 +2429,3 @@
     </script>
 </body>
 </html>
-[file content end]

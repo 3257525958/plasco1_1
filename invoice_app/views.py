@@ -2619,3 +2619,270 @@ def save_cash_payment(request):
             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
 
     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+
+
+# ------------------------------------------بستن فاکتورهای روزانه----------------------------------------
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Sum, Count
+from django.utils import timezone
+from jdatetime import datetime as jdatetime
+from .models import Invoicefrosh, InvoiceItemfrosh, CheckPayment, CreditPayment, CashPayment, POSTransaction
+from datetime import datetime, timedelta
+import json
+
+
+@login_required
+def daily_invoices(request):
+    """
+    نمایش فاکتورهای روزانه
+    """
+    # دریافت تاریخ امروز
+    today = timezone.now().date()
+    today_start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+    today_end = timezone.make_aware(datetime.combine(today, datetime.max.time()))
+
+    # فاکتورهای امروز
+    invoices = Invoicefrosh.objects.filter(
+        created_at__range=(today_start, today_end)
+    ).select_related('branch', 'created_by', 'pos_device').order_by('-created_at')
+
+    # محاسبه آمار
+    stats = {
+        'total_count': invoices.count(),
+        'total_amount': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+        'total_discount': invoices.aggregate(Sum('discount'))['discount__sum'] or 0,
+        'total_profit': invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0,
+        'paid_count': invoices.filter(is_paid=True).count(),
+        'unpaid_count': invoices.filter(is_paid=False).count(),
+    }
+
+    # گروه‌بندی بر اساس روش پرداخت
+    payment_stats = {
+        'cash': invoices.filter(payment_method='cash').count(),
+        'pos': invoices.filter(payment_method='pos').count(),
+        'check': invoices.filter(payment_method='check').count(),
+        'credit': invoices.filter(payment_method='credit').count(),
+    }
+
+    context = {
+        'invoices': invoices,
+        'stats': stats,
+        'payment_stats': payment_stats,
+        'today': jdatetime.fromgregorian(date=today).strftime('%Y/%m/%d'),
+    }
+
+    return render(request, 'invoice_app/daily_invoices.html', context)
+
+
+@login_required
+def invoice_detail(request, invoice_id):
+    """
+    نمایش جزئیات یک فاکتور
+    """
+    invoice = get_object_or_404(
+        Invoicefrosh.objects.select_related(
+            'branch', 'created_by', 'pos_device'
+        ).prefetch_related('items'),
+        id=invoice_id
+    )
+
+    # دریافت اطلاعات پرداخت بر اساس روش پرداخت
+    payment_info = None
+    if invoice.payment_method == 'check' and hasattr(invoice, 'check_payment'):
+        payment_info = invoice.check_payment
+    elif invoice.payment_method == 'credit' and hasattr(invoice, 'credit_payment'):
+        payment_info = invoice.credit_payment
+    elif invoice.payment_method == 'cash' and hasattr(invoice, 'cash_payment'):
+        payment_info = invoice.cash_payment
+
+    context = {
+        'invoice': invoice,
+        'payment_info': payment_info,
+        'items': invoice.items.all(),
+        'jalali_date': invoice.get_jalali_date(),
+        'jalali_time': invoice.get_jalali_time(),
+    }
+
+    return render(request, 'invoice_app/invoice_detail.html', context)
+
+
+@login_required
+def edit_invoice(request, invoice_id):
+    """
+    ویرایش فاکتور
+    """
+    invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
+
+    # بررسی دسترسی کاربر برای ویرایش
+    if not (request.user.is_superuser or invoice.created_by == request.user):
+        messages.error(request, 'شما مجوز ویرایش این فاکتور را ندارید.')
+        return redirect('daily_invoices')
+
+    if request.method == 'POST':
+        try:
+            data = request.POST
+
+            # به‌روزرسانی اطلاعات اصلی فاکتور
+            invoice.customer_name = data.get('customer_name', invoice.customer_name)
+            invoice.customer_phone = data.get('customer_phone', invoice.customer_phone)
+            invoice.discount = int(data.get('discount', invoice.discount))
+
+            # محاسبه مجدد مبلغ کل با احتساب تخفیف
+            if 'total_amount' in data:
+                total = int(data.get('total_amount'))
+                invoice.total_amount = total - invoice.discount
+                invoice.total_without_discount = total
+
+            # به‌روزرسانی وضعیت پرداخت
+            if 'is_paid' in data:
+                invoice.is_paid = data.get('is_paid') == 'on'
+                if invoice.is_paid and not invoice.payment_date:
+                    invoice.payment_date = timezone.now()
+
+            invoice.save()
+
+            # به‌روزرسانی آیتم‌های فاکتور
+            items_data = json.loads(request.POST.get('items', '[]'))
+            for item_data in items_data:
+                if 'id' in item_data:
+                    item = InvoiceItemfrosh.objects.get(id=item_data['id'], invoice=invoice)
+                    item.quantity = int(item_data.get('quantity', item.quantity))
+                    item.price = int(item_data.get('price', item.price))
+                    item.total_price = item.quantity * item.price
+                    item.save()
+
+            messages.success(request, 'فاکتور با موفقیت ویرایش شد.')
+            return redirect('invoice_detail', invoice_id=invoice.id)
+
+        except Exception as e:
+            messages.error(request, f'خطا در ویرایش فاکتور: {str(e)}')
+
+    # دریافت لیست آیتم‌ها برای نمایش در فرم
+    items = invoice.items.all()
+
+    context = {
+        'invoice': invoice,
+        'items': items,
+        'payment_methods': Invoicefrosh.PAYMENT_METHODS,
+        'jalali_date': invoice.get_jalali_date(),
+        'jalali_time': invoice.get_jalali_time(),
+    }
+
+    return render(request, 'invoice_app/edit_invoice.html', context)
+
+
+@login_required
+def delete_invoice(request, invoice_id):
+    """
+    حذف فاکتور
+    """
+    invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
+
+    # بررسی دسترسی کاربر برای حذف
+    if not (request.user.is_superuser or invoice.created_by == request.user):
+        messages.error(request, 'شما مجوز حذف این فاکتور را ندارید.')
+        return redirect('daily_invoices')
+
+    if request.method == 'POST':
+        try:
+            invoice.delete()
+            messages.success(request, 'فاکتور با موفقیت حذف شد.')
+            return redirect('daily_invoices')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف فاکتور: {str(e)}')
+            return redirect('invoice_detail', invoice_id=invoice.id)
+
+    context = {
+        'invoice': invoice,
+        'jalali_date': invoice.get_jalali_date(),
+    }
+
+    return render(request, 'invoice_app/delete_invoice.html', context)
+
+
+@login_required
+def update_invoice_status(request, invoice_id):
+    """
+    به‌روزرسانی وضعیت فاکتور (پرداخت/نهایی‌سازی) از طریق AJAX
+    """
+    if request.method == 'POST' and request.is_ajax():
+        try:
+            invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
+            data = json.loads(request.body)
+
+            if 'is_paid' in data:
+                invoice.is_paid = data['is_paid']
+                if invoice.is_paid and not invoice.payment_date:
+                    invoice.payment_date = timezone.now()
+
+            if 'is_finalized' in data:
+                invoice.is_finalized = data['is_finalized']
+
+            invoice.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'وضعیت فاکتور با موفقیت به‌روزرسانی شد.',
+                'is_paid': invoice.is_paid,
+                'is_finalized': invoice.is_finalized,
+                'payment_date': invoice.payment_date.strftime('%Y-%m-%d %H:%M') if invoice.payment_date else None
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'خطا در به‌روزرسانی: {str(e)}'
+            })
+
+    return JsonResponse({'success': False, 'message': 'درخواست نامعتبر'})
+
+
+@login_required
+def filter_invoices(request):
+    """
+    فیلتر فاکتورها بر اساس تاریخ
+    """
+    if request.method == 'GET':
+        date_str = request.GET.get('date')
+
+        try:
+            if date_str:
+                # تبدیل تاریخ جلالی به میلادی
+                jalali_date = jdatetime.strptime(date_str, '%Y/%m/%d')
+                gregorian_date = jalali_date.togregorian()
+
+                date_start = timezone.make_aware(datetime.combine(gregorian_date, datetime.min.time()))
+                date_end = timezone.make_aware(datetime.combine(gregorian_date, datetime.max.time()))
+
+                invoices = Invoicefrosh.objects.filter(
+                    created_at__range=(date_start, date_end)
+                ).select_related('branch', 'created_by').order_by('-created_at')
+
+                stats = {
+                    'total_count': invoices.count(),
+                    'total_amount': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+                    'total_discount': invoices.aggregate(Sum('discount'))['discount__sum'] or 0,
+                    'paid_count': invoices.filter(is_paid=True).count(),
+                }
+
+                return JsonResponse({
+                    'success': True,
+                    'invoices': list(invoices.values(
+                        'id', 'serial_number', 'branch__name', 'total_amount',
+                        'discount', 'is_paid', 'is_finalized', 'customer_name',
+                        'payment_method', 'created_at'
+                    )),
+                    'stats': stats,
+                    'date': date_str
+                })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'خطا در فیلتر: {str(e)}'
+            })
+
+    return JsonResponse({'success': False, 'message': 'درخواست نامعتبر'})

@@ -1,0 +1,998 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فاکتورهای روزانه - {{ today }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+            --red-light: #ffebee;
+            --red-dark: #d32f2f;
+            --green-light: #e8f5e9;
+            --green-dark: #2E7D32;
+            --purple-light: #f3e5f5;
+            --purple-dark: #7b1fa2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* استایل‌های آمار */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--light-bg);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-right: 4px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.blue {
+            border-right-color: var(--blue-dark);
+        }
+
+        .stat-card.green {
+            border-right-color: var(--green-dark);
+        }
+
+        .stat-card.orange {
+            border-right-color: var(--orange);
+        }
+
+        .stat-card.purple {
+            border-right-color: var(--purple-dark);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* استایل‌های جدول */
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .invoices-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        .invoices-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .invoices-table td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .invoices-table tr:nth-child(even) {
+            background-color: var(--light-bg);
+        }
+
+        .invoices-table tr:hover {
+            background-color: #e8f5e9;
+            transition: background-color 0.2s;
+        }
+
+        /* استایل‌های وضعیت */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .status-badge:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .paid {
+            background-color: var(--green-light);
+            color: var(--green-dark);
+            border: 1px solid var(--green-dark);
+        }
+
+        .unpaid {
+            background-color: var(--red-light);
+            color: var(--red-dark);
+            border: 1px solid var(--red-dark);
+        }
+
+        .finalized {
+            background-color: var(--blue-light);
+            color: var(--blue-dark);
+            border: 1px solid var(--blue-dark);
+        }
+
+        /* استایل‌های دکمه‌ها */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            text-decoration: none;
+            gap: 5px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .btn-primary {
+            background-color: var(--blue-dark);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1976d2;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background-color: var(--green-dark);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1b5e20;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: var(--red-dark);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c62828;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background-color: var(--orange);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #f57c00;
+            transform: translateY(-2px);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        /* استایل‌های جستجو و فیلتر */
+        .filter-section {
+            background-color: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .date-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-input {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 150px;
+        }
+
+        .date-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* استایل‌های پیام */
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-right: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.success {
+            background-color: var(--green-light);
+            border-right-color: var(--green-dark);
+            color: var(--green-dark);
+        }
+
+        .message.error {
+            background-color: var(--red-light);
+            border-right-color: var(--red-dark);
+            color: var(--red-dark);
+        }
+
+        .message.info {
+            background-color: var(--blue-light);
+            border-right-color: var(--blue-dark);
+            color: var(--blue-dark);
+        }
+
+        /* استایل‌های مودال */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* استایل‌های ریسپانسیو */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .actions {
+                justify-content: center;
+            }
+            
+            .btn-group {
+                flex-wrap: wrap;
+            }
+            
+            .invoices-table th,
+            .invoices-table td {
+                padding: 6px 4px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* استایل برای اعداد */
+        .number-cell {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            direction: ltr;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        /* استایل برای بارگذاری */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--blue-dark);
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-invoice"></i> فاکتورهای روزانه</h1>
+            <p>تاریخ: <span id="today-date">{{ today }}</span> | مدیریت و پیگیری فاکتورهای فروش روزانه</p>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- بخش آمار -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-count">0</div>
+                <div class="stat-label">تعداد کل فاکتورها</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-value" id="total-amount">0</div>
+                <div class="stat-label">مجموع مبالغ</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-value" id="total-discount">0</div>
+                <div class="stat-label">تخفیف کل</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-value" id="paid-unpaid">0 / 0</div>
+                <div class="stat-label">پرداخت شده / پرداخت نشده</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-value" id="total-profit">0</div>
+                <div class="stat-label">سود کل</div>
+            </div>
+        </div>
+
+        <!-- بخش فیلتر و جستجو -->
+        <div class="filter-section">
+            <div class="date-filter">
+                <label for="date-filter"><i class="fas fa-calendar-alt"></i> فیلتر بر اساس تاریخ:</label>
+                <input type="text" id="date-filter" class="date-input" placeholder="1403/01/01" value="{{ today }}">
+                <button id="apply-filter" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> اعمال فیلتر
+                </button>
+                <button id="reset-filter" class="btn btn-warning">
+                    <i class="fas fa-redo"></i> بازنشانی
+                </button>
+            </div>
+            
+            <div class="actions">
+                <button id="refresh-btn" class="btn btn-success">
+                    <i class="fas fa-sync-alt"></i> به‌روزرسانی
+                </button>
+                <a href="#" class="btn btn-primary" id="new-invoice-btn">
+                    <i class="fas fa-plus"></i> فاکتور جدید
+                </a>
+            </div>
+        </div>
+
+        <!-- جدول فاکتورها -->
+        <div class="table-container" id="table-container">
+            <table class="invoices-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>شماره سریال</th>
+                        <th>شعبه</th>
+                        <th>مشتری</th>
+                        <th>تلفن</th>
+                        <th>مبلغ کل</th>
+                        <th>تخفیف</th>
+                        <th>روش پرداخت</th>
+                        <th>وضعیت پرداخت</th>
+                        <th>نهایی شده</th>
+                        <th>تاریخ ایجاد</th>
+                        <th>سود</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="invoices-body">
+                    {% for invoice in invoices %}
+                    <tr data-invoice-id="{{ invoice.id }}">
+                        <td>{{ forloop.counter }}</td>
+                        <td><strong>{{ invoice.serial_number }}</strong></td>
+                        <td>{{ invoice.branch.name }}</td>
+                        <td>{{ invoice.customer_name|default:"-" }}</td>
+                        <td>{{ invoice.customer_phone|default:"-" }}</td>
+                        <td class="number-cell" data-value="{{ invoice.total_amount }}">{{ invoice.total_amount }}</td>
+                        <td class="number-cell" data-value="{{ invoice.discount }}">{{ invoice.discount }}</td>
+                        <td>
+                            <span class="status-badge {% if invoice.payment_method == 'cash' %}paid{% elif invoice.payment_method == 'pos' %}finalized{% else %}unpaid{% endif %}">
+                                {{ invoice.get_payment_method_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge {% if invoice.is_paid %}paid{% else %}unpaid{% endif %}" 
+                                  onclick="togglePaymentStatus({{ invoice.id }}, this)">
+                                {{ invoice.is_paid|yesno:"پرداخت شده,پرداخت نشده" }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge {% if invoice.is_finalized %}finalized{% else %}unpaid{% endif %}"
+                                  onclick="toggleFinalizeStatus({{ invoice.id }}, this)">
+                                {{ invoice.is_finalized|yesno:"نهایی شده,در انتظار" }}
+                            </span>
+                        </td>
+                        <td>{{ invoice.get_jalali_date }} {{ invoice.get_jalali_time }}</td>
+                        <td class="number-cell" data-value="{{ invoice.total_profit }}">{{ invoice.total_profit }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'invoice_app:invoice_detail' invoice.id %}" 
+                                   class="btn btn-primary btn-sm" title="مشاهده">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'invoice_app:edit_invoice' invoice.id %}" 
+                                   class="btn btn-warning btn-sm" title="ویرایش">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-danger btn-sm delete-btn" 
+                                        data-invoice-id="{{ invoice.id }}"
+                                        data-invoice-serial="{{ invoice.serial_number }}"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="13" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-file-invoice" style="font-size: 3rem; color: #ddd; margin-bottom: 15px;"></i>
+                            <p style="color: #666;">هیچ فاکتوری برای امروز ثبت نشده است.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- مودال حذف -->
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> تأیید حذف فاکتور</h3>
+                    <button class="btn btn-sm" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>آیا از حذف فاکتور شماره <strong id="delete-invoice-serial"></strong> اطمینان دارید؟</p>
+                    <p class="warning-text" style="color: var(--red-dark); margin-top: 10px;">
+                        <i class="fas fa-exclamation-circle"></i> این عملیات قابل بازگشت نیست!
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <form id="delete-form" method="POST">
+                        {% csrf_token %}
+                        <button type="button" class="btn btn-warning" onclick="closeModal()">
+                            <i class="fas fa-times"></i> انصراف
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> حذف فاکتور
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // تابع برای فرمت کردن اعداد با جداکننده هزارگان
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            
+            // تبدیل به عدد
+            let number = parseFloat(num);
+            if (isNaN(number)) return num;
+            
+            // گرد کردن به عدد صحیح اگر اعشاری باشد
+            if (number % 1 !== 0) {
+                number = Math.round(number);
+            }
+            
+            // فرمت با جداکننده هزارگان
+            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // تابع برای تبدیل اعداد انگلیسی به فارسی
+        function toPersianNumbers(num) {
+            if (!num) return '0';
+            
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            return num.toString().replace(/\d/g, function(digit) {
+                return persianDigits[digit];
+            });
+        }
+
+        // تابع برای فرمت کردن اعداد و نمایش با واحد
+        function formatCurrency(num, addUnit = true) {
+            const formatted = formatNumber(num);
+            const persianFormatted = toPersianNumbers(formatted);
+            return addUnit ? persianFormatted + ' تومان' : persianFormatted;
+        }
+
+        // تابع برای به‌روزرسانی اعداد در صفحه
+        function updateNumbersOnPage() {
+            // به‌روزرسانی آمار
+            const totalCount = {{ stats.total_count|default:0 }};
+            const totalAmount = {{ stats.total_amount|default:0 }};
+            const totalDiscount = {{ stats.total_discount|default:0 }};
+            const paidCount = {{ stats.paid_count|default:0 }};
+            const unpaidCount = {{ stats.unpaid_count|default:0 }};
+            const totalProfit = {{ stats.total_profit|default:0 }};
+
+            $('#total-count').text(toPersianNumbers(totalCount));
+            $('#total-amount').text(formatCurrency(totalAmount));
+            $('#total-discount').text(formatCurrency(totalDiscount));
+            $('#paid-unpaid').text(toPersianNumbers(paidCount) + ' / ' + toPersianNumbers(unpaidCount));
+            $('#total-profit').text(formatCurrency(totalProfit));
+
+            // به‌روزرسانی اعداد در جدول
+            $('.number-cell').each(function() {
+                const value = $(this).data('value');
+                if (value !== undefined) {
+                    $(this).text(formatCurrency(value, false));
+                }
+            });
+        }
+
+        // تابع برای نمایش مودال
+        function showModal(modalId) {
+            $('#' + modalId).fadeIn();
+            $('body').css('overflow', 'hidden');
+        }
+
+        // تابع برای بستن مودال
+        function closeModal() {
+            $('.modal').fadeOut();
+            $('body').css('overflow', 'auto');
+        }
+
+        // تغییر وضعیت پرداخت با AJAX
+        function togglePaymentStatus(invoiceId, element) {
+            const isPaid = $(element).hasClass('paid');
+            const newStatus = !isPaid;
+            
+            $.ajax({
+                url: `/invoice/update-status/${invoiceId}/`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ is_paid: newStatus }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $(element).toggleClass('paid unpaid');
+                        $(element).text(newStatus ? 'پرداخت شده' : 'پرداخت نشده');
+                        
+                        // نمایش پیام موفقیت
+                        showMessage('وضعیت پرداخت به‌روزرسانی شد', 'success');
+                        
+                        // به‌روزرسانی آمار
+                        updateStatsFromResponse(response);
+                    } else {
+                        showMessage(response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showMessage('خطا در برقراری ارتباط با سرور', 'error');
+                }
+            });
+        }
+
+        // تغییر وضعیت نهایی‌سازی با AJAX
+        function toggleFinalizeStatus(invoiceId, element) {
+            const isFinalized = $(element).hasClass('finalized');
+            const newStatus = !isFinalized;
+            
+            $.ajax({
+                url: `/invoice/update-status/${invoiceId}/`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ is_finalized: newStatus }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $(element).toggleClass('finalized unpaid');
+                        $(element).text(newStatus ? 'نهایی شده' : 'در انتظار');
+                        showMessage('وضعیت نهایی‌سازی به‌روزرسانی شد', 'success');
+                    } else {
+                        showMessage(response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showMessage('خطا در برقراری ارتباط با سرور', 'error');
+                }
+            });
+        }
+
+        // دریافت CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // نمایش پیام
+        function showMessage(text, type) {
+            const messageHtml = `
+                <div class="message ${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    ${text}
+                </div>
+            `;
+            
+            $('.messages').html(messageHtml);
+            
+            setTimeout(() => {
+                $('.messages').empty();
+            }, 5000);
+        }
+
+        // فیلتر بر اساس تاریخ
+        $('#apply-filter').on('click', function() {
+            const date = $('#date-filter').val().trim();
+            
+            if (!date) {
+                showMessage('لطفا تاریخ را وارد کنید', 'error');
+                return;
+            }
+            
+            // نمایش بارگذاری
+            showMessage('در حال بارگذاری فاکتورها...', 'info');
+            
+            $.ajax({
+                url: "{% url 'invoice_app:filter_invoices' %}",
+                method: 'GET',
+                data: { date: date },
+                success: function(response) {
+                    if (response.success) {
+                        updateTable(response.invoices, response.stats, response.date);
+                        showMessage(`فاکتورهای تاریخ ${response.date} نمایش داده شدند`, 'success');
+                    } else {
+                        showMessage(response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showMessage('خطا در برقراری ارتباط با سرور', 'error');
+                }
+            });
+        });
+
+        // بازنشانی فیلتر
+        $('#reset-filter').on('click', function() {
+            location.reload();
+        });
+
+        // به‌روزرسانی جدول
+        function updateTable(invoices, stats, date) {
+            const $body = $('#invoices-body');
+            $body.empty();
+            
+            if (invoices.length === 0) {
+                $body.html(`
+                    <tr>
+                        <td colspan="13" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-file-invoice" style="font-size: 3rem; color: #ddd; margin-bottom: 15px;"></i>
+                            <p style="color: #666;">هیچ فاکتوری برای تاریخ ${date} یافت نشد.</p>
+                        </td>
+                    </tr>
+                `);
+            } else {
+                invoices.forEach((invoice, index) => {
+                    const row = `
+                        <tr data-invoice-id="${invoice.id}">
+                            <td>${index + 1}</td>
+                            <td><strong>${invoice.serial_number}</strong></td>
+                            <td>${invoice.branch__name}</td>
+                            <td>${invoice.customer_name || '-'}</td>
+                            <td>${invoice.customer_phone || '-'}</td>
+                            <td class="number-cell" data-value="${invoice.total_amount}">${formatCurrency(invoice.total_amount, false)}</td>
+                            <td class="number-cell" data-value="${invoice.discount}">${formatCurrency(invoice.discount, false)}</td>
+                            <td>
+                                <span class="status-badge">
+                                    ${getPaymentMethodText(invoice.payment_method)}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${invoice.is_paid ? 'paid' : 'unpaid'}"
+                                      onclick="togglePaymentStatus(${invoice.id}, this)">
+                                    ${invoice.is_paid ? 'پرداخت شده' : 'پرداخت نشده'}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${invoice.is_finalized ? 'finalized' : 'unpaid'}"
+                                      onclick="toggleFinalizeStatus(${invoice.id}, this)">
+                                    ${invoice.is_finalized ? 'نهایی شده' : 'در انتظار'}
+                                </span>
+                            </td>
+                            <td>${formatDate(invoice.created_at)}</td>
+                            <td class="number-cell" data-value="${invoice.total_profit || 0}">${formatCurrency(invoice.total_profit || 0, false)}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="/invoice/detail/${invoice.id}/" 
+                                       class="btn btn-primary btn-sm" title="مشاهده">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/invoice/edit/${invoice.id}/" 
+                                       class="btn btn-warning btn-sm" title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-danger btn-sm delete-btn" 
+                                            data-invoice-id="${invoice.id}"
+                                            data-invoice-serial="${invoice.serial_number}"
+                                            title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    $body.append(row);
+                });
+            }
+            
+            // به‌روزرسانی آمار
+            updateStats(stats);
+            
+            // اضافه کردن event listener برای دکمه‌های حذف جدید
+            bindDeleteButtons();
+        }
+
+        // به‌روزرسانی آمار
+        function updateStats(stats) {
+            $('#total-count').text(toPersianNumbers(stats.total_count || 0));
+            $('#total-amount').text(formatCurrency(stats.total_amount || 0));
+            $('#total-discount').text(formatCurrency(stats.total_discount || 0));
+            $('#paid-unpaid').text(
+                toPersianNumbers(stats.paid_count || 0) + ' / ' + 
+                toPersianNumbers((stats.total_count || 0) - (stats.paid_count || 0))
+            );
+            $('#total-profit').text(formatCurrency(stats.total_profit || 0));
+        }
+
+        // تبدیل تاریخ میلادی به نمایش مناسب
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return new Intl.DateTimeFormat('fa-IR', options).format(date);
+        }
+
+        // تبدیل کد روش پرداخت به متن فارسی
+        function getPaymentMethodText(code) {
+            const methods = {
+                'cash': 'نقدی',
+                'pos': 'پوز',
+                'check': 'چک',
+                'credit': 'نسیه'
+            };
+            return methods[code] || code;
+        }
+
+        // اتصال event listener به دکمه‌های حذف
+        function bindDeleteButtons() {
+            $('.delete-btn').off('click').on('click', function() {
+                const invoiceId = $(this).data('invoice-id');
+                const invoiceSerial = $(this).data('invoice-serial');
+                
+                $('#delete-invoice-serial').text(invoiceSerial);
+                $('#delete-form').attr('action', `/invoice/delete/${invoiceId}/`);
+                
+                showModal('deleteModal');
+            });
+        }
+
+        // بارگذاری اولیه
+        $(document).ready(function() {
+            // فرمت کردن اعداد
+            updateNumbersOnPage();
+            
+            // اتصال event listener به دکمه‌های حذف
+            bindDeleteButtons();
+            
+            // به‌روزرسانی صفحه
+            $('#refresh-btn').on('click', function() {
+                location.reload();
+            });
+            
+            // بستن مودال با کلیک خارج از آن
+            $(window).on('click', function(event) {
+                if ($(event.target).hasClass('modal')) {
+                    closeModal();
+                }
+            });
+            
+            // جلوگیری از بستن مودال با کلیک داخل آن
+            $('.modal-content').on('click', function(event) {
+                event.stopPropagation();
+            });
+            
+            // دکمه فاکتور جدید
+            $('#new-invoice-btn').on('click', function(e) {
+                e.preventDefault();
+                showMessage('این قابلیت به زودی اضافه خواهد شد', 'info');
+            });
+        });
+    </script>
+</body>
+</html>

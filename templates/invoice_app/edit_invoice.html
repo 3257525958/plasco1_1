@@ -1,0 +1,919 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایش فاکتور - {{ invoice.serial_number }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+            --red-light: #ffebee;
+            --red-dark: #d32f2f;
+            --green-light: #e8f5e9;
+            --green-dark: #2E7D32;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: var(--blue-dark);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: var(--light-bg);
+            border-color: var(--blue-dark);
+            transform: translateX(-5px);
+        }
+
+        /* استایل‌های فرم */
+        .form-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .form-section {
+            background: var(--light-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border-right: 4px solid var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .form-section.blue {
+            border-right-color: var(--blue-dark);
+        }
+
+        .form-section.green {
+            border-right-color: var(--green-dark);
+        }
+
+        .form-section h3 {
+            color: var(--accent-color);
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-color: white;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15);
+        }
+
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox-group:hover {
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* استایل‌های جدول آیتم‌ها */
+        .items-section {
+            margin: 40px 0;
+            padding: 30px;
+            background: var(--light-bg);
+            border-radius: 12px;
+        }
+
+        .items-section h3 {
+            color: var(--accent-color);
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .items-table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .items-table th {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            color: white;
+            padding: 18px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+
+        .items-table td {
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .items-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        .items-table tr:hover {
+            background-color: #f0f9ff;
+        }
+
+        .item-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1rem;
+            transition: all 0.3s;
+            direction: ltr;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .item-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .item-input.changed {
+            background-color: var(--green-light);
+            border-color: var(--green-dark);
+        }
+
+        .remove-item-btn {
+            padding: 8px 16px;
+            background: var(--red-light);
+            color: var(--red-dark);
+            border: 2px solid var(--red-dark);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin: 0 auto;
+        }
+
+        .remove-item-btn:hover {
+            background: var(--red-dark);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* استایل‌های دکمه‌ها */
+        .form-actions {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            gap: 12px;
+            min-width: 180px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--blue-dark), #1976d2);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--green-dark), #1b5e20);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--orange), #f57c00);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--red-dark), #c62828);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+            color: white;
+        }
+
+        /* استایل‌های پیام */
+        .messages {
+            margin-bottom: 25px;
+        }
+
+        .message {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-right: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message.success {
+            background-color: var(--green-light);
+            border-right-color: var(--green-dark);
+            color: var(--green-dark);
+        }
+
+        .message.error {
+            background-color: var(--red-light);
+            border-right-color: var(--red-dark);
+            color: var(--red-dark);
+        }
+
+        .message.info {
+            background-color: var(--blue-light);
+            border-right-color: var(--blue-dark);
+            color: var(--blue-dark);
+        }
+
+        /* استایل‌های خلاصه */
+        .summary-card {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+            border-right: 4px solid var(--blue-dark);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px dashed rgba(33, 150, 243, 0.3);
+            font-size: 1.1rem;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: var(--blue-dark);
+            margin-top: 15px;
+            padding-top: 18px;
+            border-top: 2px solid var(--blue-dark);
+        }
+
+        .summary-label {
+            color: #1565c0;
+            font-weight: 600;
+        }
+
+        .summary-value {
+            font-weight: bold;
+            direction: ltr;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* ریسپانسیو */
+        @media (max-width: 1200px) {
+            .form-container {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .form-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-section {
+                padding: 25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .items-table {
+                font-size: 0.9rem;
+            }
+            
+            .items-table th,
+            .items-table td {
+                padding: 12px 8px;
+            }
+            
+            .item-input {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+            
+            .form-control {
+                padding: 12px 15px;
+            }
+            
+            .summary-row {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="{% url 'invoice_app:invoice_detail' invoice.id %}" class="back-link">
+        <i class="fas fa-arrow-right"></i> بازگشت به جزئیات فاکتور
+    </a>
+    
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-edit"></i> ویرایش فاکتور</h1>
+            <p>شماره سریال: {{ invoice.serial_number }} | تاریخ: {{ jalali_date }} {{ jalali_time }}</p>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" id="editInvoiceForm">
+            {% csrf_token %}
+            
+            <div class="form-container">
+                <!-- اطلاعات مشتری -->
+                <div class="form-section">
+                    <h3><i class="fas fa-user"></i> اطلاعات مشتری</h3>
+                    
+                    <div class="form-group">
+                        <label for="customer_name">نام خریدار:</label>
+                        <input type="text" id="customer_name" name="customer_name" 
+                               class="form-control" value="{{ invoice.customer_name|default:'' }}"
+                               placeholder="نام مشتری را وارد کنید" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="customer_phone">تلفن خریدار:</label>
+                        <input type="tel" id="customer_phone" name="customer_phone" 
+                               class="form-control" value="{{ invoice.customer_phone|default:'' }}"
+                               placeholder="۰۹۱۲۳۴۵۶۷۸۹" pattern="09\d{9}" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- اطلاعات مالی -->
+                <div class="form-section blue">
+                    <h3><i class="fas fa-calculator"></i> اطلاعات مالی</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="total_amount">مبلغ کل (بدون تخفیف):</label>
+                            <input type="number" id="total_amount" name="total_amount" 
+                                   class="form-control number-input" 
+                                   value="{{ invoice.total_without_discount }}" 
+                                   min="0" step="1000" autocomplete="off">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="discount">تخفیف (تومان):</label>
+                            <input type="number" id="discount" name="discount" 
+                                   class="form-control number-input" 
+                                   value="{{ invoice.discount }}" 
+                                   min="0" step="1000" autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="payment_method">روش پرداخت:</label>
+                        <select id="payment_method" name="payment_method" class="form-control">
+                            {% for value, label in payment_methods %}
+                            <option value="{{ value }}" {% if invoice.payment_method == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="is_paid" name="is_paid" 
+                               {% if invoice.is_paid %}checked{% endif %}>
+                        <label for="is_paid">پرداخت شده</label>
+                    </div>
+                </div>
+
+                <!-- اطلاعات فاکتور -->
+                <div class="form-section green">
+                    <h3><i class="fas fa-info-circle"></i> اطلاعات فاکتور</h3>
+                    
+                    <div class="form-group">
+                        <label>شماره سریال:</label>
+                        <input type="text" class="form-control" value="{{ invoice.serial_number }}" disabled>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>شعبه:</label>
+                            <input type="text" class="form-control" value="{{ invoice.branch.name }}" disabled>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>ایجاد کننده:</label>
+                            <input type="text" class="form-control" value="{{ invoice.created_by.get_full_name }}" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>تاریخ ایجاد:</label>
+                        <input type="text" class="form-control" value="{{ jalali_date }} {{ jalali_time }}" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <!-- آیتم‌های فاکتور -->
+            <div class="items-section">
+                <h3><i class="fas fa-shopping-cart"></i> آیتم‌های فاکتور</h3>
+                
+                <div class="items-table-container">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>ردیف</th>
+                                <th>نام کالا</th>
+                                <th>تعداد</th>
+                                <th>قیمت واحد</th>
+                                <th>تخفیف</th>
+                                <th>قیمت کل</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-body">
+                            {% for item in items %}
+                            <tr data-item-id="{{ item.id }}">
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.product.product_name }}</td>
+                                <td>
+                                    <input type="number" name="items[{{ item.id }}][quantity]" 
+                                           class="item-input quantity-input" 
+                                           value="{{ item.quantity }}" min="1" step="1" autocomplete="off">
+                                </td>
+                                <td>
+                                    <input type="number" name="items[{{ item.id }}][price]" 
+                                           class="item-input price-input number-input" 
+                                           value="{{ item.price }}" min="0" step="100" autocomplete="off">
+                                </td>
+                                <td>
+                                    <input type="number" name="items[{{ item.id }}][discount]" 
+                                           class="item-input discount-input number-input" 
+                                           value="{{ item.discount }}" min="0" step="100" autocomplete="off">
+                                </td>
+                                <td class="total-price-cell">
+                                    <span class="summary-value" id="item-total-{{ item.id }}">{{ item.total_price }}</span>
+                                </td>
+                                <td>
+                                    <button type="button" class="remove-item-btn" data-item-id="{{ item.id }}">
+                                        <i class="fas fa-trash"></i> حذف
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 30px;">
+                                    <i class="fas fa-box-open" style="font-size: 2.5rem; color: #ddd; margin-bottom: 15px;"></i>
+                                    <p style="color: #666; font-size: 1.1rem;">هیچ آیتمی در این فاکتور وجود ندارد.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- خلاصه مبالغ -->
+            <div class="summary-card">
+                <div class="summary-row">
+                    <span class="summary-label">مبلغ بدون تخفیف:</span>
+                    <span class="summary-value" id="summary-total-without-discount">{{ invoice.total_without_discount }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">تخفیف:</span>
+                    <span class="summary-value" id="summary-discount">{{ invoice.discount }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">مبلغ قابل پرداخت:</span>
+                    <span class="summary-value" id="summary-total-amount">{{ invoice.total_amount }}</span>
+                </div>
+            </div>
+
+            <!-- دکمه‌های اقدام -->
+            <div class="form-actions">
+                <a href="{% url 'invoice_app:invoice_detail' invoice.id %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> انصراف
+                </a>
+                <button type="submit" class="btn btn-success" id="save-btn">
+                    <i class="fas fa-save"></i> ذخیره تغییرات
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // تابع برای فرمت کردن اعداد با جداکننده هزارگان
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            
+            let number = parseFloat(num);
+            if (isNaN(number)) return num;
+            
+            if (number % 1 !== 0) {
+                number = Math.round(number);
+            }
+            
+            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // تابع برای تبدیل اعداد انگلیسی به فارسی
+        function toPersianNumbers(num) {
+            if (!num) return '۰';
+            
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            return num.toString().replace(/\d/g, function(digit) {
+                return persianDigits[digit];
+            });
+        }
+
+        // تابع برای فرمت کردن اعداد و نمایش با واحد
+        function formatCurrency(num, addUnit = false) {
+            const formatted = formatNumber(num);
+            const persianFormatted = toPersianNumbers(formatted);
+            return addUnit ? persianFormatted + ' تومان' : persianFormatted;
+        }
+
+        // محاسبه قیمت کل هر آیتم
+        function calculateItemTotal(row) {
+            const quantity = parseFloat($(row).find('.quantity-input').val()) || 0;
+            const price = parseFloat($(row).find('.price-input').val()) || 0;
+            const discount = parseFloat($(row).find('.discount-input').val()) || 0;
+            
+            const total = (quantity * price) - discount;
+            return Math.max(0, total);
+        }
+
+        // به‌روزرسانی خلاصه مبالغ
+        function updateSummary() {
+            let totalWithoutDiscount = 0;
+            let totalDiscount = 0;
+            
+            // محاسبه مجموع آیتم‌ها
+            $('#items-body tr').each(function() {
+                if ($(this).find('.quantity-input').length) {
+                    const quantity = parseFloat($(this).find('.quantity-input').val()) || 0;
+                    const price = parseFloat($(this).find('.price-input').val()) || 0;
+                    const itemDiscount = parseFloat($(this).find('.discount-input').val()) || 0;
+                    
+                    totalWithoutDiscount += quantity * price;
+                    totalDiscount += itemDiscount;
+                }
+            });
+            
+            // اگر مبلغ کل دستی تغییر کرده باشد
+            const manualTotal = parseFloat($('#total_amount').val()) || 0;
+            const manualDiscount = parseFloat($('#discount').val()) || 0;
+            
+            // استفاده از مقادیر دستی یا محاسبه شده (بسته به نیاز)
+            if (manualTotal > 0) {
+                totalWithoutDiscount = manualTotal;
+                totalDiscount = manualDiscount;
+            }
+            
+            const totalAmount = Math.max(0, totalWithoutDiscount - totalDiscount);
+            
+            // به‌روزرسانی نمایش
+            $('#summary-total-without-discount').text(formatCurrency(totalWithoutDiscount));
+            $('#summary-discount').text(formatCurrency(totalDiscount));
+            $('#summary-total-amount').text(formatCurrency(totalAmount));
+            
+            // به‌روزرسانی فیلدهای مخفی
+            $('#total_amount').val(totalWithoutDiscount);
+            $('#discount').val(totalDiscount);
+        }
+
+        // به‌روزرسانی قیمت هر ردیف
+        function updateRowTotal(row) {
+            const itemId = $(row).data('item-id');
+            const total = calculateItemTotal(row);
+            $(row).find(`#item-total-${itemId}`).text(formatCurrency(total));
+            
+            // علامت‌گذاری تغییرات
+            $(row).find('.item-input').addClass('changed');
+            setTimeout(() => {
+                $(row).find('.item-input').removeClass('changed');
+            }, 1000);
+        }
+
+        // نمایش پیام
+        function showMessage(text, type) {
+            const messageHtml = `
+                <div class="message ${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    ${text}
+                </div>
+            `;
+            
+            $('.messages').html(messageHtml);
+            
+            setTimeout(() => {
+                $('.messages').empty();
+            }, 5000);
+        }
+
+        // بارگذاری اولیه
+        $(document).ready(function() {
+            // فرمت کردن اعداد اولیه
+            updateSummary();
+            
+            // فرمت کردن قیمت‌های آیتم‌ها
+            $('#items-body tr').each(function() {
+                updateRowTotal(this);
+            });
+            
+            // محاسبه خودکار قیمت‌ها هنگام تغییر مقادیر
+            $(document).on('input', '.quantity-input, .price-input, .discount-input', function() {
+                const row = $(this).closest('tr');
+                updateRowTotal(row);
+                updateSummary();
+            });
+            
+            // تغییر مبلغ کل یا تخفیف
+            $(document).on('input', '#total_amount, #discount', function() {
+                updateSummary();
+            });
+            
+            // حذف آیتم
+            $(document).on('click', '.remove-item-btn', function() {
+                const row = $(this).closest('tr');
+                const itemId = $(this).data('item-id');
+                
+                if (confirm('آیا از حذف این آیتم اطمینان دارید؟')) {
+                    // در حالت واقعی، باید درخواست AJAX برای حذف ارسال شود
+                    // اما در اینجا فقط از جدول حذف می‌کنیم
+                    row.remove();
+                    updateSummary();
+                    
+                    showMessage('آیتم با موفقیت حذف شد', 'success');
+                }
+            });
+            
+            // اعتبارسنجی فرم قبل از ارسال
+            $('#editInvoiceForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                // جمع‌آوری داده‌های آیتم‌ها
+                const itemsData = [];
+                $('#items-body tr').each(function() {
+                    if ($(this).find('.quantity-input').length) {
+                        const itemId = $(this).data('item-id');
+                        const quantity = $(this).find('.quantity-input').val();
+                        const price = $(this).find('.price-input').val();
+                        const discount = $(this).find('.discount-input').val();
+                        
+                        if (quantity && price) {
+                            itemsData.push({
+                                id: itemId,
+                                quantity: quantity,
+                                price: price,
+                                discount: discount || 0
+                            });
+                        }
+                    }
+                });
+                
+                // اگر هیچ آیتمی وجود ندارد
+                if (itemsData.length === 0) {
+                    showMessage('لطفا حداقل یک آیتم به فاکتور اضافه کنید', 'error');
+                    return false;
+                }
+                
+                // اضافه کردن آیتم‌ها به فرم به صورت مخفی
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'items',
+                    value: JSON.stringify(itemsData)
+                }).appendTo(this);
+                
+                // غیرفعال کردن دکمه ذخیره برای جلوگیری از ارسال چندباره
+                $('#save-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...');
+                
+                // ارسال فرم
+                this.submit();
+            });
+            
+            // کلیدهای میانبر
+            $(document).keydown(function(e) {
+                // Ctrl + S برای ذخیره
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    $('#save-btn').click();
+                }
+                // Escape برای انصراف
+                if (e.key === 'Escape') {
+                    window.location.href = "{% url 'invoice_app:invoice_detail' invoice.id %}";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

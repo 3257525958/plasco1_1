@@ -47,6 +47,15 @@ path('api/quick-stats/', views.quick_stats, name='quick_stats'),
 
 
 
-# urls.py - اضافه کردن URL جدید
-path('save-cash-payment/', views.save_cash_payment, name='save_cash_payment'),
+    # urls.py - اضافه کردن URL جدید
+    path('save-cash-payment/', views.save_cash_payment, name='save_cash_payment'),
+
+# ------------------------------------------بستن فاکتورهای روزانه----------------------------------------
+    path('daily/', views.daily_invoices, name='daily_invoices'),
+    path('detail/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
+    path('edit/<int:invoice_id>/', views.edit_invoice, name='edit_invoice'),
+    path('delete/<int:invoice_id>/', views.delete_invoice, name='delete_invoice'),
+    path('update-status/<int:invoice_id>/', views.update_invoice_status, name='update_invoice_status'),
+    path('filter/', views.filter_invoices, name='filter_invoices'),
+
 ]
