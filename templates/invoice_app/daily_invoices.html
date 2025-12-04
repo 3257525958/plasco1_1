@@ -5,8 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>فاکتورهای روزانه - {{ today }}</title>
+    
+    <!-- کتابخانه‌های تاریخ شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    
+    <!-- فونت‌ها و آیکون‌ها -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    
     <style>
         :root {
             --primary-color: #4CAF50;
@@ -263,7 +269,7 @@
             justify-content: center;
         }
 
-        /* استایل‌های جستجو و فیلتر */
+        /* استایل‌های فیلتر تاریخ */
         .filter-section {
             background-color: var(--light-bg);
             padding: 20px;
@@ -280,20 +286,56 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .date-input {
-            padding: 8px 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            width: 150px;
+        /* استایل‌های جدید برای فیلد تاریخ شمسی */
+        .date-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
-        .date-input:focus {
-            border-color: var(--primary-color);
+        .shamsi-date-input {
+            width: 180px;
+            padding: 12px 15px;
+            padding-right: 40px;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 16px;
+            background: var(--input-bg);
+            text-align: center;
+            cursor: pointer;
+            font-family: 'Vazirmatn', sans-serif;
+            height: 46px;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 15px;
+            color: var(--primary-color);
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 10;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .shamsi-date-input:hover {
+            border-color: var(--accent-color);
+        }
+
+        .shamsi-date-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.3);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .date-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
         }
 
         .actions {
@@ -396,6 +438,32 @@
         }
 
         /* استایل‌های ریسپانسیو */
+        @media (max-width: 992px) {
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .date-filter {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            
+            .date-input-container {
+                width: 100%;
+            }
+            
+            .shamsi-date-input {
+                width: 100%;
+            }
+            
+            .actions {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -433,6 +501,14 @@
             .header h1 {
                 font-size: 1.5rem;
             }
+            
+            .date-filter {
+                align-items: stretch;
+            }
+            
+            .shamsi-date-input {
+                width: 100%;
+            }
         }
 
         /* استایل برای اعداد */
@@ -458,13 +534,23 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* استایل برای تضمین نمایش صحیح تقویم */
+        .pdatepicker-gui {
+            z-index: 10000 !important;
+            font-family: 'Vazirmatn', sans-serif !important;
+        }
+
+        .pdatepicker-gui .pdatepicker-day {
+            cursor: pointer !important;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-file-invoice"></i> فاکتورهای روزانه</h1>
-            <p>تاریخ: <span id="today-date">{{ today }}</span> | مدیریت و پیگیری فاکتورهای فروش روزانه</p>
+            <p>مدیریت و پیگیری فاکتورهای فروش روزانه</p>
         </div>
 
         {% if messages %}
@@ -506,7 +592,18 @@
         <div class="filter-section">
             <div class="date-filter">
                 <label for="date-filter"><i class="fas fa-calendar-alt"></i> فیلتر بر اساس تاریخ:</label>
-                <input type="text" id="date-filter" class="date-input" placeholder="1403/01/01" value="{{ today }}">
+                
+                <!-- فیلد تاریخ شمسی با تقویم -->
+                <div class="date-input-container">
+                    <input type="text" id="date-filter" class="shamsi-date-input"
+                           placeholder="برای انتخاب تاریخ کلیک کنید"
+                           value="{{ today }}" autocomplete="off">
+                    <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
+                </div>
+                <div class="date-hint">
+                    <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
+                </div>
+                
                 <button id="apply-filter" class="btn btn-primary">
                     <i class="fas fa-filter"></i> اعمال فیلتر
                 </button>
@@ -635,7 +732,11 @@
         </div>
     </div>
 
+    <!-- کتابخانه‌های JavaScript -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
     <script>
         // تابع برای فرمت کردن اعداد با جداکننده هزارگان
         function formatNumber(num) {
@@ -656,7 +757,7 @@
 
         // تابع برای تبدیل اعداد انگلیسی به فارسی
         function toPersianNumbers(num) {
-            if (!num) return '0';
+            if (!num) return '۰';
             
             const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
             return num.toString().replace(/\d/g, function(digit) {
@@ -911,6 +1012,14 @@
             
             // اضافه کردن event listener برای دکمه‌های حذف جدید
             bindDeleteButtons();
+            
+            // فرمت کردن اعداد در جدول جدید
+            $('.number-cell').each(function() {
+                const value = $(this).data('value');
+                if (value !== undefined) {
+                    $(this).text(formatCurrency(value, false));
+                }
+            });
         }
 
         // به‌روزرسانی آمار
@@ -967,6 +1076,25 @@
             // فرمت کردن اعداد
             updateNumbersOnPage();
             
+            // فعال‌سازی تقویم برای فیلد تاریخ
+            $("#date-filter").persianDatepicker({
+                observer: true,
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian',
+                onSelect: function (unix) {
+                    let date = new persianDate(unix);
+                    let formattedDate = date.format("YYYY/MM/DD");
+                    document.getElementById('date-filter').value = formattedDate;
+                }
+            });
+
+            // نمایش تقویم هنگام کلیک روی آیکون تقویم
+            document.getElementById('calendar-trigger').addEventListener('click', function () {
+                $("#date-filter").persianDatepicker('show');
+            });
+
             // اتصال event listener به دکمه‌های حذف
             bindDeleteButtons();
             
@@ -990,7 +1118,21 @@
             // دکمه فاکتور جدید
             $('#new-invoice-btn').on('click', function(e) {
                 e.preventDefault();
-                showMessage('این قابلیت به زودی اضافه خواهد شد', 'info');
+                window.location.href = "{% url 'invoice_app:create_invoice' %}"; // این URL باید در urls.py تعریف شود
+            });
+            
+            // کلیدهای میانبر
+            $(document).keydown(function(e) {
+                // Ctrl + F برای فوکوس روی فیلد تاریخ
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    $('#date-filter').focus();
+                }
+                // Ctrl + R برای بازنشانی
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    $('#reset-filter').click();
+                }
             });
         });
     </script>
