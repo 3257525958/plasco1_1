@@ -26,12 +26,27 @@
             --blue-light: #e3f2fd;
             --blue-dark: #2196f3;
             --orange: #FF9800;
+            --orange-light: #ffe0b2;
             --red-light: #ffebee;
             --red-dark: #d32f2f;
             --green-light: #e8f5e9;
             --green-dark: #2E7D32;
             --purple-light: #f3e5f5;
             --purple-dark: #7b1fa2;
+            --yellow-light: #fff9c4;
+            --yellow-dark: #f9a825;
+            
+            /* رنگ‌های جدید برای روش‌های پرداخت */
+            --cash-color: #27ae60;
+            --cash-bg: #d5f4e6;
+            --pos-color: #2980b9;
+            --pos-bg: #d6eaf8;
+            --check-color: #d35400;
+            --check-bg: #fdebd0;
+            --credit-color: #8e44ad;
+            --credit-bg: #e8daef;
+            --total-color: #16a085;
+            --total-bg: #d1f2eb;
         }
 
         * {
@@ -92,6 +107,8 @@
             text-align: center;
             border-right: 4px solid var(--primary-color);
             transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .stat-card:hover {
@@ -114,6 +131,14 @@
             border-right-color: var(--purple-dark);
         }
 
+        .stat-card.red {
+            border-right-color: var(--red-dark);
+        }
+
+        .stat-card.yellow {
+            border-right-color: var(--yellow-dark);
+        }
+
         .stat-value {
             font-size: 1.8rem;
             font-weight: bold;
@@ -124,6 +149,13 @@
         .stat-label {
             font-size: 0.9rem;
             color: #666;
+        }
+
+        .stat-subvalue {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 5px;
+            direction: ltr;
         }
 
         /* استایل‌های جدول */
@@ -269,79 +301,98 @@
             justify-content: center;
         }
 
-        /* استایل‌های فیلتر تاریخ */
+        /* استایل‌های جدید برای فیلترها (چیدمان فشرده و منظم) */
         .filter-section {
             background-color: var(--light-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
             justify-content: space-between;
+            border: 1px solid var(--border-color);
         }
 
-        .date-filter {
+        .filter-controls {
             display: flex;
-            align-items: center;
-            gap: 10px;
             flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            flex-grow: 1;
         }
 
-        /* استایل‌های جدید برای فیلد تاریخ شمسی */
-        .date-input-container {
-            position: relative;
+        .filter-item {
             display: flex;
             align-items: center;
+            gap: 5px;
+            flex-wrap: nowrap;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background-color: white;
+            transition: all 0.3s;
+            min-width: 150px;
+            height: 38px;
+        }
+
+        .filter-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .date-filter-container {
+            position: relative;
         }
 
         .shamsi-date-input {
-            width: 180px;
-            padding: 12px 15px;
-            padding-right: 40px;
+            width: 160px;
+            padding: 8px 12px;
+            padding-right: 35px;
             border: 2px solid var(--primary-color);
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
             background: var(--input-bg);
             text-align: center;
             cursor: pointer;
             font-family: 'Vazirmatn', sans-serif;
-            height: 46px;
+            height: 38px;
         }
 
         .calendar-icon {
             position: absolute;
-            left: 15px;
+            left: 10px;
             color: var(--primary-color);
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             z-index: 10;
             top: 50%;
             transform: translateY(-50%);
         }
 
-        .shamsi-date-input:hover {
-            border-color: var(--accent-color);
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
         }
 
-        .shamsi-date-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.3);
-            outline: none;
-        }
-
-        .date-hint {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            text-align: center;
-        }
-
-        .actions {
+        .page-actions {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
 
         /* استایل‌های پیام */
@@ -437,78 +488,127 @@
             border-top: 1px solid var(--border-color);
         }
 
-        /* استایل‌های ریسپانسیو */
-        @media (max-width: 992px) {
-            .filter-section {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .date-filter {
-                flex-direction: column;
-                align-items: flex-start;
-                width: 100%;
-            }
-            
-            .date-input-container {
-                width: 100%;
-            }
-            
-            .shamsi-date-input {
-                width: 100%;
-            }
-            
-            .actions {
-                justify-content: center;
-                width: 100%;
-            }
+        /* بخش آمار روش‌های پرداخت (در پایین صفحه) */
+        .payment-stats-section {
+            background-color: var(--light-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0 0 0;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .filter-section {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .actions {
-                justify-content: center;
-            }
-            
-            .btn-group {
-                flex-wrap: wrap;
-            }
-            
-            .invoices-table th,
-            .invoices-table td {
-                padding: 6px 4px;
-                font-size: 0.85rem;
-            }
+        .payment-stats-section h3 {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        @media (max-width: 480px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .date-filter {
-                align-items: stretch;
-            }
-            
-            .shamsi-date-input {
-                width: 100%;
-            }
+        .payment-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .payment-summary-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-top: 4px solid;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .payment-summary-card:hover {
+            transform: translateY(-3px);
+        }
+
+        /* رنگ‌های جدید برای کارت‌های روش پرداخت */
+        .payment-summary-card.cash {
+            border-top-color: var(--cash-color);
+            background-color: var(--cash-bg);
+        }
+
+        .payment-summary-card.pos {
+            border-top-color: var(--pos-color);
+            background-color: var(--pos-bg);
+        }
+
+        .payment-summary-card.check {
+            border-top-color: var(--check-color);
+            background-color: var(--check-bg);
+        }
+
+        .payment-summary-card.credit {
+            border-top-color: var(--credit-color);
+            background-color: var(--credit-bg);
+        }
+
+        .payment-summary-card.total {
+            border-top-color: var(--total-color);
+            background-color: var(--total-bg);
+            grid-column: 1 / -1;
+        }
+
+        .payment-method-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .payment-method-icon {
+            font-size: 1.3rem;
+        }
+
+        .payment-details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .payment-detail-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 70px;
+        }
+
+        .payment-detail-label {
+            color: #666;
+            font-size: 0.8rem;
+            margin-bottom: 3px;
+        }
+
+        .payment-detail-value {
+            font-weight: bold;
+            color: #333;
+            direction: ltr;
+        }
+
+        .payment-total {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+            direction: ltr;
+            text-align: center;
         }
 
         /* استایل برای اعداد */
@@ -544,13 +644,120 @@
         .pdatepicker-gui .pdatepicker-day {
             cursor: pointer !important;
         }
+
+        /* ریسپانسیو */
+        @media (max-width: 1200px) {
+            .payment-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-item {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            
+            .filter-input {
+                width: 100%;
+            }
+            
+            .shamsi-date-input {
+                width: 100%;
+            }
+            
+            .filter-actions, .page-actions {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .payment-stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .filter-section {
+                padding: 12px;
+            }
+            
+            .filter-actions, .page-actions {
+                flex-wrap: wrap;
+            }
+            
+            .btn-group {
+                flex-wrap: wrap;
+            }
+            
+            .invoices-table th,
+            .invoices-table td {
+                padding: 8px 6px;
+                font-size: 0.85rem;
+            }
+            
+            .payment-stats-section {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .filter-item {
+                align-items: stretch;
+            }
+            
+            .shamsi-date-input {
+                width: 100%;
+            }
+            
+            .payment-stats-section {
+                padding: 12px;
+            }
+            
+            .payment-details {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .payment-detail-item {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-file-invoice"></i> فاکتورهای روزانه</h1>
-            <p>مدیریت و پیگیری فاکتورهای فروش روزانه</p>
+            <p>مدیریت و پیگیری فاکتورهای فروش روزانه - تاریخ: {{ selected_date }}</p>
         </div>
 
         {% if messages %}
@@ -564,59 +771,87 @@
         </div>
         {% endif %}
 
-        <!-- بخش آمار -->
+        <!-- بخش آمار کلی -->
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-value" id="total-count">0</div>
+                <div class="stat-value" id="total-count">{{ stats.total_count }}</div>
                 <div class="stat-label">تعداد کل فاکتورها</div>
             </div>
             <div class="stat-card green">
-                <div class="stat-value" id="total-amount">0</div>
+                <div class="stat-value" id="total-amount">{{ stats.total_amount }}</div>
                 <div class="stat-label">مجموع مبالغ</div>
             </div>
             <div class="stat-card orange">
-                <div class="stat-value" id="total-discount">0</div>
+                <div class="stat-value" id="total-discount">{{ stats.total_discount }}</div>
                 <div class="stat-label">تخفیف کل</div>
             </div>
             <div class="stat-card blue">
-                <div class="stat-value" id="paid-unpaid">0 / 0</div>
+                <div class="stat-value" id="paid-unpaid">{{ stats.paid_count }} / {{ stats.unpaid_count }}</div>
                 <div class="stat-label">پرداخت شده / پرداخت نشده</div>
             </div>
             <div class="stat-card purple">
-                <div class="stat-value" id="total-profit">0</div>
+                <div class="stat-value" id="total-profit">{{ stats.total_profit }}</div>
                 <div class="stat-label">سود کل</div>
             </div>
         </div>
 
-        <!-- بخش فیلتر و جستجو -->
+        <!-- بخش فیلتر و جستجو (چیدمان فشرده و منظم) -->
         <div class="filter-section">
-            <div class="date-filter">
-                <label for="date-filter"><i class="fas fa-calendar-alt"></i> فیلتر بر اساس تاریخ:</label>
-                
-                <!-- فیلد تاریخ شمسی با تقویم -->
-                <div class="date-input-container">
-                    <input type="text" id="date-filter" class="shamsi-date-input"
-                           placeholder="برای انتخاب تاریخ کلیک کنید"
-                           value="{{ today }}" autocomplete="off">
-                    <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
+            <div class="filter-controls">
+                <!-- فیلتر شعبه -->
+                <div class="filter-item">
+                    <span class="filter-label"><i class="fas fa-store"></i> شعبه:</span>
+                    <select id="branch-filter" class="filter-input">
+                        <option value="">همه شعبه‌ها</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                            {{ branch.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="date-hint">
-                    <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
+
+                <!-- فیلتر روش پرداخت -->
+                <div class="filter-item">
+                    <span class="filter-label"><i class="fas fa-credit-card"></i> روش پرداخت:</span>
+                    <select id="payment-method-filter" class="filter-input">
+                        <option value="all" {% if selected_payment_method == 'all' %}selected{% endif %}>همه روش‌ها</option>
+                        {% for value, label in payment_methods %}
+                        <option value="{{ value }}" {% if selected_payment_method == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
-                
-                <button id="apply-filter" class="btn btn-primary">
-                    <i class="fas fa-filter"></i> اعمال فیلتر
-                </button>
-                <button id="reset-filter" class="btn btn-warning">
-                    <i class="fas fa-redo"></i> بازنشانی
-                </button>
+
+                <!-- فیلتر تاریخ -->
+                <div class="filter-item">
+                    <span class="filter-label"><i class="fas fa-calendar-alt"></i> تاریخ:</span>
+                    <div class="date-filter-container">
+                        <input type="text" id="date-filter" class="shamsi-date-input"
+                               placeholder="انتخاب تاریخ"
+                               value="{{ selected_date }}" autocomplete="off">
+                        <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
+                    </div>
+                </div>
+
+                <!-- دکمه‌های فیلتر -->
+                <div class="filter-actions">
+                    <button id="apply-filter" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> اعمال فیلتر
+                    </button>
+                    <button id="reset-filter" class="btn btn-warning">
+                        <i class="fas fa-redo"></i> بازنشانی
+                    </button>
+                </div>
             </div>
-            
-            <div class="actions">
+
+            <!-- دکمه‌های صفحه -->
+            <div class="page-actions">
                 <button id="refresh-btn" class="btn btn-success">
                     <i class="fas fa-sync-alt"></i> به‌روزرسانی
                 </button>
-                <a href="#" class="btn btn-primary" id="new-invoice-btn">
+                <a href="{% url 'invoice_app:create_invoice' %}" class="btn btn-primary" id="new-invoice-btn">
                     <i class="fas fa-plus"></i> فاکتور جدید
                 </a>
             </div>
@@ -694,12 +929,134 @@
                     <tr>
                         <td colspan="13" style="text-align: center; padding: 40px;">
                             <i class="fas fa-file-invoice" style="font-size: 3rem; color: #ddd; margin-bottom: 15px;"></i>
-                            <p style="color: #666;">هیچ فاکتوری برای امروز ثبت نشده است.</p>
+                            <p style="color: #666;">هیچ فاکتوری برای تاریخ انتخاب شده یافت نشد.</p>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <!-- بخش آمار روش‌های پرداخت (در پایین صفحه) -->
+        <div class="payment-stats-section">
+            <h3><i class="fas fa-chart-pie"></i> آمار روش‌های پرداخت</h3>
+            
+            <div class="payment-stats-grid">
+                <!-- نقدی -->
+                <div class="payment-summary-card cash">
+                    <div class="payment-method-title">
+                        <i class="fas fa-money-bill-wave payment-method-icon"></i>
+                        نقدی
+                    </div>
+                    <div class="payment-total" id="cash-total">{{ payment_stats.cash.total }}</div>
+                    <div class="payment-details">
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">تعداد</span>
+                            <span class="payment-detail-value" id="cash-count">{{ payment_stats.cash.count }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت شده</span>
+                            <span class="payment-detail-value" id="cash-paid">{{ payment_stats.cash.paid }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت نشده</span>
+                            <span class="payment-detail-value" id="cash-unpaid">{{ payment_stats.cash.unpaid }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- پوز -->
+                <div class="payment-summary-card pos">
+                    <div class="payment-method-title">
+                        <i class="fas fa-credit-card payment-method-icon"></i>
+                        پوز
+                    </div>
+                    <div class="payment-total" id="pos-total">{{ payment_stats.pos.total }}</div>
+                    <div class="payment-details">
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">تعداد</span>
+                            <span class="payment-detail-value" id="pos-count">{{ payment_stats.pos.count }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت شده</span>
+                            <span class="payment-detail-value" id="pos-paid">{{ payment_stats.pos.paid }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت نشده</span>
+                            <span class="payment-detail-value" id="pos-unpaid">{{ payment_stats.pos.unpaid }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- چک -->
+                <div class="payment-summary-card check">
+                    <div class="payment-method-title">
+                        <i class="fas fa-money-check payment-method-icon"></i>
+                        چک
+                    </div>
+                    <div class="payment-total" id="check-total">{{ payment_stats.check.total }}</div>
+                    <div class="payment-details">
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">تعداد</span>
+                            <span class="payment-detail-value" id="check-count">{{ payment_stats.check.count }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت شده</span>
+                            <span class="payment-detail-value" id="check-paid">{{ payment_stats.check.paid }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت نشده</span>
+                            <span class="payment-detail-value" id="check-unpaid">{{ payment_stats.check.unpaid }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- نسیه -->
+                <div class="payment-summary-card credit">
+                    <div class="payment-method-title">
+                        <i class="fas fa-hand-holding-usd payment-method-icon"></i>
+                        نسیه
+                    </div>
+                    <div class="payment-total" id="credit-total">{{ payment_stats.credit.total }}</div>
+                    <div class="payment-details">
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">تعداد</span>
+                            <span class="payment-detail-value" id="credit-count">{{ payment_stats.credit.count }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت شده</span>
+                            <span class="payment-detail-value" id="credit-paid">{{ payment_stats.credit.paid }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">پرداخت نشده</span>
+                            <span class="payment-detail-value" id="credit-unpaid">{{ payment_stats.credit.unpaid }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- جمع کل -->
+                <div class="payment-summary-card total">
+                    <div class="payment-method-title">
+                        <i class="fas fa-chart-line payment-method-icon"></i>
+                        جمع کل همه روش‌ها
+                    </div>
+                    <div class="payment-total" id="total-all-methods">{{ total_summary.total_all_methods }}</div>
+                    <div class="payment-details">
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">تعداد کل</span>
+                            <span class="payment-detail-value" id="total-count-all">{{ total_summary.count_all_methods }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">مبلغ کل</span>
+                            <span class="payment-detail-value" id="total-amount-all">{{ total_summary.total_all_methods }}</span>
+                        </div>
+                        <div class="payment-detail-item">
+                            <span class="payment-detail-label">فاکتورها</span>
+                            <span class="payment-detail-value" id="total-invoices">{{ stats.total_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- مودال حذف -->
@@ -774,7 +1131,7 @@
 
         // تابع برای به‌روزرسانی اعداد در صفحه
         function updateNumbersOnPage() {
-            // به‌روزرسانی آمار
+            // به‌روزرسانی آمار کلی
             const totalCount = {{ stats.total_count|default:0 }};
             const totalAmount = {{ stats.total_amount|default:0 }};
             const totalDiscount = {{ stats.total_discount|default:0 }};
@@ -787,6 +1144,55 @@
             $('#total-discount').text(formatCurrency(totalDiscount));
             $('#paid-unpaid').text(toPersianNumbers(paidCount) + ' / ' + toPersianNumbers(unpaidCount));
             $('#total-profit').text(formatCurrency(totalProfit));
+
+            // به‌روزرسانی آمار روش‌های پرداخت
+            const cashCount = {{ payment_stats.cash.count|default:0 }};
+            const cashTotal = {{ payment_stats.cash.total|default:0 }};
+            const cashPaid = {{ payment_stats.cash.paid|default:0 }};
+            const cashUnpaid = {{ payment_stats.cash.unpaid|default:0 }};
+            
+            const posCount = {{ payment_stats.pos.count|default:0 }};
+            const posTotal = {{ payment_stats.pos.total|default:0 }};
+            const posPaid = {{ payment_stats.pos.paid|default:0 }};
+            const posUnpaid = {{ payment_stats.pos.unpaid|default:0 }};
+            
+            const checkCount = {{ payment_stats.check.count|default:0 }};
+            const checkTotal = {{ payment_stats.check.total|default:0 }};
+            const checkPaid = {{ payment_stats.check.paid|default:0 }};
+            const checkUnpaid = {{ payment_stats.check.unpaid|default:0 }};
+            
+            const creditCount = {{ payment_stats.credit.count|default:0 }};
+            const creditTotal = {{ payment_stats.credit.total|default:0 }};
+            const creditPaid = {{ payment_stats.credit.paid|default:0 }};
+            const creditUnpaid = {{ payment_stats.credit.unpaid|default:0 }};
+            
+            const totalAllMethods = {{ total_summary.total_all_methods|default:0 }};
+            const totalCountAll = {{ total_summary.count_all_methods|default:0 }};
+
+            $('#cash-count').text(toPersianNumbers(cashCount));
+            $('#cash-total').text(formatCurrency(cashTotal));
+            $('#cash-paid').text(toPersianNumbers(cashPaid));
+            $('#cash-unpaid').text(toPersianNumbers(cashUnpaid));
+            
+            $('#pos-count').text(toPersianNumbers(posCount));
+            $('#pos-total').text(formatCurrency(posTotal));
+            $('#pos-paid').text(toPersianNumbers(posPaid));
+            $('#pos-unpaid').text(toPersianNumbers(posUnpaid));
+            
+            $('#check-count').text(toPersianNumbers(checkCount));
+            $('#check-total').text(formatCurrency(checkTotal));
+            $('#check-paid').text(toPersianNumbers(checkPaid));
+            $('#check-unpaid').text(toPersianNumbers(checkUnpaid));
+            
+            $('#credit-count').text(toPersianNumbers(creditCount));
+            $('#credit-total').text(formatCurrency(creditTotal));
+            $('#credit-paid').text(toPersianNumbers(creditPaid));
+            $('#credit-unpaid').text(toPersianNumbers(creditUnpaid));
+            
+            $('#total-all-methods').text(formatCurrency(totalAllMethods));
+            $('#total-count-all').text(toPersianNumbers(totalCountAll));
+            $('#total-amount-all').text(formatCurrency(totalAllMethods));
+            $('#total-invoices').text(toPersianNumbers(totalCount));
 
             // به‌روزرسانی اعداد در جدول
             $('.number-cell').each(function() {
@@ -831,8 +1237,8 @@
                         // نمایش پیام موفقیت
                         showMessage('وضعیت پرداخت به‌روزرسانی شد', 'success');
                         
-                        // به‌روزرسانی آمار
-                        updateStatsFromResponse(response);
+                        // به‌روزرسانی صفحه
+                        location.reload();
                     } else {
                         showMessage(response.message, 'error');
                     }
@@ -904,9 +1310,11 @@
             }, 5000);
         }
 
-        // فیلتر بر اساس تاریخ
+        // فیلتر بر اساس تاریخ و شعبه
         $('#apply-filter').on('click', function() {
             const date = $('#date-filter').val().trim();
+            const branch = $('#branch-filter').val();
+            const paymentMethod = $('#payment-method-filter').val();
             
             if (!date) {
                 showMessage('لطفا تاریخ را وارد کنید', 'error');
@@ -919,10 +1327,14 @@
             $.ajax({
                 url: "{% url 'invoice_app:filter_invoices' %}",
                 method: 'GET',
-                data: { date: date },
+                data: { 
+                    date: date,
+                    branch: branch,
+                    payment_method: paymentMethod
+                },
                 success: function(response) {
                     if (response.success) {
-                        updateTable(response.invoices, response.stats, response.date);
+                        updateTable(response.invoices, response.stats, response.payment_stats, response.total_summary, response.date);
                         showMessage(`فاکتورهای تاریخ ${response.date} نمایش داده شدند`, 'success');
                     } else {
                         showMessage(response.message, 'error');
@@ -936,11 +1348,14 @@
 
         // بازنشانی فیلتر
         $('#reset-filter').on('click', function() {
-            location.reload();
+            $('#branch-filter').val('');
+            $('#payment-method-filter').val('all');
+            $('#date-filter').val('{{ today }}');
+            location.href = "{% url 'invoice_app:daily_invoices' %}";
         });
 
         // به‌روزرسانی جدول
-        function updateTable(invoices, stats, date) {
+        function updateTable(invoices, stats, paymentStats, totalSummary, date) {
             const $body = $('#invoices-body');
             $body.empty();
             
@@ -955,6 +1370,10 @@
                 `);
             } else {
                 invoices.forEach((invoice, index) => {
+                    const paymentMethodText = getPaymentMethodText(invoice.payment_method);
+                    const paymentMethodClass = invoice.payment_method === 'cash' ? 'paid' : 
+                                              invoice.payment_method === 'pos' ? 'finalized' : 'unpaid';
+                    
                     const row = `
                         <tr data-invoice-id="${invoice.id}">
                             <td>${index + 1}</td>
@@ -965,8 +1384,8 @@
                             <td class="number-cell" data-value="${invoice.total_amount}">${formatCurrency(invoice.total_amount, false)}</td>
                             <td class="number-cell" data-value="${invoice.discount}">${formatCurrency(invoice.discount, false)}</td>
                             <td>
-                                <span class="status-badge">
-                                    ${getPaymentMethodText(invoice.payment_method)}
+                                <span class="status-badge ${paymentMethodClass}">
+                                    ${paymentMethodText}
                                 </span>
                             </td>
                             <td>
@@ -1008,7 +1427,7 @@
             }
             
             // به‌روزرسانی آمار
-            updateStats(stats);
+            updateStats(stats, paymentStats, totalSummary);
             
             // اضافه کردن event listener برای دکمه‌های حذف جدید
             bindDeleteButtons();
@@ -1023,15 +1442,47 @@
         }
 
         // به‌روزرسانی آمار
-        function updateStats(stats) {
+        function updateStats(stats, paymentStats, totalSummary) {
+            // به‌روزرسانی آمار کلی
             $('#total-count').text(toPersianNumbers(stats.total_count || 0));
             $('#total-amount').text(formatCurrency(stats.total_amount || 0));
             $('#total-discount').text(formatCurrency(stats.total_discount || 0));
             $('#paid-unpaid').text(
                 toPersianNumbers(stats.paid_count || 0) + ' / ' + 
-                toPersianNumbers((stats.total_count || 0) - (stats.paid_count || 0))
+                toPersianNumbers(stats.unpaid_count || 0)
             );
             $('#total-profit').text(formatCurrency(stats.total_profit || 0));
+            
+            // به‌روزرسانی آمار روش‌های پرداخت
+            if (paymentStats) {
+                $('#cash-count').text(toPersianNumbers(paymentStats.cash.count || 0));
+                $('#cash-total').text(formatCurrency(paymentStats.cash.total || 0));
+                $('#cash-paid').text(toPersianNumbers(paymentStats.cash.paid || 0));
+                $('#cash-unpaid').text(toPersianNumbers(paymentStats.cash.unpaid || 0));
+                
+                $('#pos-count').text(toPersianNumbers(paymentStats.pos.count || 0));
+                $('#pos-total').text(formatCurrency(paymentStats.pos.total || 0));
+                $('#pos-paid').text(toPersianNumbers(paymentStats.pos.paid || 0));
+                $('#pos-unpaid').text(toPersianNumbers(paymentStats.pos.unpaid || 0));
+                
+                $('#check-count').text(toPersianNumbers(paymentStats.check.count || 0));
+                $('#check-total').text(formatCurrency(paymentStats.check.total || 0));
+                $('#check-paid').text(toPersianNumbers(paymentStats.check.paid || 0));
+                $('#check-unpaid').text(toPersianNumbers(paymentStats.check.unpaid || 0));
+                
+                $('#credit-count').text(toPersianNumbers(paymentStats.credit.count || 0));
+                $('#credit-total').text(formatCurrency(paymentStats.credit.total || 0));
+                $('#credit-paid').text(toPersianNumbers(paymentStats.credit.paid || 0));
+                $('#credit-unpaid').text(toPersianNumbers(paymentStats.credit.unpaid || 0));
+            }
+            
+            // به‌روزرسانی جمع کل
+            if (totalSummary) {
+                $('#total-all-methods').text(formatCurrency(totalSummary.total_all_methods || 0));
+                $('#total-count-all').text(toPersianNumbers(totalSummary.count_all_methods || 0));
+                $('#total-amount-all').text(formatCurrency(totalSummary.total_all_methods || 0));
+                $('#total-invoices').text(toPersianNumbers(stats.total_count || 0));
+            }
         }
 
         // تبدیل تاریخ میلادی به نمایش مناسب
@@ -1113,12 +1564,6 @@
             // جلوگیری از بستن مودال با کلیک داخل آن
             $('.modal-content').on('click', function(event) {
                 event.stopPropagation();
-            });
-            
-            // دکمه فاکتور جدید
-            $('#new-invoice-btn').on('click', function(e) {
-                e.preventDefault();
-                window.location.href = "{% url 'invoice_app:create_invoice' %}"; // این URL باید در urls.py تعریف شود
             });
             
             // کلیدهای میانبر

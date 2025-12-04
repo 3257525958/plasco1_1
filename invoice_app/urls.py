@@ -57,5 +57,6 @@ path('api/quick-stats/', views.quick_stats, name='quick_stats'),
     path('delete/<int:invoice_id>/', views.delete_invoice, name='delete_invoice'),
     path('update-status/<int:invoice_id>/', views.update_invoice_status, name='update_invoice_status'),
     path('filter/', views.filter_invoices, name='filter_invoices'),
-    path('create/', views.create_invoice, name='create_invoice'),  # اضافه شده
+    path('create/', views.create_invoice, name='create_invoice'),
+
 ]

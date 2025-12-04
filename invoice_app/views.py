@@ -2626,30 +2626,64 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from jdatetime import datetime as jdatetime
-from .models import Invoicefrosh, InvoiceItemfrosh, CheckPayment, CreditPayment, CashPayment, POSTransaction
 from datetime import datetime, timedelta
+from cantact_app.models import Branch  # import مدل شعبه
+from .models import Invoicefrosh, InvoiceItemfrosh, CheckPayment, CreditPayment, CashPayment, POSTransaction
 import json
 
 
 @login_required
 def daily_invoices(request):
     """
-    نمایش فاکتورهای روزانه
+    نمایش فاکتورهای روزانه با فیلتر شعبه
     """
     # دریافت تاریخ امروز
     today = timezone.now().date()
     today_start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
     today_end = timezone.make_aware(datetime.combine(today, datetime.max.time()))
 
-    # فاکتورهای امروز
-    invoices = Invoicefrosh.objects.filter(
-        created_at__range=(today_start, today_end)
-    ).select_related('branch', 'created_by', 'pos_device').order_by('-created_at')
+    # دریافت پارامترهای فیلتر
+    branch_id = request.GET.get('branch')
+    date_filter = request.GET.get('date')
+    payment_method_filter = request.GET.get('payment_method')
 
-    # محاسبه آمار
+    # ایجاد query اولیه
+    invoices = Invoicefrosh.objects.all()
+
+    # اعمال فیلتر تاریخ
+    if date_filter:
+        try:
+            # تبدیل تاریخ جلالی به میلادی
+            jalali_date = jdatetime.strptime(date_filter, '%Y/%m/%d')
+            gregorian_date = jalali_date.togregorian()
+            date_start = timezone.make_aware(datetime.combine(gregorian_date, datetime.min.time()))
+            date_end = timezone.make_aware(datetime.combine(gregorian_date, datetime.max.time()))
+            invoices = invoices.filter(created_at__range=(date_start, date_end))
+            selected_date = date_filter
+        except Exception as e:
+            messages.warning(request, f'تاریخ وارد شده معتبر نیست. خطا: {str(e)}')
+            invoices = invoices.filter(created_at__range=(today_start, today_end))
+            selected_date = jdatetime.fromgregorian(date=today).strftime('%Y/%m/%d')
+    else:
+        # فیلتر بر اساس تاریخ امروز
+        invoices = invoices.filter(created_at__range=(today_start, today_end))
+        selected_date = jdatetime.fromgregorian(date=today).strftime('%Y/%m/%d')
+
+    # اعمال فیلتر شعبه
+    if branch_id and branch_id != '':
+        invoices = invoices.filter(branch_id=branch_id)
+
+    # اعمال فیلتر روش پرداخت
+    if payment_method_filter and payment_method_filter != 'all':
+        invoices = invoices.filter(payment_method=payment_method_filter)
+
+    # مرتب‌سازی و join جداول مرتبط
+    invoices = invoices.select_related('branch', 'created_by', 'pos_device').order_by('-created_at')
+
+    # محاسبه آمار کلی
     stats = {
         'total_count': invoices.count(),
         'total_amount': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
@@ -2659,18 +2693,53 @@ def daily_invoices(request):
         'unpaid_count': invoices.filter(is_paid=False).count(),
     }
 
-    # گروه‌بندی بر اساس روش پرداخت
+    # محاسبه آمار بر اساس روش پرداخت
     payment_stats = {
-        'cash': invoices.filter(payment_method='cash').count(),
-        'pos': invoices.filter(payment_method='pos').count(),
-        'check': invoices.filter(payment_method='check').count(),
-        'credit': invoices.filter(payment_method='credit').count(),
+        'cash': {
+            'count': invoices.filter(payment_method='cash').count(),
+            'total': invoices.filter(payment_method='cash').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'paid': invoices.filter(payment_method='cash', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='cash', is_paid=False).count(),
+        },
+        'pos': {
+            'count': invoices.filter(payment_method='pos').count(),
+            'total': invoices.filter(payment_method='pos').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'paid': invoices.filter(payment_method='pos', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='pos', is_paid=False).count(),
+        },
+        'check': {
+            'count': invoices.filter(payment_method='check').count(),
+            'total': invoices.filter(payment_method='check').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'paid': invoices.filter(payment_method='check', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='check', is_paid=False).count(),
+        },
+        'credit': {
+            'count': invoices.filter(payment_method='credit').count(),
+            'total': invoices.filter(payment_method='credit').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'paid': invoices.filter(payment_method='credit', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='credit', is_paid=False).count(),
+        }
     }
+
+    # محاسبه مجموع کل هر ستون
+    total_summary = {
+        'total_all_methods': sum(payment_stats[method]['total'] for method in payment_stats),
+        'count_all_methods': sum(payment_stats[method]['count'] for method in payment_stats),
+    }
+
+    # دریافت لیست شعبه‌ها برای dropdown
+    branches = Branch.objects.all()
 
     context = {
         'invoices': invoices,
         'stats': stats,
         'payment_stats': payment_stats,
+        'total_summary': total_summary,
+        'branches': branches,
+        'selected_branch': branch_id,
+        'selected_date': selected_date,
+        'selected_payment_method': payment_method_filter or 'all',
+        'payment_methods': Invoicefrosh.PAYMENT_METHODS,
         'today': jdatetime.fromgregorian(date=today).strftime('%Y/%m/%d'),
     }
 
@@ -2697,6 +2766,8 @@ def invoice_detail(request, invoice_id):
         payment_info = invoice.credit_payment
     elif invoice.payment_method == 'cash' and hasattr(invoice, 'cash_payment'):
         payment_info = invoice.cash_payment
+    elif invoice.payment_method == 'pos' and hasattr(invoice, 'pos_transaction'):
+        payment_info = invoice.pos_transaction
 
     context = {
         'invoice': invoice,
@@ -2784,16 +2855,18 @@ def delete_invoice(request, invoice_id):
     # بررسی دسترسی کاربر برای حذف
     if not (request.user.is_superuser or invoice.created_by == request.user):
         messages.error(request, 'شما مجوز حذف این فاکتور را ندارید.')
-        return redirect('daily_invoices')
+        return redirect('invoice_app:daily_invoices')
 
     if request.method == 'POST':
         try:
+            # ذخیره اطلاعات برای نمایش پیام
+            invoice_serial = invoice.serial_number
             invoice.delete()
-            messages.success(request, 'فاکتور با موفقیت حذف شد.')
-            return redirect('daily_invoices')
+            messages.success(request, f'فاکتور شماره {invoice_serial} با موفقیت حذف شد.')
+            return redirect('invoice_app:daily_invoices')
         except Exception as e:
             messages.error(request, f'خطا در حذف فاکتور: {str(e)}')
-            return redirect('invoice_detail', invoice_id=invoice.id)
+            return redirect('invoice_app:invoice_detail', invoice_id=invoice.id)
 
     context = {
         'invoice': invoice,
@@ -2801,8 +2874,6 @@ def delete_invoice(request, invoice_id):
     }
 
     return render(request, 'invoice_app/delete_invoice.html', context)
-
-
 @login_required
 def update_invoice_status(request, invoice_id):
     """
@@ -2843,41 +2914,87 @@ def update_invoice_status(request, invoice_id):
 @login_required
 def filter_invoices(request):
     """
-    فیلتر فاکتورها بر اساس تاریخ
+    فیلتر فاکتورها بر اساس تاریخ و شعبه و روش پرداخت
     """
     if request.method == 'GET':
         date_str = request.GET.get('date')
+        branch_id = request.GET.get('branch')
+        payment_method = request.GET.get('payment_method')
 
         try:
+            invoices = Invoicefrosh.objects.all()
+
             if date_str:
                 # تبدیل تاریخ جلالی به میلادی
                 jalali_date = jdatetime.strptime(date_str, '%Y/%m/%d')
                 gregorian_date = jalali_date.togregorian()
-
                 date_start = timezone.make_aware(datetime.combine(gregorian_date, datetime.min.time()))
                 date_end = timezone.make_aware(datetime.combine(gregorian_date, datetime.max.time()))
+                invoices = invoices.filter(created_at__range=(date_start, date_end))
 
-                invoices = Invoicefrosh.objects.filter(
-                    created_at__range=(date_start, date_end)
-                ).select_related('branch', 'created_by').order_by('-created_at')
+            if branch_id and branch_id != '':
+                invoices = invoices.filter(branch_id=branch_id)
 
-                stats = {
-                    'total_count': invoices.count(),
-                    'total_amount': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
-                    'total_discount': invoices.aggregate(Sum('discount'))['discount__sum'] or 0,
-                    'paid_count': invoices.filter(is_paid=True).count(),
+            if payment_method and payment_method != 'all':
+                invoices = invoices.filter(payment_method=payment_method)
+
+            invoices = invoices.select_related('branch', 'created_by').order_by('-created_at')
+
+            stats = {
+                'total_count': invoices.count(),
+                'total_amount': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+                'total_discount': invoices.aggregate(Sum('discount'))['discount__sum'] or 0,
+                'paid_count': invoices.filter(is_paid=True).count(),
+                'unpaid_count': invoices.filter(is_paid=False).count(),
+                'total_profit': invoices.aggregate(Sum('total_profit'))['total_profit__sum'] or 0,
+            }
+
+            # آمار روش‌های پرداخت
+            payment_stats = {
+                'cash': {
+                    'count': invoices.filter(payment_method='cash').count(),
+                    'total': invoices.filter(payment_method='cash').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+                    'paid': invoices.filter(payment_method='cash', is_paid=True).count(),
+                    'unpaid': invoices.filter(payment_method='cash', is_paid=False).count(),
+                },
+                'pos': {
+                    'count': invoices.filter(payment_method='pos').count(),
+                    'total': invoices.filter(payment_method='pos').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+                    'paid': invoices.filter(payment_method='pos', is_paid=True).count(),
+                    'unpaid': invoices.filter(payment_method='pos', is_paid=False).count(),
+                },
+                'check': {
+                    'count': invoices.filter(payment_method='check').count(),
+                    'total': invoices.filter(payment_method='check').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+                    'paid': invoices.filter(payment_method='check', is_paid=True).count(),
+                    'unpaid': invoices.filter(payment_method='check', is_paid=False).count(),
+                },
+                'credit': {
+                    'count': invoices.filter(payment_method='credit').count(),
+                    'total': invoices.filter(payment_method='credit').aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+                    'paid': invoices.filter(payment_method='credit', is_paid=True).count(),
+                    'unpaid': invoices.filter(payment_method='credit', is_paid=False).count(),
                 }
+            }
 
-                return JsonResponse({
-                    'success': True,
-                    'invoices': list(invoices.values(
-                        'id', 'serial_number', 'branch__name', 'total_amount',
-                        'discount', 'is_paid', 'is_finalized', 'customer_name',
-                        'payment_method', 'created_at'
-                    )),
-                    'stats': stats,
-                    'date': date_str
-                })
+            # مجموع کل همه روش‌های پرداخت
+            total_summary = {
+                'total_all_methods': sum(payment_stats[method]['total'] for method in payment_stats),
+                'count_all_methods': sum(payment_stats[method]['count'] for method in payment_stats),
+            }
+
+            return JsonResponse({
+                'success': True,
+                'invoices': list(invoices.values(
+                    'id', 'serial_number', 'branch__name', 'total_amount',
+                    'discount', 'is_paid', 'is_finalized', 'customer_name',
+                    'customer_phone', 'payment_method', 'created_at', 'total_profit'
+                )),
+                'stats': stats,
+                'payment_stats': payment_stats,
+                'total_summary': total_summary,
+                'date': date_str
+            })
 
         except Exception as e:
             return JsonResponse({
@@ -2886,3 +3003,14 @@ def filter_invoices(request):
             })
 
     return JsonResponse({'success': False, 'message': 'درخواست نامعتبر'})
+
+
+# @login_required
+# def create_invoice(request):
+#     """
+#     ایجاد فاکتور جدید
+#     """
+#     # این ویو باید با منطق ایجاد فاکتور پر شود
+#     # فعلاً فقط redirect می‌کنیم
+#     messages.info(request, 'صفحه ایجاد فاکتور جدید به زودی اضافه خواهد شد.')
+#     return redirect('daily_invoices')

@@ -469,9 +469,10 @@
                 </div>
             </div>
             
-            <form method="POST" id="deleteForm">
+            <form method="POST" id="deleteForm" action="{% url 'invoice_app:delete_invoice' invoice.id %}">
                 {% csrf_token %}
                 <div class="actions">
+                    <!-- تغییر مهم: استفاده از URL مستقیم برای invoice_detail -->
                     <a href="{% url 'invoice_app:invoice_detail' invoice.id %}" class="btn btn-secondary" id="cancel-btn">
                         <i class="fas fa-times"></i> انصراف و بازگشت
                     </a>
@@ -482,6 +483,7 @@
             </form>
             
             <div style="text-align: center;">
+                <!-- تغییر مهم: استفاده از URL مستقیم برای daily_invoices -->
                 <a href="{% url 'invoice_app:daily_invoices' %}" class="back-link">
                     <i class="fas fa-arrow-right"></i> بازگشت به لیست فاکتورها
                 </a>
@@ -529,13 +531,13 @@
             $('#total-amount').text(formatCurrency(totalAmount, true));
             
             // فرمت کردن تعداد آیتم‌ها
-            const itemsCount = {{ invoice.items.count }};
+            const itemsCount = {{ invoice.items.count|default:0 }};
             $('#items-count').text(toPersianNumbers(itemsCount));
             
             // دکمه تأیید حذف
             $('#confirm-delete-btn').on('click', function() {
                 const invoiceSerial = '{{ invoice.serial_number }}';
-                const itemsCount = {{ invoice.items.count }};
+                const itemsCount = {{ invoice.items.count|default:0 }};
                 const totalAmount = formatCurrency({{ invoice.total_amount|default:0 }}, true);
                 
                 const confirmMessage = 
@@ -580,13 +582,6 @@
                 if (e.key === 'Escape') {
                     window.location.href = "{% url 'invoice_app:invoice_detail' invoice.id %}";
                 }
-            });
-            
-            // جلوگیری از کلیک راست
-            $(document).on('contextmenu', function(e) {
-                e.preventDefault();
-                alert('این عملیات مجاز نیست!');
-                return false;
             });
         });
     </script>

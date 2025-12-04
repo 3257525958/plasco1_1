@@ -816,7 +816,7 @@ def get_branch_products(request):
             # دریافت قیمت معیار از مدل ProductPricing
             try:
                 pricing = ProductPricing.objects.get(product_name=item.product_name)
-                base_price = pricing.highest_purchase_price
+                base_price = pricing.standard_price
             except ProductPricing.DoesNotExist:
                 base_price = 0
 
