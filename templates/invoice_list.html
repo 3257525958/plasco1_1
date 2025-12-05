@@ -266,7 +266,7 @@
             height: 100%;
             background: var(--gradient-success);
             border-radius: 12px;
-            transition: width 0.3s ease;
+            transition: width 0.5s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -281,6 +281,8 @@
             background: #f8f9fa;
             border-radius: 8px;
             border-right: 4px solid var(--info-color);
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .distribution-item {
@@ -293,6 +295,33 @@
 
         .distribution-item:last-child {
             border-bottom: none;
+        }
+
+        .progress-stages {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+
+        .progress-stage {
+            text-align: center;
+            flex: 1;
+            padding: 5px;
+        }
+
+        .progress-stage.active {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .task-id {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            font-size: 0.85rem;
         }
 
         @media (max-width: 768px) {
@@ -347,7 +376,7 @@
         <div class="section-card">
             <h3 class="section-title"><i class="fas fa-receipt"></i> مدیریت فاکتورها</h3>
             
-            <!-- فرم اصلی برای تمام عملیات -->
+            <!-- فرم اصلی -->
             <form method="post" id="invoiceForm">
                 {% csrf_token %}
                 <input type="hidden" name="action_type" id="actionType" value="">
@@ -442,7 +471,6 @@
                     <button type="button" class="btn btn-info" id="distributeButton">
                         <i class="fas fa-warehouse"></i> توزیع مساوی در انبار
                     </button>
-                    <!-- دکمه جدید برای پاک کردن دیتای قیمت‌ها -->
                     <button type="button" class="btn btn-danger" id="deletePricingButton">
                         <i class="fas fa-trash-alt"></i> پاک کردن دیتای قیمت‌ها
                     </button>
@@ -450,78 +478,108 @@
                         <i class="fas fa-trash-alt"></i> پاک کردن تمام داده‌های انبار
                     </button>
                 </div>            
-            
             </form>
         </div>
     </div>
 
-    
-<!-- مودال تایید پاک کردن دیتای قیمت‌ها -->
-<div class="modal fade" id="deletePricingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> تایید پاک کردن دیتای قیمت‌ها</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <strong>هشدار جدی:</strong> این عملیات <strong class="text-danger">تمام داده‌های قیمت‌گذاری محصولات</strong> را به طور کامل پاک خواهد کرد.
+    <!-- مودال تایید پاک کردن دیتای قیمت‌ها -->
+    <div class="modal fade" id="deletePricingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> تایید پاک کردن دیتای قیمت‌ها</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <ul class="mb-3">
-                    <li>تمام records های جدول قیمت‌گذاری حذف خواهند شد</li>
-                    <li>این عملیات <strong>غیرقابل بازگشت</strong> است</li>
-                    <li>پس از پاک‌سازی، باید داده‌های قیمت‌گذاری جدید را مجدداً وارد کنید</li>
-                </ul>
-                <p class="mb-0"><strong>آیا از انجام این عملیات اطمینان دارید؟</strong></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> لغو عملیات
-                </button>
-                <form method="post" action="{% url 'delete_all_product_pricing' %}" id="deletePricingForm" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-check"></i> بله، پاک کردن داده‌های قیمت
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <strong>هشدار جدی:</strong> این عملیات <strong class="text-danger">تمام داده‌های قیمت‌گذاری محصولات</strong> را به طور کامل پاک خواهد کرد.
+                    </div>
+                    <ul class="mb-3">
+                        <li>تمام records های جدول قیمت‌گذاری حذف خواهند شد</li>
+                        <li>این عملیات <strong>غیرقابل بازگشت</strong> است</li>
+                        <li>پس از پاک‌سازی، باید داده‌های قیمت‌گذاری جدید را مجدداً وارد کنید</li>
+                    </ul>
+                    <p class="mb-0"><strong>آیا از انجام این عملیات اطمینان دارید؟</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> لغو عملیات
                     </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>    
-
-<!-- مودال نمایش پیشرفت توزیع -->
-<div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-sync-alt fa-spin text-info"></i> در حال توزیع کالاها...</h5>
-            </div>
-            <div class="modal-body">
-                <div class="progress-container">
-                    <div class="progress-info">
-                        <span id="currentInvoiceInfo">آماده سازی...</span>
-                        <span id="progressPercentage">0%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
-                    </div>
-                </div>
-                
-                <div class="distribution-details">
-                    <h6><i class="fas fa-info-circle"></i> جزئیات توزیع:</h6>
-                    <div id="distributionDetails">
-                        <!-- جزئیات توزیع به صورت داینامیک نمایش داده می‌شود -->
-                    </div>
+                    <form method="post" action="{% url 'delete_all_product_pricing' %}" id="deletePricingForm" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-check"></i> بله، پاک کردن داده‌های قیمت
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- مودال تایید ریست -->
-<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+    <!-- مودال نمایش پیشرفت توزیع -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-sync-alt fa-spin"></i> در حال توزیع کالاها...
+                        <small class="d-block mt-1" id="taskIdDisplay"></small>
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong id="progressMainMessage">آماده‌سازی عملیات...</strong>
+                        <div class="mt-2 small">
+                            <i class="fas fa-clock"></i>
+                            <span id="progressTime">شروع شده در: --:--:--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="currentInvoiceInfo">در حال آماده‌سازی...</span>
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-success" id="progressFill" style="width: 0%">
+                                <span>0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-stages" id="progressStages">
+                        <div class="progress-stage active" data-stage="1">آماده‌سازی</div>
+                        <div class="progress-stage" data-stage="2">بارگذاری داده‌ها</div>
+                        <div class="progress-stage" data-stage="3">گروه‌بندی کالاها</div>
+                        <div class="progress-stage" data-stage="4">قیمت‌گذاری</div>
+                        <div class="progress-stage" data-stage="5">توزیع</div>
+                        <div class="progress-stage" data-stage="6">ذخیره‌سازی</div>
+                        <div class="progress-stage" data-stage="7">تکمیل</div>
+                    </div>
+                    
+                    <div class="distribution-details mt-3">
+                        <h6><i class="fas fa-info-circle"></i> جزئیات عملیات:</h6>
+                        <div id="distributionDetails">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                در حال بارگذاری جزئیات...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="progressCloseBtn" disabled>
+                        <i class="fas fa-hourglass-half"></i> در حال پردازش...
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تایید ریست -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -547,93 +605,102 @@
         </div>
     </div>
 
-<!-- مودال تایید پاک کردن تمام داده‌های انبار -->
-<div class="modal fade" id="clearInventoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> تایید پاک کردن تمام داده‌های انبار</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <i class="fas fa-skull-crossbones"></i>
-                    <strong>هشدار جدی:</strong> این عملیات <strong class="text-danger">تمام داده‌های موجود در مدل InventoryCount</strong> را به طور کامل پاک خواهد کرد.
+    <!-- مودال تایید پاک کردن تمام داده‌های انبار -->
+    <div class="modal fade" id="clearInventoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> تایید پاک کردن تمام داده‌های انبار</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <ul class="mb-3">
-                    <li>تمام records های جدول انبار حذف خواهند شد</li>
-                    <li>این عملیات <strong>غیرقابل بازگشت</strong> است</li>
-                    <li>پس از پاک‌سازی، باید داده‌های جدید را مجدداً وارد کنید</li>
-                </ul>
-                <p class="mb-0"><strong>آیا از انجام این عملیات اطمینان دارید؟</strong></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> لغو عملیات
-                </button>
-                <form method="post" action="{% url 'clear_inventory' %}" id="clearInventoryForm" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-check"></i> بله، پاک کردن تمام داده‌ها
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>    
-
-<!-- مودال تایید توزیع -->
-<div class="modal fade" id="distributionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-warehouse text-info"></i> تایید توزیع در انبار</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>ویژگی‌های توزیع هوشمند:</strong>
-                    <ul class="mt-2 mb-0">
-                        <li>کالاهای تکراری در فاکتورهای مختلف <strong>جمع‌زنی</strong> می‌شوند</li>
-                        <li>توزیع <strong>تقریباً مساوی</strong> بین تمام شعب انجام می‌شود</li>
-                        <li>اگر کالا از قبل در انبار وجود داشته باشد، <strong>تعداد اضافه</strong> می‌شود</li>
-                        <li><strong>تعداد باقیمانده تمام آیتم‌ها صفر خواهد شد</strong></li>
-                        <li>این عملیات غیرقابل بازگشت است</li>
-                        <li><strong>درصد سود: ۱۰۰٪</strong></li>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-skull-crossbones"></i>
+                        <strong>هشدار جدی:</strong> این عملیات <strong class="text-danger">تمام داده‌های موجود در مدل InventoryCount</strong> را به طور کامل پاک خواهد کرد.
+                    </div>
+                    <ul class="mb-3">
+                        <li>تمام records های جدول انبار حذف خواهند شد</li>
+                        <li>این عملیات <strong>غیرقابل بازگشت</strong> است</li>
+                        <li>پس از پاک‌سازی، باید داده‌های جدید را مجدداً وارد کنید</li>
                     </ul>
+                    <p class="mb-0"><strong>آیا از انجام این عملیات اطمینان دارید؟</strong></p>
                 </div>
-                <div class="alert alert-warning">
-                    <i class="fas fa-lightbulb"></i>
-                    <strong>مثال:</strong> اگر "قاشق" در ۲ فاکتور با مجموع ۱۰ عدد باشد، بین شعب تقسیم می‌شود (نه ۲ بار ثبت می‌شود)
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> لغو عملیات
+                    </button>
+                    <form method="post" action="{% url 'clear_inventory' %}" id="clearInventoryForm" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-check"></i> بله، پاک کردن تمام داده‌ها
+                        </button>
+                    </form>
                 </div>
-                <p class="mb-0">آیا از انجام این عملیات اطمینان دارید؟</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> لغو
-                </button>
-                <button type="button" class="btn btn-info" id="confirmDistribution">
-                    <i class="fas fa-check"></i> تایید و توزیع هوشمند
-                </button>
             </div>
         </div>
     </div>
-</div>
-    
-    
+
+    <!-- مودال تایید توزیع -->
+    <div class="modal fade" id="distributionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-warehouse text-info"></i> تایید توزیع در انبار</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>ویژگی‌های توزیع هوشمند:</strong>
+                        <ul class="mt-2 mb-0">
+                            <li>کالاهای تکراری در فاکتورهای مختلف <strong>جمع‌زنی</strong> می‌شوند</li>
+                            <li>توزیع <strong>تقریباً مساوی</strong> بین تمام شعب انجام می‌شود</li>
+                            <li>اگر کالا از قبل در انبار وجود داشته باشد، <strong>تعداد اضافه</strong> می‌شود</li>
+                            <li><strong>تعداد باقیمانده تمام آیتم‌ها صفر خواهد شد</strong></li>
+                            <li>این عملیات غیرقابل بازگشت است</li>
+                            <li><strong>درصد سود: ۷۰٪</strong></li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>مثال:</strong> اگر "قاشق" در ۲ فاکتور با مجموع ۱۰ عدد باشد، بین شعب تقسیم می‌شود (نه ۲ بار ثبت می‌شود)
+                    </div>
+                    <div class="alert alert-success">
+                        <i class="fas fa-bolt"></i>
+                        <strong>بهینه‌سازی:</strong> این عملیات برای داده‌های حجیم بهینه‌سازی شده و با هر سرعت اینترنتی کار می‌کند.
+                    </div>
+                    <p class="mb-0">آیا از انجام این عملیات اطمینان دارید؟</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> لغو
+                    </button>
+                    <button type="button" class="btn btn-info" id="confirmDistribution">
+                        <i class="fas fa-check"></i> تایید و توزیع هوشمند
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() {
+            let currentTaskId = null;
+            let progressCheckInterval = null;
+            let startTime = null;
+
             // انتخاب همه
             $('#selectAllCheckbox, #selectAll').on('click', function() {
                 $('.invoice-checkbox').prop('checked', true);
+                updateSelectionCount();
             });
 
             // لغو انتخاب همه
             $('#deselectAll').on('click', function() {
                 $('.invoice-checkbox').prop('checked', false);
+                updateSelectionCount();
             });
 
             // مدیریت دکمه ریست
@@ -641,13 +708,10 @@
                 var selectedInvoices = $('input[name="selected_invoices"]:checked');
                 
                 if (selectedInvoices.length === 0) {
-                    alert('لطفاً حداقل یک فاکتور را انتخاب کنید.');
+                    showAlert('warning', 'لطفاً حداقل یک فاکتور را انتخاب کنید.');
                     return;
                 }
 
-                // تنظیم action برای ریست
-                $('#actionType').val('reset_quantity');
-                
                 // نمایش مودال تایید
                 var confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
                 confirmationModal.show();
@@ -658,7 +722,7 @@
                 var selectedInvoices = $('input[name="selected_invoices"]:checked');
                 
                 if (selectedInvoices.length === 0) {
-                    alert('لطفاً حداقل یک فاکتور را انتخاب کنید.');
+                    showAlert('warning', 'لطفاً حداقل یک فاکتور را انتخاب کنید.');
                     return;
                 }
 
@@ -681,20 +745,6 @@
                 deletePricingModal.show();
             });
             
-            // غیرفعال کردن ارسال فرم از طریق Enter برای جلوگیری از ارسال تصادفی
-            $('#deletePricingForm').on('keypress', function(e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                }
-            });
-            
-            // غیرفعال کردن ارسال فرم از طریق Enter برای جلوگیری از ارسال تصادفی
-            $('#clearInventoryForm').on('keypress', function(e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                }
-            });
-
             // تایید ریست در مودال
             $('#confirmReset').on('click', function() {
                 $('#invoiceForm').attr('action', "{% url 'reset_remaining_quantity' %}");
@@ -704,23 +754,14 @@
 
             // تایید توزیع در مودال
             $('#confirmDistribution').on('click', function() {
-                // نمایش مودال پیشرفت
-                var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
-                progressModal.show();
-                
-                // شروع شبیه‌سازی پیشرفت
-                simulateDistributionProgress();
-                
-                // ارسال فرم پس از تأخیر
-                setTimeout(function() {
-                    $('#invoiceForm').attr('action', "{% url 'distribute_inventory' %}");
-                    $('#invoiceForm').submit();
-                }, 3000); // تأخیر 3 ثانیه برای نمایش پیشرفت
+                $('#distributionModal').modal('hide');
+                startDistribution();
             });
 
             // هماهنگی چک‌باکس هدر با بقیه
             $('#selectAllCheckbox').on('change', function() {
                 $('.invoice-checkbox').prop('checked', this.checked);
+                updateSelectionCount();
             });
 
             $('.invoice-checkbox').on('change', function() {
@@ -729,83 +770,298 @@
                 } else if ($('.invoice-checkbox:checked').length === $('.invoice-checkbox').length) {
                     $('#selectAllCheckbox').prop('checked', true);
                 }
+                updateSelectionCount();
             });
 
-            // تابع شبیه‌سازی پیشرفت توزیع
-            function simulateDistributionProgress() {
-                var progress = 0;
-                var progressInterval = setInterval(function() {
-                    progress += 5;
-                    if (progress > 100) {
-                        progress = 100;
-                        clearInterval(progressInterval);
-                    }
-                    
-                    // به‌روزرسانی نوار پیشرفت
-                    $('#progressFill').css('width', progress + '%').text(progress + '%');
-                    $('#progressPercentage').text(progress + '%');
-                    
-                    // به‌روزرسانی اطلاعات
-                    updateProgressInfo(progress);
-                    
-                }, 150);
+            // تابع شروع توزیع
+            function startDistribution() {
+                // نمایش مودال پیشرفت
+                var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                progressModal.show();
+                
+                // تنظیم زمان شروع
+                startTime = new Date();
+                updateTimeDisplay();
+                
+                // ارسال درخواست توزیع
+                distributeSelectedInvoices();
             }
 
-            // تابع به‌روزرسانی اطلاعات پیشرفت
-            function updateProgressInfo(progress) {
-                var stages = [
-                    {percent: 0, text: "آماده سازی برای توزیع..."},
-                    {percent: 10, text: "در حال خواندن اطلاعات فاکتورها..."},
-                    {percent: 25, text: "محاسبه مجموع کالاهای باقیمانده..."},
-                    {percent: 40, text: "توزیع کالاها بین شعب..."},
-                    {percent: 60, text: "بروزرسانی موجودی انبارها..."},
-                    {percent: 80, text: "صفر کردن تعداد باقیمانده..."},
-                    {percent: 95, text: "پایان عملیات توزیع..."},
-                    {percent: 100, text: "توزیع با موفقیت انجام شد!"}
-                ];
-
-                var currentStage = stages[0];
-                for (var i = stages.length - 1; i >= 0; i--) {
-                    if (progress >= stages[i].percent) {
-                        currentStage = stages[i];
-                        break;
+            // تابع ارسال درخواست توزیع
+            function distributeSelectedInvoices() {
+                var formData = new FormData($('#invoiceForm')[0]);
+                
+                $.ajax({
+                    url: "{% url 'distribute_inventory' %}",
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    beforeSend: function() {
+                        resetProgressDisplay();
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            currentTaskId = response.task_id;
+                            $('#taskIdDisplay').html('<small class="task-id">شناسه کار: ' + response.task_id + '</small>');
+                            // شروع بررسی پیشرفت
+                            startProgressChecking();
+                        } else {
+                            showAlert('error', 'خطا: ' + response.error);
+                            $('#progressModal').modal('hide');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        let errorMsg = 'خطا در ارسال درخواست: ' + error;
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMsg = xhr.responseJSON.error;
+                        }
+                        showAlert('error', errorMsg);
+                        $('#progressModal').modal('hide');
                     }
-                }
+                });
+            }
 
+            // شروع بررسی پیشرفت
+            function startProgressChecking() {
+                if (progressCheckInterval) {
+                    clearInterval(progressCheckInterval);
+                }
+                
+                progressCheckInterval = setInterval(function() {
+                    checkProgress();
+                }, 1500); // هر 1.5 ثانیه بررسی کن
+            }
+
+            // بررسی پیشرفت
+            function checkProgress() {
+                if (!currentTaskId) return;
+                
+                $.ajax({
+                    url: "{% url 'check_distribution_progress' %}?task_id=" + currentTaskId,
+                    type: 'GET',
+                    success: function(response) {
+                        updateProgressDisplay(response);
+                        
+                        // اگر عملیات کامل شد
+                        if (response.status === 'completed' || response.percentage >= 100) {
+                            completeProgress();
+                        } else if (response.status === 'not_found') {
+                            // اگر وضعیت یافت نشد
+                            $('#currentInvoiceInfo').html(
+                                '<i class="fas fa-exclamation-triangle text-warning"></i> وضعیت پیشرفت یافت نشد'
+                            );
+                        }
+                    },
+                    error: function() {
+                        $('#currentInvoiceInfo').html(
+                            '<i class="fas fa-exclamation-triangle text-danger"></i> خطا در بررسی وضعیت'
+                        );
+                    }
+                });
+            }
+
+            // به‌روزرسانی نمایش پیشرفت
+            function updateProgressDisplay(response) {
+                // به‌روزرسانی نوار پیشرفت
+                let percentage = Math.min(response.percentage, 100);
+                $('#progressFill').css('width', percentage + '%')
+                                  .text(percentage.toFixed(1) + '%');
+                $('#progressPercentage').text(percentage.toFixed(1) + '%');
+                
+                // به‌روزرسانی پیام اصلی
                 $('#currentInvoiceInfo').html(
-                    '<i class="fas fa-sync-alt fa-spin"></i> ' + currentStage.text
+                    '<i class="fas fa-sync-alt fa-spin"></i> ' + response.message
                 );
-
-                // نمایش جزئیات توزیع
-                var detailsHtml = '';
-                if (progress >= 25) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-file-invoice text-primary"></i> فاکتورهای انتخاب شده: ' + $('input[name="selected_invoices"]:checked').length + ' فاکتور</span>';
-                    detailsHtml += '</div>';
+                $('#progressMainMessage').text(response.message);
+                
+                // به‌روزرسانی جزئیات
+                if (response.details && response.details.length > 0) {
+                    let detailsHtml = '';
+                    response.details.forEach(function(detail) {
+                        detailsHtml += '<div class="distribution-item">' +
+                                       '<span><i class="fas fa-check-circle text-success"></i> ' + detail + '</span>' +
+                                       '</div>';
+                    });
+                    $('#distributionDetails').html(detailsHtml);
                 }
-                if (progress >= 40) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-boxes text-success"></i> کالاهای در حال توزیع: چندین محصول</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 60) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-store text-info"></i> شعب: در حال به‌روزرسانی</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 80) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-check-circle text-success"></i> تعداد باقیمانده: در حال صفر شدن</span>';
-                    detailsHtml += '</div>';
-                }
-                if (progress >= 95) {
-                    detailsHtml += '<div class="distribution-item">';
-                    detailsHtml += '<span><i class="fas fa-tasks text-primary"></i> درصد سود: 100%</span>';
-                    detailsHtml += '</div>';
-                }
-
-                $('#distributionDetails').html(detailsHtml);
+                
+                // به‌روزرسانی مراحل
+                updateProgressStages(percentage);
+                
+                // به‌روزرسانی زمان
+                updateTimeDisplay();
             }
+
+            // به‌روزرسانی مراحل پیشرفت
+            function updateProgressStages(percentage) {
+                const stages = $('.progress-stage');
+                stages.removeClass('active');
+                
+                if (percentage < 10) {
+                    $(stages[0]).addClass('active');
+                } else if (percentage < 25) {
+                    $(stages[1]).addClass('active');
+                } else if (percentage < 40) {
+                    $(stages[2]).addClass('active');
+                } else if (percentage < 50) {
+                    $(stages[3]).addClass('active');
+                } else if (percentage < 85) {
+                    $(stages[4]).addClass('active');
+                } else if (percentage < 98) {
+                    $(stages[5]).addClass('active');
+                } else {
+                    $(stages[6]).addClass('active');
+                }
+            }
+
+            // تکمیل پیشرفت
+            function completeProgress() {
+                if (progressCheckInterval) {
+                    clearInterval(progressCheckInterval);
+                    progressCheckInterval = null;
+                }
+                
+                // تغییر وضعیت دکمه
+                $('#progressCloseBtn')
+                    .removeClass('btn-secondary')
+                    .addClass('btn-success')
+                    .html('<i class="fas fa-check"></i> توزیع کامل شد - کلیک کنید')
+                    .prop('disabled', false)
+                    .off('click')
+                    .on('click', function() {
+                        $('#progressModal').modal('hide');
+                        location.reload();
+                    });
+                
+                // نمایش پیام نهایی
+                $('#currentInvoiceInfo').html(
+                    '<i class="fas fa-check-circle text-success"></i> توزیع با موفقیت انجام شد!'
+                );
+                $('#progressMainMessage').html(
+                    '<i class="fas fa-check-circle text-success"></i> <strong>عملیات با موفقیت تکمیل شد</strong>'
+                );
+                
+                // پخش صدای اعلان
+                playCompletionSound();
+            }
+
+            // ریست نمایش پیشرفت
+            function resetProgressDisplay() {
+                $('#progressFill').css('width', '0%').text('0%');
+                $('#progressPercentage').text('0%');
+                $('#currentInvoiceInfo').html('<i class="fas fa-spinner fa-spin"></i> در حال آماده‌سازی...');
+                $('#progressMainMessage').text('آماده‌سازی عملیات...');
+                $('#distributionDetails').html(
+                    '<div class="text-center text-muted py-3">' +
+                    '<i class="fas fa-spinner fa-spin"></i> در حال بارگذاری جزئیات...' +
+                    '</div>'
+                );
+                $('#taskIdDisplay').empty();
+                
+                // ریست دکمه
+                $('#progressCloseBtn')
+                    .removeClass('btn-success')
+                    .addClass('btn-secondary')
+                    .html('<i class="fas fa-hourglass-half"></i> در حال پردازش...')
+                    .prop('disabled', true);
+            }
+
+            // به‌روزرسانی زمان
+            function updateTimeDisplay() {
+                if (!startTime) return;
+                
+                const now = new Date();
+                const diffMs = now - startTime;
+                const diffSec = Math.floor(diffMs / 1000);
+                const minutes = Math.floor(diffSec / 60);
+                const seconds = diffSec % 60;
+                
+                $('#progressTime').html(
+                    '<i class="fas fa-clock"></i> مدت زمان: ' + 
+                    minutes.toString().padStart(2, '0') + ':' + 
+                    seconds.toString().padStart(2, '0')
+                );
+            }
+
+            // نمایش آلرت
+            function showAlert(type, message) {
+                let icon = 'info-circle';
+                let color = 'info';
+                
+                switch(type) {
+                    case 'success':
+                        icon = 'check-circle';
+                        color = 'success';
+                        break;
+                    case 'warning':
+                        icon = 'exclamation-triangle';
+                        color = 'warning';
+                        break;
+                    case 'error':
+                        icon = 'times-circle';
+                        color = 'danger';
+                        break;
+                }
+                
+                // ایجاد آلرت موقت
+                const alertHtml = `
+                    <div class="alert alert-${color} alert-dismissible fade show position-fixed" 
+                         style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                        <i class="fas fa-${icon}"></i> ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                $('body').append(alertHtml);
+                
+                // حذف خودکار بعد از 5 ثانیه
+                setTimeout(function() {
+                    $('.alert').alert('close');
+                }, 5000);
+            }
+
+            // پخش صدای اعلان
+            function playCompletionSound() {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
+            }
+
+            // به‌روزرسانی تعداد انتخاب شده
+            function updateSelectionCount() {
+                const selectedCount = $('input[name="selected_invoices"]:checked').length;
+                const distributeBtn = $('#distributeButton');
+                const resetBtn = $('#resetButton');
+                
+                if (selectedCount > 0) {
+                    distributeBtn.html(`<i class="fas fa-warehouse"></i> توزیع (${selectedCount} فاکتور)`);
+                    resetBtn.html(`<i class="fas fa-redo"></i> ریست (${selectedCount} فاکتور)`);
+                } else {
+                    distributeBtn.html('<i class="fas fa-warehouse"></i> توزیع مساوی در انبار');
+                    resetBtn.html('<i class="fas fa-redo"></i> ریست کردن تعداد باقیمانده');
+                }
+            }
+
+            // اولیه‌سازی
+            updateSelectionCount();
         });
     </script>
 </body>
