@@ -1086,7 +1086,7 @@
 {#    </script>#}
 {#</body>#}
 {#</html>#}
-
+{##}
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -1156,47 +1156,34 @@
             min-height: 100vh;
         }
 
-        /* کانتینر برای ردیف‌های لیبل - بدون فاصله */
+        /* کانتینر برای ردیف‌های لیبل - فاصله‌بندی دقیق */
         .label-row {
             display: flex;
             justify-content: space-between;
             width: 100%;
             margin: 0 !important;
-            padding: 0 !important;
-            gap: 0 !important;
+            padding: 0 1mm !important; /* فاصله چپ و راست: 1mm */
+            gap: 2mm !important; /* فاصله بین دو لیبل: 2mm (بیشتر از کناره) */
         }
 
-        /* استایل لیبل - دقیقاً 40×20 میلی‌متر */
+        /* استایل لیبل - با فاصله از بالا و وسط چین کامل */
         .label {
-            width: 40mm !important;
-            height: 20mm !important;
+            width: 38mm; /* کاهش عرض برای ایجاد فاصله */
+            height: 19mm; /* کاهش ارتفاع برای ایجاد فاصله از بالا */
             background: white;
             border: none;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: center; /* وسط چین افقی */
             position: relative;
             overflow: hidden;
-            margin: 0 !important;
+            margin: 1mm 0 0 0 !important; /* فاصله از بالا: 1mm */
             padding: 0 !important;
         }
 
-        /* کانتینر محتوا - وسط چین کامل */
-        .label-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-            position: relative;
-        }
-
-        /* نام محصول - کوچک و در بالای لیبل */
+        /* نام محصول - نصف اندازه قبلی */
         .product-name {
-            font-size: 6pt !important;
+            font-size: 3.5pt !important; /* نصف شده از 7pt */
             font-weight: 900;
             line-height: 1 !important;
             text-align: center;
@@ -1205,66 +1192,56 @@
             align-items: center;
             justify-content: center;
             border: none;
-            margin: 0 0 0.5mm 0 !important;
+            margin: 0 !important;
             padding: 0 !important;
             word-break: break-word;
             font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
             color: #000000 !important;
-            text-shadow: 0.3px 0.3px 0.3px rgba(0,0,0,0.3);
-            letter-spacing: 0.1px;
+            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
+            letter-spacing: 0.15px; /* کمی کمتر */
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            width: 100%;
-            max-height: 3mm;
-            overflow: hidden;
-            position: absolute;
-            top: 1.5mm; /* کمی پایین‌تر */
+            width: 100%; /* عرض کامل برای وسط چین */
         }
 
-        /* کانتینر بارکد - کوچک‌تر شده */
+        /* کانتینر بارکد - وسط چین کامل - طول 33mm */
         .barcode-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 32mm !important; /* کاهش عرض */
-            height: 8mm !important; /* کاهش ارتفاع */
+            width: 33mm !important; /* طول بارکد: 33mm */
+            height: 9mm !important;
             overflow: hidden;
             position: relative;
             border: none;
-            margin: 0 auto !important;
+            margin: 0 auto !important; /* وسط چین افقی */
             padding: 0 !important;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
 
-        /* بارکد - کوچک‌تر شده */
+        /* بارکد - کمی نازک‌تر و وسط چین کامل */
         .barcode {
             font-family: 'Libre Barcode 128', cursive;
-            font-size: 20pt !important; /* کاهش از 24pt به 20pt */
+            font-size: 25pt !important; /* سایز متعادل */
             line-height: 1 !important;
             margin: 0 !important;
             padding: 0 !important;
-            letter-spacing: 1px; /* کاهش فاصله حروف */
-            transform: scaleY(1.2) !important; /* کمی نازک‌تر */
+            letter-spacing: 1.5px;
+            transform: scaleY(1.4) !important; /* نازک‌تر از قبل اما هنوز قابل اسکن */
             transform-origin: center;
             display: block;
             width: 100% !important;
             text-align: center;
-            height: 6mm !important; /* کاهش ارتفاع */
+            height: 7mm !important;
             color: #000000 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            white-space: nowrap;
-            overflow: hidden;
         }
 
-        /* عدد بارکد - کوچک‌تر */
+        /* عدد بارکد - وسط چین کامل */
         .barcode-number {
             font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            font-size: 3.5pt !important; /* کاهش از 4pt به 3.5pt */
+            font-size: 5pt !important;
             font-weight: normal;
             line-height: 1 !important;
             text-align: center;
@@ -1272,15 +1249,15 @@
             color: #000000 !important;
             margin: 0 !important;
             padding: 0 !important;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            width: 100%;
+            width: 100%; /* عرض کامل برای وسط چین */
         }
 
-        /* قیمت - بزرگ و در پایین لیبل */
+        /* قیمت - وسط چین کامل */
         .price {
-            font-size: 8pt !important;
+            font-size: 7pt !important;
             font-weight: 900;
             line-height: 1 !important;
             text-align: center;
@@ -1293,13 +1270,23 @@
             padding: 0 !important;
             font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
             color: #000000 !important;
-            text-shadow: 0.3px 0.3px 0.3px rgba(0,0,0,0.3);
-            letter-spacing: 0.2px;
+            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
+            letter-spacing: 0.3px;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            width: 100%; /* عرض کامل برای وسط چین */
+        }
+
+        /* کانتینر محتوا برای توزیع فضا و وسط چین کامل */
+        .label-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            position: absolute;
-            bottom: 1.5mm; /* کمی بالاتر */
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         /* استایل‌های غیرچاپی */
@@ -1437,6 +1424,11 @@
             margin: 2px !important;
         }
 
+        .preview-label .product-name {
+            font-size: 3.5pt !important;
+            height: 3mm;
+        }
+
         .preview-row {
             display: flex;
             justify-content: center;
@@ -1454,78 +1446,6 @@
         .print-form {
             display: inline;
         }
-
-        /* نمایش اندازه واقعی لیبل */
-        .label-size-demo {
-            width: 40mm;
-            height: 20mm;
-            background: white;
-            border: 2px solid #4CAF50;
-            margin: 10px auto;
-            position: relative;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .size-label {
-            text-align: center;
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .demo-grid {
-            display: flex;
-            justify-content: space-between;
-            width: 80mm;
-            margin: 0 auto;
-            gap: 0;
-        }
-
-        .demo-grid-item {
-            width: 40mm;
-            height: 20mm;
-            background: white;
-            border: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            color: #666;
-        }
-
-        /* نمایش بارکد کوچک شده */
-        .barcode-comparison {
-            display: flex;
-            justify-content: space-around;
-            margin: 15px 0;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-
-        .barcode-sample {
-            text-align: center;
-        }
-
-        .barcode-sample .old {
-            font-family: 'Libre Barcode 128', cursive;
-            font-size: 24pt;
-            height: 8mm;
-            color: #999;
-        }
-
-        .barcode-sample .new {
-            font-family: 'Libre Barcode 128', cursive;
-            font-size: 20pt;
-            height: 6mm;
-            color: #000;
-        }
-
-        .barcode-label {
-            font-size: 0.8rem;
-            margin-top: 5px;
-            color: #333;
-        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
@@ -1533,14 +1453,14 @@
 </head>
 <body>
     <div class="no-print">
-        <h2>چاپ لیبل - MEVA 4200</h2>
+        <h2>چاپ لیبل - چاپگر MEVA 4200</h2>
 
         <div class="printer-specs">
-            <h3><i class="fas fa-print"></i> مشخصات چاپ - بارکد کوچک شده</h3>
+            <h3><i class="fas fa-print"></i> مشخصات چاپ</h3>
             <div class="specs-grid">
                 <div class="spec-item">
                     <span>سایز لیبل:</span>
-                    <strong style="color: #d32f2f;">40×20 میلی‌متر</strong>
+                    <strong>40×20 میلی‌متر (عرض × طول)</strong>
                 </div>
                 <div class="spec-item">
                     <span>تعداد لیبل در ردیف:</span>
@@ -1551,57 +1471,18 @@
                     <strong>{{ total_labels }} عدد</strong>
                 </div>
                 <div class="spec-item">
-                    <span>فونت بارکد:</span>
-                    <strong style="color: #d32f2f;">20pt (کوچک شده)</strong>
+                    <span>ابعاد بارکد:</span>
+                    <strong>33×7 میلی‌متر (متوسط)</strong>
                 </div>
                 <div class="spec-item">
-                    <span>عرض بارکد:</span>
-                    <strong>32mm (کوچک شده)</strong>
+                    <span>فاصله‌بندی:</span>
+                    <strong>کناره‌ها: 1mm | وسط: 2mm | بالا: 1mm</strong>
                 </div>
                 <div class="spec-item">
-                    <span>فونت قیمت:</span>
-                    <strong>8pt (بزرگ)</strong>
-                </div>
-                <div class="spec-item">
-                    <span>فونت نام کالا:</span>
-                    <strong>6pt (کوچک)</strong>
+                    <span>نوع قیمت:</span>
+                    <strong>قیمت فروش</strong>
                 </div>
             </div>
-        </div>
-
-        <!-- نمایش مقایسه بارکد -->
-        <div style="text-align: center; margin: 20px 0;">
-            <div class="preview-title">مقایسه اندازه بارکد:</div>
-            <div class="barcode-comparison">
-                <div class="barcode-sample">
-                    <div class="old">*123456789*</div>
-                    <div class="barcode-label">بارکد قدیمی (24pt)</div>
-                </div>
-                <div class="barcode-sample">
-                    <div class="new">*123456789*</div>
-                    <div class="barcode-label">بارکد جدید (20pt)</div>
-                </div>
-            </div>
-            <div style="font-size: 0.8rem; color: #666;">
-                بارکد 20% کوچک‌تر شده تا از بیرون زدن جلوگیری شود
-            </div>
-        </div>
-
-        <!-- نمایش اندازه واقعی لیبل -->
-        <div style="text-align: center; margin: 20px 0;">
-            <div class="preview-title">نمایش اندازه واقعی لیبل با بارکد کوچک:</div>
-            <div class="label-size-demo">
-                <div style="position: absolute; top: 1.5mm; left: 0; width: 100%; text-align: center; font-size: 6pt; height: 3mm;">
-                    نام کالا
-                </div>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 7pt; width: 32mm; text-align: center;">
-                    بارکد (کوچک شده)
-                </div>
-                <div style="position: absolute; bottom: 1.5mm; left: 0; width: 100%; text-align: center; font-size: 8pt; font-weight: bold; height: 4mm;">
-                    25,000 تومان
-                </div>
-            </div>
-            <div class="size-label">سایز لیبل: 40×20mm - بارکد: 32mm عرض</div>
         </div>
 
         <!-- خلاصه محصولات -->
@@ -1620,36 +1501,32 @@
             </div>
         </div>
 
+        <div class="size-display">
+            <strong>ابعاد لیبل:</strong> عرض ۴۰mm × طول ۲۰mm | <strong>بارکد:</strong> ۳۳mm × ۷mm | <strong>قیمت:</strong> فروش
+        </div>
+
         <!-- پیش‌نمایش لیبل -->
         <div style="text-align: center;">
-            <div class="preview-title">پیش‌نمایش لیبل‌ها (بارکد کوچک شده):</div>
+            <div class="preview-title">پیش‌نمایش لیبل‌ها (قیمت فروش):</div>
             <div class="center-container">
                 <div class="preview-container">
-                    {% for label in all_labels|slice:":4" %}
+                    {% for label in all_labels|slice:":6" %}
                         {% if forloop.counter0|divisibleby:2 %}
                         <div class="preview-row">
                         {% endif %}
 
-                        <div class="preview-label" style="position: relative;">
+                        <div class="preview-label">
                             {% if label.show_name %}
-                            <div style="position: absolute; top: 1.5mm; width: 100%; text-align: center; font-size: 6pt; height: 3mm;">
-                                {{ label.product_name|truncatechars:25 }}
-                            </div>
+                            <div class="product-name">{{ label.product_name }}</div>
                             {% endif %}
 
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32mm; text-align: center;">
-                                <div style="font-family: 'Libre Barcode 128', cursive; font-size: 20pt; height: 6mm; transform: scaleY(1.2); letter-spacing: 1px;">
-                                    *{{ label.barcode }}*
-                                </div>
-                                <div style="font-size: 3.5pt; height: 2mm;">
-                                    {{ label.barcode }}
-                                </div>
+                            <div class="barcode-container">
+                                <div class="barcode">*{{ label.barcode }}*</div>
+                                <div class="barcode-number">{{ label.barcode }}</div>
                             </div>
 
                             {% if label.show_price %}
-                            <div style="position: absolute; bottom: 1.5mm; width: 100%; text-align: center; font-size: 8pt; font-weight: bold; height: 4mm;">
-                                {{ label.price|floatformat:0 }} تومان
-                            </div>
+                            <div class="price">{{ label.price|floatformat:0 }} تومان</div>
                             {% endif %}
                         </div>
 
@@ -1659,18 +1536,19 @@
                     {% endfor %}
                 </div>
             </div>
-            {% if total_labels > 4 %}
+            {% if total_labels > 6 %}
             <div style="margin-top: 10px !important; color: #666; font-size: 0.9rem;">
-                و {{ total_labels|add:"-4" }} لیبل دیگر...
+                و {{ total_labels|add:"-6" }} لیبل دیگر...
             </div>
             {% endif %}
         </div>
 
         <div style="margin: 20px 0 !important; text-align: center;">
+            <!-- تغییر دکمه چاپ به فرم POST -->
             <form method="post" class="print-form">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-print"></i> چاپ لیبل‌ها (بارکد کوچک شده)
+                    <i class="fas fa-print"></i> چاپ تمام لیبل‌ها
                 </button>
             </form>
             <a href="{% url 'label_settings' %}" class="btn btn-secondary">
@@ -1683,25 +1561,25 @@
 
         <div style="color: #666; font-size: 0.8rem; margin-top: 15px !important; padding: 10px !important; background: #d4edda; border-radius: 4px;">
             <i class="fas fa-info-circle"></i>
-            <strong>تغییرات اعمال شده برای جلوگیری از بیرون زدن بارکد:</strong>
+            <strong>راهنمایی:</strong>
             <ul style="margin: 5px 0 5px 20px !important;">
-                <li><strong>بارکد کوچک‌تر شده:</strong> از 24pt به 20pt (کاهش 20%)</li>
-                <li><strong>عرض بارکد کاهش یافته:</strong> از 35mm به 32mm</li>
-                <li><strong>ارتفاع بارکد کاهش یافته:</strong> از 7mm به 6mm</li>
-                <li><strong>فونت عدد بارکد کوچک‌تر:</strong> از 4pt به 3.5pt</li>
-                <li><strong>فاصله حروف بارکد کمتر:</strong> letter-spacing: 1px</li>
-                <li><strong>نام کالا کمی پایین‌تر:</strong> از top: 1mm به top: 1.5mm</li>
-                <li><strong>ارتفاع نام کالا کاهش یافته:</strong> از 4mm به 3mm</li>
-                <li><strong>قیمت کمی بالاتر:</strong> از bottom: 1mm به bottom: 1.5mm</li>
-                <li>سایز لیبل ثابت: <strong>40×20 میلی‌متر</strong></li>
-                <li>فونت قیمت بزرگ: <strong>8pt</strong></li>
-                <li style="color: #d32f2f; font-weight: bold;">✅ بارکد کوچک شده و از بیرون زدن جلوگیری می‌شود</li>
+                <li>لیبل‌ها با سایز <strong>40×20 میلی‌متر (عرض × طول)</strong> چاپ خواهند شد</li>
+                <li>بارکد با ابعاد دقیق <strong>33×7 میلی‌متر</strong> چاپ می‌شود</li>
+                <li><strong>قیمت نمایش داده شده: قیمت فروش</strong> کالاها است</li>
+                <li><strong>فاصله از چپ و راست: 1mm</strong></li>
+                <li><strong>فاصله بین لیبل‌ها: 2mm</strong> (بیشتر از کناره)</li>
+                <li><strong>فاصله از بالا: 1mm</strong></li>
+                <li><strong>همه المان‌ها در لیبل وسط چین</strong> هستند</li>
+                <li><strong>عدد بارکد به صورت ریز</strong> زیر بارکد نمایش داده می‌شود</li>
+                <li>در هر ردیف <strong>۲ لیبل</strong> قرار می‌گیرد</li>
+                <li>همه المان‌ها مشکی هستند</li>
+                <li>تعداد کل لیبل‌ها: <strong>{{ total_labels }} عدد</strong></li>
             </ul>
         </div>
     </div>
 
     <div class="print-area">
-        <!-- چاپ لیبل‌ها با بارکد کوچک شده -->
+        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->
         {% for label in all_labels %}
             {% if forloop.counter0|divisibleby:2 %}
             <div class="label-row">
@@ -1731,37 +1609,33 @@
     </div>
 
     <script>
-        // چاپ خودکار پس از ثبت تاریخچه
+        // چاپ خودکار پس از ثبت تاریخچه (فقط در صورت POST)
         document.addEventListener('DOMContentLoaded', function() {
             {% if auto_print %}
-                console.log('🖨️ شروع چاپ لیبل‌ها با بارکد کوچک شده...');
-                console.log('📏 سایز لیبل: 40×20 میلی‌متر');
-                console.log('🔍 بارکد کوچک شده: 20pt (کاهش 20%)');
-                console.log('📐 عرض بارکد: 32mm');
-                console.log('💰 فونت قیمت: 8pt (بزرگ)');
-                console.log('📝 فونت نام کالا: 6pt (کوچک)');
-                console.log('📊 تعداد کل: {{ total_labels }} لیبل');
+                console.log('🖨️ شروع چاپ لیبل‌ها...');
+                console.log('📏 سایز لیبل: 40×20 میلی‌متر (عرض × طول)');
+                console.log('📐 ابعاد بارکد: 33×7 میلی‌متر (متوسط)');
+                console.log('📊 تعداد کل لیبل‌ها: {{ total_labels }}');
+                console.log('💰 نوع قیمت: قیمت فروش');
+                console.log('📏 فاصله‌بندی: کناره=1mm | وسط=2mm | بالا=1mm');
 
-                setTimeout(function() {
-                    window.print();
-                }, 500);
+                window.print();
             {% endif %}
         });
 
         window.onbeforeprint = function() {
             console.log('📄 آماده چاپ لیبل‌ها...');
-            console.log('✅ اندازه لیبل: 40mm × 20mm');
-            console.log('✅ بارکد کوچک شده: 20pt (جلوگیری از بیرون زدن)');
-            console.log('✅ عرض بارکد: 32mm');
-            console.log('💰 فونت قیمت: 8pt');
-            console.log('📝 فونت نام کالا: 6pt');
+            console.log('✅ ابعاد لیبل: عرض 40mm × طول 20mm');
+            console.log('✅ ابعاد بارکد: طول 33mm × ارتفاع 7mm (متوسط)');
+            console.log('💰 نوع قیمت: قیمت فروش');
+            console.log('✅ فاصله: کناره=1mm | وسط=2mm | بالا=1mm');
             console.log('✅ تعداد: {{ total_labels }} لیبل');
         };
 
         window.onafterprint = function() {
             console.log('✅ چاپ تکمیل شد');
             setTimeout(() => {
-                alert('{{ total_labels }} لیبل با بارکد کوچک شده و جلوگیری از بیرون زدن با موفقیت چاپ شدند.');
+                alert('{{ total_labels }} لیبل با سایز 40×20 میلی‌متر و قیمت فروش با موفقیت چاپ شدند.');
             }, 500);
         };
     </script>

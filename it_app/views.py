@@ -1,22 +1,15 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.views.decorators.http import require_POST, require_GET, require_http_methods
+from django.views.decorators.http import require_POST
 from django.db import transaction
 from decimal import Decimal
 import math
-import time
-import json
 from dashbord_app.models import Invoice, InvoiceItem
 from cantact_app.models import Branch
 from account_app.models import InventoryCount, ProductPricing
 from django.db.models import Max, Sum
+from decimal import Decimal
 from django.http import JsonResponse
-import threading
-import uuid
-from datetime import datetime
-
-# دیکشنری برای ذخیره وضعیت کارها
-distribution_tasks = {}
 
 
 def invoice_list(request):
@@ -78,77 +71,25 @@ def reset_remaining_quantity(request):
 
 
 @require_POST
+@transaction.atomic
 def distribute_inventory(request):
-    """
-    شروع فرآیند توزیع موجودی - ایجاد تسک جدید
-    """
+    print("🎬 شروع فرآیند توزیع موجودی")
+
     selected_invoice_ids = request.POST.getlist('selected_invoices')
 
     if not selected_invoice_ids:
         messages.warning(request, 'هیچ فاکتوری انتخاب نشده است.')
         return redirect('invoice_list')
 
-    # ایجاد یک ID منحصر به فرد برای تسک
-    task_id = str(uuid.uuid4())
-
-    # ذخیره اطلاعات اولیه تسک
-    distribution_tasks[task_id] = {
-        'status': 'pending',
-        'progress': 0,
-        'current_stage': 'آماده‌سازی',
-        'details': [],
-        'start_time': datetime.now(),
-        'end_time': None,
-        'total_items': 0,
-        'distributed_items': 0,
-        'branches_count': 0,
-        'products_count': 0,
-        'error': None
-    }
-
-    # شروع تسک در یک thread جداگانه
-    thread = threading.Thread(
-        target=run_distribution_task,
-        args=(task_id, selected_invoice_ids, request.user)
-    )
-    thread.daemon = True
-    thread.start()
-
-    # بازگشت به صفحه با task_id
-    return JsonResponse({
-        'success': True,
-        'task_id': task_id,
-        'message': 'فرآیند توزیع با موفقیت شروع شد.'
-    })
-
-
-def run_distribution_task(task_id, selected_invoice_ids, user):
-    """
-    اجرای فرآیند توزیع در background
-    """
     try:
-        task = distribution_tasks[task_id]
-        task['status'] = 'running'
-
-        # مرحله 1: آماده‌سازی
-        task['current_stage'] = 'در حال آماده‌سازی...'
-        task['progress'] = 5
-        time.sleep(0.5)  # کمی تاخیر برای نمایش بهتر
-
         # دریافت تمام شعب
         branches = list(Branch.objects.all())
         if not branches:
-            task['error'] = 'هیچ شعبه‌ای تعریف نشده است.'
-            task['status'] = 'failed'
-            return
+            messages.error(request, 'هیچ شعبه‌ای تعریف نشده است.')
+            return redirect('invoice_list')
 
         branch_count = len(branches)
-        task['branches_count'] = branch_count
-        task['details'].append(f'تعداد شعب: {branch_count}')
-
-        # مرحله 2: خواندن اطلاعات فاکتورها
-        task['current_stage'] = 'در حال خواندن اطلاعات فاکتورها...'
-        task['progress'] = 10
+        print(f"🏪 تعداد شعب: {branch_count}")
 
         # فقط آیتم‌هایی که remaining_quantity دارند
         all_items = InvoiceItem.objects.filter(
@@ -157,16 +98,10 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
         ).select_related('invoice')
 
         if not all_items:
-            task['error'] = 'هیچ کالایی با تعداد باقیمانده برای توزیع یافت نشد.'
-            task['status'] = 'completed'
-            return
+            messages.warning(request, 'هیچ کالایی با تعداد باقیمانده برای توزیع یافت نشد.')
+            return redirect('invoice_list')
 
-        task['total_items'] = all_items.count()
-
-        # مرحله 3: گروه‌بندی کالاها
-        task['current_stage'] = 'در حال گروه‌بندی کالاها...'
-        task['progress'] = 20
-
+        # گروه‌بندی کالاها
         product_summary = {}
         for item in all_items:
             key = f"{item.product_name}|{item.product_type}"
@@ -193,19 +128,16 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
                 products_to_distribute.append(data)
 
         if not products_to_distribute:
-            task['error'] = 'هیچ کالایی با تعداد باقیمانده معتبر برای توزیع یافت نشد.'
-            task['status'] = 'completed'
-            return
+            messages.warning(request, 'هیچ کالایی با تعداد باقیمانده معتبر برای توزیع یافت نشد.')
+            return redirect('invoice_list')
 
-        task['products_count'] = len(products_to_distribute)
-        task['details'].append(f'تعداد کالاهای منحصر به فرد: {len(products_to_distribute)}')
+        print(f"Products to distribute: {len(products_to_distribute)}")
 
-        # مرحله 4: بروزرسانی ProductPricing
-        task['current_stage'] = 'در حال بروزرسانی اطلاعات قیمت‌گذاری...'
-        task['progress'] = 30
-
-        for idx, product in enumerate(products_to_distribute):
+        # بخش ProductPricing
+        for product in products_to_distribute:
             product_name = product['name']
+            print(f"Processing product: {product_name}")
+
             try:
                 highest_purchase = InvoiceItem.objects.filter(
                     product_name=product_name,
@@ -222,29 +154,31 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
                     }
                 )
 
-                task['details'].append(f'✅ قیمت‌گذاری: {product_name} - قیمت معیار: {standard_price:,} تومان')
+                print(f"✅ Product pricing {'created' if created else 'updated'}: {product_name}")
 
             except Exception as e:
-                task['details'].append(f'⚠️ خطا در قیمت‌گذاری {product_name}: {str(e)}')
+                print(f"❌ Error in ProductPricing for {product_name}: {str(e)}")
+                continue
 
-            # به‌روزرسانی پیشرفت
-            progress = 30 + int((idx + 1) / len(products_to_distribute) * 20)
-            task['progress'] = min(progress, 50)
+        print("Starting distribution to branches")
 
-        # مرحله 5: توزیع کالاها در انبارها
-        task['current_stage'] = 'در حال توزیع کالاها بین شعب...'
-        task['progress'] = 50
-
+        # توزیع کالاها - دقیقاً مطابق دستور
         total_distributed = 0
-        for idx, product in enumerate(products_to_distribute):
+        distribution_details = []
+
+        for product in products_to_distribute:
             total_remaining = product['total_remaining']
             product_distributed = 0
 
-            # توزیع بر اساس منطق شما
+            print(f"Distributing {product['name']}: {total_remaining} units")
+
+            # 🔴 دقیقاً مطابق دستور: اگر کمتر از ۳ باشد، به هر شعبه یک کالا بده
             if total_remaining < 3:
-                # اگر کمتر از ۳ باشد، به هر شعبه یک کالا بده
+                print(f"   ⚠️  تعداد کالا ({total_remaining}) کمتر از ۳ است - دادن ۱ کالا به هر شعبه")
+
+                # به هر شعبه دقیقاً یک کالا می‌دهیم
                 for branch in branches:
-                    qty_for_branch = 1
+                    qty_for_branch = 1  # همیشه ۱ کالا به هر شعبه
 
                     try:
                         inventory_obj, created = InventoryCount.objects.get_or_create(
@@ -253,7 +187,7 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
                             is_new=product['is_new'],
                             defaults={
                                 'quantity': qty_for_branch,
-                                'counter': user,
+                                'counter': request.user,
                                 'selling_price': product['max_selling_price'],
                                 'profit_percentage': Decimal('70.00')
                             }
@@ -271,10 +205,13 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
                         product_distributed += qty_for_branch
                         total_distributed += qty_for_branch
 
+                        print(f"   ✅ شعبه {branch.name}: 1 کالا")
+
                     except Exception as e:
-                        task['details'].append(f'⚠️ خطا در توزیع {product["name"]} به شعبه {branch.name}: {str(e)}')
+                        print(f"Error distributing to branch {branch.name}: {str(e)}")
+                        continue
             else:
-                # منطق عادی توزیع
+                # منطق عادی برای کالاهای ۳ تا یا بیشتر
                 base_per_branch = total_remaining // branch_count
                 remainder = total_remaining % branch_count
 
@@ -291,7 +228,7 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
                                 is_new=product['is_new'],
                                 defaults={
                                     'quantity': qty_for_branch,
-                                    'counter': user,
+                                    'counter': request.user,
                                     'selling_price': product['max_selling_price'],
                                     'profit_percentage': Decimal('70.00')
                                 }
@@ -309,65 +246,43 @@ def run_distribution_task(task_id, selected_invoice_ids, user):
                             product_distributed += qty_for_branch
                             total_distributed += qty_for_branch
 
+                            print(f"   📦 شعبه {branch.name}: {qty_for_branch} کالا")
+
                         except Exception as e:
-                            task['details'].append(f'⚠️ خطا در توزیع {product["name"]} به شعبه {branch.name}: {str(e)}')
+                            print(f"Error distributing to branch {branch.name}: {str(e)}")
+                            continue
 
-            task['distributed_items'] = total_distributed
-            task['details'].append(f'📦 {product["name"]}: {product_distributed} عدد توزیع شد')
+            distribution_details.append(
+                f"{product['name']} ({product['type']}): {product_distributed} عدد"
+            )
 
-            # به‌روزرسانی پیشرفت
-            progress = 50 + int((idx + 1) / len(products_to_distribute) * 30)
-            task['progress'] = min(progress, 80)
-
-        # مرحله 6: صفر کردن تعداد باقیمانده
-        task['current_stage'] = 'در حال صفر کردن تعداد باقیمانده...'
-        task['progress'] = 80
-
+        # صفر کردن remaining_quantity
         zeroed_count = all_items.update(remaining_quantity=0)
-        task['details'].append(f'✅ تعداد باقیمانده {zeroed_count} آیتم صفر شد')
+        print(f"Zeroed {zeroed_count} items")
 
-        # مرحله 7: اتمام
-        task['current_stage'] = 'توزیع با موفقیت انجام شد!'
-        task['progress'] = 100
-        task['status'] = 'completed'
-        task['end_time'] = datetime.now()
-
-        # محاسبه زمان انجام کار
-        duration = (task['end_time'] - task['start_time']).total_seconds()
-        task['details'].append(f'⏱️ زمان انجام کار: {duration:.2f} ثانیه')
+        # پیام موفقیت
+        detail_message = "\n".join(distribution_details)
+        messages.success(
+            request,
+            f'✅ توزیع با موفقیت انجام شد!\n\n'
+            f'📊 خلاصه عملکرد:\n'
+            f'• تعداد کل کالاهای توزیع شده: {total_distributed} عدد\n'
+            f'• تعداد کالاهای منحصر به فرد: {len(products_to_distribute)} مورد\n'
+            f'• تعداد شعب: {branch_count} شعبه\n'
+            f'• آیتم‌های به روز شده: {zeroed_count} مورد\n\n'
+            f'📦 جزئیات توزیع:\n{detail_message}'
+        )
 
     except Exception as e:
-        task = distribution_tasks.get(task_id)
-        if task:
-            task['error'] = str(e)
-            task['status'] = 'failed'
-            task['current_stage'] = f'خطا: {str(e)}'
+        print(f"❌ General error in distribute_inventory: {str(e)}")
+        messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
 
-
-@require_GET
-def get_distribution_status(request, task_id):
-    """
-    دریافت وضعیت فعلی توزیع
-    """
-    task = distribution_tasks.get(task_id)
-
-    if not task:
-        return JsonResponse({
-            'status': 'not_found',
-            'message': 'تسک یافت نشد'
-        })
-
-    return JsonResponse({
-        'status': task['status'],
-        'progress': task['progress'],
-        'current_stage': task['current_stage'],
-        'details': task['details'][-10:],  # فقط 10 مورد آخر
-        'total_items': task['total_items'],
-        'distributed_items': task['distributed_items'],
-        'branches_count': task['branches_count'],
-        'products_count': task['products_count'],
-        'error': task['error']
-    })
+    return redirect('invoice_list')
+# ---------------------------------------------------------------پاک کردن قیمت ها------------------
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_http_methods
 
 
 @require_http_methods(["GET", "POST"])
@@ -413,6 +328,12 @@ def delete_all_product_pricing(request):
         'page_title': 'حذف تمام اطلاعات قیمت‌گذاری',
     }
     return render(request, 'delete_all_product_pricing.html', context)
+
+
+# ------------------------------------------------------پاک کردن کل دیتاهای انبار------------------------------------------
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 
 
 @require_POST

@@ -9,7 +9,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <style>
-        /* استایل‌های قبلی را حفظ کنید */
         :root {
             --primary-color: #2E7D32;
             --secondary-color: #388E3C;
@@ -30,9 +29,308 @@
             --gradient-info: linear-gradient(135deg, #2196F3, #42A5F5);
         }
 
-        /* تمام استایل‌های قبلی را کپی کنید */
-        /* ... */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
 
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 10px;
+            color: var(--text-color);
+            direction: rtl;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .branch-info {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8f5e9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--gradient-success);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-warning {
+            background: var(--gradient-warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #FFB74D, #FFCC80);
+            transform: translateY(-2px);
+        }
+
+        .btn-info {
+            background: var(--gradient-info);
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #42A5F5, #64B5F6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-secondary {
+            background: #78909c;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #546e7a;
+            transform: translateY(-2px);
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .invoice-table th {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .invoice-table td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .invoice-table tr:hover td {
+            background-color: #f8f9fa;
+        }
+
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .checkbox-cell {
+            width: 50px;
+        }
+
+        .selection-actions {
+            margin-bottom: 15px;
+        }
+
+        .selection-actions .btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .bg-success {
+            background: var(--success-color) !important;
+        }
+
+        .bg-warning {
+            background: var(--warning-color) !important;
+        }
+
+        .bg-danger {
+            background: var(--danger-color) !important;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-success);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .distribution-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-right: 4px solid var(--info-color);
+        }
+
+        .distribution-item {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .distribution-item:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+            
+            .invoice-table {
+                font-size: 0.8rem;
+            }
+            
+            .invoice-table th,
+            .invoice-table td {
+                padding: 8px 5px;
+            }
+            
+            .section-card {
+                padding: 12px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons .btn {
+                min-width: 100%;
+            }
+
+            .progress-info {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -157,87 +455,83 @@
         </div>
     </div>
 
-    <!-- مودال‌ها -->
-    <!-- مودال تایید پاک کردن دیتای قیمت‌ها -->
-    <div class="modal fade" id="deletePricingModal" tabindex="-1" aria-hidden="true">
-        <!-- محتوای مودال بدون تغییر -->
-    </div>
     
-    <!-- مودال نمایش پیشرفت توزیع REAL-TIME -->
-    <div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-sync-alt fa-spin text-info"></i> در حال توزیع کالاها...</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- مودال تایید پاک کردن دیتای قیمت‌ها -->
+<div class="modal fade" id="deletePricingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> تایید پاک کردن دیتای قیمت‌ها</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <strong>هشدار جدی:</strong> این عملیات <strong class="text-danger">تمام داده‌های قیمت‌گذاری محصولات</strong> را به طور کامل پاک خواهد کرد.
                 </div>
-                <div class="modal-body">
-                    <div class="progress-container">
-                        <div class="progress-info">
-                            <span id="currentStageInfo">آماده سازی...</span>
-                            <span id="progressPercentage">0%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
-                        </div>
-                        <div class="mt-2" id="statsInfo">
-                            <small class="text-muted" id="itemsInfo">آیتم‌ها: 0/0</small>
-                            <small class="text-muted ms-3" id="productsInfo">کالاها: 0</small>
-                            <small class="text-muted ms-3" id="branchesInfo">شعب: 0</small>
-                        </div>
+                <ul class="mb-3">
+                    <li>تمام records های جدول قیمت‌گذاری حذف خواهند شد</li>
+                    <li>این عملیات <strong>غیرقابل بازگشت</strong> است</li>
+                    <li>پس از پاک‌سازی، باید داده‌های قیمت‌گذاری جدید را مجدداً وارد کنید</li>
+                </ul>
+                <p class="mb-0"><strong>آیا از انجام این عملیات اطمینان دارید؟</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> لغو عملیات
+                </button>
+                <form method="post" action="{% url 'delete_all_product_pricing' %}" id="deletePricingForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-check"></i> بله، پاک کردن داده‌های قیمت
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>    
+
+<!-- مودال نمایش پیشرفت توزیع -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-sync-alt fa-spin text-info"></i> در حال توزیع کالاها...</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span id="currentInvoiceInfo">آماده سازی...</span>
+                        <span id="progressPercentage">0%</span>
                     </div>
-                    
-                    <div class="distribution-details">
-                        <h6><i class="fas fa-info-circle"></i> جزئیات توزیع:</h6>
-                        <div id="distributionDetails" style="max-height: 300px; overflow-y: auto;">
-                            <!-- جزئیات توزیع به صورت داینامیک نمایش داده می‌شود -->
-                        </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeProgressModal">
-                        <i class="fas fa-times"></i> بستن
-                    </button>
-                    <button type="button" class="btn btn-success d-none" id="reloadButton" onclick="location.reload()">
-                        <i class="fas fa-redo"></i> رفرش صفحه
-                    </button>
+                
+                <div class="distribution-details">
+                    <h6><i class="fas fa-info-circle"></i> جزئیات توزیع:</h6>
+                    <div id="distributionDetails">
+                        <!-- جزئیات توزیع به صورت داینامیک نمایش داده می‌شود -->
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- سایر مودال‌ها بدون تغییر -->
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
-        <!-- محتوای بدون تغییر -->
-    </div>
-    
-    <div class="modal fade" id="clearInventoryModal" tabindex="-1" aria-hidden="true">
-        <!-- محتوای بدون تغییر -->
-    </div>
-    
-    <div class="modal fade" id="distributionModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+<!-- مودال تایید ریست -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-warehouse text-info"></i> تایید توزیع در انبار</h5>
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-warning"></i> تایید عملیات</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>ویژگی‌های توزیع هوشمند:</strong>
-                        <ul class="mt-2 mb-0">
-                            <li>کالاهای تکراری در فاکتورهای مختلف <strong>جمع‌زنی</strong> می‌شوند</li>
-                            <li>توزیع <strong>تقریباً مساوی</strong> بین تمام شعب انجام می‌شود</li>
-                            <li>اگر کالا از قبل در انبار وجود داشته باشد، <strong>تعداد اضافه</strong> می‌شود</li>
-                            <li><strong>تعداد باقیمانده تمام آیتم‌ها صفر خواهد شد</strong></li>
-                            <li>این عملیات در background اجرا می‌شود - بدون timeout</li>
-                            <li><strong>درصد سود: ۷۰٪</strong></li>
-                        </ul>
-                    </div>
                     <div class="alert alert-warning">
-                        <i class="fas fa-lightbulb"></i>
-                        <strong>نکته:</strong> فرآیند توزیع در background اجرا می‌شود. می‌توانید صفحه را ببندید و بعداً نتیجه را مشاهده کنید.
+                        <i class="fas fa-info-circle"></i>
+                        <strong>توجه:</strong> با این کار، <strong>تعداد باقیمانده</strong> برای آیتم‌های فاکتور(های) انتخاب شده، با <strong>تعداد اولیه</strong> برابر می‌شود.
                     </div>
                     <p class="mb-0">آیا از انجام این عملیات اطمینان دارید؟</p>
                 </div>
@@ -245,21 +539,93 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times"></i> لغو
                     </button>
-                    <button type="button" class="btn btn-info" id="confirmDistribution">
-                        <i class="fas fa-check"></i> تایید و شروع توزیع
+                    <button type="button" class="btn btn-warning" id="confirmReset">
+                        <i class="fas fa-check"></i> تایید و ادامه
                     </button>
                 </div>
             </div>
         </div>
     </div>
+
+<!-- مودال تایید پاک کردن تمام داده‌های انبار -->
+<div class="modal fade" id="clearInventoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> تایید پاک کردن تمام داده‌های انبار</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-skull-crossbones"></i>
+                    <strong>هشدار جدی:</strong> این عملیات <strong class="text-danger">تمام داده‌های موجود در مدل InventoryCount</strong> را به طور کامل پاک خواهد کرد.
+                </div>
+                <ul class="mb-3">
+                    <li>تمام records های جدول انبار حذف خواهند شد</li>
+                    <li>این عملیات <strong>غیرقابل بازگشت</strong> است</li>
+                    <li>پس از پاک‌سازی، باید داده‌های جدید را مجدداً وارد کنید</li>
+                </ul>
+                <p class="mb-0"><strong>آیا از انجام این عملیات اطمینان دارید؟</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> لغو عملیات
+                </button>
+                <form method="post" action="{% url 'clear_inventory' %}" id="clearInventoryForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-check"></i> بله، پاک کردن تمام داده‌ها
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>    
+
+<!-- مودال تایید توزیع -->
+<div class="modal fade" id="distributionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-warehouse text-info"></i> تایید توزیع در انبار</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>ویژگی‌های توزیع هوشمند:</strong>
+                    <ul class="mt-2 mb-0">
+                        <li>کالاهای تکراری در فاکتورهای مختلف <strong>جمع‌زنی</strong> می‌شوند</li>
+                        <li>توزیع <strong>تقریباً مساوی</strong> بین تمام شعب انجام می‌شود</li>
+                        <li>اگر کالا از قبل در انبار وجود داشته باشد، <strong>تعداد اضافه</strong> می‌شود</li>
+                        <li><strong>تعداد باقیمانده تمام آیتم‌ها صفر خواهد شد</strong></li>
+                        <li>این عملیات غیرقابل بازگشت است</li>
+                        <li><strong>درصد سود: ۱۰۰٪</strong></li>
+                    </ul>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>مثال:</strong> اگر "قاشق" در ۲ فاکتور با مجموع ۱۰ عدد باشد، بین شعب تقسیم می‌شود (نه ۲ بار ثبت می‌شود)
+                </div>
+                <p class="mb-0">آیا از انجام این عملیات اطمینان دارید؟</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> لغو
+                </button>
+                <button type="button" class="btn btn-info" id="confirmDistribution">
+                    <i class="fas fa-check"></i> تایید و توزیع هوشمند
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() {
-            let currentTaskId = null;
-            let progressInterval = null;
-
             // انتخاب همه
             $('#selectAllCheckbox, #selectAll').on('click', function() {
                 $('.invoice-checkbox').prop('checked', true);
@@ -315,13 +681,14 @@
                 deletePricingModal.show();
             });
             
-            // غیرفعال کردن ارسال فرم از طریق Enter
+            // غیرفعال کردن ارسال فرم از طریق Enter برای جلوگیری از ارسال تصادفی
             $('#deletePricingForm').on('keypress', function(e) {
                 if (e.which === 13) {
                     e.preventDefault();
                 }
             });
             
+            // غیرفعال کردن ارسال فرم از طریق Enter برای جلوگیری از ارسال تصادفی
             $('#clearInventoryForm').on('keypress', function(e) {
                 if (e.which === 13) {
                     e.preventDefault();
@@ -337,21 +704,18 @@
 
             // تایید توزیع در مودال
             $('#confirmDistribution').on('click', function() {
-                var selectedInvoices = $('input[name="selected_invoices"]:checked');
-                var invoiceIds = selectedInvoices.map(function() { return this.value; }).get();
-                
-                // بستن مودال تایید
-                $('#distributionModal').modal('hide');
-                
                 // نمایش مودال پیشرفت
                 var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
                 progressModal.show();
                 
-                // ریست کردن اطلاعات پیشرفت
-                resetProgressModal();
+                // شروع شبیه‌سازی پیشرفت
+                simulateDistributionProgress();
                 
-                // ارسال درخواست شروع توزیع
-                startDistribution(invoiceIds);
+                // ارسال فرم پس از تأخیر
+                setTimeout(function() {
+                    $('#invoiceForm').attr('action', "{% url 'distribute_inventory' %}");
+                    $('#invoiceForm').submit();
+                }, 3000); // تأخیر 3 ثانیه برای نمایش پیشرفت
             });
 
             // هماهنگی چک‌باکس هدر با بقیه
@@ -367,128 +731,81 @@
                 }
             });
 
-            // تابع شروع توزیع
-            function startDistribution(invoiceIds) {
-                $.ajax({
-                    url: "{% url 'distribute_inventory' %}",
-                    method: 'POST',
-                    data: {
-                        'selected_invoices': invoiceIds,
-                        'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            currentTaskId = response.task_id;
-                            // شروع پرس‌وجوی وضعیت
-                            startPollingStatus();
-                        } else {
-                            showError('خطا در شروع توزیع: ' + response.message);
-                        }
-                    },
-                    error: function(xhr) {
-                        showError('خطا در ارتباط با سرور: ' + xhr.statusText);
+            // تابع شبیه‌سازی پیشرفت توزیع
+            function simulateDistributionProgress() {
+                var progress = 0;
+                var progressInterval = setInterval(function() {
+                    progress += 5;
+                    if (progress > 100) {
+                        progress = 100;
+                        clearInterval(progressInterval);
                     }
-                });
-            }
-
-            // تابع شروع پرس‌وجوی وضعیت
-            function startPollingStatus() {
-                if (progressInterval) {
-                    clearInterval(progressInterval);
-                }
-                
-                progressInterval = setInterval(function() {
-                    if (!currentTaskId) return;
                     
-                    $.getJSON("{% url 'get_distribution_status' 0 %}".replace('0', currentTaskId), function(data) {
-                        updateProgress(data);
-                        
-                        // اگر کار تمام شد یا خطا داشت
-                        if (data.status === 'completed' || data.status === 'failed') {
-                            clearInterval(progressInterval);
-                            progressInterval = null;
-                            
-                            if (data.status === 'completed') {
-                                $('#reloadButton').removeClass('d-none');
-                                $('#closeProgressModal').addClass('d-none');
-                            }
-                        }
-                    }).fail(function() {
-                        showError('خطا در دریافت وضعیت توزیع');
-                    });
-                }, 1000); // هر 1 ثانیه
+                    // به‌روزرسانی نوار پیشرفت
+                    $('#progressFill').css('width', progress + '%').text(progress + '%');
+                    $('#progressPercentage').text(progress + '%');
+                    
+                    // به‌روزرسانی اطلاعات
+                    updateProgressInfo(progress);
+                    
+                }, 150);
             }
 
-            // تابع به‌روزرسانی نمایش پیشرفت
-            function updateProgress(data) {
-                // به‌روزرسانی نوار پیشرفت
-                $('#progressFill').css('width', data.progress + '%').text(data.progress + '%');
-                $('#progressPercentage').text(data.progress + '%');
-                
-                // به‌روزرسانی مرحله فعلی
-                $('#currentStageInfo').html('<i class="fas fa-sync-alt fa-spin"></i> ' + data.current_stage);
-                
-                // به‌روزرسانی آمار
-                $('#itemsInfo').text('آیتم‌ها: ' + data.distributed_items + '/' + data.total_items);
-                $('#productsInfo').text('کالاها: ' + data.products_count);
-                $('#branchesInfo').text('شعب: ' + data.branches_count);
-                
-                // به‌روزرسانی جزئیات
-                var detailsHtml = '';
-                if (data.details && data.details.length > 0) {
-                    data.details.forEach(function(detail) {
-                        var icon = '📌';
-                        if (detail.includes('✅')) icon = '✅';
-                        else if (detail.includes('⚠️')) icon = '⚠️';
-                        else if (detail.includes('📦')) icon = '📦';
-                        else if (detail.includes('⏱️')) icon = '⏱️';
-                        
-                        detailsHtml += '<div class="distribution-item">' +
-                            '<span>' + icon + ' ' + detail.replace('✅', '').replace('⚠️', '').replace('📦', '').replace('⏱️', '') + '</span>' +
-                            '</div>';
-                    });
+            // تابع به‌روزرسانی اطلاعات پیشرفت
+            function updateProgressInfo(progress) {
+                var stages = [
+                    {percent: 0, text: "آماده سازی برای توزیع..."},
+                    {percent: 10, text: "در حال خواندن اطلاعات فاکتورها..."},
+                    {percent: 25, text: "محاسبه مجموع کالاهای باقیمانده..."},
+                    {percent: 40, text: "توزیع کالاها بین شعب..."},
+                    {percent: 60, text: "بروزرسانی موجودی انبارها..."},
+                    {percent: 80, text: "صفر کردن تعداد باقیمانده..."},
+                    {percent: 95, text: "پایان عملیات توزیع..."},
+                    {percent: 100, text: "توزیع با موفقیت انجام شد!"}
+                ];
+
+                var currentStage = stages[0];
+                for (var i = stages.length - 1; i >= 0; i--) {
+                    if (progress >= stages[i].percent) {
+                        currentStage = stages[i];
+                        break;
+                    }
                 }
-                $('#distributionDetails').html(detailsHtml);
-                
-                // اسکرول به پایین
-                $('#distributionDetails').scrollTop($('#distributionDetails')[0].scrollHeight);
-                
-                // نمایش خطا اگر وجود دارد
-                if (data.error) {
-                    showError('خطا: ' + data.error);
-                }
-            }
 
-            // تابع ریست کردن مودال پیشرفت
-            function resetProgressModal() {
-                $('#progressFill').css('width', '0%').text('0%');
-                $('#progressPercentage').text('0%');
-                $('#currentStageInfo').text('آماده سازی...');
-                $('#itemsInfo').text('آیتم‌ها: 0/0');
-                $('#productsInfo').text('کالاها: 0');
-                $('#branchesInfo').text('شعب: 0');
-                $('#distributionDetails').html('');
-                $('#reloadButton').addClass('d-none');
-                $('#closeProgressModal').removeClass('d-none');
-            }
-
-            // تابع نمایش خطا
-            function showError(message) {
-                $('#distributionDetails').append(
-                    '<div class="distribution-item text-danger">' +
-                    '<span><i class="fas fa-exclamation-circle"></i> ' + message + '</span>' +
-                    '</div>'
+                $('#currentInvoiceInfo').html(
+                    '<i class="fas fa-sync-alt fa-spin"></i> ' + currentStage.text
                 );
-            }
 
-            // پاک کردن interval هنگام بستن مودال
-            $('#progressModal').on('hidden.bs.modal', function() {
-                if (progressInterval) {
-                    clearInterval(progressInterval);
-                    progressInterval = null;
+                // نمایش جزئیات توزیع
+                var detailsHtml = '';
+                if (progress >= 25) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-file-invoice text-primary"></i> فاکتورهای انتخاب شده: ' + $('input[name="selected_invoices"]:checked').length + ' فاکتور</span>';
+                    detailsHtml += '</div>';
                 }
-                currentTaskId = null;
-            });
+                if (progress >= 40) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-boxes text-success"></i> کالاهای در حال توزیع: چندین محصول</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 60) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-store text-info"></i> شعب: در حال به‌روزرسانی</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 80) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-check-circle text-success"></i> تعداد باقیمانده: در حال صفر شدن</span>';
+                    detailsHtml += '</div>';
+                }
+                if (progress >= 95) {
+                    detailsHtml += '<div class="distribution-item">';
+                    detailsHtml += '<span><i class="fas fa-tasks text-primary"></i> درصد سود: 100%</span>';
+                    detailsHtml += '</div>';
+                }
+
+                $('#distributionDetails').html(detailsHtml);
+            }
         });
     </script>
 </body>
