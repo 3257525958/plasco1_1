@@ -511,6 +511,7 @@ class StoreInvoiceItems(View):
     def update_product_pricing(self, product_name):
         """
         به روزرسانی ProductPricing برای یک محصول خاص
+        با منطق جدید
         """
         try:
             # یافتن بالاترین قیمت واحد برای این محصول از InvoiceItem
@@ -518,38 +519,73 @@ class StoreInvoiceItems(View):
                 product_name=product_name).order_by('-unit_price').first()
 
             if highest_price_item:
-                print(f"بالاترین قیمت یافت شد: {highest_price_item.unit_price}")
-
-                # یافتن فاکتور مربوطه
+                new_price = highest_price_item.unit_price
                 invoice = highest_price_item.invoice
 
-                # ایجاد یا به روزرسانی ProductPricing
+                print(f"🔍 بررسی قیمت برای {product_name}: قیمت جدید = {new_price}")
+
+                # یافتن یا ایجاد ProductPricing
                 product_pricing, created = ProductPricing.objects.get_or_create(
                     product_name=product_name,
                     defaults={
-                        'highest_purchase_price': highest_price_item.unit_price,
+                        'highest_purchase_price': new_price,
                         'invoice_date': invoice.jalali_date,
                         'invoice_number': invoice.serial_number,
-                        'standard_price': highest_price_item.unit_price  # این خط جدید
+                        'standard_price': new_price,
+                        'adjustment_percentage': 0
                     }
                 )
 
-                if not created:
-                    # اگر از قبل وجود داشت، به روزرسانی کن
-                    product_pricing.highest_purchase_price = highest_price_item.unit_price
-                    product_pricing.invoice_date = invoice.jalali_date
-                    product_pricing.invoice_number = invoice.serial_number
-                    product_pricing.standard_price = highest_price_item.unit_price
-                    product_pricing.save()
-
                 if created:
-                    print(f"ایجاد شد ProductPricing جدید برای: {product_name}")
-                else:
-                    print(f"به روزرسانی شد ProductPricing برای: {product_name}")
+                    print(f"✅ ProductPricing جدید برای: {product_name} ایجاد شد")
+                    return
+
+                # دریافت مقادیر قدیم
+                old_highest_price = product_pricing.highest_purchase_price
+                old_standard_price = product_pricing.standard_price
+
+                print(f"   مقادیر قبلی: highest={old_highest_price}, standard={old_standard_price}")
+
+                # منطق تصمیم‌گیری
+                if new_price <= old_highest_price:
+                    print(f"   📉 حالت 1: قیمت جدید ≤ highest قدیم")
+                    product_pricing.highest_purchase_price = new_price
+                    product_pricing.standard_price = new_price
+                    product_pricing.adjustment_percentage = 0
+
+                else:  # new_price > old_highest_price
+                    if new_price < old_standard_price:
+                        print(f"   📊 حالت 2a: قیمت جدید > highest قدیم اما < standard قدیم")
+                        product_pricing.highest_purchase_price = new_price
+                        # standard_price ثابت می‌ماند
+
+                        # محاسبه adjustment_percentage جدید
+                        if new_price > 0:
+                            new_adjustment = (old_standard_price / new_price - 1) * 100
+                            product_pricing.adjustment_percentage = new_adjustment
+                        else:
+                            product_pricing.adjustment_percentage = 0
+
+                    else:  # new_price >= old_standard_price
+                        print(f"   🚀 حالت 2b: قیمت جدید ≥ standard قدیم")
+                        product_pricing.highest_purchase_price = new_price
+                        product_pricing.standard_price = new_price
+                        product_pricing.adjustment_percentage = 0
+
+                # به‌روزرسانی اطلاعات فاکتور
+                product_pricing.invoice_date = invoice.jalali_date
+                product_pricing.invoice_number = invoice.serial_number
+
+                # ذخیره تغییرات
+                product_pricing.save()
+
+                print(f"   ✅ به‌روزرسانی شد: highest={product_pricing.highest_purchase_price}, "
+                      f"standard={product_pricing.standard_price}, "
+                      f"adjustment={product_pricing.adjustment_percentage:.2f}%")
 
             else:
-                print(f"هیچ فاکتوری برای محصول {product_name} یافت نشد")
-                # ایجاد ProductPricing با مقادیر پیشفرض اگر فاکتوری یافت نشد
+                print(f"⚠️ هیچ فاکتوری برای محصول {product_name} یافت نشد")
+                # ایجاد ProductPricing با مقادیر پیشفرض
                 ProductPricing.objects.get_or_create(
                     product_name=product_name,
                     defaults={
@@ -559,22 +595,9 @@ class StoreInvoiceItems(View):
                 )
 
         except Exception as e:
-            print(f"خطا در به روزرسانی ProductPricing برای {product_name}: {str(e)}")
+            print(f"❌ خطا در به روزرسانی ProductPricing برای {product_name}: {str(e)}")
             import traceback
             traceback.print_exc()
-    def update_invoice_remaining_quantities(self, invoice, print_data):
-        """به روزرسانی مقادیر باقیمانده فاکتور بر اساس موجودی اضافه شده"""
-        for invoice_item in invoice.items.all():
-            product_name = invoice_item.product_name
-            if product_name in print_data['items']:
-                # محاسبه کل مقداری که به انبار اضافه شده
-                total_stored = print_data['items'][product_name]['total']
-
-                # به روزرسانی مقدار باقیمانده در فاکتور
-                if hasattr(invoice_item, 'remaining_quantity'):
-                    invoice_item.remaining_quantity = max(0, invoice_item.quantity - total_stored)
-                    invoice_item.save()
-
     def create_or_update_financial_document(self, invoice, invoice_items):
         """ایجاد یا به روزرسانی سند مالی"""
         try:
@@ -842,9 +865,17 @@ def get_branch_products(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+
+
+
+
+
+
+
+
 @csrf_exempt
-def update_product_pricing(request):
-    """به روزرسانی قیمت فروش و محاسبه خودکار درصد سود"""
+def update_inventory_selling_price(request):  # <-- نام جدید
+    """به روزرسانی قیمت فروش در InventoryCount و محاسبه درصد سود"""
     if request.method == 'POST':
         try:
             # بررسی اینکه کاربر لاگین کرده است
@@ -906,6 +937,14 @@ def update_product_pricing(request):
             return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
 
     return JsonResponse({'success': False, 'error': 'متد مجاز نیست'}, status=405)
+
+
+
+
+
+
+
+
 
 
 @csrf_exempt
