@@ -1501,212 +1501,182 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
-$(document).ready(function() {
-    // انتخاب همه
-    $('#selectAllCheckbox, #selectAll').on('click', function() {
-        $('.invoice-checkbox').prop('checked', true);
-        updateSelectionCount();
-    });
+// ============================================
+// توابع کمکی (Global Functions)
+// ============================================
 
-    // لغو انتخاب همه
-    $('#deselectAll').on('click', function() {
-        $('.invoice-checkbox').prop('checked', false);
-        updateSelectionCount();
-    });
-
-    // مدیریت دکمه ریست
-    $('#resetButton').on('click', function() {
-        var selectedInvoices = $('input[name="selected_invoices"]:checked');
-        
-        if (selectedInvoices.length === 0) {
-            showAlert('warning', 'لطفاً حداقل یک فاکتور را انتخاب کنید.');
-            return;
-        }
-
-        // تنظیم action برای ریست
-        $('#actionType').val('reset_quantity');
-        
-        // نمایش مودال تایید
-        var confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-        confirmationModal.show();
-    });
-
-    // مدیریت دکمه توزیع
-    $('#distributeButton').on('click', function() {
-        var selectedInvoices = $('input[name="selected_invoices"]:checked');
-        
-        if (selectedInvoices.length === 0) {
-            showAlert('warning', 'لطفاً حداقل یک فاکتور را انتخاب کنید.');
-            return;
-        }
-
-        // نمایش مودال تایید توزیع
-        var distributionModal = new bootstrap.Modal(document.getElementById('distributionModal'));
-        distributionModal.show();
-    });
-
-    // مدیریت دکمه پاک کردن انبار
-    $('#clearInventoryButton').on('click', function() {
-        // نمایش مودال تایید
-        var clearInventoryModal = new bootstrap.Modal(document.getElementById('clearInventoryModal'));
-        clearInventoryModal.show();
-    });
-
-    // مدیریت دکمه پاک کردن دیتای قیمت‌ها
-    $('#deletePricingButton').on('click', function() {
-        // نمایش مودال تایید
-        var deletePricingModal = new bootstrap.Modal(document.getElementById('deletePricingModal'));
-        deletePricingModal.show();
-    });
+/**
+ * نمایش پیام به کاربر
+ */
+function showAlert(type, message) {
+    var alertClass = '';
+    var icon = '';
     
-    // غیرفعال کردن ارسال فرم از طریق Enter برای جلوگیری از ارسال تصادفی
-    $('#deletePricingForm').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-        }
-    });
+    switch(type) {
+        case 'success': 
+            alertClass = 'alert-success';
+            icon = 'fa-check-circle';
+            break;
+        case 'warning': 
+            alertClass = 'alert-warning';
+            icon = 'fa-exclamation-triangle';
+            break;
+        case 'error': 
+            alertClass = 'alert-danger';
+            icon = 'fa-times-circle';
+            break;
+        default: 
+            alertClass = 'alert-info';
+            icon = 'fa-info-circle';
+    }
     
-    // غیرفعال کردن ارسال فرم از طریق Enter برای جلوگیری از ارسال تصادفی
-    $('#clearInventoryForm').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-        }
-    });
+    // حذف آلرت‌های قبلی
+    $('.alert-dismissible').alert('close');
+    
+    var alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" 
+             style="position: fixed; top: 20px; left: 20px; right: 20px; z-index: 9999;">
+            <i class="fas ${icon}"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    `;
+    
+    $('body').append(alertHtml);
+    
+    // حذف خودکار پس از 5 ثانیه
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 5000);
+}
 
-    // تایید ریست در مودال
-    $('#confirmReset').on('click', function() {
-        $('#invoiceForm').attr('action', "{% url 'reset_remaining_quantity' %}");
-        $('#invoiceForm').submit();
-        $('#confirmationModal').modal('hide');
-    });
-
-    // تایید توزیع در مودال
-    $('#confirmDistribution').on('click', function() {
-        $('#distributionModal').modal('hide');
-        
-        var selectedInvoices = $('input[name="selected_invoices"]:checked');
-        var invoiceIds = [];
-        selectedInvoices.each(function() {
-            invoiceIds.push($(this).val());
-        });
-        
-        console.log("🎯 فاکتورهای انتخاب شده برای توزیع:", invoiceIds);
-        
-        // نمایش مودال پیشرفت
-        var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
-        progressModal.show();
-        
-        // شروع توزیع واقعی
-        startRealDistribution(invoiceIds);
-    });
-
-    // هماهنگی چک‌باکس هدر با بقیه
-    $('#selectAllCheckbox').on('change', function() {
-        $('.invoice-checkbox').prop('checked', this.checked);
-        updateSelectionCount();
-    });
-
-    $('.invoice-checkbox').on('change', function() {
-        if (!$('.invoice-checkbox:checked').length) {
-            $('#selectAllCheckbox').prop('checked', false);
-        } else if ($('.invoice-checkbox:checked').length === $('.invoice-checkbox').length) {
-            $('#selectAllCheckbox').prop('checked', true);
-        }
-        updateSelectionCount();
-    });
-
-    // به‌روزرسانی تعداد انتخاب شده
-    function updateSelectionCount() {
-        var count = $('input[name="selected_invoices"]:checked').length;
-        var total = $('.invoice-checkbox').length;
-        console.log(`✅ ${count} از ${total} فاکتور انتخاب شده`);
+/**
+ * به‌روزرسانی نوار پیشرفت
+ */
+function updateProgress(percent, message, isError) {
+    var $progressFill = $('#progressFill');
+    var $progressPercentage = $('#progressPercentage');
+    var $currentInvoiceInfo = $('#currentInvoiceInfo');
+    
+    // به‌روزرسانی نوار
+    $progressFill.css('width', percent + '%').text(percent + '%');
+    $progressPercentage.text(percent + '%');
+    
+    // به‌روزرسانی پیام
+    var icon = isError ? 'fa-times-circle text-danger' : 'fa-sync-alt fa-spin text-info';
+    $currentInvoiceInfo.html(`<i class="fas ${icon}"></i> ${message}`);
+    
+    // تغییر رنگ نوار
+    if (isError) {
+        $progressFill.css('background', 'linear-gradient(135deg, #F44336, #EF5350)');
+    } else if (percent >= 100) {
+        $progressFill.css('background', 'linear-gradient(135deg, #4CAF50, #66BB6A)');
+        $currentInvoiceInfo.find('i').removeClass('fa-sync-alt fa-spin text-info').addClass('fa-check-circle text-success');
+    } else {
+        $progressFill.css('background', 'linear-gradient(135deg, #2E7D32, #4CAF50)');
     }
+}
 
-    // نمایش آلرت
-    function showAlert(type, message) {
-        var alertClass = '';
-        switch(type) {
-            case 'success': alertClass = 'alert-success'; break;
-            case 'warning': alertClass = 'alert-warning'; break;
-            case 'error': alertClass = 'alert-danger'; break;
-            default: alertClass = 'alert-info';
+/**
+ * دریافت cookie
+ */
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
-        
-        var alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                <i class="fas fa-info-circle"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        
-        $('.container').prepend(alertHtml);
-        
-        // حذف خودکار آلرت پس از 5 ثانیه
-        setTimeout(function() {
-            $('.alert').alert('close');
-        }, 5000);
     }
-});
+    return cookieValue;
+}
 
-// شروع توزیع واقعی
+/**
+ * به‌روزرسانی تعداد انتخاب‌ها
+ */
+function updateSelectionCount() {
+    var count = $('input[name="selected_invoices"]:checked').length;
+    var total = $('.invoice-checkbox').length;
+    console.log(`✅ ${count} از ${total} فاکتور انتخاب شده`);
+}
+
+/**
+ * شروع توزیع واقعی
+ */
 function startRealDistribution(invoiceIds) {
     console.log("🚀 شروع فرآیند توزیع برای فاکتورها:", invoiceIds);
     updateProgress(5, 'شروع فرآیند توزیع...', false);
     
-    // ارسال درخواست توزیع
+    // دریافت CSRF token
+    var csrftoken = getCookie('csrftoken');
+    
+    // ارسال درخواست به سرور
     $.ajax({
         url: "{% url 'distribute_inventory' %}",
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
-            'selected_invoices': invoiceIds,
-            'csrfmiddlewaretoken': '{{ csrf_token }}'
+            'selected_invoices': invoiceIds
         }),
         headers: {
-            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(),
+            'X-CSRFToken': csrftoken,
             'X-Requested-With': 'XMLHttpRequest'
         },
         beforeSend: function() {
             updateProgress(10, 'ارسال درخواست به سرور...', false);
         },
         success: function(response) {
-            console.log("📨 پاسخ سرور دریافت شد:", response);
+            console.log("📨 پاسخ سرور:", response);
             if (response.status === 'success') {
-                // شبیه‌سازی پیشرفت با جزئیات واقعی
                 simulateProgressWithRealDetails(response);
             } else {
-                updateProgress(0, 'خطا: ' + response.message, true);
-                setTimeout(function() {
-                    $('#progressModal').modal('hide');
-                    showAlert('error', response.message || 'خطا در توزیع');
-                }, 3000);
+                handleDistributionError(response.message || 'خطا در توزیع');
             }
         },
         error: function(xhr, status, error) {
             console.error('❌ خطای Ajax:', xhr.responseText);
-            var errorMsg = 'خطا در ارتباط با سرور!';
+            var errorMsg = 'خطا در ارتباط با سرور! کد خطا: ' + xhr.status;
+            
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMsg = xhr.responseJSON.message;
+            } else if (xhr.responseText && xhr.responseText.includes('Internal Server Error')) {
+                errorMsg = 'خطای داخلی سرور. لطفاً لاگ‌های سرور را بررسی کنید.';
             }
-            updateProgress(0, errorMsg, true);
-            setTimeout(function() {
-                $('#progressModal').modal('hide');
-                showAlert('error', errorMsg);
-            }, 3000);
+            
+            handleDistributionError(errorMsg);
         }
     });
 }
 
-// شبیه‌سازی پیشرفت با جزئیات واقعی
+/**
+ * مدیریت خطای توزیع
+ */
+function handleDistributionError(errorMsg) {
+    updateProgress(0, errorMsg, true);
+    setTimeout(function() {
+        var progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+        if (progressModal) {
+            progressModal.hide();
+        }
+        showAlert('error', errorMsg);
+    }, 3000);
+}
+
+/**
+ * شبیه‌سازی پیشرفت با جزئیات
+ */
 function simulateProgressWithRealDetails(response) {
     var progress = 10;
     var stages = [
         {percent: 10, text: "در حال خواندن اطلاعات فاکتورها..."},
         {percent: 25, text: "محاسبه مجموع کالاهای باقیمانده..."},
-        {percent: 40, text: "ایجاد/به‌روزرسانی قیمت‌گذاری محصولات..."},
-        {percent: 55, text: "توزیع کالاها به هر شعبه (بدون تقسیم)..."},
+        {percent: 40, text: "ایجاد/به‌روزرسانی قیمت‌گذاری..."},
+        {percent: 55, text: "توزیع کالاها به هر شعبه..."},
         {percent: 75, text: "بروزرسانی موجودی انبارها..."},
-        {percent: 90, text: "صفر کردن تعداد باقیمانده فاکتورها..."},
+        {percent: 90, text: "صفر کردن تعداد باقیمانده..."},
         {percent: 95, text: "پایان عملیات توزیع..."},
         {percent: 100, text: "✅ توزیع با موفقیت انجام شد!"}
     ];
@@ -1725,32 +1695,30 @@ function simulateProgressWithRealDetails(response) {
             progress = 100;
             clearInterval(progressInterval);
             
-            // نمایش پیام نهایی
             updateProgress(100, stages[stages.length - 1].text, false);
-            
-            // نمایش جزئیات واقعی
             displayRealDistributionDetails(response);
             
-            // تأخیر و ریدایرکت
             setTimeout(function() {
-                $('#progressModal').modal('hide');
-                // رفرش صفحه برای نمایش تغییرات
+                var progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+                if (progressModal) {
+                    progressModal.hide();
+                }
                 window.location.href = "{% url 'invoice_list' %}";
             }, 4000);
         } else {
-            // به‌روزرسانی بر اساس مرحله فعلی
             updateProgress(progress, stages[currentStageIndex].text, false);
-            updateDistributionDetails(progress, response);
+            updateDistributionDetails(progress);
         }
         
-        // به‌روزرسانی نوار پیشرفت
         $('#progressFill').css('width', progress + '%').text(progress + '%');
         $('#progressPercentage').text(progress + '%');
         
-    }, 200); // افزایش هر 200 میلی‌ثانیه
+    }, 200);
 }
 
-// نمایش جزئیات واقعی توزیع
+/**
+ * نمایش جزئیات واقعی توزیع
+ */
 function displayRealDistributionDetails(response) {
     var detailsHtml = '';
     
@@ -1772,7 +1740,7 @@ function displayRealDistributionDetails(response) {
         detailsHtml += '</div>';
         
         detailsHtml += '<div class="distribution-item">';
-        detailsHtml += `<span><i class="fas fa-percentage text-primary"></i> <strong>درصد سود:</strong> ۱۰۰٪</span>`;
+        detailsHtml += `<span><i class="fas fa-percentage text-primary"></i> <strong>درصد سود:</strong> ۷۰٪</span>`;
         detailsHtml += '</div>';
         
         if (response.details.distribution_details && response.details.distribution_details.length > 0) {
@@ -1793,8 +1761,10 @@ function displayRealDistributionDetails(response) {
     $('#distributionDetails').html(detailsHtml);
 }
 
-// به‌روزرسانی جزئیات بر اساس پیشرفت
-function updateDistributionDetails(progress, response) {
+/**
+ * به‌روزرسانی جزئیات بر اساس پیشرفت
+ */
+function updateDistributionDetails(progress) {
     var detailsHtml = '';
     
     if (progress >= 10) {
@@ -1835,70 +1805,301 @@ function updateDistributionDetails(progress, response) {
     
     if (progress >= 95) {
         detailsHtml += '<div class="distribution-item">';
-        detailsHtml += '<span><i class="fas fa-chart-line text-primary"></i> درصد سود: ۱۰۰٪</span>';
+        detailsHtml += '<span><i class="fas fa-chart-line text-primary"></i> درصد سود: ۷۰٪</span>';
         detailsHtml += '</div>';
     }
     
     $('#distributionDetails').html(detailsHtml);
 }
 
-// به‌روزرسانی پیشرفت
-function updateProgress(percent, message, isError) {
-    // به‌روزرسانی نوار پیشرفت
-    $('#progressFill').css('width', percent + '%').text(percent + '%');
-    $('#progressPercentage').text(percent + '%');
+// ============================================
+// رویدادهای صفحه (Document Ready)
+// ============================================
+
+$(document).ready(function() {
+    console.log("✅ صفحه invoice_list بارگذاری شد");
     
-    // به‌روزرسانی پیام
-    var icon = isError ? 'fa-times-circle text-danger' : 'fa-sync-alt fa-spin text-info';
-    $('#currentInvoiceInfo').html(`<i class="fas ${icon}"></i> ${message}`);
+    // ========== رویدادهای انتخاب ==========
+    // انتخاب همه
+    $('#selectAllCheckbox, #selectAll').on('click', function() {
+        $('.invoice-checkbox').prop('checked', true);
+        updateSelectionCount();
+    });
+
+    // لغو انتخاب همه
+    $('#deselectAll').on('click', function() {
+        $('.invoice-checkbox').prop('checked', false);
+        updateSelectionCount();
+    });
+
+    // هماهنگی چک‌باکس هدر با بقیه
+    $('#selectAllCheckbox').on('change', function() {
+        $('.invoice-checkbox').prop('checked', this.checked);
+        updateSelectionCount();
+    });
+
+    $('.invoice-checkbox').on('change', function() {
+        if (!$('.invoice-checkbox:checked').length) {
+            $('#selectAllCheckbox').prop('checked', false);
+        } else if ($('.invoice-checkbox:checked').length === $('.invoice-checkbox').length) {
+            $('#selectAllCheckbox').prop('checked', true);
+        }
+        updateSelectionCount();
+    });
+
+    // ========== رویدادهای دکمه‌ها ==========
+    // دکمه ریست
+    $('#resetButton').on('click', function() {
+        var selectedInvoices = $('input[name="selected_invoices"]:checked');
+        
+        if (selectedInvoices.length === 0) {
+            showAlert('warning', 'لطفاً حداقل یک فاکتور را انتخاب کنید.');
+            return;
+        }
+
+        $('#actionType').val('reset_quantity');
+        
+        var confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+        confirmationModal.show();
+    });
+
+    // دکمه توزیع
+    $('#distributeButton').on('click', function() {
+        var selectedInvoices = $('input[name="selected_invoices"]:checked');
+        
+        if (selectedInvoices.length === 0) {
+            showAlert('warning', 'لطفاً حداقل یک فاکتور را انتخاب کنید.');
+            return;
+        }
+
+        var distributionModal = new bootstrap.Modal(document.getElementById('distributionModal'));
+        distributionModal.show();
+    });
+
+    // دکمه پاک کردن انبار
+    $('#clearInventoryButton').on('click', function() {
+        var clearInventoryModal = new bootstrap.Modal(document.getElementById('clearInventoryModal'));
+        clearInventoryModal.show();
+    });
+
+    // دکمه پاک کردن دیتای قیمت‌ها
+    $('#deletePricingButton').on('click', function() {
+        var deletePricingModal = new bootstrap.Modal(document.getElementById('deletePricingModal'));
+        deletePricingModal.show();
+    });
+
+    // ========== رویدادهای فرم‌ها ==========
+    // جلوگیری از ارسال فرم با Enter
+    $('#deletePricingForm').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+        }
+    });
     
-    // تغییر رنگ نوار در صورت خطا
-    if (isError) {
-        $('#progressFill').css('background', 'var(--gradient-danger)');
-    } else if (percent >= 100) {
-        $('#progressFill').css('background', 'var(--gradient-success)');
-        $('#currentInvoiceInfo').find('i').removeClass('fa-sync-alt fa-spin text-info').addClass('fa-check-circle text-success');
-    } else {
-        $('#progressFill').css('background', 'linear-gradient(135deg, #2E7D32, #4CAF50)');
-    }
-}
+    $('#clearInventoryForm').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+        }
+    });
 
-// جلوگیری از بسته شدن مودال پیشرفت با کلیک خارج از آن
-$('#progressModal').modal({
-    backdrop: 'static',
-    keyboard: false
-});
+    // ========== رویدادهای مودال‌ها ==========
+    // تایید ریست
+    $('#confirmReset').on('click', function() {
+        $('#invoiceForm').attr('action', "{% url 'reset_remaining_quantity' %}");
+        $('#invoiceForm').submit();
+        var confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+        if (confirmationModal) {
+            confirmationModal.hide();
+        }
+    });
 
-// اضافه کردن CSRF token به درخواست‌های AJAX
-$(document).ajaxSend(function(event, xhr, settings) {
-    if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-        // Only send the token to relative URLs i.e. locally.
-        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-    }
-});
+    // تایید توزیع
+    $('#confirmDistribution').on('click', function() {
+        var distributionModal = bootstrap.Modal.getInstance(document.getElementById('distributionModal'));
+        if (distributionModal) {
+            distributionModal.hide();
+        }
+        
+        var selectedInvoices = $('input[name="selected_invoices"]:checked');
+        var invoiceIds = [];
+        selectedInvoices.each(function() {
+            invoiceIds.push($(this).val());
+        });
+        
+        console.log("🎯 فاکتورهای انتخاب شده برای توزیع:", invoiceIds);
+        
+        var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+        progressModal.show();
+        
+        startRealDistribution(invoiceIds);
+    });
 
-// تابع برای دریافت cookie
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    // ========== پیکربندی AJAX ==========
+    // تنظیم CSRF token برای تمام درخواست‌های AJAX
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
             }
         }
+    });
+
+    // ========== پیکربندی مودال پیشرفت ==========
+    // جلوگیری از بسته شدن مودال پیشرفت
+    $('#progressModal').on('show.bs.modal', function(e) {
+        $(this).data('bs.modal')._config.backdrop = 'static';
+        $(this).data('bs.modal')._config.keyboard = false;
+    });
+
+    // ========== گزارش‌دهی اولیه ==========
+    console.log("📌 URL توزیع: {% url 'distribute_inventory' %}");
+    console.log("📌 URL ریست: {% url 'reset_remaining_quantity' %}");
+    console.log("📌 CSRF Token موجود: " + (getCookie('csrftoken') ? 'بله' : 'خیر'));
+    
+    // بررسی وجود توابع ضروری
+    if (typeof bootstrap === 'undefined') {
+        console.error('❌ Bootstrap JavaScript بارگذاری نشده است!');
+        showAlert('error', 'خطا در بارگذاری کتابخانه‌ها. صفحه را رفرش کنید.');
     }
-    return cookieValue;
+    
+    if (typeof $ === 'undefined') {
+        console.error('❌ jQuery بارگذاری نشده است!');
+    }
+});
+
+// ============================================
+// توابع کمکی اضافی
+// ============================================
+
+/**
+ * بررسی وضعیت بارگذاری کتابخانه‌ها
+ */
+function checkLibraries() {
+    var libraries = {
+        'jQuery': typeof $ !== 'undefined',
+        'Bootstrap': typeof bootstrap !== 'undefined',
+        'jQuery Modal': typeof $.fn.modal !== 'undefined'
+    };
+    
+    console.log('📚 وضعیت کتابخانه‌ها:', libraries);
+    
+    for (var lib in libraries) {
+        if (!libraries[lib]) {
+            console.error(`❌ ${lib} بارگذاری نشده است!`);
+        }
+    }
+    
+    return Object.values(libraries).every(Boolean);
 }
 
-// گزارش کنسول برای دیباگ
-console.log("✅ JavaScript invoice_list بارگذاری شد");
-console.log("📌 URL توزیع: {% url 'distribute_inventory' %}");
-console.log("📌 URL ریست: {% url 'reset_remaining_quantity' %}");
+/**
+ * راه‌اندازی اولیه
+ */
+function initializePage() {
+    // بررسی کتابخانه‌ها
+    if (!checkLibraries()) {
+        showAlert('error', 'مشکل در بارگذاری کتابخانه‌ها. لطفاً صفحه را رفرش کنید.');
+        return;
+    }
+    
+    // نمایش تعداد اولیه انتخاب‌ها
+    updateSelectionCount();
+    
+    // رفع مشکل نمایش مودال‌ها در مرورگرهای مختلف
+    if (typeof bootstrap === 'object' && bootstrap.Modal) {
+        console.log('✅ Bootstrap Modal آماده است');
+    }
+}
 
+// اجرای راه‌اندازی پس از بارگذاری کامل صفحه
+$(window).on('load', function() {
+    console.log('🏁 صفحه کاملاً بارگذاری شد');
+    initializePage();
+});
+
+// مدیریت خطاهای全局
+window.addEventListener('error', function(e) {
+    console.error('🚨 خطای全局:', e.message, 'در فایل:', e.filename, 'خط:', e.lineno);
+    showAlert('error', 'خطای غیرمنتظره رخ داد. لطفاً کنسول مرورگر را بررسی کنید.');
+});
+
+// ============================================
+// توابع اضافی برای دیباگ
+// ============================================
+
+/**
+ * نمایش اطلاعات فاکتورهای انتخاب شده
+ */
+function showSelectedInvoices() {
+    var selected = [];
+    $('input[name="selected_invoices"]:checked').each(function() {
+        var invoiceId = $(this).val();
+        var row = $(this).closest('tr');
+        var serial = row.find('td:nth-child(3)').text().trim();
+        selected.push({
+            id: invoiceId,
+            serial: serial
+        });
+    });
+    
+    console.log('📋 فاکتورهای انتخاب شده:', selected);
+    return selected;
+}
+
+/**
+ * آزمایش اتصال به سرور
+ */
+function testServerConnection() {
+    $.ajax({
+        url: "{% url 'invoice_list' %}",
+        method: 'GET',
+        success: function() {
+            console.log('✅ اتصال به سرور برقرار است');
+        },
+        error: function() {
+            console.error('❌ اتصال به سرور قطع است');
+        }
+    });
+}
+
+/**
+ * بررسی وضعیت CSRF Token
+ */
+function checkCSRFToken() {
+    var token = getCookie('csrftoken');
+    if (!token) {
+        console.warn('⚠️ CSRF Token یافت نشد!');
+        showAlert('warning', 'مشکل امنیتی: CSRF Token یافت نشد. ممکن است برخی عملیات کار نکنند.');
+    } else {
+        console.log('✅ CSRF Token موجود:', token.substring(0, 10) + '...');
+    }
+    return !!token;
+}
+
+// اجرای بررسی‌های اولیه
+$(document).ready(function() {
+    setTimeout(function() {
+        checkCSRFToken();
+        testServerConnection();
+    }, 1000);
+});
+
+// ============================================
+// اکسپورت توابع برای دیباگ در کنسول
+// ============================================
+
+// قرار دادن توابع مهم در scope جهانی برای استفاده در کنسول مرورگر
+window.invoiceListUtils = {
+    showAlert: showAlert,
+    updateProgress: updateProgress,
+    startRealDistribution: startRealDistribution,
+    showSelectedInvoices: showSelectedInvoices,
+    testServerConnection: testServerConnection,
+    checkCSRFToken: checkCSRFToken,
+    getCookie: getCookie
+};
+
+console.log('🔧 ابزارهای دیباگ در دسترس: invoiceListUtils');
     </script>
 </body>
 </html>
