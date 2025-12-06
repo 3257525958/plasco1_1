@@ -1130,12 +1130,12 @@
             }
 
             /* بهبود کیفیت بارکد در چاپ */
-            .barcode {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                font-smooth: never !important;
-                -webkit-font-smoothing: none !important;
-            }
+         .barcode {
+            font-family: 'Libre Barcode 39', cursive; /* یا فونت مخصوص UPC */
+            font-size: 32pt !important;
+            transform: scaleY(1.2) !important;
+            letter-spacing: 2px;
+                    }
 
             .barcode-number {
                 -webkit-print-color-adjust: exact !important;
