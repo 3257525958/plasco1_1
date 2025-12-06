@@ -70,120 +70,208 @@ def reset_remaining_quantity(request):
     return redirect('invoice_list')
 
 
+from django.db import transaction
 import time
-from django.db import transaction
-from django.db.models import Count, Sum
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
-# در views.py اضافه کنید
-from django.views.decorators.csrf import csrf_exempt
-import json
-from datetime import datetime
-
-# دیکشنری برای ذخیره وضعیت پیشرفت
-distribution_progress = {}
-
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.db import transaction
-from decimal import Decimal
-from django.db.models import Max, Sum
-from dashbord_app.models import Invoice, InvoiceItem
-from cantact_app.models import Branch
-from account_app.models import InventoryCount, ProductPricing
+from django.db.models import Q
 
 
-
-@csrf_exempt
-def start_distribution(request):
-    """شروع فرآیند توزیع و ایجاد جلسه"""
-    if request.method == 'POST':
-        import uuid
-        session_id = str(uuid.uuid4())
-        distribution_progress[session_id] = {
-            'progress': 0,
-            'message': 'آماده‌سازی...',
-            'details': [],
-            'start_time': datetime.now().isoformat(),
-            'status': 'processing'
-        }
-
-        # اجرای توزیع در background (می‌توانید از Celery استفاده کنید)
-        # برای سادگی، توزیع را در همان thread اجرا می‌کنیم
-        # در پروژه واقعی از Celery استفاده شود
-
-        return JsonResponse({
-            'session_id': session_id,
-            'status': 'started'
-        })
-
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-
-@csrf_exempt
-def get_distribution_progress(request, session_id):
-    """دریافت وضعیت پیشرفت"""
-    if session_id in distribution_progress:
-        return JsonResponse(distribution_progress[session_id])
-    else:
-        return JsonResponse({
-            'status': 'not_found',
-            'message': 'جلسه توزیع یافت نشد'
-        }, status=404)
-
-
-@csrf_exempt
 @require_POST
-@transaction.atomic
 def distribute_inventory(request):
-    """توزیع کالاها در انبار"""
     print("🎬 شروع فرآیند توزیع موجودی")
 
+    selected_invoice_ids = request.POST.getlist('selected_invoices')
+
+    if not selected_invoice_ids:
+        messages.warning(request, 'هیچ فاکتوری انتخاب نشده است.')
+        return redirect('invoice_list')
+
     try:
-        # دریافت داده‌های JSON
-        data = json.loads(request.body)
-        selected_invoice_ids = data.get('selected_invoices', [])
+        # دریافت تمام شعب
+        branches = list(Branch.objects.all())
+        if not branches:
+            messages.error(request, 'هیچ شعبه‌ای تعریف نشده است.')
+            return redirect('invoice_list')
 
-        print(f"📋 فاکتورهای انتخاب شده: {selected_invoice_ids}")
+        branch_count = len(branches)
+        print(f"🏪 تعداد شعب: {branch_count}")
 
-        if not selected_invoice_ids:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'هیچ فاکتوری انتخاب نشده است.'
-            }, status=400)
+        # دریافت تعداد کل آیتم‌ها برای پیشرفت
+        total_items_count = InvoiceItem.objects.filter(
+            invoice_id__in=selected_invoice_ids,
+            remaining_quantity__gt=0
+        ).count()
 
-        # بقیه کد view.py را اینجا کپی کنید...
-        # مطمئن شوید که درصد سود 70.00 باشد:
-        # existing_inventory.profit_percentage = Decimal('70.00')
-        # و در ایجاد جدید هم: profit_percentage=Decimal('70.00')
+        print(f"📊 تعداد کل آیتم‌های قابل توزیع: {total_items_count}")
 
-        return JsonResponse({
-            'status': 'success',
-            'message': '✅ توزیع با موفقیت انجام شد!',
-            'details': {
-                'total_distributed': total_distributed,
-                'unique_products': len(products_to_distribute),
-                'branches': branch_count,
-                'items_updated': zeroed_count,
-                'distribution_details': distribution_details
-            }
-        })
+        if total_items_count == 0:
+            messages.warning(request, 'هیچ کالایی با تعداد باقیمانده برای توزیع یافت نشد.')
+            return redirect('invoice_list')
 
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'داده‌های ارسالی نامعتبر است.'
-        }, status=400)
+        # تعیین اندازه دسته (Batch Size) - قابل تنظیم
+        BATCH_SIZE = 50  # پردازش 50 آیتم در هر مرحله
+
+        # محاسبه تعداد دسته‌ها
+        total_batches = (total_items_count // BATCH_SIZE) + 1
+
+        # پردازش دسته‌بندی شده فاکتورها
+        distributed_items = 0
+        processed_invoices = set()
+        distribution_details = []
+
+        # مرحله ۱: پردازش ProductPricing برای هر فاکتور
+        print("🔄 شروع پردازش قیمت‌گذاری محصولات...")
+        for i, invoice_id in enumerate(selected_invoice_ids, 1):
+            try:
+                with transaction.atomic():
+                    # دریافت آیتم‌های این فاکتور
+                    items = InvoiceItem.objects.filter(
+                        invoice_id=invoice_id,
+                        remaining_quantity__gt=0
+                    )[:BATCH_SIZE]  # محدود کردن تعداد
+
+                    for item in items:
+                        try:
+                            # محاسبه بالاترین قیمت خرید
+                            highest_purchase = InvoiceItem.objects.filter(
+                                product_name=item.product_name,
+                                invoice_id__in=selected_invoice_ids[:i]  # محدود به فاکتورهای پردازش شده
+                            ).aggregate(max_price=Max('unit_price'))['max_price'] or Decimal('0')
+
+                            standard_price = item.selling_price or item.unit_price
+
+                            # به‌روزرسانی قیمت‌گذاری
+                            ProductPricing.objects.update_or_create(
+                                product_name=item.product_name,
+                                defaults={
+                                    'highest_purchase_price': highest_purchase,
+                                    'standard_price': standard_price
+                                }
+                            )
+
+                        except Exception as e:
+                            print(f"⚠️ خطا در قیمت‌گذاری محصول {item.product_name}: {str(e)}")
+                            continue
+
+                # اضافه کردن تاخیر برای کاهش فشار سرور
+                time.sleep(0.1)
+
+            except Exception as e:
+                print(f"⚠️ خطا در پردازش فاکتور {invoice_id}: {str(e)}")
+                continue
+
+        print("✅ قیمت‌گذاری محصولات تکمیل شد")
+
+        # مرحله ۲: پردازش توزیع برای هر فاکتور
+        print("🔄 شروع توزیع موجودی...")
+
+        for batch_num in range(total_batches):
+            print(f"📦 پردازش دسته {batch_num + 1} از {total_batches}")
+
+            # دریافت یک دسته از آیتم‌ها
+            batch_items = InvoiceItem.objects.filter(
+                invoice_id__in=selected_invoice_ids,
+                remaining_quantity__gt=0
+            ).select_related('invoice')[batch_num * BATCH_SIZE:(batch_num + 1) * BATCH_SIZE]
+
+            if not batch_items:
+                break
+
+            try:
+                with transaction.atomic():
+                    # گروه‌بندی کالاها در این دسته
+                    product_summary = {}
+                    for item in batch_items:
+                        key = f"{item.product_name}|{item.product_type}"
+                        if key not in product_summary:
+                            product_summary[key] = {
+                                'name': item.product_name,
+                                'type': item.product_type,
+                                'total_remaining': 0,
+                                'max_selling_price': item.selling_price or item.unit_price,
+                                'is_new': item.product_type == 'new',
+                            }
+
+                        product_summary[key]['total_remaining'] += item.remaining_quantity
+                        product_summary[key]['max_selling_price'] = max(
+                            product_summary[key]['max_selling_price'],
+                            item.selling_price or item.unit_price
+                        )
+
+                    # توزیع کالاهای این دسته
+                    for key, product in product_summary.items():
+                        total_remaining = product['total_remaining']
+
+                        # به هر شعبه کل تعداد کالا را می‌دهیم (بدون تقسیم)
+                        for branch in branches:
+                            try:
+                                inventory_obj, created = InventoryCount.objects.get_or_create(
+                                    product_name=product['name'],
+                                    branch=branch,
+                                    is_new=product['is_new'],
+                                    defaults={
+                                        'quantity': total_remaining,
+                                        'counter': request.user,
+                                        'selling_price': product['max_selling_price'],
+                                        'profit_percentage': Decimal('70.00')
+                                    }
+                                )
+
+                                if not created:
+                                    inventory_obj.quantity += total_remaining
+                                    inventory_obj.selling_price = max(
+                                        inventory_obj.selling_price or 0,
+                                        product['max_selling_price']
+                                    )
+                                    inventory_obj.profit_percentage = Decimal('70.00')
+                                    inventory_obj.save()
+
+                                distributed_items += total_remaining
+
+                                # فقط یک بار در گزارش اضافه شود
+                                if batch_num == 0:
+                                    distribution_details.append(
+                                        f"{product['name']} ({product['type']}): برای هر شعبه {total_remaining} عدد"
+                                    )
+
+                            except Exception as e:
+                                print(f"⚠️ خطا در توزیع به شعبه {branch.name}: {str(e)}")
+                                continue
+
+                    # صفر کردن remaining_quantity برای آیتم‌های این دسته
+                    batch_items.update(remaining_quantity=0)
+                    distributed_items += len(batch_items)
+
+                # تاخیر بین دسته‌ها
+                time.sleep(0.5)  # 0.5 ثانیه تاخیر
+
+            except Exception as e:
+                print(f"⚠️ خطا در پردازش دسته {batch_num + 1}: {str(e)}")
+                continue
+
+        # پیام موفقیت
+        if distribution_details:
+            detail_message = "\n".join(distribution_details[:20])  # محدود کردن جزئیات
+            if len(distribution_details) > 20:
+                detail_message += f"\n... و {len(distribution_details) - 20} مورد دیگر"
+
+            messages.success(
+                request,
+                f'✅ توزیع با موفقیت انجام شد!\n\n'
+                f'📊 خلاصه عملکرد:\n'
+                f'• تعداد کل آیتم‌های پردازش شده: {distributed_items} عدد\n'
+                f'• تعداد فاکتورهای انتخاب شده: {len(selected_invoice_ids)} فاکتور\n'
+                f'• تعداد شعب: {branch_count} شعبه\n'
+                f'• پردازش در {total_batches} دسته انجام شد\n\n'
+                f'📦 نمونه‌ای از جزئیات توزیع:\n{detail_message}'
+            )
+        else:
+            messages.info(request, 'توزیع انجام شد اما جزئیاتی ثبت نشد.')
+
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({
-            'status': 'error',
-            'message': f'خطا در توزیع کالاها: {str(e)}'
-        }, status=500)
+        print(f"❌ خطای کلی در توزیع موجودی: {str(e)}")
+        messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
 
+    return redirect('invoice_list')
 
 # @require_POST
 # @transaction.atomic
