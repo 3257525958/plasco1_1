@@ -84,6 +84,200 @@ from datetime import datetime
 # دیکشنری برای ذخیره وضعیت پیشرفت
 distribution_progress = {}
 
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+from decimal import Decimal
+from django.db.models import Max, Sum
+from dashbord_app.models import Invoice, InvoiceItem
+from cantact_app.models import Branch
+from account_app.models import InventoryCount, ProductPricing
+
+
+@csrf_exempt
+@transaction.atomic
+def distribute_inventory(request):
+    """توزیع کالاها در انبار - نسخه بهینه شده"""
+    print("🎬 شروع فرآیند توزیع موجودی")
+
+    try:
+        # دریافت داده‌ها از request
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            selected_invoice_ids = data.get('selected_invoices', [])
+        else:
+            selected_invoice_ids = request.POST.getlist('selected_invoices')
+
+        print(f"📋 فاکتورهای انتخاب شده: {selected_invoice_ids}")
+
+        if not selected_invoice_ids:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'هیچ فاکتوری انتخاب نشده است.'
+            }, status=400)
+
+        # دریافت تمام شعب
+        branches = list(Branch.objects.all())
+        if not branches:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'هیچ شعبه‌ای تعریف نشده است.'
+            })
+
+        branch_count = len(branches)
+        print(f"🏪 تعداد شعب: {branch_count}")
+
+        # فقط آیتم‌هایی که remaining_quantity دارند
+        all_items = InvoiceItem.objects.filter(
+            invoice_id__in=selected_invoice_ids,
+            remaining_quantity__gt=0
+        ).select_related('invoice')
+
+        if not all_items:
+            return JsonResponse({
+                'status': 'warning',
+                'message': 'هیچ کالایی با تعداد باقیمانده برای توزیع یافت نشد.'
+            })
+
+        # گروه‌بندی کالاها
+        product_summary = {}
+        for item in all_items:
+            key = f"{item.product_name}|{item.product_type}"
+            if key not in product_summary:
+                product_summary[key] = {
+                    'name': item.product_name,
+                    'type': item.product_type,
+                    'total_remaining': 0,
+                    'max_selling_price': item.selling_price or item.unit_price,
+                    'is_new': item.product_type == 'new',
+                    'source_items': []
+                }
+
+            product_summary[key]['total_remaining'] += item.remaining_quantity
+            if item.selling_price or item.unit_price:
+                product_summary[key]['max_selling_price'] = max(
+                    product_summary[key]['max_selling_price'],
+                    item.selling_price or item.unit_price
+                )
+            product_summary[key]['source_items'].append(item.id)
+
+        products_to_distribute = []
+        for key, data in product_summary.items():
+            if data['total_remaining'] > 0:
+                products_to_distribute.append(data)
+
+        if not products_to_distribute:
+            return JsonResponse({
+                'status': 'warning',
+                'message': 'هیچ کالایی با تعداد باقیمانده معتبر برای توزیع یافت نشد.'
+            })
+
+        print(f"📦 تعداد محصولات برای توزیع: {len(products_to_distribute)}")
+
+        # بخش ProductPricing
+        for product in products_to_distribute:
+            product_name = product['name']
+
+            try:
+                highest_purchase = InvoiceItem.objects.filter(
+                    product_name=product_name,
+                    invoice_id__in=selected_invoice_ids
+                ).aggregate(max_price=Max('unit_price'))['max_price'] or Decimal('0')
+
+                standard_price = product['max_selling_price']
+
+                pricing_obj, created = ProductPricing.objects.update_or_create(
+                    product_name=product_name,
+                    defaults={
+                        'highest_purchase_price': highest_purchase,
+                        'standard_price': standard_price
+                    }
+                )
+
+                print(f"💰 قیمت‌گذاری {product_name}: {'ایجاد شد' if created else 'به‌روزرسانی شد'}")
+
+            except Exception as e:
+                print(f"⚠️ خطا در قیمت‌گذاری {product_name}: {str(e)}")
+                continue
+
+        # توزیع کالاها - منطق جدید: به هر شعبه کل کالاها
+        total_distributed = 0
+        distribution_details = []
+
+        for product in products_to_distribute:
+            total_remaining = product['total_remaining']
+
+            print(f"🔄 توزیع {product['name']}: {total_remaining} واحد")
+
+            # به هر شعبه به اندازه کل کالاهای باقیمانده این محصول می‌دهیم
+            for branch in branches:
+                qty_for_branch = total_remaining  # مقدار کامل، نه تقسیم
+
+                try:
+                    # بررسی وجود رکورد
+                    existing_inventory = InventoryCount.objects.filter(
+                        product_name=product['name'],
+                        branch=branch,
+                        is_new=product['is_new']
+                    ).first()
+
+                    if existing_inventory:
+                        # به‌روزرسانی
+                        existing_inventory.quantity += qty_for_branch
+                        existing_inventory.selling_price = max(
+                            existing_inventory.selling_price or 0,
+                            product['max_selling_price']
+                        )
+                        existing_inventory.profit_percentage = Decimal('100.00')
+                        existing_inventory.save()
+                    else:
+                        # ایجاد جدید
+                        InventoryCount.objects.create(
+                            product_name=product['name'],
+                            branch=branch,
+                            is_new=product['is_new'],
+                            quantity=qty_for_branch,
+                            counter=request.user if request.user.is_authenticated else None,
+                            selling_price=product['max_selling_price'],
+                            profit_percentage=Decimal('100.00')
+                        )
+
+                    total_distributed += qty_for_branch
+
+                except Exception as e:
+                    print(f"❌ خطا در توزیع به شعبه {branch.name}: {str(e)}")
+                    continue
+
+            distribution_details.append(
+                f"{product['name']} ({product['type']}): {total_remaining * branch_count} عدد توزیع شد"
+            )
+
+        # صفر کردن remaining_quantity
+        zeroed_count = all_items.update(remaining_quantity=0)
+        print(f"🔴 {zeroed_count} آیتم صفر شد")
+
+        # برگرداندن نتیجه
+        return JsonResponse({
+            'status': 'success',
+            'message': '✅ توزیع با موفقیت انجام شد!',
+            'details': {
+                'total_distributed': total_distributed,
+                'unique_products': len(products_to_distribute),
+                'branches': branch_count,
+                'items_updated': zeroed_count,
+                'distribution_details': distribution_details
+            }
+        })
+
+    except Exception as e:
+        print(f"❌ خطای کلی در توزیع موجودی: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در توزیع کالاها: {str(e)}'
+        }, status=500)
 
 @csrf_exempt
 def start_distribution(request):
@@ -121,200 +315,6 @@ def get_distribution_progress(request, session_id):
             'status': 'not_found',
             'message': 'جلسه توزیع یافت نشد'
         }, status=404)
-@csrf_exempt
-@require_POST
-@transaction.atomic
-def distribute_inventory(request):
-    print("🎬 شروع فرآیند توزیع موجودی")
-
-    selected_invoice_ids = request.POST.getlist('selected_invoices')
-
-    if not selected_invoice_ids:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'هیچ فاکتوری انتخاب نشده است.'
-        }, status=400)
-
-    try:
-        # دریافت تمام شعب
-        branches = list(Branch.objects.all())
-        if not branches:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'هیچ شعبه‌ای تعریف نشده است.'
-            }, status=400)
-
-        branch_count = len(branches)
-        print(f"🏪 تعداد شعب: {branch_count}")
-
-        # فقط آیتم‌هایی که remaining_quantity دارند
-        all_items = InvoiceItem.objects.filter(
-            invoice_id__in=selected_invoice_ids,
-            remaining_quantity__gt=0
-        ).select_related('invoice')
-
-        if not all_items:
-            return JsonResponse({
-                'status': 'warning',
-                'message': 'هیچ کالایی با تعداد باقیمانده برای توزیع یافت نشد.'
-            })
-
-        # گروه‌بندی کالاها
-        product_summary = {}
-        for item in all_items:
-            key = f"{item.product_name}|{item.product_type}"
-            if key not in product_summary:
-                product_summary[key] = {
-                    'name': item.product_name,
-                    'type': item.product_type,
-                    'total_remaining': 0,
-                    'max_selling_price': item.selling_price or item.unit_price,
-                    'is_new': item.product_type == 'new',
-                    'source_items': []
-                }
-
-            product_summary[key]['total_remaining'] += item.remaining_quantity
-            product_summary[key]['max_selling_price'] = max(
-                product_summary[key]['max_selling_price'],
-                item.selling_price or item.unit_price
-            )
-            product_summary[key]['source_items'].append(item.id)
-
-        products_to_distribute = []
-        for key, data in product_summary.items():
-            if data['total_remaining'] > 0:
-                products_to_distribute.append(data)
-
-        if not products_to_distribute:
-            return JsonResponse({
-                'status': 'warning',
-                'message': 'هیچ کالایی با تعداد باقیمانده معتبر برای توزیع یافت نشد.'
-            })
-
-        print(f"📦 تعداد محصولات برای توزیع: {len(products_to_distribute)}")
-
-        # بخش ProductPricing - به صورت bulk برای عملکرد بهتر
-        for product in products_to_distribute:
-            try:
-                highest_purchase = InvoiceItem.objects.filter(
-                    product_name=product['name'],
-                    invoice_id__in=selected_invoice_ids
-                ).aggregate(max_price=Max('unit_price'))['max_price'] or Decimal('0')
-
-                standard_price = product['max_selling_price']
-
-                pricing_obj, created = ProductPricing.objects.update_or_create(
-                    product_name=product['name'],
-                    defaults={
-                        'highest_purchase_price': highest_purchase,
-                        'standard_price': standard_price
-                    }
-                )
-
-                print(f"💰 قیمت‌گذاری {product['name']}: {'ایجاد شد' if created else 'به‌روزرسانی شد'}")
-
-            except Exception as e:
-                print(f"⚠️ خطا در قیمت‌گذاری {product['name']}: {str(e)}")
-                continue
-
-        # توزیع کالاها - منطق جدید: به هر شعبه کل کالاها (بدون تقسیم)
-        total_distributed = 0
-        distribution_details = []
-        processed_products = 0
-
-        # بهینه‌سازی: استفاده از bulk operations
-        inventory_to_create = []
-        inventory_to_update = []
-
-        for product in products_to_distribute:
-            total_remaining = product['total_remaining']
-            processed_products += 1
-
-            # محاسبه درصد پیشرفت
-            progress = int((processed_products / len(products_to_distribute)) * 100)
-
-            print(f"🔄 در حال توزیع {product['name']} ({progress}%): {total_remaining} واحد")
-
-            # به هر شعبه به اندازه کل کالاهای باقیمانده این محصول می‌دهیم
-            for branch in branches:
-                qty_for_branch = total_remaining  # مقدار کامل، نه تقسیم
-
-                try:
-                    # بررسی وجود رکورد
-                    existing_inventory = InventoryCount.objects.filter(
-                        product_name=product['name'],
-                        branch=branch,
-                        is_new=product['is_new']
-                    ).first()
-
-                    if existing_inventory:
-                        # به‌روزرسانی
-                        existing_inventory.quantity += qty_for_branch
-                        existing_inventory.selling_price = max(
-                            existing_inventory.selling_price or 0,
-                            product['max_selling_price']
-                        )
-                        existing_inventory.profit_percentage = Decimal('100.00')  # 100٪ سود
-                        inventory_to_update.append(existing_inventory)
-                    else:
-                        # ایجاد جدید
-                        inventory_to_create.append(
-                            InventoryCount(
-                                product_name=product['name'],
-                                branch=branch,
-                                is_new=product['is_new'],
-                                quantity=qty_for_branch,
-                                counter=request.user,
-                                selling_price=product['max_selling_price'],
-                                profit_percentage=Decimal('100.00')  # 100٪ سود
-                            )
-                        )
-
-                    total_distributed += qty_for_branch
-
-                except Exception as e:
-                    print(f"❌ خطا در توزیع به شعبه {branch.name}: {str(e)}")
-                    continue
-
-            distribution_details.append(
-                f"{product['name']} ({product['type']}): {total_remaining * branch_count} عدد"
-            )
-
-        # ذخیره بهینه شده
-        if inventory_to_create:
-            InventoryCount.objects.bulk_create(inventory_to_create)
-            print(f"✅ {len(inventory_to_create)} رکورد جدید ایجاد شد")
-
-        if inventory_to_update:
-            InventoryCount.objects.bulk_update(
-                inventory_to_update,
-                ['quantity', 'selling_price', 'profit_percentage']
-            )
-            print(f"✅ {len(inventory_to_update)} رکورد به‌روزرسانی شد")
-
-        # صفر کردن remaining_quantity
-        zeroed_count = all_items.update(remaining_quantity=0)
-        print(f"🔴 {zeroed_count} آیتم صفر شد")
-
-        # برگرداندن نتیجه
-        return JsonResponse({
-            'status': 'success',
-            'message': '✅ توزیع با موفقیت انجام شد!',
-            'details': {
-                'total_distributed': total_distributed,
-                'unique_products': len(products_to_distribute),
-                'branches': branch_count,
-                'items_updated': zeroed_count,
-                'distribution_details': distribution_details
-            }
-        })
-
-    except Exception as e:
-        print(f"❌ خطای کلی در توزیع موجودی: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': f'❌ خطا در توزیع کالاها: {str(e)}'
-        }, status=500)
 # @require_POST
 # @transaction.atomic
 # def distribute_inventory(request):
