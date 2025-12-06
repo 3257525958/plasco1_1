@@ -1,3 +1,1092 @@
+{#{% load static %}#}
+{#<!DOCTYPE html>#}
+{#<html lang="fa" dir="rtl">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1.0">#}
+{#    <title>چاپ لیبل - MEVA 4200</title>#}
+{#    <style>#}
+{#        /* Reset کامل برای چاپ */#}
+{#        * {#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            box-sizing: border-box;#}
+{#        }#}
+{##}
+{#        @media print {#}
+{#            body * {#}
+{#                visibility: hidden;#}
+{#            }#}
+{#            .print-area, .print-area * {#}
+{#                visibility: visible;#}
+{#            }#}
+{#            .print-area {#}
+{#                position: absolute;#}
+{#                left: 50%;#}
+{#                top: 0;#}
+{#                transform: translateX(-50%);#}
+{#                width: 80mm;#}
+{#                height: 100%;#}
+{#                display: flex;#}
+{#                flex-direction: column;#}
+{#                align-items: center;#}
+{#            }#}
+{#            .no-print {#}
+{#                display: none !important;#}
+{#            }#}
+{#        }#}
+{##}
+{#        /* تنظیمات صفحه برای چاپگر لیبل */#}
+{#        @page {#}
+{#            size: 80mm auto;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        body {#}
+{#            font-family: 'Vazirmatn', sans-serif;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            background: #f5f5f5;#}
+{#            width: 100%;#}
+{#            display: flex;#}
+{#            justify-content: center;#}
+{#            align-items: center;#}
+{#            min-height: 100vh;#}
+{#        }#}
+{##}
+{#        /* استایل‌های اصلی چاپ */#}
+{#        .print-area {#}
+{#            width: 80mm;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            background: white;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            min-height: 100vh;#}
+{#        }#}
+{##}
+{#        /* کانتینر برای ردیف‌های لیبل - فاصله‌بندی دقیق */#}
+{#        .label-row {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            width: 100%;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 1mm !important; /* فاصله چپ و راست: 1mm */#}
+{#            gap: 2mm !important; /* فاصله بین دو لیبل: 2mm (بیشتر از کناره) */#}
+{#        }#}
+{##}
+{#        /* استایل لیبل - با فاصله از بالا و وسط چین کامل */#}
+{#        .label {#}
+{#            width: 38mm; /* کاهش عرض برای ایجاد فاصله */#}
+{#            height: 19mm; /* کاهش ارتفاع برای ایجاد فاصله از بالا */#}
+{#            background: white;#}
+{#            border: none;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center; /* وسط چین افقی */#}
+{#            position: relative;#}
+{#            overflow: hidden;#}
+{#            margin: 1mm 0 0 0 !important; /* فاصله از بالا: 1mm */#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        /* نام محصول - وسط چین کامل */#}
+{#        .product-name {#}
+{#            font-size: 7pt !important;#}
+{#            font-weight: 900;#}
+{#            line-height: 1 !important;#}
+{#            text-align: center;#}
+{#            height: 5mm;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            border: none;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            word-break: break-word;#}
+{#            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;#}
+{#            color: #000000 !important;#}
+{#            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);#}
+{#            letter-spacing: 0.3px;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#            width: 100%; /* عرض کامل برای وسط چین */#}
+{#        }#}
+{##}
+{#        /* کانتینر بارکد - وسط چین کامل - طول 33mm */#}
+{#        .barcode-container {#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            width: 33mm !important; /* طول بارکد: 33mm */#}
+{#            height: 9mm !important;#}
+{#            overflow: hidden;#}
+{#            position: relative;#}
+{#            border: none;#}
+{#            margin: 0 auto !important; /* وسط چین افقی */#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        /* بارکد - کمی نازک‌تر و وسط چین کامل */#}
+{#        .barcode {#}
+{#            font-family: 'Libre Barcode 128', cursive;#}
+{#            font-size: 25pt !important; /* سایز متعادل */#}
+{#            line-height: 1 !important;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            letter-spacing: 1.5px;#}
+{#            transform: scaleY(1.4) !important; /* نازک‌تر از قبل اما هنوز قابل اسکن */#}
+{#            transform-origin: center;#}
+{#            display: block;#}
+{#            width: 100% !important;#}
+{#            text-align: center;#}
+{#            height: 7mm !important;#}
+{#            color: #000000 !important;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#        }#}
+{##}
+{#        /* عدد بارکد - وسط چین کامل */#}
+{#        .barcode-number {#}
+{#            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;#}
+{#            font-size: 5pt !important;#}
+{#            font-weight: normal;#}
+{#            line-height: 1 !important;#}
+{#            text-align: center;#}
+{#            height: 2mm !important;#}
+{#            color: #000000 !important;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            letter-spacing: 0.5px;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#            width: 100%; /* عرض کامل برای وسط چین */#}
+{#        }#}
+{##}
+{#        /* قیمت - وسط چین کامل */#}
+{#        .price {#}
+{#            font-size: 7pt !important;#}
+{#            font-weight: 900;#}
+{#            line-height: 1 !important;#}
+{#            text-align: center;#}
+{#            height: 4mm;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            border: none;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;#}
+{#            color: #000000 !important;#}
+{#            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);#}
+{#            letter-spacing: 0.3px;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#            width: 100%; /* عرض کامل برای وسط چین */#}
+{#        }#}
+{##}
+{#        /* کانتینر محتوا برای توزیع فضا و وسط چین کامل */#}
+{#        .label-content {#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            justify-content: space-between;#}
+{#            width: 100%;#}
+{#            height: 100%;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        /* استایل‌های غیرچاپی */#}
+{#        .no-print {#}
+{#            text-align: center;#}
+{#            margin: 20px auto !important;#}
+{#            padding: 20px !important;#}
+{#            background: white;#}
+{#            border-radius: 8px;#}
+{#            box-shadow: 0 2px 10px rgba(0,0,0,0.1);#}
+{#            max-width: 600px;#}
+{#        }#}
+{##}
+{#        .print-info {#}
+{#            display: grid;#}
+{#            grid-template-columns: 1fr 1fr;#}
+{#            gap: 10px;#}
+{#            margin: 15px 0 !important;#}
+{#            padding: 15px !important;#}
+{#            background: #f8f9fa;#}
+{#            border-radius: 6px;#}
+{#        }#}
+{##}
+{#        .info-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            padding: 3px 0 !important;#}
+{#        }#}
+{##}
+{#        .btn {#}
+{#            padding: 12px 24px !important;#}
+{#            margin: 0 5px !important;#}
+{#            border: none;#}
+{#            border-radius: 6px;#}
+{#            font-size: 1rem;#}
+{#            font-weight: bold;#}
+{#            cursor: pointer;#}
+{#            font-family: 'Vazirmatn', sans-serif;#}
+{#            text-decoration: none;#}
+{#            display: inline-flex;#}
+{#            align-items: center;#}
+{#            gap: 8px;#}
+{#            transition: all 0.3s ease;#}
+{#        }#}
+{##}
+{#        .btn-primary {#}
+{#            background: linear-gradient(45deg, #4CAF50, #2E7D32);#}
+{#            color: white;#}
+{#        }#}
+{##}
+{#        .btn-primary:hover {#}
+{#            background: linear-gradient(45deg, #2E7D32, #4CAF50);#}
+{#            transform: translateY(-2px);#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.2);#}
+{#        }#}
+{##}
+{#        .btn-secondary {#}
+{#            background: #f0f0f0;#}
+{#            color: #2c3e50;#}
+{#        }#}
+{##}
+{#        .btn-secondary:hover {#}
+{#            background: #e0e0e0;#}
+{#        }#}
+{##}
+{#        .printer-specs {#}
+{#            background: #e3f2fd;#}
+{#            padding: 12px !important;#}
+{#            border-radius: 6px;#}
+{#            margin: 12px 0 !important;#}
+{#            border-right: 4px solid #2196f3;#}
+{#        }#}
+{##}
+{#        .specs-grid {#}
+{#            display: grid;#}
+{#            grid-template-columns: 1fr 1fr;#}
+{#            gap: 8px;#}
+{#            margin-top: 8px !important;#}
+{#            font-size: 0.85rem;#}
+{#        }#}
+{##}
+{#        .spec-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            padding: 2px 0 !important;#}
+{#        }#}
+{##}
+{#        .preview-title {#}
+{#            text-align: center;#}
+{#            font-size: 0.9rem;#}
+{#            color: #666;#}
+{#            margin-bottom: 10px !important;#}
+{#        }#}
+{##}
+{#        .size-display {#}
+{#            text-align: center;#}
+{#            margin: 10px 0 !important;#}
+{#            font-size: 0.9rem;#}
+{#            color: #333;#}
+{#        }#}
+{##}
+{#        .center-container {#}
+{#            display: flex;#}
+{#            justify-content: center;#}
+{#            align-items: center;#}
+{#            width: 100%;#}
+{#        }#}
+{##}
+{#        .products-summary {#}
+{#            margin: 20px 0 !important;#}
+{#            padding: 15px !important;#}
+{#            background: #f8f9fa;#}
+{#            border-radius: 8px;#}
+{#            border: 1px solid #ddd;#}
+{#        }#}
+{##}
+{#        .summary-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            padding: 8px 0 !important;#}
+{#            border-bottom: 1px solid #eee;#}
+{#        }#}
+{##}
+{#        .summary-item:last-child {#}
+{#            border-bottom: none;#}
+{#        }#}
+{##}
+{#        .preview-label {#}
+{#            width: 40mm;#}
+{#            height: 20mm;#}
+{#            background: white;#}
+{#            border: 1px dashed #ccc;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            margin: 2px !important;#}
+{#        }#}
+{##}
+{#        .preview-row {#}
+{#            display: flex;#}
+{#            justify-content: center;#}
+{#            margin-bottom: 10px !important;#}
+{#        }#}
+{##}
+{#        .preview-container {#}
+{#            border: 2px dashed #999;#}
+{#            padding: 10px !important;#}
+{#            border-radius: 8px;#}
+{#            background: #f9f9f9;#}
+{#        }#}
+{#    </style>#}
+{#    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">#}
+{#    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">#}
+{#    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">#}
+{#</head>#}
+{#<body>#}
+{#    <div class="no-print">#}
+{#        <h2>چاپ لیبل - چاپگر MEVA 4200</h2>#}
+{##}
+{#        <div class="printer-specs">#}
+{#            <h3><i class="fas fa-print"></i> مشخصات چاپ</h3>#}
+{#            <div class="specs-grid">#}
+{#                <div class="spec-item">#}
+{#                    <span>سایز لیبل:</span>#}
+{#                    <strong>40×20 میلی‌متر (عرض × طول)</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>تعداد لیبل در ردیف:</span>#}
+{#                    <strong>۲ عدد</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>تعداد کل لیبل‌ها:</span>#}
+{#                    <strong>{{ total_labels }} عدد</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>ابعاد بارکد:</span>#}
+{#                    <strong>33×7 میلی‌متر (متوسط)</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>فاصله‌بندی:</span>#}
+{#                    <strong>کناره‌ها: 1mm | وسط: 2mm | بالا: 1mm</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>نوع قیمت:</span>#}
+{#                    <strong>قیمت فروش</strong>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- خلاصه محصولات -->#}
+{#        <div class="products-summary">#}
+{#            <h3><i class="fas fa-list"></i> خلاصه لیبل‌ها</h3>#}
+{#            {% regroup all_labels by product_name as product_list %}#}
+{#            {% for product in product_list %}#}
+{#            <div class="summary-item">#}
+{#                <span>{{ product.grouper }}</span>#}
+{#                <strong>{{ product.list|length }} لیبل</strong>#}
+{#            </div>#}
+{#            {% endfor %}#}
+{#            <div class="summary-item" style="background: #e8f5e9; margin-top: 10px !important; border-radius: 4px;">#}
+{#                <span><strong>جمع کل:</strong></span>#}
+{#                <strong>{{ total_labels }} لیبل</strong>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="size-display">#}
+{#            <strong>ابعاد لیبل:</strong> عرض ۴۰mm × طول ۲۰mm | <strong>بارکد:</strong> ۳۳mm × ۷mm | <strong>قیمت:</strong> فروش#}
+{#        </div>#}
+{##}
+{#        <!-- پیش‌نمایش لیبل -->#}
+{#        <div style="text-align: center;">#}
+{#            <div class="preview-title">پیش‌نمایش لیبل‌ها (قیمت فروش):</div>#}
+{#            <div class="center-container">#}
+{#                <div class="preview-container">#}
+{#                    {% for label in all_labels|slice:":6" %}#}
+{#                        {% if forloop.counter0|divisibleby:2 %}#}
+{#                        <div class="preview-row">#}
+{#                        {% endif %}#}
+{##}
+{#                        <div class="preview-label">#}
+{#                            {% if label.show_name %}#}
+{#                            <div class="product-name">{{ label.product_name }}</div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <div class="barcode-container">#}
+{#                                <div class="barcode">*{{ label.barcode }}*</div>#}
+{#                                <div class="barcode-number">{{ label.barcode }}</div>#}
+{#                            </div>#}
+{##}
+{#                            {% if label.show_price %}#}
+{#                            <div class="price">{{ label.price|floatformat:0 }} تومان</div>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{##}
+{#                        {% if forloop.counter|divisibleby:2 or forloop.last %}#}
+{#                        </div>#}
+{#                        {% endif %}#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{#            {% if total_labels > 6 %}#}
+{#            <div style="margin-top: 10px !important; color: #666; font-size: 0.9rem;">#}
+{#                و {{ total_labels|add:"-6" }} لیبل دیگر...#}
+{#            </div>#}
+{#            {% endif %}#}
+{#        </div>#}
+{##}
+{#        <div style="margin: 20px 0 !important; text-align: center;">#}
+{#            <button onclick="window.print()" class="btn btn-primary">#}
+{#                <i class="fas fa-print"></i> چاپ تمام لیبل‌ها#}
+{#            </button>#}
+{#            <a href="{% url 'label_settings' %}" class="btn btn-secondary">#}
+{#                <i class="fas fa-arrow-right"></i> بازگشت به تنظیمات#}
+{#            </a>#}
+{#            <a href="{% url 'label_generator' %}" class="btn btn-secondary">#}
+{#                <i class="fas fa-shopping-cart"></i> بازگشت به انتخاب کالا#}
+{#            </a>#}
+{#        </div>#}
+{##}
+{#        <div style="color: #666; font-size: 0.8rem; margin-top: 15px !important; padding: 10px !important; background: #d4edda; border-radius: 4px;">#}
+{#            <i class="fas fa-info-circle"></i>#}
+{#            <strong>راهنمایی:</strong>#}
+{#            <ul style="margin: 5px 0 5px 20px !important;">#}
+{#                <li>لیبل‌ها با سایز <strong>40×20 میلی‌متر (عرض × طول)</strong> چاپ خواهند شد</li>#}
+{#                <li>بارکد با ابعاد دقیق <strong>33×7 میلی‌متر</strong> چاپ می‌شود</li>#}
+{#                <li><strong>قیمت نمایش داده شده: قیمت فروش</strong> کالاها است</li>#}
+{#                <li><strong>فاصله از چپ و راست: 1mm</strong></li>#}
+{#                <li><strong>فاصله بین لیبل‌ها: 2mm</strong> (بیشتر از کناره)</li>#}
+{#                <li><strong>فاصله از بالا: 1mm</strong></li>#}
+{#                <li><strong>همه المان‌ها در لیبل وسط چین</strong> هستند</li>#}
+{#                <li><strong>عدد بارکد به صورت ریز</strong> زیر بارکد نمایش داده می‌شود</li>#}
+{#                <li>در هر ردیف <strong>۲ لیبل</strong> قرار می‌گیرد</li>#}
+{#                <li>همه المان‌ها مشکی هستند</li>#}
+{#                <li>تعداد کل لیبل‌ها: <strong>{{ total_labels }} عدد</strong></li>#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="print-area">#}
+{#        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->#}
+{#        {% for label in all_labels %}#}
+{#            {% if forloop.counter0|divisibleby:2 %}#}
+{#            <div class="label-row">#}
+{#            {% endif %}#}
+{##}
+{#            <div class="label">#}
+{#                <div class="label-content">#}
+{#                    {% if label.show_name %}#}
+{#                    <div class="product-name">{{ label.product_name }}</div>#}
+{#                    {% endif %}#}
+{##}
+{#                    <div class="barcode-container">#}
+{#                        <div class="barcode">*{{ label.barcode }}*</div>#}
+{#                        <div class="barcode-number">{{ label.barcode }}</div>#}
+{#                    </div>#}
+{##}
+{#                    {% if label.show_price %}#}
+{#                    <div class="price">{{ label.price|floatformat:0 }} تومان</div>#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            {% if forloop.counter|divisibleby:2 or forloop.last %}#}
+{#            </div>#}
+{#            {% endif %}#}
+{#        {% endfor %}#}
+{#    </div>#}
+{##}
+{#    <script>#}
+{#        function printLabel() {#}
+{#            console.log('🖨️ شروع چاپ لیبل‌ها...');#}
+{#            console.log('📏 سایز لیبل: 40×20 میلی‌متر (عرض × طول)');#}
+{#            console.log('📐 ابعاد بارکد: 33×7 میلی‌متر (متوسط)');#}
+{#            console.log('📊 تعداد کل لیبل‌ها: {{ total_labels }}');#}
+{#            console.log('💰 نوع قیمت: قیمت فروش');#}
+{#            console.log('📏 فاصله‌بندی: کناره=1mm | وسط=2mm | بالا=1mm');#}
+{##}
+{#            window.print();#}
+{#        }#}
+{##}
+{#        window.onbeforeprint = function() {#}
+{#            console.log('📄 آماده چاپ لیبل‌ها...');#}
+{#            console.log('✅ ابعاد لیبل: عرض 40mm × طول 20mm');#}
+{#            console.log('✅ ابعاد بارکد: طول 33mm × ارتفاع 7mm (متوسط)');#}
+{#            console.log('💰 نوع قیمت: قیمت فروش');#}
+{#            console.log('✅ فاصله: کناره=1mm | وسط=2mm | بالا=1mm');#}
+{#            console.log('✅ تعداد: {{ total_labels }} لیبل');#}
+{#        };#}
+{##}
+{#        window.onafterprint = function() {#}
+{#            console.log('✅ چاپ تکمیل شد');#}
+{#            setTimeout(() => {#}
+{#                alert('{{ total_labels }} لیبل با سایز 40×20 میلی‌متر و قیمت فروش با موفقیت چاپ شدند.');#}
+{#            }, 500);#}
+{#        };#}
+{#    </script>#}
+{#</body>#}
+{#</html>#}
+{##}
+{##}
+{#{% load static %}#}
+{#<!DOCTYPE html>#}
+{#<html lang="fa" dir="rtl">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1.0">#}
+{#    <title>چاپ لیبل - MEVA 4200</title>#}
+{#    <style>#}
+{#        /* Reset کامل برای چاپ */#}
+{#        * {#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            box-sizing: border-box;#}
+{#        }#}
+{##}
+{#        @media print {#}
+{#            body * {#}
+{#                visibility: hidden;#}
+{#            }#}
+{#            .print-area, .print-area * {#}
+{#                visibility: visible;#}
+{#            }#}
+{#            .print-area {#}
+{#                position: absolute;#}
+{#                left: 50%;#}
+{#                top: 0;#}
+{#                transform: translateX(-50%);#}
+{#                width: 80mm;#}
+{#                height: 100%;#}
+{#                display: flex;#}
+{#                flex-direction: column;#}
+{#                align-items: center;#}
+{#            }#}
+{#            .no-print {#}
+{#                display: none !important;#}
+{#            }#}
+{#        }#}
+{##}
+{#        /* تنظیمات صفحه برای چاپگر لیبل */#}
+{#        @page {#}
+{#            size: 80mm auto;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        body {#}
+{#            font-family: 'Vazirmatn', sans-serif;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            background: #f5f5f5;#}
+{#            width: 100%;#}
+{#            display: flex;#}
+{#            justify-content: center;#}
+{#            align-items: center;#}
+{#            min-height: 100vh;#}
+{#        }#}
+{##}
+{#        /* استایل‌های اصلی چاپ */#}
+{#        .print-area {#}
+{#            width: 80mm;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            background: white;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            min-height: 100vh;#}
+{#        }#}
+{##}
+{#        /* کانتینر برای ردیف‌های لیبل - فاصله‌بندی دقیق */#}
+{#        .label-row {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            width: 100%;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 1mm !important; /* فاصله چپ و راست: 1mm */#}
+{#            gap: 2mm !important; /* فاصله بین دو لیبل: 2mm (بیشتر از کناره) */#}
+{#        }#}
+{##}
+{#        /* استایل لیبل - با فاصله از بالا و وسط چین کامل */#}
+{#        .label {#}
+{#            width: 38mm; /* کاهش عرض برای ایجاد فاصله */#}
+{#            height: 19mm; /* کاهش ارتفاع برای ایجاد فاصله از بالا */#}
+{#            background: white;#}
+{#            border: none;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center; /* وسط چین افقی */#}
+{#            position: relative;#}
+{#            overflow: hidden;#}
+{#            margin: 1mm 0 0 0 !important; /* فاصله از بالا: 1mm */#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        /* نام محصول - وسط چین کامل */#}
+{#        .product-name {#}
+{#            font-size: 7pt !important;#}
+{#            font-weight: 900;#}
+{#            line-height: 1 !important;#}
+{#            text-align: center;#}
+{#            height: 5mm;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            border: none;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            word-break: break-word;#}
+{#            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;#}
+{#            color: #000000 !important;#}
+{#            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);#}
+{#            letter-spacing: 0.3px;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#            width: 100%; /* عرض کامل برای وسط چین */#}
+{#        }#}
+{##}
+{#        /* کانتینر بارکد - وسط چین کامل - طول 33mm */#}
+{#        .barcode-container {#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            width: 33mm !important; /* طول بارکد: 33mm */#}
+{#            height: 9mm !important;#}
+{#            overflow: hidden;#}
+{#            position: relative;#}
+{#            border: none;#}
+{#            margin: 0 auto !important; /* وسط چین افقی */#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        /* بارکد - کمی نازک‌تر و وسط چین کامل */#}
+{#        .barcode {#}
+{#            font-family: 'Libre Barcode 128', cursive;#}
+{#            font-size: 25pt !important; /* سایز متعادل */#}
+{#            line-height: 1 !important;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            letter-spacing: 1.5px;#}
+{#            transform: scaleY(1.4) !important; /* نازک‌تر از قبل اما هنوز قابل اسکن */#}
+{#            transform-origin: center;#}
+{#            display: block;#}
+{#            width: 100% !important;#}
+{#            text-align: center;#}
+{#            height: 7mm !important;#}
+{#            color: #000000 !important;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#        }#}
+{##}
+{#        /* عدد بارکد - وسط چین کامل */#}
+{#        .barcode-number {#}
+{#            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;#}
+{#            font-size: 5pt !important;#}
+{#            font-weight: normal;#}
+{#            line-height: 1 !important;#}
+{#            text-align: center;#}
+{#            height: 2mm !important;#}
+{#            color: #000000 !important;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            letter-spacing: 0.5px;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#            width: 100%; /* عرض کامل برای وسط چین */#}
+{#        }#}
+{##}
+{#        /* قیمت - وسط چین کامل */#}
+{#        .price {#}
+{#            font-size: 7pt !important;#}
+{#            font-weight: 900;#}
+{#            line-height: 1 !important;#}
+{#            text-align: center;#}
+{#            height: 4mm;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            border: none;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;#}
+{#            color: #000000 !important;#}
+{#            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);#}
+{#            letter-spacing: 0.3px;#}
+{#            -webkit-print-color-adjust: exact;#}
+{#            print-color-adjust: exact;#}
+{#            width: 100%; /* عرض کامل برای وسط چین */#}
+{#        }#}
+{##}
+{#        /* کانتینر محتوا برای توزیع فضا و وسط چین کامل */#}
+{#        .label-content {#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            justify-content: space-between;#}
+{#            width: 100%;#}
+{#            height: 100%;#}
+{#            margin: 0 !important;#}
+{#            padding: 0 !important;#}
+{#        }#}
+{##}
+{#        /* استایل‌های غیرچاپی */#}
+{#        .no-print {#}
+{#            text-align: center;#}
+{#            margin: 20px auto !important;#}
+{#            padding: 20px !important;#}
+{#            background: white;#}
+{#            border-radius: 8px;#}
+{#            box-shadow: 0 2px 10px rgba(0,0,0,0.1);#}
+{#            max-width: 600px;#}
+{#        }#}
+{##}
+{#        .print-info {#}
+{#            display: grid;#}
+{#            grid-template-columns: 1fr 1fr;#}
+{#            gap: 10px;#}
+{#            margin: 15px 0 !important;#}
+{#            padding: 15px !important;#}
+{#            background: #f8f9fa;#}
+{#            border-radius: 6px;#}
+{#        }#}
+{##}
+{#        .info-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            padding: 3px 0 !important;#}
+{#        }#}
+{##}
+{#        .btn {#}
+{#            padding: 12px 24px !important;#}
+{#            margin: 0 5px !important;#}
+{#            border: none;#}
+{#            border-radius: 6px;#}
+{#            font-size: 1rem;#}
+{#            font-weight: bold;#}
+{#            cursor: pointer;#}
+{#            font-family: 'Vazirmatn', sans-serif;#}
+{#            text-decoration: none;#}
+{#            display: inline-flex;#}
+{#            align-items: center;#}
+{#            gap: 8px;#}
+{#            transition: all 0.3s ease;#}
+{#        }#}
+{##}
+{#        .btn-primary {#}
+{#            background: linear-gradient(45deg, #4CAF50, #2E7D32);#}
+{#            color: white;#}
+{#        }#}
+{##}
+{#        .btn-primary:hover {#}
+{#            background: linear-gradient(45deg, #2E7D32, #4CAF50);#}
+{#            transform: translateY(-2px);#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.2);#}
+{#        }#}
+{##}
+{#        .btn-secondary {#}
+{#            background: #f0f0f0;#}
+{#            color: #2c3e50;#}
+{#        }#}
+{##}
+{#        .btn-secondary:hover {#}
+{#            background: #e0e0e0;#}
+{#        }#}
+{##}
+{#        .printer-specs {#}
+{#            background: #e3f2fd;#}
+{#            padding: 12px !important;#}
+{#            border-radius: 6px;#}
+{#            margin: 12px 0 !important;#}
+{#            border-right: 4px solid #2196f3;#}
+{#        }#}
+{##}
+{#        .specs-grid {#}
+{#            display: grid;#}
+{#            grid-template-columns: 1fr 1fr;#}
+{#            gap: 8px;#}
+{#            margin-top: 8px !important;#}
+{#            font-size: 0.85rem;#}
+{#        }#}
+{##}
+{#        .spec-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            padding: 2px 0 !important;#}
+{#        }#}
+{##}
+{#        .preview-title {#}
+{#            text-align: center;#}
+{#            font-size: 0.9rem;#}
+{#            color: #666;#}
+{#            margin-bottom: 10px !important;#}
+{#        }#}
+{##}
+{#        .size-display {#}
+{#            text-align: center;#}
+{#            margin: 10px 0 !important;#}
+{#            font-size: 0.9rem;#}
+{#            color: #333;#}
+{#        }#}
+{##}
+{#        .center-container {#}
+{#            display: flex;#}
+{#            justify-content: center;#}
+{#            align-items: center;#}
+{#            width: 100%;#}
+{#        }#}
+{##}
+{#        .products-summary {#}
+{#            margin: 20px 0 !important;#}
+{#            padding: 15px !important;#}
+{#            background: #f8f9fa;#}
+{#            border-radius: 8px;#}
+{#            border: 1px solid #ddd;#}
+{#        }#}
+{##}
+{#        .summary-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            padding: 8px 0 !important;#}
+{#            border-bottom: 1px solid #eee;#}
+{#        }#}
+{##}
+{#        .summary-item:last-child {#}
+{#            border-bottom: none;#}
+{#        }#}
+{##}
+{#        .preview-label {#}
+{#            width: 40mm;#}
+{#            height: 20mm;#}
+{#            background: white;#}
+{#            border: 1px dashed #ccc;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            margin: 2px !important;#}
+{#        }#}
+{##}
+{#        .preview-row {#}
+{#            display: flex;#}
+{#            justify-content: center;#}
+{#            margin-bottom: 10px !important;#}
+{#        }#}
+{##}
+{#        .preview-container {#}
+{#            border: 2px dashed #999;#}
+{#            padding: 10px !important;#}
+{#            border-radius: 8px;#}
+{#            background: #f9f9f9;#}
+{#        }#}
+{##}
+{#        /* استایل برای فرم POST */#}
+{#        .print-form {#}
+{#            display: inline;#}
+{#        }#}
+{#    </style>#}
+{#    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">#}
+{#    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">#}
+{#    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">#}
+{#</head>#}
+{#<body>#}
+{#    <div class="no-print">#}
+{#        <h2>چاپ لیبل - چاپگر MEVA 4200</h2>#}
+{##}
+{#        <div class="printer-specs">#}
+{#            <h3><i class="fas fa-print"></i> مشخصات چاپ</h3>#}
+{#            <div class="specs-grid">#}
+{#                <div class="spec-item">#}
+{#                    <span>سایز لیبل:</span>#}
+{#                    <strong>40×20 میلی‌متر (عرض × طول)</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>تعداد لیبل در ردیف:</span>#}
+{#                    <strong>۲ عدد</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>تعداد کل لیبل‌ها:</span>#}
+{#                    <strong>{{ total_labels }} عدد</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>ابعاد بارکد:</span>#}
+{#                    <strong>33×7 میلی‌متر (متوسط)</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>فاصله‌بندی:</span>#}
+{#                    <strong>کناره‌ها: 1mm | وسط: 2mm | بالا: 1mm</strong>#}
+{#                </div>#}
+{#                <div class="spec-item">#}
+{#                    <span>نوع قیمت:</span>#}
+{#                    <strong>قیمت فروش</strong>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- خلاصه محصولات -->#}
+{#        <div class="products-summary">#}
+{#            <h3><i class="fas fa-list"></i> خلاصه لیبل‌ها</h3>#}
+{#            {% regroup all_labels by product_name as product_list %}#}
+{#            {% for product in product_list %}#}
+{#            <div class="summary-item">#}
+{#                <span>{{ product.grouper }}</span>#}
+{#                <strong>{{ product.list|length }} لیبل</strong>#}
+{#            </div>#}
+{#            {% endfor %}#}
+{#            <div class="summary-item" style="background: #e8f5e9; margin-top: 10px !important; border-radius: 4px;">#}
+{#                <span><strong>جمع کل:</strong></span>#}
+{#                <strong>{{ total_labels }} لیبل</strong>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="size-display">#}
+{#            <strong>ابعاد لیبل:</strong> عرض ۴۰mm × طول ۲۰mm | <strong>بارکد:</strong> ۳۳mm × ۷mm | <strong>قیمت:</strong> فروش#}
+{#        </div>#}
+{##}
+{#        <!-- پیش‌نمایش لیبل -->#}
+{#        <div style="text-align: center;">#}
+{#            <div class="preview-title">پیش‌نمایش لیبل‌ها (قیمت فروش):</div>#}
+{#            <div class="center-container">#}
+{#                <div class="preview-container">#}
+{#                    {% for label in all_labels|slice:":6" %}#}
+{#                        {% if forloop.counter0|divisibleby:2 %}#}
+{#                        <div class="preview-row">#}
+{#                        {% endif %}#}
+{##}
+{#                        <div class="preview-label">#}
+{#                            {% if label.show_name %}#}
+{#                            <div class="product-name">{{ label.product_name }}</div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <div class="barcode-container">#}
+{#                                <div class="barcode">*{{ label.barcode }}*</div>#}
+{#                                <div class="barcode-number">{{ label.barcode }}</div>#}
+{#                            </div>#}
+{##}
+{#                            {% if label.show_price %}#}
+{#                            <div class="price">{{ label.price|floatformat:0 }} تومان</div>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{##}
+{#                        {% if forloop.counter|divisibleby:2 or forloop.last %}#}
+{#                        </div>#}
+{#                        {% endif %}#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{#            {% if total_labels > 6 %}#}
+{#            <div style="margin-top: 10px !important; color: #666; font-size: 0.9rem;">#}
+{#                و {{ total_labels|add:"-6" }} لیبل دیگر...#}
+{#            </div>#}
+{#            {% endif %}#}
+{#        </div>#}
+{##}
+{#        <div style="margin: 20px 0 !important; text-align: center;">#}
+{#            <!-- تغییر دکمه چاپ به فرم POST -->#}
+{#            <form method="post" class="print-form">#}
+{#                {% csrf_token %}#}
+{#                <button type="submit" class="btn btn-primary">#}
+{#                    <i class="fas fa-print"></i> چاپ تمام لیبل‌ها#}
+{#                </button>#}
+{#            </form>#}
+{#            <a href="{% url 'label_settings' %}" class="btn btn-secondary">#}
+{#                <i class="fas fa-arrow-right"></i> بازگشت به تنظیمات#}
+{#            </a>#}
+{#            <a href="{% url 'label_generator' %}" class="btn btn-secondary">#}
+{#                <i class="fas fa-shopping-cart"></i> بازگشت به انتخاب کالا#}
+{#            </a>#}
+{#        </div>#}
+{##}
+{#        <div style="color: #666; font-size: 0.8rem; margin-top: 15px !important; padding: 10px !important; background: #d4edda; border-radius: 4px;">#}
+{#            <i class="fas fa-info-circle"></i>#}
+{#            <strong>راهنمایی:</strong>#}
+{#            <ul style="margin: 5px 0 5px 20px !important;">#}
+{#                <li>لیبل‌ها با سایز <strong>40×20 میلی‌متر (عرض × طول)</strong> چاپ خواهند شد</li>#}
+{#                <li>بارکد با ابعاد دقیق <strong>33×7 میلی‌متر</strong> چاپ می‌شود</li>#}
+{#                <li><strong>قیمت نمایش داده شده: قیمت فروش</strong> کالاها است</li>#}
+{#                <li><strong>فاصله از چپ و راست: 1mm</strong></li>#}
+{#                <li><strong>فاصله بین لیبل‌ها: 2mm</strong> (بیشتر از کناره)</li>#}
+{#                <li><strong>فاصله از بالا: 1mm</strong></li>#}
+{#                <li><strong>همه المان‌ها در لیبل وسط چین</strong> هستند</li>#}
+{#                <li><strong>عدد بارکد به صورت ریز</strong> زیر بارکد نمایش داده می‌شود</li>#}
+{#                <li>در هر ردیف <strong>۲ لیبل</strong> قرار می‌گیرد</li>#}
+{#                <li>همه المان‌ها مشکی هستند</li>#}
+{#                <li>تعداد کل لیبل‌ها: <strong>{{ total_labels }} عدد</strong></li>#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="print-area">#}
+{#        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->#}
+{#        {% for label in all_labels %}#}
+{#            {% if forloop.counter0|divisibleby:2 %}#}
+{#            <div class="label-row">#}
+{#            {% endif %}#}
+{##}
+{#            <div class="label">#}
+{#                <div class="label-content">#}
+{#                    {% if label.show_name %}#}
+{#                    <div class="product-name">{{ label.product_name }}</div>#}
+{#                    {% endif %}#}
+{##}
+{#                    <div class="barcode-container">#}
+{#                        <div class="barcode">*{{ label.barcode }}*</div>#}
+{#                        <div class="barcode-number">{{ label.barcode }}</div>#}
+{#                    </div>#}
+{##}
+{#                    {% if label.show_price %}#}
+{#                    <div class="price">{{ label.price|floatformat:0 }} تومان</div>#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            {% if forloop.counter|divisibleby:2 or forloop.last %}#}
+{#            </div>#}
+{#            {% endif %}#}
+{#        {% endfor %}#}
+{#    </div>#}
+{##}
+{#    <script>#}
+{#        // چاپ خودکار پس از ثبت تاریخچه (فقط در صورت POST)#}
+{#        document.addEventListener('DOMContentLoaded', function() {#}
+{#            {% if auto_print %}#}
+{#                console.log('🖨️ شروع چاپ لیبل‌ها...');#}
+{#                console.log('📏 سایز لیبل: 40×20 میلی‌متر (عرض × طول)');#}
+{#                console.log('📐 ابعاد بارکد: 33×7 میلی‌متر (متوسط)');#}
+{#                console.log('📊 تعداد کل لیبل‌ها: {{ total_labels }}');#}
+{#                console.log('💰 نوع قیمت: قیمت فروش');#}
+{#                console.log('📏 فاصله‌بندی: کناره=1mm | وسط=2mm | بالا=1mm');#}
+{##}
+{#                window.print();#}
+{#            {% endif %}#}
+{#        });#}
+{##}
+{#        window.onbeforeprint = function() {#}
+{#            console.log('📄 آماده چاپ لیبل‌ها...');#}
+{#            console.log('✅ ابعاد لیبل: عرض 40mm × طول 20mm');#}
+{#            console.log('✅ ابعاد بارکد: طول 33mm × ارتفاع 7mm (متوسط)');#}
+{#            console.log('💰 نوع قیمت: قیمت فروش');#}
+{#            console.log('✅ فاصله: کناره=1mm | وسط=2mm | بالا=1mm');#}
+{#            console.log('✅ تعداد: {{ total_labels }} لیبل');#}
+{#        };#}
+{##}
+{#        window.onafterprint = function() {#}
+{#            console.log('✅ چاپ تکمیل شد');#}
+{#            setTimeout(() => {#}
+{#                alert('{{ total_labels }} لیبل با سایز 40×20 میلی‌متر و قیمت فروش با موفقیت چاپ شدند.');#}
+{#            }, 500);#}
+{#        };#}
+{#    </script>#}
+{#</body>#}
+{#</html>#}
+{##}
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -5,190 +1094,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>چاپ لیبل - MEVA 4200</title>
-    <style>
-        /* Reset کامل برای چاپ */
-        * {
-            margin: 0 !important;
-            padding: 0 !important;
-            box-sizing: border-box;
-        }
 
+    <!-- فونت بارکد استاندارد -->
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">
+
+    <!-- فونت فارسی -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+
+    <!-- آیکون‌ها -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* ============ تنظیمات کلی چاپ ============ */
         @media print {
-            body * {
-                visibility: hidden;
+            @page {
+                size: 80mm auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            .print-area, .print-area * {
-                visibility: visible;
+
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 80mm !important;
+                height: 100% !important;
+                background: white !important;
             }
-            .print-area {
-                position: absolute;
-                left: 50%;
-                top: 0;
-                transform: translateX(-50%);
-                width: 80mm;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
+
             .no-print {
                 display: none !important;
             }
+
+            .print-area {
+                display: block !important;
+            }
+
+            /* بهبود کیفیت بارکد در چاپ */
+            .barcode {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                font-smooth: never !important;
+                -webkit-font-smoothing: none !important;
+            }
+
+            .barcode-number {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .label {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
 
-        /* تنظیمات صفحه برای چاپگر لیبل */
-        @page {
-            size: 80mm auto;
-            margin: 0 !important;
-            padding: 0 !important;
+        /* ============ استایل‌های نمایشی (غیرچاپ) ============ */
+        .no-print {
+            font-family: 'Vazirmatn', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
+        /* ============ استایل‌های چاپ ============ */
         body {
             font-family: 'Vazirmatn', sans-serif;
             margin: 0 !important;
             padding: 0 !important;
-            background: #f5f5f5;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* استایل‌های اصلی چاپ */
-        .print-area {
-            width: 80mm;
-            margin: 0 !important;
-            padding: 0 !important;
             background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            width: 80mm;
         }
 
-        /* کانتینر برای ردیف‌های لیبل - فاصله‌بندی دقیق */
+        .print-area {
+            display: none;
+            width: 80mm;
+            background: white;
+        }
+
+        /* ردیف لیبل‌ها */
         .label-row {
             display: flex;
             justify-content: space-between;
             width: 100%;
             margin: 0 !important;
-            padding: 0 1mm !important; /* فاصله چپ و راست: 1mm */
-            gap: 2mm !important; /* فاصله بین دو لیبل: 2mm (بیشتر از کناره) */
+            padding: 0 0.5mm !important;  /* فاصله کنار */
+            gap: 1mm !important;  /* فاصله بین دو لیبل */
+            page-break-inside: avoid;
         }
 
-        /* استایل لیبل - با فاصله از بالا و وسط چین کامل */
+        /* هر لیبل */
         .label {
-            width: 38mm; /* کاهش عرض برای ایجاد فاصله */
-            height: 19mm; /* کاهش ارتفاع برای ایجاد فاصله از بالا */
-            background: white;
+            width: 38mm;  /* عرض هر لیبل */
+            height: 20mm;  /* ارتفاع هر لیبل */
+            background: white !important;
             border: none;
             display: flex;
             flex-direction: column;
-            align-items: center; /* وسط چین افقی */
-            position: relative;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5mm !important;  /* فاصله داخلی */
+            margin: 0.5mm 0 0 0 !important;  /* فاصله از بالا */
             overflow: hidden;
-            margin: 1mm 0 0 0 !important; /* فاصله از بالا: 1mm */
-            padding: 0 !important;
+            page-break-inside: avoid;
+            box-sizing: border-box;
         }
 
-        /* نام محصول - وسط چین کامل */
+        /* نام محصول */
         .product-name {
-            font-size: 7pt !important;
-            font-weight: 900;
-            line-height: 1 !important;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 6.5pt !important;
+            font-weight: 900 !important;
+            line-height: 1.1 !important;
             text-align: center;
-            height: 5mm;
+            height: 4.5mm;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: none;
             margin: 0 !important;
-            padding: 0 !important;
-            word-break: break-word;
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+            padding: 0 0.5mm !important;
+            width: 100%;
             color: #000000 !important;
-            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
+            text-shadow: 0.2px 0.2px 0.2px rgba(0,0,0,0.5);
+            letter-spacing: 0.1px;
+            word-break: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* کانتینر بارکد - وسط چین کامل - طول 33mm */
+        /* کانتینر بارکد */
         .barcode-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 33mm !important; /* طول بارکد: 33mm */
-            height: 9mm !important;
-            overflow: hidden;
-            position: relative;
-            border: none;
-            margin: 0 auto !important; /* وسط چین افقی */
+            width: 36mm !important;  /* عرض بارکد */
+            height: 9mm !important;   /* ارتفاع بارکد */
+            margin: 0 auto !important;
             padding: 0 !important;
+            position: relative;
         }
 
-        /* بارکد - کمی نازک‌تر و وسط چین کامل */
+        /* بارکد اصلی - مهم‌ترین بخش */
         .barcode {
-            font-family: 'Libre Barcode 128', cursive;
-            font-size: 25pt !important; /* سایز متعادل */
+            font-family: 'Libre Barcode 128', cursive !important;
+            font-size: 30pt !important;  /* سایز بزرگ برای خوانایی */
             line-height: 1 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            letter-spacing: 1.5px;
-            transform: scaleY(1.4) !important; /* نازک‌تر از قبل اما هنوز قابل اسکن */
+            letter-spacing: 2.8px !important;  /* فاصله بین کاراکترها */
+            transform: scaleY(1.35) !important;  /* کشیده‌تر برای اسکن بهتر */
             transform-origin: center;
             display: block;
             width: 100% !important;
             text-align: center;
             height: 7mm !important;
-            color: #000000 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            color: #000000 !important;  /* سیاه خالص */
+            margin: 0 !important;
+            padding: 0 !important;
+            font-smooth: never !important;
+            -webkit-font-smoothing: none !important;
+            font-weight: normal !important;
+            text-rendering: optimizeLegibility;
         }
 
-        /* عدد بارکد - وسط چین کامل */
+        /* عدد بارکد */
         .barcode-number {
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            font-size: 5pt !important;
-            font-weight: normal;
+            font-family: 'Courier New', monospace !important;  /* فونت مونو برای وضوح */
+            font-size: 5.5pt !important;
+            font-weight: bold !important;  /* پررنگ */
             line-height: 1 !important;
             text-align: center;
             height: 2mm !important;
             color: #000000 !important;
             margin: 0 !important;
             padding: 0 !important;
-            letter-spacing: 0.5px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
+            letter-spacing: 0.8px !important;  /* فاصله بین ارقام */
+            width: 100%;
+            direction: ltr;  /* چپ‌چین برای اعداد */
         }
 
-        /* قیمت - وسط چین کامل */
+        /* قیمت */
         .price {
+            font-family: 'Vazirmatn', sans-serif;
             font-size: 7pt !important;
-            font-weight: 900;
+            font-weight: 900 !important;
             line-height: 1 !important;
             text-align: center;
             height: 4mm;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: none;
             margin: 0 !important;
             padding: 0 !important;
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
             color: #000000 !important;
-            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
+            text-shadow: 0.2px 0.2px 0.2px rgba(0,0,0,0.5);
+            letter-spacing: 0.1px;
+            width: 100%;
         }
 
-        /* کانتینر محتوا برای توزیع فضا و وسط چین کامل */
+        /* محتوای لیبل */
         .label-content {
             display: flex;
             flex-direction: column;
@@ -200,36 +1303,10 @@
             padding: 0 !important;
         }
 
-        /* استایل‌های غیرچاپی */
-        .no-print {
-            text-align: center;
-            margin: 20px auto !important;
-            padding: 20px !important;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 600px;
-        }
-
-        .print-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0 !important;
-            padding: 15px !important;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0 !important;
-        }
-
+        /* ============ استایل‌های کنترل (غیرچاپ) ============ */
         .btn {
             padding: 12px 24px !important;
-            margin: 0 5px !important;
+            margin: 5px !important;
             border: none;
             border-radius: 6px;
             font-size: 1rem;
@@ -251,7 +1328,7 @@
         .btn-primary:hover {
             background: linear-gradient(45deg, #2E7D32, #4CAF50);
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
         }
 
         .btn-secondary {
@@ -265,45 +1342,24 @@
 
         .printer-specs {
             background: #e3f2fd;
-            padding: 12px !important;
-            border-radius: 6px;
-            margin: 12px 0 !important;
+            padding: 15px !important;
+            border-radius: 8px;
+            margin: 15px 0 !important;
             border-right: 4px solid #2196f3;
         }
 
         .specs-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 8px !important;
-            font-size: 0.85rem;
+            gap: 10px;
+            margin-top: 10px !important;
+            font-size: 0.9rem;
         }
 
         .spec-item {
             display: flex;
             justify-content: space-between;
-            padding: 2px 0 !important;
-        }
-
-        .preview-title {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 10px !important;
-        }
-
-        .size-display {
-            text-align: center;
-            margin: 10px 0 !important;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .center-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
+            padding: 3px 0 !important;
         }
 
         .products-summary {
@@ -325,14 +1381,34 @@
             border-bottom: none;
         }
 
+        .print-form {
+            display: inline;
+        }
+
+        .warning-box {
+            background: #fff8e1;
+            border: 2px solid #ffb300;
+            border-radius: 8px;
+            padding: 15px !important;
+            margin: 15px 0 !important;
+        }
+
+        .center-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
         .preview-label {
-            width: 40mm;
+            width: 38mm;
             height: 20mm;
             background: white;
             border: 1px dashed #ccc;
             display: flex;
             flex-direction: column;
             margin: 2px !important;
+            padding: 1mm !important;
         }
 
         .preview-row {
@@ -346,25 +1422,52 @@
             padding: 10px !important;
             border-radius: 8px;
             background: #f9f9f9;
+            max-width: 400px;
+            margin: 0 auto !important;
+        }
+
+        /* پیام برای بارکدهای نامعتبر */
+        .invalid-barcode {
+            font-size: 5pt !important;
+            color: #ff0000 !important;
+            text-align: center;
+            font-weight: bold;
+            margin: 1mm 0 !important;
+            padding: 0.5mm !important;
+            background: #fff0f0;
+            border: 0.3mm dashed #ff0000;
+            border-radius: 1mm;
+        }
+
+        /* تنظیمات فونت برای چاپگر */
+        @font-face {
+            font-family: 'PrintBarcode';
+            src: local('Libre Barcode 128'), url('https://fonts.gstatic.com/s/librebarcode128/v17/cIfnMbdUsUoiW3O_hVviCwVjuLtXeJ_A_gMk0izH.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* تضمین سیاه بودن رنگ‌ها در چاپ */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+    <!-- بخش کنترل (غیرچاپ) -->
     <div class="no-print">
-        <h2>چاپ لیبل - چاپگر MEVA 4200</h2>
+        <h2><i class="fas fa-print"></i> چاپ لیبل - چاپگر MEVA 4200</h2>
 
         <div class="printer-specs">
-            <h3><i class="fas fa-print"></i> مشخصات چاپ</h3>
+            <h3><i class="fas fa-info-circle"></i> تنظیمات فنی چاپ</h3>
             <div class="specs-grid">
                 <div class="spec-item">
                     <span>سایز لیبل:</span>
-                    <strong>40×20 میلی‌متر (عرض × طول)</strong>
+                    <strong>40×20 میلی‌متر</strong>
                 </div>
                 <div class="spec-item">
-                    <span>تعداد لیبل در ردیف:</span>
+                    <span>تعداد در هر ردیف:</span>
                     <strong>۲ عدد</strong>
                 </div>
                 <div class="spec-item">
@@ -373,15 +1476,23 @@
                 </div>
                 <div class="spec-item">
                     <span>ابعاد بارکد:</span>
-                    <strong>33×7 میلی‌متر (متوسط)</strong>
+                    <strong>36×7 میلی‌متر</strong>
                 </div>
                 <div class="spec-item">
-                    <span>فاصله‌بندی:</span>
-                    <strong>کناره‌ها: 1mm | وسط: 2mm | بالا: 1mm</strong>
+                    <span>فونت بارکد:</span>
+                    <strong>Libre Barcode 128 (30pt)</strong>
                 </div>
                 <div class="spec-item">
-                    <span>نوع قیمت:</span>
-                    <strong>قیمت فروش</strong>
+                    <span>فاصله کاراکترها:</span>
+                    <strong>2.8px</strong>
+                </div>
+                <div class="spec-item">
+                    <span>رنگ:</span>
+                    <strong>سیاه روی سفید</strong>
+                </div>
+                <div class="spec-item">
+                    <span>نوع بارکد:</span>
+                    <strong>CODE128</strong>
                 </div>
             </div>
         </div>
@@ -392,7 +1503,7 @@
             {% regroup all_labels by product_name as product_list %}
             {% for product in product_list %}
             <div class="summary-item">
-                <span>{{ product.grouper }}</span>
+                <span>{{ product.grouper|truncatechars:30 }}</span>
                 <strong>{{ product.list|length }} لیبل</strong>
             </div>
             {% endfor %}
@@ -402,28 +1513,33 @@
             </div>
         </div>
 
-        <div class="size-display">
-            <strong>ابعاد لیبل:</strong> عرض ۴۰mm × طول ۲۰mm | <strong>بارکد:</strong> ۳۳mm × ۷mm | <strong>قیمت:</strong> فروش
-        </div>
-
-        <!-- پیش‌نمایش لیبل -->
-        <div style="text-align: center;">
-            <div class="preview-title">پیش‌نمایش لیبل‌ها (قیمت فروش):</div>
+        <!-- پیش‌نمایش -->
+        <div style="text-align: center; margin: 20px 0 !important;">
+            <h3><i class="fas fa-eye"></i> پیش‌نمایش لیبل</h3>
             <div class="center-container">
                 <div class="preview-container">
-                    {% for label in all_labels|slice:":6" %}
+                    {% for label in all_labels|slice:":4" %}
                         {% if forloop.counter0|divisibleby:2 %}
                         <div class="preview-row">
                         {% endif %}
 
                         <div class="preview-label">
                             {% if label.show_name %}
-                            <div class="product-name">{{ label.product_name }}</div>
+                            <div class="product-name">{{ label.product_name|truncatechars:20 }}</div>
                             {% endif %}
 
                             <div class="barcode-container">
-                                <div class="barcode">*{{ label.barcode }}*</div>
-                                <div class="barcode-number">{{ label.barcode }}</div>
+                                <div class="barcode">
+                                    {% if label.barcode and label.barcode != 'ندارد' %}
+                                        {{ label.barcode }}
+                                    {% else %}
+                                        بدون بارکد
+                                    {% endif %}
+                                </div>
+
+                                {% if label.barcode and label.barcode != 'ندارد' %}
+                                <div class="barcode-number">{{ label.barcode|truncatechars:15 }}</div>
+                                {% endif %}
                             </div>
 
                             {% if label.show_price %}
@@ -437,46 +1553,70 @@
                     {% endfor %}
                 </div>
             </div>
-            {% if total_labels > 6 %}
+
+            {% if total_labels > 4 %}
             <div style="margin-top: 10px !important; color: #666; font-size: 0.9rem;">
-                و {{ total_labels|add:"-6" }} لیبل دیگر...
+                <i class="fas fa-ellipsis-h"></i>
+                و {{ total_labels|add:"-4" }} لیبل دیگر...
             </div>
             {% endif %}
         </div>
 
-        <div style="margin: 20px 0 !important; text-align: center;">
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-print"></i> چاپ تمام لیبل‌ها
-            </button>
+        <!-- دکمه‌های کنترل -->
+        <div style="margin: 25px 0 !important; text-align: center;">
+            <form method="post" class="print-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-print"></i> ثبت و چاپ لیبل‌ها
+                </button>
+            </form>
+
             <a href="{% url 'label_settings' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-right"></i> بازگشت به تنظیمات
             </a>
+
             <a href="{% url 'label_generator' %}" class="btn btn-secondary">
-                <i class="fas fa-shopping-cart"></i> بازگشت به انتخاب کالا
+                <i class="fas fa-shopping-cart"></i> انتخاب کالای جدید
             </a>
+
+            <button onclick="printLabels()" class="btn btn-primary" style="background: linear-gradient(45deg, #2196F3, #0D47A1);">
+                <i class="fas fa-redo"></i> چاپ مجدد
+            </button>
         </div>
 
-        <div style="color: #666; font-size: 0.8rem; margin-top: 15px !important; padding: 10px !important; background: #d4edda; border-radius: 4px;">
-            <i class="fas fa-info-circle"></i>
-            <strong>راهنمایی:</strong>
-            <ul style="margin: 5px 0 5px 20px !important;">
-                <li>لیبل‌ها با سایز <strong>40×20 میلی‌متر (عرض × طول)</strong> چاپ خواهند شد</li>
-                <li>بارکد با ابعاد دقیق <strong>33×7 میلی‌متر</strong> چاپ می‌شود</li>
-                <li><strong>قیمت نمایش داده شده: قیمت فروش</strong> کالاها است</li>
-                <li><strong>فاصله از چپ و راست: 1mm</strong></li>
-                <li><strong>فاصله بین لیبل‌ها: 2mm</strong> (بیشتر از کناره)</li>
-                <li><strong>فاصله از بالا: 1mm</strong></li>
-                <li><strong>همه المان‌ها در لیبل وسط چین</strong> هستند</li>
-                <li><strong>عدد بارکد به صورت ریز</strong> زیر بارکد نمایش داده می‌شود</li>
-                <li>در هر ردیف <strong>۲ لیبل</strong> قرار می‌گیرد</li>
-                <li>همه المان‌ها مشکی هستند</li>
-                <li>تعداد کل لیبل‌ها: <strong>{{ total_labels }} عدد</strong></li>
-            </ul>
+        <!-- راهنمای عیب‌یابی بارکد -->
+        <div class="warning-box">
+            <h3><i class="fas fa-life-ring"></i> راهنمای عیب‌یابی بارکد</h3>
+            <p><strong>اگر بارکدخوان نمی‌خواند:</strong></p>
+            <ol style="margin-right: 20px !important;">
+                <li>بارکد باید <strong>سیاه خالص</strong> روی زمینه <strong>سفید خالص</strong> باشد</li>
+                <li>بارکد ۱۲ رقمی باید <strong>بدون * یا کاراکتر اضافه</strong> باشد</li>
+                <li>در چاپگر <strong>Density را روی 14-16</strong> تنظیم کنید</li>
+                <li><strong>Speed را روی 2-3</strong> (آهسته) تنظیم کنید</li>
+                <li>بارکد باید <strong>کشیده و واضح</strong> باشد (transform: scaleY(1.35))</li>
+                <li><strong>فاصله کاراکترها</strong> باید کافی باشد (letter-spacing: 2.8px)</li>
+                <li>بارکد باید حداقل <strong>۲۵ میلی‌متر طول</strong> داشته باشد</li>
+            </ol>
+        </div>
+
+        <!-- تست بارکد -->
+        <div style="background: #e8f5e9; padding: 15px !important; border-radius: 8px; margin: 20px 0 !important;">
+            <h3><i class="fas fa-vial"></i> تست تنظیمات بارکد</h3>
+            <div style="font-size: 0.9rem;">
+                <p>بارکدهای تست برای دستگاه بارکدخوان:</p>
+                <div style="font-family: monospace; background: white; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    <p><strong>UPC-A (12 رقم):</strong> 123456789012</p>
+                    <p><strong>EAN-13 (13 رقم):</strong> 6264004000015</p>
+                    <p><strong>CODE128:</strong> ABC123456789</p>
+                </div>
+                <p>این بارکدها باید توسط دستگاه خوانده شوند.</p>
+            </div>
         </div>
     </div>
 
+    <!-- بخش قابل چاپ -->
     <div class="print-area">
-        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->
+        <!-- چاپ لیبل‌ها -->
         {% for label in all_labels %}
             {% if forloop.counter0|divisibleby:2 %}
             <div class="label-row">
@@ -485,12 +1625,27 @@
             <div class="label">
                 <div class="label-content">
                     {% if label.show_name %}
-                    <div class="product-name">{{ label.product_name }}</div>
+                    <div class="product-name">{{ label.product_name|truncatechars:25 }}</div>
                     {% endif %}
 
                     <div class="barcode-container">
-                        <div class="barcode">*{{ label.barcode }}*</div>
-                        <div class="barcode-number">{{ label.barcode }}</div>
+                        <!-- بارکد اصلی -->
+                        <div class="barcode">
+                            {% if label.barcode and label.barcode != 'ندارد' %}
+                                {% if label.is_valid %}
+                                    {{ label.barcode }}
+                                {% else %}
+                                    {{ label.barcode }}
+                                {% endif %}
+                            {% else %}
+                                بدون بارکد
+                            {% endif %}
+                        </div>
+
+                        <!-- عدد بارکد -->
+                        {% if label.barcode and label.barcode != 'ندارد' %}
+                        <div class="barcode-number">{{ label.barcode|truncatechars:18 }}</div>
+                        {% endif %}
                     </div>
 
                     {% if label.show_price %}
@@ -506,584 +1661,84 @@
     </div>
 
     <script>
-        function printLabel() {
+        // تابع چاپ
+        function printLabels() {
             console.log('🖨️ شروع چاپ لیبل‌ها...');
-            console.log('📏 سایز لیبل: 40×20 میلی‌متر (عرض × طول)');
-            console.log('📐 ابعاد بارکد: 33×7 میلی‌متر (متوسط)');
-            console.log('📊 تعداد کل لیبل‌ها: {{ total_labels }}');
-            console.log('💰 نوع قیمت: قیمت فروش');
-            console.log('📏 فاصله‌بندی: کناره=1mm | وسط=2mm | بالا=1mm');
+            console.log('📏 سایز لیبل: 40×20 میلی‌متر');
+            console.log('📐 ابعاد بارکد: 36×7 میلی‌متر');
+            console.log('🔤 فونت بارکد: Libre Barcode 128 (30pt)');
+            console.log('📏 فاصله کاراکترها: 2.8px');
+            console.log('⚫ رنگ: سیاه خالص');
+            console.log('📊 تعداد: {{ total_labels }} لیبل');
 
             window.print();
         }
 
+        // چاپ خودکار پس از POST
+        {% if auto_print %}
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🖨️ چاپ خودکار فعال شده');
+            console.log('⚙️ تنظیمات بارکد:');
+            console.log('- فونت: Libre Barcode 128');
+            console.log('- سایز: 30pt');
+            console.log('- فاصله کاراکترها: 2.8px');
+            console.log('- کشیدگی: 1.35x');
+            console.log('- رنگ: #000000');
+
+            setTimeout(() => {
+                window.print();
+            }, 800); // تاخیر برای بارگذاری فونت
+        });
+        {% endif %}
+
+        // رویدادهای چاپ
         window.onbeforeprint = function() {
             console.log('📄 آماده چاپ لیبل‌ها...');
-            console.log('✅ ابعاد لیبل: عرض 40mm × طول 20mm');
-            console.log('✅ ابعاد بارکد: طول 33mm × ارتفاع 7mm (متوسط)');
-            console.log('💰 نوع قیمت: قیمت فروش');
-            console.log('✅ فاصله: کناره=1mm | وسط=2mm | بالا=1mm');
-            console.log('✅ تعداد: {{ total_labels }} لیبل');
+            console.log('✅ تنظیمات بارکد:');
+            console.log('   - سایز: 30pt');
+            console.log('   - فاصله: 2.8px');
+            console.log('   - کشیدگی: 1.35x');
+            console.log('   - رنگ: سیاه خالص');
+            console.log('✅ تعداد لیبل‌ها: {{ total_labels }}');
+            console.log('✅ سایز لیبل: 40×20 میلی‌متر');
+            console.log('✅ سایز بارکد: 36×7 میلی‌متر');
         };
 
         window.onafterprint = function() {
             console.log('✅ چاپ تکمیل شد');
+
             setTimeout(() => {
-                alert('{{ total_labels }} لیبل با سایز 40×20 میلی‌متر و قیمت فروش با موفقیت چاپ شدند.');
+                alert('{{ total_labels }} لیبل با موفقیت چاپ شدند.\nبارکدها با تنظیمات بهینه برای اسکنرها تولید شده‌اند.');
             }, 500);
         };
-    </script>
-</body>
-</html>
 
+        // تست تنظیمات بارکد
+        function testBarcodeSettings() {
+            const testBarcodes = [
+                {code: '123456789012', type: 'UPC-A (12 رقم)'},
+                {code: '6264004000015', type: 'EAN-13 (13 رقم)'},
+                {code: 'ABC123456789', type: 'CODE128'}
+            ];
 
-{% load static %}
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>چاپ لیبل - MEVA 4200</title>
-    <style>
-        /* Reset کامل برای چاپ */
-        * {
-            margin: 0 !important;
-            padding: 0 !important;
-            box-sizing: border-box;
+            console.log('🧪 تست تنظیمات بارکد:');
+            testBarcodes.forEach(b => {
+                console.log(`   ${b.type}: ${b.code}`);
+            });
         }
 
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            .print-area, .print-area * {
-                visibility: visible;
-            }
-            .print-area {
-                position: absolute;
-                left: 50%;
-                top: 0;
-                transform: translateX(-50%);
-                width: 80mm;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            .no-print {
-                display: none !important;
-            }
-        }
-
-        /* تنظیمات صفحه برای چاپگر لیبل */
-        @page {
-            size: 80mm auto;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #f5f5f5;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* استایل‌های اصلی چاپ */
-        .print-area {
-            width: 80mm;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* کانتینر برای ردیف‌های لیبل - فاصله‌بندی دقیق */
-        .label-row {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin: 0 !important;
-            padding: 0 1mm !important; /* فاصله چپ و راست: 1mm */
-            gap: 2mm !important; /* فاصله بین دو لیبل: 2mm (بیشتر از کناره) */
-        }
-
-        /* استایل لیبل - با فاصله از بالا و وسط چین کامل */
-        .label {
-            width: 38mm; /* کاهش عرض برای ایجاد فاصله */
-            height: 19mm; /* کاهش ارتفاع برای ایجاد فاصله از بالا */
-            background: white;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* وسط چین افقی */
-            position: relative;
-            overflow: hidden;
-            margin: 1mm 0 0 0 !important; /* فاصله از بالا: 1mm */
-            padding: 0 !important;
-        }
-
-        /* نام محصول - وسط چین کامل */
-        .product-name {
-            font-size: 7pt !important;
-            font-weight: 900;
-            line-height: 1 !important;
-            text-align: center;
-            height: 5mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            margin: 0 !important;
-            padding: 0 !important;
-            word-break: break-word;
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            color: #000000 !important;
-            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
-        }
-
-        /* کانتینر بارکد - وسط چین کامل - طول 33mm */
-        .barcode-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 33mm !important; /* طول بارکد: 33mm */
-            height: 9mm !important;
-            overflow: hidden;
-            position: relative;
-            border: none;
-            margin: 0 auto !important; /* وسط چین افقی */
-            padding: 0 !important;
-        }
-
-        /* بارکد - کمی نازک‌تر و وسط چین کامل */
-        .barcode {
-            font-family: 'Libre Barcode 128', cursive;
-            font-size: 25pt !important; /* سایز متعادل */
-            line-height: 1 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            letter-spacing: 1.5px;
-            transform: scaleY(1.4) !important; /* نازک‌تر از قبل اما هنوز قابل اسکن */
-            transform-origin: center;
-            display: block;
-            width: 100% !important;
-            text-align: center;
-            height: 7mm !important;
-            color: #000000 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        /* عدد بارکد - وسط چین کامل */
-        .barcode-number {
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            font-size: 5pt !important;
-            font-weight: normal;
-            line-height: 1 !important;
-            text-align: center;
-            height: 2mm !important;
-            color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            letter-spacing: 0.5px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
-        }
-
-        /* قیمت - وسط چین کامل */
-        .price {
-            font-size: 7pt !important;
-            font-weight: 900;
-            line-height: 1 !important;
-            text-align: center;
-            height: 4mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            margin: 0 !important;
-            padding: 0 !important;
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            color: #000000 !important;
-            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
-        }
-
-        /* کانتینر محتوا برای توزیع فضا و وسط چین کامل */
-        .label-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            height: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        /* استایل‌های غیرچاپی */
-        .no-print {
-            text-align: center;
-            margin: 20px auto !important;
-            padding: 20px !important;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 600px;
-        }
-
-        .print-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0 !important;
-            padding: 15px !important;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0 !important;
-        }
-
-        .btn {
-            padding: 12px 24px !important;
-            margin: 0 5px !important;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: 'Vazirmatn', sans-serif;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #4CAF50, #2E7D32);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(45deg, #2E7D32, #4CAF50);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #2c3e50;
-        }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .printer-specs {
-            background: #e3f2fd;
-            padding: 12px !important;
-            border-radius: 6px;
-            margin: 12px 0 !important;
-            border-right: 4px solid #2196f3;
-        }
-
-        .specs-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 8px !important;
-            font-size: 0.85rem;
-        }
-
-        .spec-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 2px 0 !important;
-        }
-
-        .preview-title {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 10px !important;
-        }
-
-        .size-display {
-            text-align: center;
-            margin: 10px 0 !important;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .center-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-
-        .products-summary {
-            margin: 20px 0 !important;
-            padding: 15px !important;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0 !important;
-            border-bottom: 1px solid #eee;
-        }
-
-        .summary-item:last-child {
-            border-bottom: none;
-        }
-
-        .preview-label {
-            width: 40mm;
-            height: 20mm;
-            background: white;
-            border: 1px dashed #ccc;
-            display: flex;
-            flex-direction: column;
-            margin: 2px !important;
-        }
-
-        .preview-row {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px !important;
-        }
-
-        .preview-container {
-            border: 2px dashed #999;
-            padding: 10px !important;
-            border-radius: 8px;
-            background: #f9f9f9;
-        }
-
-        /* استایل برای فرم POST */
-        .print-form {
-            display: inline;
-        }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="no-print">
-        <h2>چاپ لیبل - چاپگر MEVA 4200</h2>
-
-        <div class="printer-specs">
-            <h3><i class="fas fa-print"></i> مشخصات چاپ</h3>
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <span>سایز لیبل:</span>
-                    <strong>40×20 میلی‌متر (عرض × طول)</strong>
-                </div>
-                <div class="spec-item">
-                    <span>تعداد لیبل در ردیف:</span>
-                    <strong>۲ عدد</strong>
-                </div>
-                <div class="spec-item">
-                    <span>تعداد کل لیبل‌ها:</span>
-                    <strong>{{ total_labels }} عدد</strong>
-                </div>
-                <div class="spec-item">
-                    <span>ابعاد بارکد:</span>
-                    <strong>33×7 میلی‌متر (متوسط)</strong>
-                </div>
-                <div class="spec-item">
-                    <span>فاصله‌بندی:</span>
-                    <strong>کناره‌ها: 1mm | وسط: 2mm | بالا: 1mm</strong>
-                </div>
-                <div class="spec-item">
-                    <span>نوع قیمت:</span>
-                    <strong>قیمت فروش</strong>
-                </div>
-            </div>
-        </div>
-
-        <!-- خلاصه محصولات -->
-        <div class="products-summary">
-            <h3><i class="fas fa-list"></i> خلاصه لیبل‌ها</h3>
-            {% regroup all_labels by product_name as product_list %}
-            {% for product in product_list %}
-            <div class="summary-item">
-                <span>{{ product.grouper }}</span>
-                <strong>{{ product.list|length }} لیبل</strong>
-            </div>
-            {% endfor %}
-            <div class="summary-item" style="background: #e8f5e9; margin-top: 10px !important; border-radius: 4px;">
-                <span><strong>جمع کل:</strong></span>
-                <strong>{{ total_labels }} لیبل</strong>
-            </div>
-        </div>
-
-        <div class="size-display">
-            <strong>ابعاد لیبل:</strong> عرض ۴۰mm × طول ۲۰mm | <strong>بارکد:</strong> ۳۳mm × ۷mm | <strong>قیمت:</strong> فروش
-        </div>
-
-        <!-- پیش‌نمایش لیبل -->
-        <div style="text-align: center;">
-            <div class="preview-title">پیش‌نمایش لیبل‌ها (قیمت فروش):</div>
-            <div class="center-container">
-                <div class="preview-container">
-                    {% for label in all_labels|slice:":6" %}
-                        {% if forloop.counter0|divisibleby:2 %}
-                        <div class="preview-row">
-                        {% endif %}
-
-                        <div class="preview-label">
-                            {% if label.show_name %}
-                            <div class="product-name">{{ label.product_name }}</div>
-                            {% endif %}
-
-                            <div class="barcode-container">
-                                <div class="barcode">*{{ label.barcode }}*</div>
-                                <div class="barcode-number">{{ label.barcode }}</div>
-                            </div>
-
-                            {% if label.show_price %}
-                            <div class="price">{{ label.price|floatformat:0 }} تومان</div>
-                            {% endif %}
-                        </div>
-
-                        {% if forloop.counter|divisibleby:2 or forloop.last %}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            {% if total_labels > 6 %}
-            <div style="margin-top: 10px !important; color: #666; font-size: 0.9rem;">
-                و {{ total_labels|add:"-6" }} لیبل دیگر...
-            </div>
-            {% endif %}
-        </div>
-
-        <div style="margin: 20px 0 !important; text-align: center;">
-            <!-- تغییر دکمه چاپ به فرم POST -->
-            <form method="post" class="print-form">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-print"></i> چاپ تمام لیبل‌ها
-                </button>
-            </form>
-            <a href="{% url 'label_settings' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-right"></i> بازگشت به تنظیمات
-            </a>
-            <a href="{% url 'label_generator' %}" class="btn btn-secondary">
-                <i class="fas fa-shopping-cart"></i> بازگشت به انتخاب کالا
-            </a>
-        </div>
-
-        <div style="color: #666; font-size: 0.8rem; margin-top: 15px !important; padding: 10px !important; background: #d4edda; border-radius: 4px;">
-            <i class="fas fa-info-circle"></i>
-            <strong>راهنمایی:</strong>
-            <ul style="margin: 5px 0 5px 20px !important;">
-                <li>لیبل‌ها با سایز <strong>40×20 میلی‌متر (عرض × طول)</strong> چاپ خواهند شد</li>
-                <li>بارکد با ابعاد دقیق <strong>33×7 میلی‌متر</strong> چاپ می‌شود</li>
-                <li><strong>قیمت نمایش داده شده: قیمت فروش</strong> کالاها است</li>
-                <li><strong>فاصله از چپ و راست: 1mm</strong></li>
-                <li><strong>فاصله بین لیبل‌ها: 2mm</strong> (بیشتر از کناره)</li>
-                <li><strong>فاصله از بالا: 1mm</strong></li>
-                <li><strong>همه المان‌ها در لیبل وسط چین</strong> هستند</li>
-                <li><strong>عدد بارکد به صورت ریز</strong> زیر بارکد نمایش داده می‌شود</li>
-                <li>در هر ردیف <strong>۲ لیبل</strong> قرار می‌گیرد</li>
-                <li>همه المان‌ها مشکی هستند</li>
-                <li>تعداد کل لیبل‌ها: <strong>{{ total_labels }} عدد</strong></li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="print-area">
-        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->
-        {% for label in all_labels %}
-            {% if forloop.counter0|divisibleby:2 %}
-            <div class="label-row">
-            {% endif %}
-
-            <div class="label">
-                <div class="label-content">
-                    {% if label.show_name %}
-                    <div class="product-name">{{ label.product_name }}</div>
-                    {% endif %}
-
-                    <div class="barcode-container">
-                        <div class="barcode">*{{ label.barcode }}*</div>
-                        <div class="barcode-number">{{ label.barcode }}</div>
-                    </div>
-
-                    {% if label.show_price %}
-                    <div class="price">{{ label.price|floatformat:0 }} تومان</div>
-                    {% endif %}
-                </div>
-            </div>
-
-            {% if forloop.counter|divisibleby:2 or forloop.last %}
-            </div>
-            {% endif %}
-        {% endfor %}
-    </div>
-
-    <script>
-        // چاپ خودکار پس از ثبت تاریخچه (فقط در صورت POST)
-        document.addEventListener('DOMContentLoaded', function() {
-            {% if auto_print %}
-                console.log('🖨️ شروع چاپ لیبل‌ها...');
-                console.log('📏 سایز لیبل: 40×20 میلی‌متر (عرض × طول)');
-                console.log('📐 ابعاد بارکد: 33×7 میلی‌متر (متوسط)');
-                console.log('📊 تعداد کل لیبل‌ها: {{ total_labels }}');
-                console.log('💰 نوع قیمت: قیمت فروش');
-                console.log('📏 فاصله‌بندی: کناره=1mm | وسط=2mm | بالا=1mm');
-
-                window.print();
-            {% endif %}
+        // اجرای تست هنگام بارگذاری
+        window.addEventListener('load', function() {
+            testBarcodeSettings();
         });
 
-        window.onbeforeprint = function() {
-            console.log('📄 آماده چاپ لیبل‌ها...');
-            console.log('✅ ابعاد لیبل: عرض 40mm × طول 20mm');
-            console.log('✅ ابعاد بارکد: طول 33mm × ارتفاع 7mm (متوسط)');
-            console.log('💰 نوع قیمت: قیمت فروش');
-            console.log('✅ فاصله: کناره=1mm | وسط=2mm | بالا=1mm');
-            console.log('✅ تعداد: {{ total_labels }} لیبل');
-        };
-
-        window.onafterprint = function() {
-            console.log('✅ چاپ تکمیل شد');
-            setTimeout(() => {
-                alert('{{ total_labels }} لیبل با سایز 40×20 میلی‌متر و قیمت فروش با موفقیت چاپ شدند.');
-            }, 500);
-        };
+        // اطلاعات برای تکنسین
+        console.log('🔧 اطلاعات فنی برای تنظیم چاپگر:');
+        console.log('- چاپگر: MEVA 4200');
+        console.log('- Density: 14-16');
+        console.log('- Speed: 2-3');
+        console.log('- Darkness: +2 تا +3');
+        console.log('- سایز لیبل: 40×20 میلی‌متر');
+        console.log('- فاصله لیبل‌ها: 1mm');
     </script>
 </body>
 </html>
-
