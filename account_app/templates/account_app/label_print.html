@@ -476,35 +476,28 @@
     </div>
 
     <div class="print-area">
-        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->
-        {% for label in all_labels %}
-            {% if forloop.counter0|divisibleby:2 %}
-            <div class="label-row">
-            {% endif %}
-
-            <div class="label">
-                <div class="label-content">
-                    {% if label.show_name %}
-                    <div class="product-name">{{ label.product_name }}</div>
-                    {% endif %}
-
-                    <div class="barcode-container">
-                        <div class="barcode">{{ label.barcode }}</div>
-                        <div class="barcode-number">{{ label.barcode }}</div>
-                    </div>
-
-                    {% if label.show_price %}
-                    <div class="price">{{ label.price|floatformat:0 }} تومان</div>
-                    {% endif %}
+            <div class="label-row" style="border: 2px solid red; margin-bottom: 5mm !important;">
+        <div class="label" style="border: 2px solid blue;">
+            <div class="label-content">
+                <div class="product-name">تست استاندارد</div>
+                <div class="barcode-container">
+                    <div class="barcode">5901234123457</div>
+                    <div class="barcode-number">5901234123457</div>
                 </div>
+                <div class="price">100,000 تومان</div>
             </div>
-
-            {% if forloop.counter|divisibleby:2 or forloop.last %}
+        </div>
+        <div class="label" style="border: 2px solid blue;">
+            <div class="label-content">
+                <div class="product-name">تست استاندارد</div>
+                <div class="barcode-container">
+                    <div class="barcode">5901234123457</div>
+                    <div class="barcode-number">5901234123457</div>
+                </div>
+                <div class="price">100,000 تومان</div>
             </div>
-            {% endif %}
-        {% endfor %}
-    </div>
-
+        </div>
+    </div>    </div>
     <script>
         function printLabel() {
             console.log('🖨️ شروع چاپ لیبل‌ها...');
