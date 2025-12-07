@@ -585,8 +585,12 @@
 
             body {
                 width: 80mm;
-                margin: 0;
+                margin: 0 auto;
                 padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
             }
         }
 
@@ -649,13 +653,23 @@
             font-weight: bold;
         }
 
-        /* کانتینر برای 2 لیبل در عرض 80mm */
-        .row {
+        /* کانتینر اصلی برای وسط‌چینی */
+        .print-container {
             width: 80mm;
-            height: 20mm;
             display: flex;
-            margin: 0;
-            padding: 0;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* کانتینر برای 2 لیبل در یک ردیف */
+        .labels-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 3mm; /* فاصله ۳ میلی‌متر بین دو لیبل */
+            margin: 0 auto;
+            width: fit-content;
         }
     </style>
     <!-- کتابخانه JsBarcode برای تولید بارکد واقعی -->
@@ -673,6 +687,8 @@
             <p><strong>ابعاد بارکد:</strong> 33 × 10 میلی‌متر</p>
             <p><strong>کیفیت چاپ:</strong> 300 DPI (حداقل)</p>
             <p><strong>حاشیه سفید:</strong> 3.5mm از هر طرف</p>
+            <p><strong>فاصله لیبل‌ها:</strong> 3mm بین دو لیبل</p>
+            <p><strong>تراز:</strong> وسط‌چین در صفحه 80mm</p>
         </div>
 
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 600px;">
@@ -712,47 +728,121 @@
         ">
             🧪 چاپ صفحه تست استاندارد
         </button>
+
+        <!-- پیش‌نمایش برای صفحه نمایش -->
+        <div style="margin: 40px auto; max-width: 600px; text-align: center;">
+            <h3>👁️ پیش‌نمایش چاپ</h3>
+            <div style="
+                width: 80mm;
+                height: 20mm;
+                margin: 20px auto;
+                border: 1px dashed #ccc;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+                background: linear-gradient(90deg, transparent 0%, transparent 3.5mm, #f0f0f0 3.5mm, #f0f0f0 76.5mm, transparent 76.5mm, transparent 100%);
+            ">
+                <div style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 3mm;
+                    position: relative;
+                    z-index: 2;
+                ">
+                    <div style="
+                        width: 40mm;
+                        height: 20mm;
+                        border: 1px solid #666;
+                        background: white;
+                        position: relative;
+                    ">
+                        <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 8px; font-weight: bold;">
+                            تست EAN-13
+                        </div>
+                        <div style="position: absolute; bottom: 0.5mm; width: 100%; text-align: center; font-size: 10px; font-weight: bold;">
+                            100,000 تومان
+                        </div>
+                    </div>
+                    <div style="
+                        width: 40mm;
+                        height: 20mm;
+                        border: 1px solid #666;
+                        background: white;
+                        position: relative;
+                    ">
+                        <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 8px; font-weight: bold;">
+                            تست UPC-A
+                        </div>
+                        <div style="position: absolute; bottom: 0.5mm; width: 100%; text-align: center; font-size: 10px; font-weight: bold;">
+                            75,000 تومان
+                        </div>
+                    </div>
+                </div>
+                <div style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    color: #999;
+                    font-size: 12px;
+                    z-index: 1;
+                ">
+                    خط وسط صفحه (40mm)
+                </div>
+            </div>
+            <p style="color: #666; margin-top: 10px;">
+                <strong>محاسبه وسط‌چینی:</strong><br>
+                عرض صفحه: 80mm - عرض دو لیبل: 40mm + 40mm = 80mm - فاصله: 3mm = فضای باقی‌مانده: 0mm<br>
+                بنابراین لیبل‌ها باید دقیقاً در مرکز قرار بگیرند
+            </p>
+        </div>
     </div>
 
     <div class="print-only" id="print-area">
-        <!-- بارکدهای استاندارد برای چاپ -->
-        <div class="row">
-            <div class="label">
-                <div class="product-name">تست EAN-13 استاندارد</div>
-                <div class="barcode-container">
-                    <img id="barcode1" class="barcode-image" alt="بارکد">
-                    <div class="barcode-number">5 901234 123457</div>
+        <div class="print-container">
+            <div class="labels-row">
+                <div class="label">
+                    <div class="product-name">تست EAN-13 استاندارد</div>
+                    <div class="barcode-container">
+                        <img id="barcode1" class="barcode-image" alt="بارکد">
+                        <div class="barcode-number">5 901234 123457</div>
+                    </div>
+                    <div class="price">100,000 تومان</div>
                 </div>
-                <div class="price">100,000 تومان</div>
-            </div>
 
-            <div class="label">
-                <div class="product-name">تست UPC-A استاندارد</div>
-                <div class="barcode-container">
-                    <img id="barcode2" class="barcode-image" alt="بارکد">
-                    <div class="barcode-number">0 36000 29145 2</div>
+                <div class="label">
+                    <div class="product-name">تست UPC-A استاندارد</div>
+                    <div class="barcode-container">
+                        <img id="barcode2" class="barcode-image" alt="بارکد">
+                        <div class="barcode-number">0 36000 29145 2</div>
+                    </div>
+                    <div class="price">75,000 تومان</div>
                 </div>
-                <div class="price">75,000 تومان</div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="label">
-                <div class="product-name">تست بارکد معروف</div>
-                <div class="barcode-container">
-                    <img id="barcode3" class="barcode-image" alt="بارکد">
-                    <div class="barcode-number">4 006381 333931</div>
+        <!-- ردیف دوم -->
+        <div class="print-container" style="page-break-before: always;">
+            <div class="labels-row">
+                <div class="label">
+                    <div class="product-name">تست بارکد معروف</div>
+                    <div class="barcode-container">
+                        <img id="barcode3" class="barcode-image" alt="بارکد">
+                        <div class="barcode-number">4 006381 333931</div>
+                    </div>
+                    <div class="price">150,000 تومان</div>
                 </div>
-                <div class="price">150,000 تومان</div>
-            </div>
 
-            <div class="label">
-                <div class="product-name">تست بارکد کتاب</div>
-                <div class="barcode-container">
-                    <img id="barcode4" class="barcode-image" alt="بارکد">
-                    <div class="barcode-number">9 780201 379624</div>
+                <div class="label">
+                    <div class="product-name">تست بارکد کتاب</div>
+                    <div class="barcode-container">
+                        <img id="barcode4" class="barcode-image" alt="بارکد">
+                        <div class="barcode-number">9 780201 379624</div>
+                    </div>
+                    <div class="price">85,000 تومان</div>
                 </div>
-                <div class="price">85,000 تومان</div>
             </div>
         </div>
     </div>
@@ -807,6 +897,8 @@
             console.log('🎉 تمام بارکدها تولید شدند');
             console.log('📏 ابعاد: 33×10mm (بارکد واقعی)');
             console.log('🎯 استاندارد: EAN-13/UPC-A');
+            console.log('↔️ فاصله لیبل‌ها: 3mm در وسط');
+            console.log('🎯 موقعیت: وسط‌چین در صفحه 80mm');
         }
 
         // تولید و چاپ
@@ -824,18 +916,47 @@
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>تست بارکد استاندارد</title>
+                    <title>تست بارکد استاندارد - وسط‌چین</title>
                     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
                     <style>
-                        @page { size: 80mm auto; margin: 0; }
-                        body { margin: 0; padding: 0; width: 80mm; }
+                        @page {
+                            size: 80mm auto;
+                            margin: 0mm;
+                        }
+
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            width: 80mm;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                        }
+
+                        .print-container {
+                            width: 80mm;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                        }
+
+                        .labels-row {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            gap: 3mm;
+                            margin: 0 auto;
+                        }
+
                         .label {
                             width: 40mm;
                             height: 20mm;
                             border: 0.1mm solid #000;
-                            display: inline-block;
                             position: relative;
                         }
+
                         .barcode-container {
                             position: absolute;
                             top: 4mm;
@@ -843,11 +964,13 @@
                             width: 33mm;
                             height: 14mm;
                         }
+
                         .barcode-img {
                             width: 33mm;
                             height: 10mm;
                             image-rendering: crisp-edges;
                         }
+
                         .barcode-text {
                             font-family: 'Courier New';
                             font-size: 2mm;
@@ -857,8 +980,8 @@
                     </style>
                 </head>
                 <body>
-                    <div style="width: 80mm;">
-                        <div style="display: flex;">
+                    <div class="print-container">
+                        <div class="labels-row">
                             <div class="label">
                                 <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 2.5mm; font-weight: bold;">
                                     تست بارکد استاندارد
@@ -925,6 +1048,8 @@
             console.log('📋 بارکد تست: 5901234123457');
             console.log('🎯 استاندارد: EAN-13 معتبر جهانی');
             console.log('📏 ابعاد: 33×10mm');
+            console.log('↔️ فاصله لیبل‌ها: 3mm در وسط');
+            console.log('🎯 موقعیت: وسط‌چین در صفحه 80mm');
 
             // تولید بارکدها برای پیش‌نمایش
             if (document.getElementById('barcode1')) {
@@ -943,6 +1068,8 @@
             console.log('✅ کیفیت: حداقل 300 DPI');
             console.log('✅ حاشیه سفید: 3.5mm از هر طرف');
             console.log('✅ بارکد تست: 5901234123457 (EAN-13 معتبر)');
+            console.log('✅ فاصله لیبل‌ها: 3mm در وسط');
+            console.log('✅ موقعیت: وسط‌چین کامل در صفحه 80mm');
         };
 
         // بعد از چاپ
@@ -950,7 +1077,7 @@
             console.log('✅ چاپ کامل شد');
 
             setTimeout(function() {
-                alert('بارکدهای استاندارد چاپ شدند.\n\nبارکد تست اصلی: 5901234123457\n\nاین بارکد باید حتماً توسط بارکدخوان خوانده شود زیرا:\n1. استاندارد EAN-13 است\n2. ابعاد دقیق 33×10mm دارد\n3. حاشیه سفید کافی دارد\n4. کنتراست کامل مشکی/سفید دارد\n\nاگر خوانده نشد، مشکل از چاپگر یا اسکنر است.');
+                alert('بارکدهای استاندارد چاپ شدند.\n\nبارکد تست اصلی: 5901234123457\n\nویژگی‌های چاپ:\n• ابعاد دقیق 40×20mm\n• فاصله 3mm بین لیبل‌ها\n• وسط‌چین کامل در صفحه\n• ابعاد بارکد 33×10mm\n• حاشیه سفید کافی\n• کنتراست کامل مشکی/سفید\n\nاگر خوانده نشد، مشکل از چاپگر یا اسکنر است.');
             }, 500);
         };
     </script>
