@@ -1408,156 +1408,118 @@ def convert_persian_arabic_to_english(text):
 
 
 # ----------------------- چاپ لیبل -----------------------
-
 import os
-from barcode import Code128, Code39, EAN13, EAN8, UPCA
-from barcode.writer import ImageWriter
-from django.core.files.base import ContentFile
 import tempfile
+import base64
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
-def generate_high_quality_barcode(barcode_number):
+def generate_barcode_image(barcode_number):
     """
-    تولید بارکد با کیفیت بالا برای چاپ
+    تولید بارکد به صورت تصویر و بازگرداندن به صورت base64
     """
     try:
+        # پاکسازی و فرمت‌بندی بارکد
+        import re
         barcode_str = str(barcode_number).strip()
 
-        # انتخاب استاندارد مناسب
-        if barcode_str.isdigit():
-            if len(barcode_str) == 12:
-                # UPC-A
-                from barcode.upc import UniversalProductCodeA
-                barcode_class = UniversalProductCodeA(barcode_str, writer=ImageWriter())
-            elif len(barcode_str) == 13:
-                # EAN-13
-                from barcode.ean import EuropeanArticleNumber13
-                barcode_class = EuropeanArticleNumber13(barcode_str, writer=ImageWriter())
-            else:
-                # Code128 برای اعداد
-                from barcode.codex import Code128
-                barcode_class = Code128(barcode_str, writer=ImageWriter())
-        else:
-            # Code128 برای رشته‌های متنی
-            from barcode.codex import Code128
-            barcode_class = Code128(barcode_str, writer=ImageWriter())
+        # حذف کاراکترهای غیرعددی
+        barcode_digits = re.sub(r'\D', '', barcode_str)
 
-        # تنظیمات پیشرفته برای کیفیت بهتر
+        # اگر بارکد خالی است، یک بارکد تصادفی تولید کن
+        if not barcode_digits or len(barcode_digits) < 8:
+            import random
+            barcode_digits = ''.join([str(random.randint(0, 9)) for _ in range(12)])
+
+        # اطمینان از 12 رقمی بودن
+        if len(barcode_digits) > 12:
+            barcode_digits = barcode_digits[:12]
+        elif len(barcode_digits) < 12:
+            barcode_digits = barcode_digits.ljust(12, '0')
+
+        # تولید بارکد با python-barcode
+        from barcode import Code128
+        from barcode.writer import ImageWriter
+        from PIL import Image
+        import io
+
+        # تنظیمات بارکد
+        barcode_class = Code128(barcode_digits, writer=ImageWriter())
+
+        # ایجاد فایل موقت در حافظه
+        buffer = BytesIO()
+
+        # تنظیمات برای اندازه مناسب
         options = {
-            'module_height': 25.0,
-            'module_width': 0.3,
-            'quiet_zone': 6.5,
-            'font_size': 12,
-            'text_distance': 3.0,
-            'write_text': True,
+            'module_height': 8.0,
+            'module_width': 0.2,
+            'quiet_zone': 2.0,
+            'font_size': 0,
+            'write_text': False,
             'background': 'white',
             'foreground': 'black',
-            'center_text': True,
-            'dpi': 300,  # رزولوشن بالا برای چاپ
-            'compress': False,
+            'dpi': 203,
         }
 
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        temp_path = temp_file.name
+        # ذخیره بارکد در بافر
+        barcode_class.write(buffer, options=options)
 
-        barcode_class.write(temp_path, options=options)
+        # بازگرداندن به ابتدای بافر
+        buffer.seek(0)
 
-        return temp_path
+        # تبدیل به base64
+        barcode_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-    except Exception as e:
-        print(f"خطا در تولید بارکد با کیفیت: {e}")
-        return None
-
-def generate_barcode(barcode_number):
-    """
-    تولید بارکد استاندارد برای اعداد ۱۲ رقمی
-    """
-    try:
-        # بررسی نوع بارکد بر اساس طول
-        barcode_str = str(barcode_number).strip()
-
-        if len(barcode_str) == 12:
-            # UPC-A بارکد ۱۲ رقمی
-            # UPC-A به ۱۱ رقم + ۱ رقم کنترلی نیاز دارد
-            if barcode_str.isdigit():
-                # تولید بارکد UPC-A
-                barcode_class = UPCA(barcode_str, writer=ImageWriter())
-            else:
-                # اگر کاراکتر غیر عددی دارد از Code128 استفاده کن
-                barcode_class = Code128(barcode_str, writer=ImageWriter())
-        elif len(barcode_str) == 13:
-            # EAN-13 بارکد ۱۳ رقمی
-            barcode_class = EAN13(barcode_str, writer=ImageWriter())
-        elif len(barcode_str) <= 8:
-            # EAN-8 برای اعداد کوتاه
-            barcode_class = EAN8(barcode_str, writer=ImageWriter())
-        else:
-            # برای سایر موارد از Code128 استفاده کن
-            barcode_class = Code128(barcode_str, writer=ImageWriter())
-
-        # ایجاد فایل موقت برای بارکد
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        temp_path = temp_file.name
-
-        # ذخیره بارکد
-        barcode_class.write(temp_path, options={
-            'module_height': 15.0,  # ارتفاع بارکد
-            'module_width': 0.2,  # عرض هر ماژول
-            'quiet_zone': 6.5,  # منطقه خالی اطراف
-            'font_size': 10,  # سایز فونت عدد زیر بارکد
-            'text_distance': 5.0,  # فاصله عدد از بارکد
-            'write_text': True,  # نمایش عدد زیر بارکد
-            'background': 'white',  # پس زمینه سفید
-            'foreground': 'black',  # پیش زمینه سیاه
-        })
-
-        return temp_path
+        return f"data:image/png;base64,{barcode_base64}", barcode_digits
 
     except Exception as e:
-        print(f"خطا در تولید بارکد: {e}")
-        # در صورت خطا، بارکد قدیمی را برگردان
-        return None
+        print(f"❌ خطا در تولید بارکد تصویری: {e}")
+        # در صورت خطا، یک جایگزین ساده برگردان
+        return None, barcode_digits
 
-
-# views.py - تابع label_print را ساده‌سازی کنید
 
 @login_required
 def label_print(request):
-    """صفحه چاپ لیبل - بدون نیاز به تصویر بارکد"""
+    """صفحه چاپ لیبل"""
     cart = request.session.get('label_cart', [])
 
     # ایجاد لیست کامل لیبل‌ها
     all_labels = []
     for item in cart:
-        # بررسی اینکه بارکد فقط حاوی اعداد باشد
-        barcode = str(item.get('barcode', '')).strip()
-        # حذف کاراکترهای غیرعددی
-        import re
-        barcode_digits = re.sub(r'\D', '', barcode)
+        # تولید بارکد برای هر آیتم
+        barcode_image, barcode_number = generate_barcode_image(item['barcode'])
 
-        # اگر بارکد خالی است یا حاوی حروف است، یک بارکد عددی استاندارد تولید کن
-        if not barcode_digits or len(barcode_digits) < 8:
-            # تولید یک بارکد عددی استاندارد 12 رقمی
-            from datetime import datetime
-            import random
-            timestamp = int(datetime.now().timestamp()) % 1000000
-            random_num = random.randint(100000, 999999)
-            barcode_digits = f"{timestamp:06d}{random_num:06d}"[:12]
+        # اگر تولید بارکد موفق نبود، یک placeholder ایجاد کن
+        if not barcode_image:
+            # ایجاد یک تصویر ساده مشکی و سفید برای تست
+            from PIL import Image, ImageDraw
+            import io
+            import base64
 
-        # اطمینان از طول مناسب بارکد (12 رقم برای UPC-A)
-        if len(barcode_digits) != 12:
-            if len(barcode_digits) > 12:
-                barcode_digits = barcode_digits[:12]
-            else:
-                barcode_digits = barcode_digits.ljust(12, '0')
+            # ایجاد تصویر 150x50 پیکسل
+            img = Image.new('RGB', (150, 50), color='white')
+            d = ImageDraw.Draw(img)
 
-        # اضافه کردن کاراکترهای ستاره در ابتدا و انتها برای فونت Code128
-        formatted_barcode = f"*{barcode_digits}*"
+            # کشتن یک مستطیل ساده (شبیه بارکد)
+            for i in range(10):
+                width = 10
+                x = i * 15
+                d.rectangle([x, 10, x + width, 40], fill='black')
+
+            # ذخیره در بافر
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+
+            # تبدیل به base64
+            barcode_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            barcode_image = f"data:image/png;base64,{barcode_base64}"
 
         for i in range(item['quantity']):
             label_data = item.copy()
-            label_data['barcode_display'] = formatted_barcode
-            label_data['barcode_number'] = barcode_digits
+            label_data['barcode_image'] = barcode_image
+            label_data['barcode_number'] = barcode_number
             all_labels.append(label_data)
 
     total_labels = len(all_labels)
@@ -1590,22 +1552,18 @@ def label_print(request):
                             label_setting.allow_print = False
                             label_setting.save()
 
-                            print(f"✅ ثبت چاپ و غیرفعال کردن: {product_name}")
-
                         except Exception as e:
                             print(f"❌ خطا در ثبت برای {product_name}: {e}")
 
             except Exception as e:
                 print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
 
-        # پس از ثبت، همان صفحه را رندر می‌کنیم تا چاپ انجام شود
         return render(request, 'account_app/label_print.html', {
             'all_labels': all_labels,
             'total_labels': total_labels,
             'auto_print': True
         })
 
-    # اگر GET باشد، فقط صفحه را نمایش می‌دهیم بدون ثبت تاریخچه
     return render(request, 'account_app/label_print.html', {
         'all_labels': all_labels,
         'total_labels': total_labels,
