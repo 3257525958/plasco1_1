@@ -1408,15 +1408,445 @@ def convert_persian_arabic_to_english(text):
 
 
 # ----------------------- چاپ لیبل -----------------------
+#
+# @login_required
+# def label_generator(request):
+#     """صفحه اصلی تولید لیبل - با ریست کردن سشن هنگام بارگذاری"""
+#     # پاک کردن سبد خرید لیبل از session هنگام بارگذاری صفحه
+#     if 'label_cart' in request.session:
+#         del request.session['label_cart']
+#         request.session.modified = True
+#
+#     return render(request, 'account_app/label_generator.html')
+#
+#
+# @login_required
+# @require_GET
+# def get_branches_for_label(request):
+#     """دریافت لیست شعبه‌ها برای صفحه لیبل"""
+#     try:
+#         branches = Branch.objects.all().values('id', 'name')
+#         return JsonResponse({'branches': list(branches)})
+#     except Exception as e:
+#         return JsonResponse({'branches': [], 'error': str(e)})
+#
+#
+# @login_required
+# @require_GET
+# def get_branch_products_for_label(request):
+#     """دریافت محصولات یک شعبه خاص - فقط کالاهای مجاز برای چاپ"""
+#     try:
+#         branch_id = request.GET.get('branch_id')
+#         if not branch_id:
+#             return JsonResponse({'products': []})
+#
+#         # دریافت محصولات این شعبه
+#         products = InventoryCount.objects.filter(
+#             branch_id=branch_id
+#         ).values(
+#             'product_name', 'barcode_data', 'selling_price'
+#         ).annotate(
+#             total_quantity=Sum('quantity')
+#         ).order_by('product_name')
+#
+#         product_list = []
+#         for product in products:
+#             try:
+#                 # بررسی وضعیت اجازه چاپ
+#                 # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
+#                 allow_print = False
+#                 try:
+#                     label_setting = ProductLabelSetting.objects.get(
+#                         product_name=product['product_name'],
+#                         branch_id=branch_id
+#                     )
+#                     allow_print = label_setting.allow_print
+#                 except ProductLabelSetting.DoesNotExist:
+#                     # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
+#                     allow_print = False
+#
+#                 # فقط کالاهای مجاز برای چاپ را اضافه کن
+#                 if allow_print:
+#                     product_list.append({
+#                         'product_name': product['product_name'],
+#                         'barcode': product['barcode_data'] or 'ندارد',
+#                         'price': str(product['selling_price']) if product['selling_price'] else '0',
+#                         'quantity': product['total_quantity'] or 0,
+#                         'branch_id': branch_id,
+#                         'allow_print': allow_print
+#                     })
+#
+#             except Exception as e:
+#                 continue
+#
+#         return JsonResponse({'products': product_list})
+#
+#     except Exception as e:
+#         return JsonResponse({'products': [], 'error': str(e)})
+#
+#
+# @login_required
+# @require_GET
+# def search_products_for_label(request):
+#     """جستجوی محصولات برای لیبل - فقط کالاهای مجاز برای چاپ"""
+#     query = request.GET.get('q', '').strip()
+#     branch_id = request.GET.get('branch_id')
+#
+#     if not branch_id:
+#         return JsonResponse({'results': []})
+#
+#     try:
+#         # فیلتر بر اساس شعبه
+#         base_query = InventoryCount.objects.filter(branch_id=branch_id)
+#
+#         # اگر کوئری وجود دارد جستجو می‌کنیم
+#         if query and len(query) >= 2:
+#             query_english = convert_persian_arabic_to_english(query)
+#             products = base_query.filter(
+#                 Q(product_name__icontains=query_english) |
+#                 Q(barcode_data__icontains=query_english)
+#             ).values(
+#                 'product_name', 'barcode_data', 'selling_price'
+#             ).annotate(
+#                 total_quantity=Sum('quantity')
+#             ).order_by('product_name')
+#         else:
+#             # همه محصولات این شعبه
+#             products = base_query.values(
+#                 'product_name', 'barcode_data', 'selling_price'
+#             ).annotate(
+#                 total_quantity=Sum('quantity')
+#             ).order_by('product_name')
+#
+#         results = []
+#         for product in products:
+#             try:
+#                 # بررسی وضعیت اجازه چاپ
+#                 # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
+#                 allow_print = False
+#                 try:
+#                     label_setting = ProductLabelSetting.objects.get(
+#                         product_name=product['product_name'],
+#                         branch_id=branch_id
+#                     )
+#                     allow_print = label_setting.allow_print
+#                 except ProductLabelSetting.DoesNotExist:
+#                     # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
+#                     allow_print = False
+#
+#                 # فقط کالاهای مجاز برای چاپ را اضافه کن
+#                 if allow_print:
+#                     product_data = {
+#                         'product_name': product['product_name'],
+#                         'barcode': product['barcode_data'] or 'ندارد',
+#                         'price': str(product['selling_price']) if product['selling_price'] else '0',
+#                         'branch_id': branch_id,
+#                         'quantity': product['total_quantity'] or 0,
+#                         'allow_print': allow_print
+#                     }
+#                     results.append(product_data)
+#
+#             except Exception as product_error:
+#                 continue
+#
+#         return JsonResponse({'results': results})
+#
+#     except Exception as e:
+#         return JsonResponse({'results': [], 'error': str(e)})
+#
+#
+# @login_required
+# @require_POST
+# def add_product_to_label_cart(request):
+#     """افزودن محصول به سبد لیبل - با چک مجوز چاپ"""
+#     try:
+#         data = json.loads(request.body)
+#         product_name = data.get('product_name')
+#         branch_id = data.get('branch_id')
+#
+#         if not branch_id:
+#             return JsonResponse({'success': False, 'error': 'شعبه انتخاب نشده است'})
+#
+#         # بررسی اجازه چاپ
+#         # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
+#         allow_print = False
+#         try:
+#             label_setting = ProductLabelSetting.objects.get(
+#                 product_name=product_name,
+#                 branch_id=branch_id
+#             )
+#             allow_print = label_setting.allow_print
+#         except ProductLabelSetting.DoesNotExist:
+#             # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
+#             allow_print = False
+#
+#         if not allow_print:
+#             return JsonResponse({'success': False, 'error': 'این کالا برای چاپ غیرفعال شده است'})
+#
+#         # بقیه کد مثل قبل...
+#         product_aggregate = InventoryCount.objects.filter(
+#             product_name=product_name,
+#             branch_id=branch_id
+#         ).aggregate(
+#             total_quantity=Sum('quantity'),
+#             first_barcode=Min('barcode_data'),
+#             first_price=Min('selling_price')
+#         )
+#
+#         total_quantity = product_aggregate['total_quantity'] or 0
+#
+#         if total_quantity == 0:
+#             return JsonResponse({'success': False, 'error': 'این کالا در انبار این شعبه موجود نیست'})
+#
+#         price = str(product_aggregate['first_price']) if product_aggregate['first_price'] else '0'
+#
+#         product_data = {
+#             'product_name': product_name,
+#             'barcode': product_aggregate['first_barcode'] or 'ندارد',
+#             'price': price,
+#             'quantity': total_quantity,
+#             'show_name': True,
+#             'show_price': True,
+#             'branch_id': branch_id
+#         }
+#
+#         # ذخیره در سشن
+#         if 'label_cart' not in request.session:
+#             request.session['label_cart'] = []
+#
+#         cart = request.session['label_cart']
+#         existing_index = next((i for i, item in enumerate(cart)
+#                                if item['product_name'] == product_name and item['branch_id'] == branch_id), -1)
+#
+#         if existing_index >= 0:
+#             cart[existing_index]['quantity'] = total_quantity
+#         else:
+#             cart.append(product_data)
+#
+#         request.session['label_cart'] = cart
+#         request.session.modified = True
+#
+#         return JsonResponse({
+#             'success': True,
+#             'cart_count': len(cart),
+#             'product_name': product_name,
+#             'quantity': total_quantity
+#         })
+#
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)})
+#
+# @login_required
+# @require_POST
+# def remove_from_label_cart(request):
+#     """حذف محصول از سبد لیبل"""
+#     try:
+#         data = json.loads(request.body)
+#         product_name = data.get('product_name')
+#
+#         cart = request.session.get('label_cart', [])
+#         cart = [item for item in cart if item['product_name'] != product_name]
+#
+#         request.session['label_cart'] = cart
+#         request.session.modified = True
+#
+#         return JsonResponse({'success': True, 'cart_count': len(cart)})
+#
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)})
+#
+#
+# @login_required
+# @require_GET
+# def get_label_cart(request):
+#     """دریافت سبد خرید لیبل - با اطمینان از خالی بودن هنگام بارگذاری اولیه"""
+#     cart = request.session.get('label_cart', [])
+#
+#     # اگر سشن خالی است، مطمئن شویم که آرایه خالی برگردانده شود
+#     if not cart:
+#         request.session['label_cart'] = []
+#         request.session.modified = True
+#
+#     return JsonResponse({'cart': cart})
+#
+# @login_required
+# @require_POST
+# def update_cart_quantity(request):
+#     """به روزرسانی تعداد محصول در سبد خرید"""
+#     try:
+#         data = json.loads(request.body)
+#         product_name = data.get('product_name')
+#         quantity = int(data.get('quantity', 1))
+#
+#         cart = request.session.get('label_cart', [])
+#         for item in cart:
+#             if item['product_name'] == product_name:
+#                 item['quantity'] = max(1, quantity)
+#                 break
+#
+#         request.session['label_cart'] = cart
+#         request.session.modified = True
+#
+#         return JsonResponse({'success': True})
+#
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)})
+#
+#
+# @login_required
+# @require_POST
+# def clear_label_cart(request):
+#     """پاک کردن کل سبد خرید"""
+#     request.session['label_cart'] = []
+#     request.session.modified = True
+#     return JsonResponse({'success': True})
+#
+#
+# @login_required
+# def label_settings(request):
+#     """صفحه تنظیمات لیبل - نسخه اصلاح شده"""
+#     cart = request.session.get('label_cart', [])
+#
+#     if request.method == 'POST':
+#         print("🔍 POST Data:", dict(request.POST))  # برای دیباگ
+#
+#         # لیست تمام محصولات در سبد خرید
+#         product_names = [item['product_name'] for item in cart]
+#
+#         # به روزرسانی وضعیت نمایش برای هر محصول
+#         for product_name in product_names:
+#             for item in cart:
+#                 if item['product_name'] == product_name:
+#                     # بررسی وضعیت نمایش نام
+#                     show_name_key = f'show_name_{product_name}'
+#                     if show_name_key in request.POST:
+#                         item['show_name'] = True
+#                         print(f"✅ نمایش نام برای {product_name}: True")
+#                     else:
+#                         item['show_name'] = False
+#                         print(f"❌ نمایش نام برای {product_name}: False")
+#
+#                     # بررسی وضعیت نمایش قیمت
+#                     show_price_key = f'show_price_{product_name}'
+#                     if show_price_key in request.POST:
+#                         item['show_price'] = True
+#                         print(f"✅ نمایش قیمت برای {product_name}: True")
+#                     else:
+#                         item['show_price'] = False
+#                         print(f"❌ نمایش قیمت برای {product_name}: False")
+#                     break
+#
+#         # ذخیره تغییرات در سشن
+#         request.session['label_cart'] = cart
+#         request.session.modified = True
+#
+#         print("🔍 سبد خرید بعد از به روزرسانی:", cart)  # برای دیباگ
+#         return redirect('label_print')
+#
+#     return render(request, 'account_app/label_settings.html', {'cart': cart})
+#
+#
+# @login_required
+# def label_print(request):
+#     """صفحه چاپ لیبل - با ثبت تاریخچه و تغییر وضعیت به false فقط در صورت POST"""
+#     cart = request.session.get('label_cart', [])
+#
+#     # ایجاد لیست کامل لیبل‌ها
+#     all_labels = []
+#     for item in cart:
+#         for i in range(item['quantity']):
+#             all_labels.append(item)
+#
+#     total_labels = len(all_labels)
+#
+#     if request.method == 'POST':
+#         # ثبت تاریخچه چاپ و تغییر وضعیت به false فقط هنگام POST
+#         if cart:
+#             try:
+#                 for item in cart:
+#                     product_name = item['product_name']
+#                     branch_id = item.get('branch_id')
+#
+#                     if branch_id:
+#                         try:
+#                             # پیدا کردن یا ایجاد تنظیمات کالا
+#                             label_setting, created = ProductLabelSetting.objects.get_or_create(
+#                                 product_name=product_name,
+#                                 branch_id=branch_id,
+#                                 defaults={
+#                                     'barcode': item.get('barcode', ''),
+#                                     'allow_print': True  # پیش‌فرض true
+#                                 }
+#                             )
+#
+#                             # ایجاد آیتم تاریخچه
+#                             LabelPrintItem.objects.create(
+#                                 label_setting=label_setting,
+#                                 print_quantity=item['quantity'],
+#                                 user=request.user
+#                             )
+#
+#                             # تغییر وضعیت اجازه چاپ به false
+#                             label_setting.allow_print = False
+#                             label_setting.save()
+#
+#                             print(f"✅ ثبت چاپ و غیرفعال کردن: {product_name}")
+#
+#                         except Exception as e:
+#                             print(f"❌ خطا در ثبت برای {product_name}: {e}")
+#
+#             except Exception as e:
+#                 print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
+#
+#         # پس از ثبت، همان صفحه را رندر می‌کنیم تا چاپ انجام شود
+#         return render(request, 'account_app/label_print.html', {
+#             'all_labels': all_labels,
+#             'total_labels': total_labels,
+#             'auto_print': True  # فلگ برای چاپ خودکار
+#         })
+#
+#     # اگر GET باشد، فقط صفحه را نمایش می‌دهیم بدون ثبت تاریخچه
+#     return render(request, 'account_app/label_print.html', {
+#         'all_labels': all_labels,
+#         'total_labels': total_labels,
+#         'auto_print': False
+#     })
+#
+# # ویوهای کمکی برای template tags
+# def get_label_range(value):
+#     """تولید range برای template (برای استفاده در template tags)"""
+#     return range(int(value))
+#
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Sum, Min, Q
+from django.conf import settings
+import json
+import os
+from .models import InventoryCount, Branch, ProductLabelSetting, LabelPrintItem
+from django.contrib.auth.models import User
+
+
+# تابع تبدیل اعداد فارسی/عربی به انگلیسی
+def convert_persian_arabic_to_english(text):
+    persian_numbers = '۰۱۲۳۴۵۶۷۸۹'
+    arabic_numbers = '٠١٢٣٤٥٦٧٨٩'
+    english_numbers = '0123456789'
+
+    for p, a, e in zip(persian_numbers, arabic_numbers, english_numbers):
+        text = text.replace(p, e).replace(a, e)
+    return text
+
 
 @login_required
 def label_generator(request):
     """صفحه اصلی تولید لیبل - با ریست کردن سشن هنگام بارگذاری"""
-    # پاک کردن سبد خرید لیبل از session هنگام بارگذاری صفحه
     if 'label_cart' in request.session:
         del request.session['label_cart']
         request.session.modified = True
-
     return render(request, 'account_app/label_generator.html')
 
 
@@ -1440,40 +1870,35 @@ def get_branch_products_for_label(request):
         if not branch_id:
             return JsonResponse({'products': []})
 
-        # دریافت محصولات این شعبه
-        products = InventoryCount.objects.filter(
-            branch_id=branch_id
-        ).values(
-            'product_name', 'barcode_data', 'selling_price'
-        ).annotate(
-            total_quantity=Sum('quantity')
-        ).order_by('product_name')
+        # دریافت محصولات این شعبه که اجازه چاپ دارند
+        products = ProductLabelSetting.objects.filter(
+            branch_id=branch_id,
+            allow_print=True
+        ).values('product_name', 'barcode')
 
+        # دریافت اطلاعات موجودی و قیمت از InventoryCount
         product_list = []
         for product in products:
             try:
-                # بررسی وضعیت اجازه چاپ
-                # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
-                allow_print = False
-                try:
-                    label_setting = ProductLabelSetting.objects.get(
-                        product_name=product['product_name'],
-                        branch_id=branch_id
-                    )
-                    allow_print = label_setting.allow_print
-                except ProductLabelSetting.DoesNotExist:
-                    # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
-                    allow_print = False
+                inventory_info = InventoryCount.objects.filter(
+                    product_name=product['product_name'],
+                    branch_id=branch_id
+                ).aggregate(
+                    total_quantity=Sum('quantity'),
+                    selling_price=Min('selling_price')
+                )
 
-                # فقط کالاهای مجاز برای چاپ را اضافه کن
-                if allow_print:
+                total_quantity = inventory_info['total_quantity'] or 0
+                selling_price = inventory_info['selling_price'] or 0
+
+                if total_quantity > 0:  # فقط کالاهای موجود
                     product_list.append({
                         'product_name': product['product_name'],
-                        'barcode': product['barcode_data'] or 'ندارد',
-                        'price': str(product['selling_price']) if product['selling_price'] else '0',
-                        'quantity': product['total_quantity'] or 0,
+                        'barcode': product['barcode'],
+                        'price': str(selling_price),
+                        'quantity': total_quantity,
                         'branch_id': branch_id,
-                        'allow_print': allow_print
+                        'allow_print': True
                     })
 
             except Exception as e:
@@ -1496,53 +1921,42 @@ def search_products_for_label(request):
         return JsonResponse({'results': []})
 
     try:
-        # فیلتر بر اساس شعبه
-        base_query = InventoryCount.objects.filter(branch_id=branch_id)
+        # ابتدا محصولاتی که اجازه چاپ دارند را بیاب
+        label_settings = ProductLabelSetting.objects.filter(
+            branch_id=branch_id,
+            allow_print=True
+        )
 
-        # اگر کوئری وجود دارد جستجو می‌کنیم
         if query and len(query) >= 2:
             query_english = convert_persian_arabic_to_english(query)
-            products = base_query.filter(
+            label_settings = label_settings.filter(
                 Q(product_name__icontains=query_english) |
-                Q(barcode_data__icontains=query_english)
-            ).values(
-                'product_name', 'barcode_data', 'selling_price'
-            ).annotate(
-                total_quantity=Sum('quantity')
-            ).order_by('product_name')
-        else:
-            # همه محصولات این شعبه
-            products = base_query.values(
-                'product_name', 'barcode_data', 'selling_price'
-            ).annotate(
-                total_quantity=Sum('quantity')
-            ).order_by('product_name')
+                Q(barcode__icontains=query_english)
+            )
 
         results = []
-        for product in products:
+        for setting in label_settings:
             try:
-                # بررسی وضعیت اجازه چاپ
-                # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
-                allow_print = False
-                try:
-                    label_setting = ProductLabelSetting.objects.get(
-                        product_name=product['product_name'],
-                        branch_id=branch_id
-                    )
-                    allow_print = label_setting.allow_print
-                except ProductLabelSetting.DoesNotExist:
-                    # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
-                    allow_print = False
+                # دریافت اطلاعات موجودی
+                inventory_info = InventoryCount.objects.filter(
+                    product_name=setting.product_name,
+                    branch_id=branch_id
+                ).aggregate(
+                    total_quantity=Sum('quantity'),
+                    selling_price=Min('selling_price')
+                )
 
-                # فقط کالاهای مجاز برای چاپ را اضافه کن
-                if allow_print:
+                total_quantity = inventory_info['total_quantity'] or 0
+                selling_price = inventory_info['selling_price'] or 0
+
+                if total_quantity > 0:  # فقط کالاهای موجود
                     product_data = {
-                        'product_name': product['product_name'],
-                        'barcode': product['barcode_data'] or 'ندارد',
-                        'price': str(product['selling_price']) if product['selling_price'] else '0',
+                        'product_name': setting.product_name,
+                        'barcode': setting.barcode,
+                        'price': str(selling_price),
                         'branch_id': branch_id,
-                        'quantity': product['total_quantity'] or 0,
-                        'allow_print': allow_print
+                        'quantity': total_quantity,
+                        'allow_print': setting.allow_print
                     }
                     results.append(product_data)
 
@@ -1568,29 +1982,23 @@ def add_product_to_label_cart(request):
             return JsonResponse({'success': False, 'error': 'شعبه انتخاب نشده است'})
 
         # بررسی اجازه چاپ
-        # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
-        allow_print = False
         try:
             label_setting = ProductLabelSetting.objects.get(
                 product_name=product_name,
                 branch_id=branch_id
             )
-            allow_print = label_setting.allow_print
+            if not label_setting.allow_print:
+                return JsonResponse({'success': False, 'error': 'این کالا برای چاپ غیرفعال شده است'})
         except ProductLabelSetting.DoesNotExist:
-            # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
-            allow_print = False
-
-        if not allow_print:
             return JsonResponse({'success': False, 'error': 'این کالا برای چاپ غیرفعال شده است'})
 
-        # بقیه کد مثل قبل...
+        # دریافت اطلاعات محصول از InventoryCount
         product_aggregate = InventoryCount.objects.filter(
             product_name=product_name,
             branch_id=branch_id
         ).aggregate(
             total_quantity=Sum('quantity'),
-            first_barcode=Min('barcode_data'),
-            first_price=Min('selling_price')
+            selling_price=Min('selling_price')
         )
 
         total_quantity = product_aggregate['total_quantity'] or 0
@@ -1598,11 +2006,11 @@ def add_product_to_label_cart(request):
         if total_quantity == 0:
             return JsonResponse({'success': False, 'error': 'این کالا در انبار این شعبه موجود نیست'})
 
-        price = str(product_aggregate['first_price']) if product_aggregate['first_price'] else '0'
+        price = str(product_aggregate['selling_price']) if product_aggregate['selling_price'] else '0'
 
         product_data = {
             'product_name': product_name,
-            'barcode': product_aggregate['first_barcode'] or 'ندارد',
+            'barcode': label_setting.barcode,
             'price': price,
             'quantity': total_quantity,
             'show_name': True,
@@ -1615,13 +2023,12 @@ def add_product_to_label_cart(request):
             request.session['label_cart'] = []
 
         cart = request.session['label_cart']
-        existing_index = next((i for i, item in enumerate(cart)
-                               if item['product_name'] == product_name and item['branch_id'] == branch_id), -1)
 
-        if existing_index >= 0:
-            cart[existing_index]['quantity'] = total_quantity
-        else:
-            cart.append(product_data)
+        # حذف اگر قبلاً اضافه شده باشد (جایگزینی)
+        cart = [item for item in cart if not (item['product_name'] == product_name and item['branch_id'] == branch_id)]
+
+        # افزودن به سبد
+        cart.append(product_data)
 
         request.session['label_cart'] = cart
         request.session.modified = True
@@ -1635,6 +2042,7 @@ def add_product_to_label_cart(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
 
 @login_required
 @require_POST
@@ -1651,7 +2059,6 @@ def remove_from_label_cart(request):
         request.session.modified = True
 
         return JsonResponse({'success': True, 'cart_count': len(cart)})
-
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
@@ -1659,15 +2066,13 @@ def remove_from_label_cart(request):
 @login_required
 @require_GET
 def get_label_cart(request):
-    """دریافت سبد خرید لیبل - با اطمینان از خالی بودن هنگام بارگذاری اولیه"""
+    """دریافت سبد خرید لیبل"""
     cart = request.session.get('label_cart', [])
-
-    # اگر سشن خالی است، مطمئن شویم که آرایه خالی برگردانده شود
     if not cart:
         request.session['label_cart'] = []
         request.session.modified = True
-
     return JsonResponse({'cart': cart})
+
 
 @login_required
 @require_POST
@@ -1681,14 +2086,19 @@ def update_cart_quantity(request):
         cart = request.session.get('label_cart', [])
         for item in cart:
             if item['product_name'] == product_name:
-                item['quantity'] = max(1, quantity)
+                # حداکثر مقدار برابر با موجودی انبار
+                max_quantity = InventoryCount.objects.filter(
+                    product_name=product_name,
+                    branch_id=item['branch_id']
+                ).aggregate(total=Sum('quantity'))['total'] or 0
+
+                item['quantity'] = max(1, min(quantity, max_quantity))
                 break
 
         request.session['label_cart'] = cart
         request.session.modified = True
 
         return JsonResponse({'success': True})
-
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
@@ -1704,43 +2114,24 @@ def clear_label_cart(request):
 
 @login_required
 def label_settings(request):
-    """صفحه تنظیمات لیبل - نسخه اصلاح شده"""
+    """صفحه تنظیمات لیبل"""
     cart = request.session.get('label_cart', [])
 
     if request.method == 'POST':
-        print("🔍 POST Data:", dict(request.POST))  # برای دیباگ
-
-        # لیست تمام محصولات در سبد خرید
         product_names = [item['product_name'] for item in cart]
 
-        # به روزرسانی وضعیت نمایش برای هر محصول
         for product_name in product_names:
             for item in cart:
                 if item['product_name'] == product_name:
-                    # بررسی وضعیت نمایش نام
                     show_name_key = f'show_name_{product_name}'
-                    if show_name_key in request.POST:
-                        item['show_name'] = True
-                        print(f"✅ نمایش نام برای {product_name}: True")
-                    else:
-                        item['show_name'] = False
-                        print(f"❌ نمایش نام برای {product_name}: False")
+                    item['show_name'] = show_name_key in request.POST
 
-                    # بررسی وضعیت نمایش قیمت
                     show_price_key = f'show_price_{product_name}'
-                    if show_price_key in request.POST:
-                        item['show_price'] = True
-                        print(f"✅ نمایش قیمت برای {product_name}: True")
-                    else:
-                        item['show_price'] = False
-                        print(f"❌ نمایش قیمت برای {product_name}: False")
+                    item['show_price'] = show_price_key in request.POST
                     break
 
-        # ذخیره تغییرات در سشن
         request.session['label_cart'] = cart
         request.session.modified = True
-
-        print("🔍 سبد خرید بعد از به روزرسانی:", cart)  # برای دیباگ
         return redirect('label_print')
 
     return render(request, 'account_app/label_settings.html', {'cart': cart})
@@ -1748,7 +2139,7 @@ def label_settings(request):
 
 @login_required
 def label_print(request):
-    """صفحه چاپ لیبل - با ثبت تاریخچه و تغییر وضعیت به false فقط در صورت POST"""
+    """صفحه چاپ لیبل"""
     cart = request.session.get('label_cart', [])
 
     # ایجاد لیست کامل لیبل‌ها
@@ -1760,7 +2151,7 @@ def label_print(request):
     total_labels = len(all_labels)
 
     if request.method == 'POST':
-        # ثبت تاریخچه چاپ و تغییر وضعیت به false فقط هنگام POST
+        # ثبت تاریخچه چاپ و تغییر وضعیت به false
         if cart:
             try:
                 for item in cart:
@@ -1769,14 +2160,10 @@ def label_print(request):
 
                     if branch_id:
                         try:
-                            # پیدا کردن یا ایجاد تنظیمات کالا
-                            label_setting, created = ProductLabelSetting.objects.get_or_create(
+                            # پیدا کردن تنظیمات کالا
+                            label_setting = ProductLabelSetting.objects.get(
                                 product_name=product_name,
-                                branch_id=branch_id,
-                                defaults={
-                                    'barcode': item.get('barcode', ''),
-                                    'allow_print': True  # پیش‌فرض true
-                                }
+                                branch_id=branch_id
                             )
 
                             # ایجاد آیتم تاریخچه
@@ -1790,34 +2177,27 @@ def label_print(request):
                             label_setting.allow_print = False
                             label_setting.save()
 
-                            print(f"✅ ثبت چاپ و غیرفعال کردن: {product_name}")
-
+                        except ProductLabelSetting.DoesNotExist:
+                            continue
                         except Exception as e:
                             print(f"❌ خطا در ثبت برای {product_name}: {e}")
 
             except Exception as e:
                 print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
 
-        # پس از ثبت، همان صفحه را رندر می‌کنیم تا چاپ انجام شود
+        # پس از ثبت، صفحه چاپ را نمایش می‌دهیم
         return render(request, 'account_app/label_print.html', {
             'all_labels': all_labels,
             'total_labels': total_labels,
-            'auto_print': True  # فلگ برای چاپ خودکار
+            'auto_print': True
         })
 
-    # اگر GET باشد، فقط صفحه را نمایش می‌دهیم بدون ثبت تاریخچه
+    # اگر GET باشد، فقط صفحه را نمایش می‌دهیم
     return render(request, 'account_app/label_print.html', {
         'all_labels': all_labels,
         'total_labels': total_labels,
         'auto_print': False
     })
-
-# ویوهای کمکی برای template tags
-def get_label_range(value):
-    """تولید range برای template (برای استفاده در template tags)"""
-    return range(int(value))
-
-
 # ------------------------------------------------------برای تعین درصد تعدیل----------------------------------------
 from django.shortcuts import render
 from django.http import JsonResponse

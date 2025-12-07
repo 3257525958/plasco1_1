@@ -18,6 +18,150 @@ import jdatetime
 from django.db import models, connection
 from decimal import Decimal
 
+# class InventoryCount(models.Model):
+#     product_name = models.CharField(max_length=100, verbose_name="نام کالا")
+#     is_new = models.BooleanField(default=True, verbose_name="کالای جدید")
+#     quantity = models.IntegerField(verbose_name="تعداد")
+#     count_date = models.CharField(max_length=10, verbose_name="تاریخ شمارش", default="")
+#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+#     barcode_data = models.CharField(max_length=100, blank=True, null=True, verbose_name="داده بارکد")
+#     selling_price = models.PositiveIntegerField(verbose_name="قیمت فروش", blank=True, null=True)
+#     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, verbose_name="شعبه")
+#     counter = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="شمارنده")
+#     profit_percentage = models.DecimalField(
+#         max_digits=5,
+#         decimal_places=2,
+#         verbose_name="درصد سود",
+#         default=Decimal('70.00'),
+#     )
+#
+#     class Meta:
+#         verbose_name = "شمارش انبار"
+#         verbose_name_plural = "شمارش های انبار"
+#         ordering = ['-created_at']
+#
+#     def clean(self):
+#         """
+#         اعتبارسنجی خودکار قبل از ذخیره‌سازی
+#         """
+#         from decimal import Decimal, InvalidOperation
+#
+#         try:
+#             profit_value = Decimal(str(self.profit_percentage))
+#             if profit_value < Decimal('0.00') or profit_value > Decimal('10000.00'):
+#                 self.profit_percentage = Decimal('70.00')
+#         except (TypeError, ValueError, InvalidOperation):
+#             self.profit_percentage = Decimal('70.00')
+#
+#     def generate_unique_numeric_barcode(self):
+#         """تولید بارکد ثابت ۱۲ رقمی بر اساس نام کالا"""
+#         import hashlib
+#
+#         product_name = self.product_name.strip()
+#         hash_object = hashlib.md5(product_name.encode('utf-8'))
+#         hash_hex = hash_object.hexdigest()
+#         hash_int = int(hash_hex[:8], 16)
+#         barcode = str(hash_int % 10 ** 12).zfill(12)
+#         return barcode
+#
+#     def calculate_selling_price(self, standard_price, profit_percentage):
+#         """محاسبه ایمن قیمت فروش"""
+#         try:
+#             from decimal import Decimal, InvalidOperation
+#             import math
+#
+#             # تبدیل ایمن به Decimal
+#             if isinstance(standard_price, (int, float)):
+#                 standard_price_decimal = Decimal(str(standard_price))
+#             else:
+#                 standard_price_decimal = Decimal(str(standard_price or 0))
+#
+#             if isinstance(profit_percentage, (int, float)):
+#                 profit_decimal = Decimal(str(profit_percentage))
+#             else:
+#                 profit_decimal = Decimal(str(profit_percentage or 30))
+#
+#             # محاسبه قیمت
+#             multiplier = Decimal('1') + (profit_decimal / Decimal('100'))
+#             new_price = standard_price_decimal * multiplier
+#
+#             # گرد کردن
+#             selling_price = int(math.ceil(float(new_price) / 1000) * 1000)
+#             return max(0, selling_price)  # اطمینان از مثبت بودن
+#
+#         except (ValueError, TypeError, InvalidOperation) as e:
+#             print(f"⚠️ خطا در محاسبه قیمت: {e}")
+#             return standard_price or 0
+#
+#     def save(self, *args, **kwargs):
+#         self.clean()
+#
+#         # تنظیم تاریخ
+#         if not self.count_date:
+#             import jdatetime
+#             jalali_date = jdatetime.datetime.now().strftime('%Y/%m/%d')
+#             self.count_date = jalali_date
+#
+#         # تنظیم بارکد
+#         if not self.barcode_data:
+#             self.barcode_data = self.generate_unique_numeric_barcode()
+#
+#         print(f"✅ شروع محاسبه قیمت برای کالا: {self.product_name}")
+#
+#         try:
+#             # ایمپورت درون تابع برای جلوگیری از circular import
+#             from .models import ProductPricing
+#
+#             # دریافت یا ایجاد ProductPricing
+#             pricing, created = ProductPricing.objects.get_or_create(
+#                 product_name=self.product_name,
+#                 defaults={
+#                     'highest_purchase_price': Decimal('0'),
+#                     'adjustment_percentage': Decimal('0'),
+#                     'standard_price': Decimal('0')
+#                 }
+#             )
+#
+#             if created:
+#                 print(f"✅ ProductPricing جدید ایجاد شد برای: {self.product_name}")
+#             else:
+#                 print(f"✅ ProductPricing یافت شد: {pricing.standard_price}")
+#
+#             # محاسبه قیمت فروش
+#             if pricing.standard_price and pricing.standard_price > 0:
+#                 self.selling_price = self.calculate_selling_price(
+#                     pricing.standard_price,
+#                     self.profit_percentage
+#                 )
+#                 print(f"✅ قیمت فروش محاسبه شد: {self.selling_price}")
+#             else:
+#                 print("⚠️ قیمت معیار صفر است، قیمت فروش تنظیم نشد")
+#                 if not self.selling_price:
+#                     self.selling_price = 0
+#
+#         except Exception as e:
+#             print(f"❌ خطا در پردازش قیمت‌گذاری: {e}")
+#             # مقدار پیش‌فرض برای حالت خطا
+#             if not self.selling_price:
+#                 self.selling_price = 0
+#
+#         # ذخیره نهایی
+#         super().save(*args, **kwargs)
+#         print("✅ متد save با موفقیت اجرا شد.")
+#
+#     def __str__(self):
+#         try:
+#             branch_name = self.branch.name if self.branch else "بدون شعبه"
+#             return f"{self.product_name} - {branch_name} - {self.quantity}"
+#         except Exception:
+#             return f"{self.product_name} - {self.quantity}"
+
+
+from django.db import models
+from django.contrib.auth.models import User
+from decimal import Decimal
+
+
 class InventoryCount(models.Model):
     product_name = models.CharField(max_length=100, verbose_name="نام کالا")
     is_new = models.BooleanField(default=True, verbose_name="کالای جدید")
@@ -53,16 +197,70 @@ class InventoryCount(models.Model):
         except (TypeError, ValueError, InvalidOperation):
             self.profit_percentage = Decimal('70.00')
 
-    def generate_unique_numeric_barcode(self):
-        """تولید بارکد ثابت ۱۲ رقمی بر اساس نام کالا"""
+    def generate_unique_ean13_barcode(self):
+        """تولید بارکد EAN-13 ثابت ۱۳ رقمی معتبر بر اساس نام کالا"""
         import hashlib
 
-        product_name = self.product_name.strip()
+        # نام کالا را نرمالایز کنید تا همیشه یکسان باشد
+        product_name = self.product_name.strip().lower()
+
+        # ایجاد یک هش یکتا از نام کالا
         hash_object = hashlib.md5(product_name.encode('utf-8'))
         hash_hex = hash_object.hexdigest()
+
+        # تبدیل هش به یک عدد ۱۲ رقمی
         hash_int = int(hash_hex[:8], 16)
-        barcode = str(hash_int % 10 ** 12).zfill(12)
-        return barcode
+        base_number = str(hash_int % 10 ** 12).zfill(12)
+
+        # حذف صفرهای ابتدایی بیش از حد
+        if base_number.startswith('0000'):
+            # جایگزین کردن با اعداد تصادفی اما ثابت
+            seed = sum(ord(c) for c in product_name)
+            import random
+            random.seed(seed)
+            base_number = str(random.randint(100000000000, 999999999999))
+
+        # محاسبه رقم کنترل برای EAN-13
+        digits = [int(d) for d in base_number]
+
+        # الگوریتم EAN-13: جمع ارقام زوج * 3 + جمع ارقام فرد
+        even_sum = sum(digits[1::2]) * 3  # موقعیت‌های زوج (با شروع از 0، پس اندیس‌های فرد)
+        odd_sum = sum(digits[::2])  # موقعیت‌های فرد (اندیس‌های زوج)
+        total = even_sum + odd_sum
+
+        # رقم کنترل: کوچکترین عددی که وقتی به جمع اضافه شود، مضرب 10 شود
+        check_digit = (10 - (total % 10)) % 10
+
+        # بازگشت بارکد کامل ۱۳ رقمی
+        ean13_barcode = base_number + str(check_digit)
+
+        # اطمینان از معتبر بودن EAN-13 (شروع با 5 یا 6 یا 8 یا 9 یا 0)
+        if ean13_barcode[0] not in ['5', '6', '8', '9', '0']:
+            # اگر با اعداد نامعتبر شروع شد، پیشوند معتبر اضافه کنیم
+            prefix = '59'  # پیشوند ایران
+            new_base = prefix + ean13_barcode[2:12]  # حذف 2 رقم اول و اضافه کردن پیشوند
+            # محاسبه مجدد رقم کنترل
+            digits = [int(d) for d in new_base]
+            even_sum = sum(digits[1::2]) * 3
+            odd_sum = sum(digits[::2])
+            total = even_sum + odd_sum
+            check_digit = (10 - (total % 10)) % 10
+            ean13_barcode = new_base + str(check_digit)
+
+        # اطمینان از ۱۳ رقمی بودن
+        if len(ean13_barcode) != 13:
+            # ساخت یک EAN-13 معتبر استاندارد با پیشوند ایران
+            import random
+            random.seed(hash_int)
+            base = '590' + str(random.randint(100000000, 999999999))[:9]
+            digits = [int(d) for d in base]
+            even_sum = sum(digits[1::2]) * 3
+            odd_sum = sum(digits[::2])
+            total = even_sum + odd_sum
+            check_digit = (10 - (total % 10)) % 10
+            ean13_barcode = base + str(check_digit)
+
+        return ean13_barcode
 
     def calculate_selling_price(self, standard_price, profit_percentage):
         """محاسبه ایمن قیمت فروش"""
@@ -102,9 +300,10 @@ class InventoryCount(models.Model):
             jalali_date = jdatetime.datetime.now().strftime('%Y/%m/%d')
             self.count_date = jalali_date
 
-        # تنظیم بارکد
+        # تنظیم بارکد EAN-13
         if not self.barcode_data:
-            self.barcode_data = self.generate_unique_numeric_barcode()
+            self.barcode_data = self.generate_unique_ean13_barcode()
+            print(f"✅ بارکد EAN-13 تولید شد برای '{self.product_name}': {self.barcode_data}")
 
         print(f"✅ شروع محاسبه قیمت برای کالا: {self.product_name}")
 
@@ -155,6 +354,9 @@ class InventoryCount(models.Model):
             return f"{self.product_name} - {branch_name} - {self.quantity}"
         except Exception:
             return f"{self.product_name} - {self.quantity}"
+
+
+
 
 from django.db import models
 from django.core.validators import MinValueValidator

@@ -1,3 +1,934 @@
+{#{% load static %}#}
+{#<!DOCTYPE html>#}
+{#<html lang="fa" dir="rtl">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1.0">#}
+{#    <title>تولید لیبل بارکد</title>#}
+{#    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">#}
+{#    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">#}
+{#    <style>#}
+{#        :root {#}
+{#            --primary-color: #4CAF50;#}
+{#            --secondary-color: #388E3C;#}
+{#            --accent-color: #2E7D32;#}
+{#            --text-color: #2c3e50;#}
+{#            --light-bg: #f9f9f9;#}
+{#            --border-color: #ddd;#}
+{#            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);#}
+{#            --input-bg: #f1f8e9;#}
+{#            --blue-light: #e3f2fd;#}
+{#            --blue-dark: #2196f3;#}
+{#            --orange: #FF9800;#}
+{#            --red: #f44336;#}
+{#            --gray: #6c757d;#}
+{#        }#}
+{##}
+{#        * {#}
+{#            box-sizing: border-box;#}
+{#            margin: 0;#}
+{#            padding: 0;#}
+{#            font-family: 'Vazirmatn', sans-serif;#}
+{#        }#}
+{##}
+{#        body {#}
+{#            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);#}
+{#            min-height: 100vh;#}
+{#            padding: 20px;#}
+{#            color: var(--text-color);#}
+{#            direction: rtl;#}
+{#        }#}
+{##}
+{#        .container {#}
+{#            max-width: 1400px;#}
+{#            margin: 0 auto;#}
+{#            background: white;#}
+{#            border-radius: 12px;#}
+{#            overflow: hidden;#}
+{#            box-shadow: var(--shadow);#}
+{#        }#}
+{##}
+{#        .header {#}
+{#            text-align: center;#}
+{#            padding: 20px;#}
+{#            border-bottom: 2px solid var(--border-color);#}
+{#            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));#}
+{#            color: white;#}
+{#        }#}
+{##}
+{#        .header h1 {#}
+{#            font-size: 2rem;#}
+{#            margin-bottom: 10px;#}
+{#        }#}
+{##}
+{#        .header p {#}
+{#            opacity: 0.9;#}
+{#        }#}
+{##}
+{#        .top-bar {#}
+{#            display: flex;#}
+{#            gap: 15px;#}
+{#            padding: 20px;#}
+{#            background: var(--light-bg);#}
+{#            border-bottom: 1px solid var(--border-color);#}
+{#            flex-wrap: wrap;#}
+{#            align-items: center;#}
+{#        }#}
+{##}
+{#        .branch-selector {#}
+{#            flex: 1;#}
+{#            min-width: 250px;#}
+{#        }#}
+{##}
+{#        .branch-select {#}
+{#            width: 100%;#}
+{#            padding: 12px 15px;#}
+{#            border: 2px solid var(--blue-dark);#}
+{#            border-radius: 8px;#}
+{#            font-size: 1rem;#}
+{#            background: white;#}
+{#            color: var(--text-color);#}
+{#            cursor: pointer;#}
+{#            transition: all 0.3s ease;#}
+{#        }#}
+{##}
+{#        .branch-select:focus {#}
+{#            border-color: var(--accent-color);#}
+{#            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);#}
+{#            outline: none;#}
+{#        }#}
+{##}
+{#        .branch-info {#}
+{#            margin-top: 8px;#}
+{#            font-size: 0.85rem;#}
+{#            color: var(--blue-dark);#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 5px;#}
+{#        }#}
+{##}
+{#        .products-count {#}
+{#            background: var(--blue-dark);#}
+{#            color: white;#}
+{#            padding: 2px 8px;#}
+{#            border-radius: 12px;#}
+{#            font-size: 0.8rem;#}
+{#        }#}
+{##}
+{#        .search-container {#}
+{#            flex: 2;#}
+{#            min-width: 300px;#}
+{#            position: relative;#}
+{#        }#}
+{##}
+{#        .search-input {#}
+{#            width: 100%;#}
+{#            padding: 12px 45px 12px 12px;#}
+{#            font-size: 1rem;#}
+{#            border: 2px solid var(--primary-color);#}
+{#            border-radius: 8px;#}
+{#            transition: all 0.3s;#}
+{#            background: var(--input-bg);#}
+{#        }#}
+{##}
+{#        .search-input:focus {#}
+{#            border-color: var(--accent-color);#}
+{#            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);#}
+{#            outline: none;#}
+{#        }#}
+{##}
+{#        .search-btn {#}
+{#            position: absolute;#}
+{#            left: 12px;#}
+{#            top: 50%;#}
+{#            transform: translateY(-50%);#}
+{#            background: none;#}
+{#            border: none;#}
+{#            color: var(--primary-color);#}
+{#            font-size: 18px;#}
+{#            cursor: pointer;#}
+{#        }#}
+{##}
+{#        .search-hint {#}
+{#            font-size: 0.8rem;#}
+{#            color: #666;#}
+{#            margin-top: 5px;#}
+{#        }#}
+{##}
+{#        .content-wrapper {#}
+{#            display: flex;#}
+{#            min-height: 600px;#}
+{#        }#}
+{##}
+{#        .search-column {#}
+{#            flex: 1;#}
+{#            padding: 20px;#}
+{#            border-left: 1px solid var(--border-color);#}
+{#            background-color: var(--light-bg);#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#        }#}
+{##}
+{#        .search-results {#}
+{#            border: 1px solid var(--border-color);#}
+{#            border-radius: 8px;#}
+{#            flex: 1;#}
+{#            overflow-y: auto;#}
+{#            margin-top: 10px;#}
+{#            background: white;#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.1);#}
+{#        }#}
+{##}
+{#        .search-result-item {#}
+{#            padding: 15px;#}
+{#            cursor: pointer;#}
+{#            border-bottom: 1px solid var(--border-color);#}
+{#            transition: all 0.2s;#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            align-items: center;#}
+{#        }#}
+{##}
+{#        .search-result-item:hover {#}
+{#            background-color: var(--light-bg);#}
+{#            transform: translateX(-5px);#}
+{#        }#}
+{##}
+{#        .search-result-item:last-child {#}
+{#            border-bottom: none;#}
+{#        }#}
+{##}
+{#        .search-result-item.disabled {#}
+{#            background-color: #f8f9fa !important;#}
+{#            color: var(--gray) !important;#}
+{#            cursor: not-allowed !important;#}
+{#        }#}
+{##}
+{#        .search-result-item.disabled:hover {#}
+{#            transform: none !important;#}
+{#            background-color: #f8f9fa !important;#}
+{#        }#}
+{##}
+{#        .product-info {#}
+{#            flex: 1;#}
+{#        }#}
+{##}
+{#        .product-name {#}
+{#            font-weight: bold;#}
+{#            margin-bottom: 5px;#}
+{#            color: var(--text-color);#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 8px;#}
+{#        }#}
+{##}
+{#        .disabled-badge {#}
+{#            background: var(--red);#}
+{#            color: white;#}
+{#            padding: 2px 6px;#}
+{#            border-radius: 4px;#}
+{#            font-size: 0.7rem;#}
+{#        }#}
+{##}
+{#        .product-details {#}
+{#            color: #666;#}
+{#            font-size: 0.9rem;#}
+{#            margin-bottom: 3px;#}
+{#        }#}
+{##}
+{#        .product-stock {#}
+{#            font-size: 0.8rem;#}
+{#            color: #2e7d32;#}
+{#        }#}
+{##}
+{#        .stock-quantity {#}
+{#            background: #4caf50;#}
+{#            color: white;#}
+{#            padding: 2px 6px;#}
+{#            border-radius: 4px;#}
+{#            font-size: 0.8rem;#}
+{#            margin-left: 5px;#}
+{#        }#}
+{##}
+{#        .add-btn {#}
+{#            background: var(--primary-color);#}
+{#            color: white;#}
+{#            border: none;#}
+{#            padding: 8px 15px;#}
+{#            border-radius: 5px;#}
+{#            cursor: pointer;#}
+{#            transition: background 0.3s;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 5px;#}
+{#        }#}
+{##}
+{#        .add-btn:hover {#}
+{#            background: var(--accent-color);#}
+{#        }#}
+{##}
+{#        .add-btn:disabled {#}
+{#            background: var(--gray);#}
+{#            cursor: not-allowed;#}
+{#        }#}
+{##}
+{#        .cart-column {#}
+{#            flex: 1;#}
+{#            padding: 20px;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#        }#}
+{##}
+{#        .cart-header {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            align-items: center;#}
+{#            margin-bottom: 20px;#}
+{#            padding-bottom: 10px;#}
+{#            border-bottom: 1px solid var(--border-color);#}
+{#        }#}
+{##}
+{#        .cart-title {#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 10px;#}
+{#        }#}
+{##}
+{#        .cart-badge {#}
+{#            background: var(--orange);#}
+{#            color: white;#}
+{#            border-radius: 50%;#}
+{#            width: 24px;#}
+{#            height: 24px;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            font-size: 0.8rem;#}
+{#        }#}
+{##}
+{#        .cart-actions {#}
+{#            display: flex;#}
+{#            gap: 10px;#}
+{#        }#}
+{##}
+{#        .cart-items {#}
+{#            flex: 1;#}
+{#            overflow-y: auto;#}
+{#            border: 1px solid var(--border-color);#}
+{#            border-radius: 8px;#}
+{#            padding: 10px;#}
+{#            background: var(--light-bg);#}
+{#        }#}
+{##}
+{#        .cart-item {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            align-items: center;#}
+{#            padding: 12px;#}
+{#            background: white;#}
+{#            border-radius: 6px;#}
+{#            margin-bottom: 10px;#}
+{#            box-shadow: 0 2px 4px rgba(0,0,0,0.05);#}
+{#            transition: all 0.2s;#}
+{#        }#}
+{##}
+{#        .cart-item:hover {#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.1);#}
+{#        }#}
+{##}
+{#        .cart-item-info {#}
+{#            flex: 1;#}
+{#        }#}
+{##}
+{#        .cart-item-name {#}
+{#            font-weight: bold;#}
+{#            margin-bottom: 5px;#}
+{#        }#}
+{##}
+{#        .cart-item-details {#}
+{#            font-size: 0.8rem;#}
+{#            color: #666;#}
+{#        }#}
+{##}
+{#        .remove-btn {#}
+{#            color: var(--red);#}
+{#            background: none;#}
+{#            border: none;#}
+{#            cursor: pointer;#}
+{#            font-size: 1.2rem;#}
+{#            padding: 5px;#}
+{#            transition: color 0.3s;#}
+{#        }#}
+{##}
+{#        .remove-btn:hover {#}
+{#            color: #d32f2f;#}
+{#        }#}
+{##}
+{#        .empty-cart {#}
+{#            text-align: center;#}
+{#            padding: 40px 20px;#}
+{#            color: #666;#}
+{#        }#}
+{##}
+{#        .empty-cart i {#}
+{#            font-size: 3rem;#}
+{#            margin-bottom: 15px;#}
+{#            color: #ccc;#}
+{#        }#}
+{##}
+{#        .btn {#}
+{#            padding: 10px 20px;#}
+{#            border: none;#}
+{#            border-radius: 6px;#}
+{#            font-size: 1rem;#}
+{#            font-weight: bold;#}
+{#            cursor: pointer;#}
+{#            display: inline-flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            gap: 8px;#}
+{#            transition: all 0.3s ease;#}
+{#        }#}
+{##}
+{#        .btn-primary {#}
+{#            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));#}
+{#            color: white;#}
+{#        }#}
+{##}
+{#        .btn-primary:hover {#}
+{#            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));#}
+{#            transform: translateY(-2px);#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.2);#}
+{#        }#}
+{##}
+{#        .btn-secondary {#}
+{#            background: #f0f0f0;#}
+{#            color: var(--text-color);#}
+{#        }#}
+{##}
+{#        .btn-secondary:hover {#}
+{#            background: #e0e0e0;#}
+{#        }#}
+{##}
+{#        .btn:disabled {#}
+{#            background: #ccc;#}
+{#            cursor: not-allowed;#}
+{#            transform: none;#}
+{#        }#}
+{##}
+{#        .message {#}
+{#            padding: 12px;#}
+{#            border-radius: 6px;#}
+{#            margin: 12px 0;#}
+{#            border-left: 4px solid;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 8px;#}
+{#        }#}
+{##}
+{#        .error-message {#}
+{#            color: #d32f2f;#}
+{#            background-color: #ffebee;#}
+{#            border-left-color: #d32f2f;#}
+{#        }#}
+{##}
+{#        .success-message {#}
+{#            color: #2E7D32;#}
+{#            background-color: #e8f5e9;#}
+{#            border-left-color: #2E7D32;#}
+{#        }#}
+{##}
+{#        .info-message {#}
+{#            color: #1976d2;#}
+{#            background-color: #e3f2fd;#}
+{#            border-left-color: #1976d2;#}
+{#        }#}
+{##}
+{#        .hidden {#}
+{#            display: none;#}
+{#        }#}
+{##}
+{#        @media (max-width: 768px) {#}
+{#            .content-wrapper {#}
+{#                flex-direction: column;#}
+{#            }#}
+{##}
+{#            .search-column {#}
+{#                border-left: none;#}
+{#                border-bottom: 1px solid var(--border-color);#}
+{#            }#}
+{##}
+{#            .header h1 {#}
+{#                font-size: 1.5rem;#}
+{#            }#}
+{##}
+{#            .top-bar {#}
+{#                flex-direction: column;#}
+{#            }#}
+{##}
+{#            .branch-selector, .search-container {#}
+{#                min-width: 100%;#}
+{#            }#}
+{##}
+{#            .btn {#}
+{#                width: 100%;#}
+{#                margin: 5px 0;#}
+{#            }#}
+{##}
+{#            .cart-actions {#}
+{#                flex-direction: column;#}
+{#            }#}
+{#        }#}
+{#    </style>#}
+{#</head>#}
+{#<body>#}
+{#    <div class="container">#}
+{#        <div class="header">#}
+{#            <h1>تولید لیبل بارکد</h1>#}
+{#            <p>جستجو و انتخاب کالاها برای تولید لیبل</p>#}
+{#        </div>#}
+{##}
+{#        <div class="top-bar">#}
+{#            <div class="branch-selector">#}
+{#                <select id="branch-select" class="branch-select">#}
+{#                    <option value="">-- انتخاب شعبه --</option>#}
+{#                </select>#}
+{#                <div id="branch-info" class="branch-info" style="display: none;">#}
+{#                    <i class="fas fa-box"></i>#}
+{#                    <span id="products-count" class="products-count">0</span>#}
+{#                    <span>کالا در این شعبه</span>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <div class="search-container">#}
+{#                <input type="search" id="product-search" class="search-input"#}
+{#                       placeholder="نام کالا یا بارکد را وارد کنید..."#}
+{#                       aria-label="جستجوی کالا" disabled>#}
+{#                <button type="button" class="search-btn">#}
+{#                    <i class="fas fa-search"></i>#}
+{#                </button>#}
+{#                <div class="search-hint">برای جستجو، ابتدا شعبه را انتخاب کرده و سپس حداقل 2 کاراکتر وارد کنید</div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="content-wrapper">#}
+{#            <div class="search-column">#}
+{#                <h3 style="margin-bottom: 15px; color: var(--text-color);">#}
+{#                    <i class="fas fa-search"></i>#}
+{#                    نتایج جستجو#}
+{#                </h3>#}
+{#                <div id="search-results" class="search-results">#}
+{#                    <div style="text-align: center; padding: 40px; color: #666;">#}
+{#                        <i class="fas fa-store" style="font-size: 3rem; margin-bottom: 15px; color: #ccc;"></i>#}
+{#                        <p>لطفاً ابتدا شعبه را انتخاب کنید</p>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <div class="cart-column">#}
+{#                <div class="cart-header">#}
+{#                    <div class="cart-title">#}
+{#                        <i class="fas fa-shopping-cart"></i>#}
+{#                        <h3>کالاهای انتخاب شده</h3>#}
+{#                        <span id="cart-count" class="cart-badge">0</span>#}
+{#                    </div>#}
+{##}
+{#                    <div class="cart-actions">#}
+{#                        <button id="continue-btn" class="btn btn-primary" disabled>#}
+{#                            <i class="fas fa-cog"></i> تنظیمات چاپ#}
+{#                        </button>#}
+{#                        <button id="clear-cart-btn" class="btn btn-secondary">#}
+{#                            <i class="fas fa-trash"></i> پاک کردن همه#}
+{#                        </button>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <div class="cart-items" id="cart-items-container">#}
+{#                    <div id="empty-cart-message" class="empty-cart">#}
+{#                        <i class="fas fa-shopping-cart"></i>#}
+{#                        <p>هیچ کالایی انتخاب نشده است</p>#}
+{#                        <p>لطفاً از قسمت جستجو کالاهای مورد نظر را انتخاب کنید</p>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div id="messages" style="padding: 0 20px 20px;"></div>#}
+{#    </div>#}
+{##}
+{#    <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>#}
+{#    <script>#}
+{#        // تابع برای دریافت cookie#}
+{#        function getCookie(name) {#}
+{#            let cookieValue = null;#}
+{#            if (document.cookie && document.cookie !== '') {#}
+{#                const cookies = document.cookie.split(';');#}
+{#                for (let i = 0; i < cookies.length; i++) {#}
+{#                    const cookie = cookies[i].trim();#}
+{#                    if (cookie.substring(0, name.length + 1) === (name + '=')) {#}
+{#                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));#}
+{#                        break;#}
+{#                    }#}
+{#                }#}
+{#            }#}
+{#            return cookieValue;#}
+{#        }#}
+{##}
+{#        // تابع برای نمایش پیام#}
+{#        function showMessage(message, type) {#}
+{#            const messageClass = type === 'error' ? 'error-message' :#}
+{#                                type === 'success' ? 'success-message' : 'info-message';#}
+{#            const icon = type === 'error' ? 'fa-exclamation-circle' :#}
+{#                        type === 'success' ? 'fa-check-circle' : 'fa-info-circle';#}
+{##}
+{#            $('#messages').html(`#}
+{#                <div class="message ${messageClass}">#}
+{#                    <i class="fas ${icon}"></i> ${message}#}
+{#                </div>#}
+{#            `);#}
+{##}
+{#            if (type !== 'error') {#}
+{#                setTimeout(() => {#}
+{#                    $('#messages').empty();#}
+{#                }, 5000);#}
+{#            }#}
+{#        }#}
+{##}
+{#        let selectedBranchId = '';#}
+{#        let searchTimeout = null;#}
+{##}
+{#        // بارگذاری شعبه‌ها#}
+{#        function loadBranches() {#}
+{#            $.ajax({#}
+{#                url: "{% url 'get_branches_for_label' %}",#}
+{#                method: 'GET',#}
+{#                success: function(data) {#}
+{#                    if (data.branches && data.branches.length > 0) {#}
+{#                        let html = '<option value="">-- انتخاب شعبه --</option>';#}
+{#                        data.branches.forEach(branch => {#}
+{#                            html += `<option value="${branch.id}">${branch.name}</option>`;#}
+{#                        });#}
+{#                        $('#branch-select').html(html);#}
+{#                    } else {#}
+{#                        showMessage('هیچ شعبه‌ای یافت نشد', 'error');#}
+{#                    }#}
+{#                },#}
+{#                error: function() {#}
+{#                    showMessage('خطا در دریافت لیست شعبه‌ها', 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // وقتی شعبه تغییر کرد#}
+{#        $('#branch-select').change(function() {#}
+{#            selectedBranchId = $(this).val();#}
+{#            const branchName = $(this).find('option:selected').text();#}
+{##}
+{#            if (selectedBranchId) {#}
+{#                // فعال کردن جستجو#}
+{#                $('#product-search').prop('disabled', false);#}
+{#                $('#product-search').attr('placeholder', `جستجو در ${branchName}...`);#}
+{##}
+{#                // بارگذاری محصولات شعبه و نمایش همه آنها#}
+{#                loadBranchProducts(selectedBranchId);#}
+{#                loadAllBranchProducts(selectedBranchId);#}
+{##}
+{#                showMessage(`شعبه "${branchName}" انتخاب شد`, 'success');#}
+{#            } else {#}
+{#                // غیرفعال کردن جستجو#}
+{#                $('#product-search').prop('disabled', true);#}
+{#                $('#product-search').val('');#}
+{#                $('#product-search').attr('placeholder', 'ابتدا شعبه را انتخاب کنید...');#}
+{#                $('#search-results').html(`#}
+{#                    <div style="text-align: center; padding: 40px; color: #666;">#}
+{#                        <i class="fas fa-store" style="font-size: 3rem; margin-bottom: 15px; color: #ccc;"></i>#}
+{#                        <p>لطفاً ابتدا شعبه را انتخاب کنید</p>#}
+{#                    </div>#}
+{#                `);#}
+{#                $('#branch-info').hide();#}
+{#            }#}
+{#        });#}
+{##}
+{#        // بارگذاری محصولات شعبه برای نمایش تعداد#}
+{#        function loadBranchProducts(branchId) {#}
+{#            $.ajax({#}
+{#                url: "{% url 'get_branch_products_for_label' %}",#}
+{#                data: { branch_id: branchId },#}
+{#                success: function(data) {#}
+{#                    if (data.products && data.products.length > 0) {#}
+{#                        $('#products-count').text(data.products.length);#}
+{#                        $('#branch-info').show();#}
+{#                    } else {#}
+{#                        $('#branch-info').hide();#}
+{#                    }#}
+{#                },#}
+{#                error: function() {#}
+{#                    $('#branch-info').hide();#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // بارگذاری تمام محصولات شعبه برای نمایش در لیست#}
+{#        function loadAllBranchProducts(branchId) {#}
+{#            $.ajax({#}
+{#                url: "{% url 'search_products_for_label' %}",#}
+{#                data: {#}
+{#                    q: '', // کوئری خالی برای دریافت همه محصولات#}
+{#                    branch_id: branchId#}
+{#                },#}
+{#                success: function(data) {#}
+{#                    displaySearchResults(data.results);#}
+{#                },#}
+{#                error: function() {#}
+{#                    $('#search-results').html('<div class="search-result-item">خطا در بارگذاری محصولات</div>');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // نمایش نتایج جستجو#}
+{#        function displaySearchResults(results) {#}
+{#            if (results && results.length > 0) {#}
+{#                let html = '';#}
+{#                results.forEach(product => {#}
+{#                    const price = parseInt(product.price) || 0;#}
+{#                    const quantity = product.quantity || 0;#}
+{#                    const allowPrint = product.allow_print !== false;#}
+{##}
+{#                    // تعیین استایل و دکمه بر اساس وضعیت اجازه چاپ#}
+{#                    const itemClass = allowPrint ? '' : 'disabled';#}
+{#                    const buttonHtml = allowPrint ?#}
+{#                        `<button class="add-btn" onclick="addToCart('${product.product_name.replace(/'/g, "\\'")}')">#}
+{#                            <i class="fas fa-plus"></i> افزودن#}
+{#                        </button>` :#}
+{#                        `<button class="add-btn" disabled style="background: #ccc; cursor: not-allowed;">#}
+{#                            <i class="fas fa-ban"></i> غیرفعال#}
+{#                        </button>`;#}
+{##}
+{#                    html += `#}
+{#                        <div class="search-result-item ${itemClass}"#}
+{#                             data-product-name="${product.product_name}"#}
+{#                             data-barcode="${product.barcode}"#}
+{#                             data-price="${product.price}"#}
+{#                             data-branch-id="${product.branch_id}">#}
+{#                            <div class="product-info">#}
+{#                                <div class="product-name">#}
+{#                                    ${product.product_name}#}
+{#                                    ${!allowPrint ? '<span class="disabled-badge">غیرفعال</span>' : ''}#}
+{#                                </div>#}
+{#                                <div class="product-details">#}
+{#                                    بارکد: ${product.barcode} | قیمت: ${price.toLocaleString()} تومان#}
+{#                                </div>#}
+{#                                <div class="product-stock">#}
+{#                                    موجودی: <span class="stock-quantity">${quantity}</span> عدد#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            ${buttonHtml}#}
+{#                        </div>#}
+{#                    `;#}
+{#                });#}
+{#                $('#search-results').html(html);#}
+{#            } else {#}
+{#                $('#search-results').html('<div class="search-result-item">هیچ کالایی در این شعبه یافت نشد</div>');#}
+{#            }#}
+{#        }#}
+{##}
+{#        // جستجوی محصولات#}
+{#        $('#product-search').on('input', function() {#}
+{#            const query = $(this).val().trim();#}
+{##}
+{#            if (!selectedBranchId) {#}
+{#                showMessage('لطفاً ابتدا شعبه را انتخاب کنید', 'error');#}
+{#                return;#}
+{#            }#}
+{##}
+{#            clearTimeout(searchTimeout);#}
+{#            searchTimeout = setTimeout(function() {#}
+{#                if (query.length < 2) {#}
+{#                    // اگر کوئری کمتر از ۲ کاراکتر است، همه محصولات شعبه را نمایش بده#}
+{#                    loadAllBranchProducts(selectedBranchId);#}
+{#                    return;#}
+{#                }#}
+{##}
+{#                $.ajax({#}
+{#                    url: "{% url 'search_products_for_label' %}",#}
+{#                    data: {#}
+{#                        q: query,#}
+{#                        branch_id: selectedBranchId#}
+{#                    },#}
+{#                    success: function(data) {#}
+{#                        displaySearchResults(data.results);#}
+{#                    },#}
+{#                    error: function(xhr, status, error) {#}
+{#                        console.error('Error searching products:', error);#}
+{#                        showMessage('خطا در جستجوی کالاها', 'error');#}
+{#                    }#}
+{#                });#}
+{#            }, 300);#}
+{#        });#}
+{##}
+{#        // افزودن به سبد خرید#}
+{#        function addToCart(productName) {#}
+{#            if (!selectedBranchId) {#}
+{#                showMessage('لطفاً ابتدا شعبه را انتخاب کنید', 'error');#}
+{#                return;#}
+{#            }#}
+{##}
+{#            $.ajax({#}
+{#                url: "{% url 'add_product_to_label_cart' %}",#}
+{#                method: 'POST',#}
+{#                contentType: 'application/json',#}
+{#                data: JSON.stringify({#}
+{#                    product_name: productName,#}
+{#                    branch_id: selectedBranchId#}
+{#                }),#}
+{#                headers: {#}
+{#                    'X-CSRFToken': getCookie('csrftoken'),#}
+{#                    'X-Requested-With': 'XMLHttpRequest'#}
+{#                },#}
+{#                success: function(data) {#}
+{#                    if (data.success) {#}
+{#                        showMessage(`کالای "${data.product_name}" با موفقیت به سبد اضافه شد`, 'success');#}
+{#                        updateCartDisplay();#}
+{#                    } else {#}
+{#                        showMessage('خطا در افزودن کالا: ' + data.error, 'error');#}
+{#                    }#}
+{#                },#}
+{#                error: function(xhr, status, error) {#}
+{#                    console.error('Error adding to cart:', error);#}
+{#                    showMessage('خطا در ارتباط با سرور', 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // به روزرسانی نمایش سبد خرید#}
+{#        function updateCartDisplay() {#}
+{#            $.ajax({#}
+{#                url: "{% url 'get_label_cart' %}",#}
+{#                method: 'GET',#}
+{#                success: function(data) {#}
+{#                    const $cartContainer = $('#cart-items-container');#}
+{#                    const $cartCount = $('#cart-count');#}
+{#                    const $emptyCartMessage = $('#empty-cart-message');#}
+{#                    const $continueBtn = $('#continue-btn');#}
+{##}
+{#                    if (data.cart && data.cart.length > 0) {#}
+{#                        let html = '';#}
+{#                        data.cart.forEach(item => {#}
+{#                            const price = parseInt(item.price) || 0;#}
+{#                            html += `#}
+{#                                <div class="cart-item" data-product-name="${item.product_name}">#}
+{#                                    <div class="cart-item-info">#}
+{#                                        <div class="cart-item-name">${item.product_name}</div>#}
+{#                                        <div class="cart-item-details">#}
+{#                                            بارکد: ${item.barcode} |#}
+{#                                            قیمت: ${price.toLocaleString()} تومان#}
+{#                                        </div>#}
+{#                                        <div class="product-stock">#}
+{#                                            تعداد لیبل: <span class="stock-quantity">${item.quantity}</span>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="cart-item-actions">#}
+{#                                        <button class="remove-btn" onclick="removeFromCart('${item.product_name.replace(/'/g, "\\'")}')">#}
+{#                                            <i class="fas fa-times"></i>#}
+{#                                        </button>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            `;#}
+{#                        });#}
+{##}
+{#                        $cartContainer.html(html);#}
+{#                        $cartCount.text(data.cart.length);#}
+{#                        $emptyCartMessage.hide();#}
+{#                        $continueBtn.prop('disabled', false);#}
+{#                    } else {#}
+{#                        $cartContainer.html($emptyCartMessage);#}
+{#                        $emptyCartMessage.show();#}
+{#                        $cartCount.text('0');#}
+{#                        $continueBtn.prop('disabled', true);#}
+{#                    }#}
+{#                },#}
+{#                error: function() {#}
+{#                    showMessage('خطا در دریافت سبد خرید', 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // حذف از سبد خرید#}
+{#        function removeFromCart(productName) {#}
+{#            $.ajax({#}
+{#                url: "{% url 'remove_from_label_cart' %}",#}
+{#                method: 'POST',#}
+{#                contentType: 'application/json',#}
+{#                data: JSON.stringify({#}
+{#                    product_name: productName#}
+{#                }),#}
+{#                headers: {#}
+{#                    'X-CSRFToken': getCookie('csrftoken')#}
+{#                },#}
+{#                success: function(data) {#}
+{#                    if (data.success) {#}
+{#                        showMessage('کالا از سبد حذف شد', 'success');#}
+{#                        updateCartDisplay();#}
+{#                    } else {#}
+{#                        showMessage('خطا در حذف کالا: ' + data.error, 'error');#}
+{#                    }#}
+{#                },#}
+{#                error: function() {#}
+{#                    showMessage('خطا در ارتباط با سرور', 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // پاک کردن کل سبد خرید#}
+{#        $('#clear-cart-btn').click(function() {#}
+{#            if (confirm('آیا از پاک کردن همه کالاهای سبد خرید اطمینان دارید؟')) {#}
+{#                $.ajax({#}
+{#                    url: "{% url 'clear_label_cart' %}",#}
+{#                    method: 'POST',#}
+{#                    headers: {#}
+{#                        'X-CSRFToken': getCookie('csrftoken')#}
+{#                    },#}
+{#                    success: function(data) {#}
+{#                        if (data.success) {#}
+{#                            showMessage('سبد خرید با موفقیت پاک شد', 'success');#}
+{#                            updateCartDisplay();#}
+{#                        } else {#}
+{#                            showMessage('خطا در پاک کردن سبد خرید: ' + data.error, 'error');#}
+{#                        }#}
+{#                    },#}
+{#                    error: function() {#}
+{#                        showMessage('خطا در ارتباط با سرور', 'error');#}
+{#                    }#}
+{#                });#}
+{#            }#}
+{#        });#}
+{##}
+{#        // ادامه به تنظیمات#}
+{#        $('#continue-btn').click(function() {#}
+{#            window.location.href = "{% url 'label_settings' %}";#}
+{#        });#}
+{##}
+{#        // مقداردهی اولیه#}
+{#        $(document).ready(function() {#}
+{#            loadBranches();#}
+{#            updateCartDisplay();#}
+{#        });#}
+{##}
+{#        // جستجو با کلید Enter#}
+{#        $('#product-search').on('keypress', function(e) {#}
+{#            if (e.which === 13) {#}
+{#                e.preventDefault();#}
+{#                const query = $(this).val().trim();#}
+{#                if (query.length >= 2 && selectedBranchId) {#}
+{#                    $(this).trigger('input');#}
+{#                }#}
+{#            }#}
+{#        });#}
+{#    </script>#}
+{#</body>#}
+{#</html>#}
+
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -61,10 +992,6 @@
             margin-bottom: 10px;
         }
 
-        .header p {
-            opacity: 0.9;
-        }
-
         .top-bar {
             display: flex;
             gap: 15px;
@@ -92,29 +1019,6 @@
             transition: all 0.3s ease;
         }
 
-        .branch-select:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);
-            outline: none;
-        }
-
-        .branch-info {
-            margin-top: 8px;
-            font-size: 0.85rem;
-            color: var(--blue-dark);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .products-count {
-            background: var(--blue-dark);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-        }
-
         .search-container {
             flex: 2;
             min-width: 300px;
@@ -131,12 +1035,6 @@
             background: var(--input-bg);
         }
 
-        .search-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);
-            outline: none;
-        }
-
         .search-btn {
             position: absolute;
             left: 12px;
@@ -147,12 +1045,6 @@
             color: var(--primary-color);
             font-size: 18px;
             cursor: pointer;
-        }
-
-        .search-hint {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 5px;
         }
 
         .content-wrapper {
@@ -194,21 +1086,6 @@
             transform: translateX(-5px);
         }
 
-        .search-result-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-result-item.disabled {
-            background-color: #f8f9fa !important;
-            color: var(--gray) !important;
-            cursor: not-allowed !important;
-        }
-
-        .search-result-item.disabled:hover {
-            transform: none !important;
-            background-color: #f8f9fa !important;
-        }
-
         .product-info {
             flex: 1;
         }
@@ -217,17 +1094,6 @@
             font-weight: bold;
             margin-bottom: 5px;
             color: var(--text-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .disabled-badge {
-            background: var(--red);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
         }
 
         .product-details {
@@ -265,11 +1131,6 @@
 
         .add-btn:hover {
             background: var(--accent-color);
-        }
-
-        .add-btn:disabled {
-            background: var(--gray);
-            cursor: not-allowed;
         }
 
         .cart-column {
@@ -329,11 +1190,6 @@
             border-radius: 6px;
             margin-bottom: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-        }
-
-        .cart-item:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
         .cart-item-info {
@@ -357,23 +1213,12 @@
             cursor: pointer;
             font-size: 1.2rem;
             padding: 5px;
-            transition: color 0.3s;
-        }
-
-        .remove-btn:hover {
-            color: #d32f2f;
         }
 
         .empty-cart {
             text-align: center;
             padding: 40px 20px;
             color: #666;
-        }
-
-        .empty-cart i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #ccc;
         }
 
         .btn {
@@ -398,7 +1243,6 @@
         .btn-primary:hover {
             background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         .btn-secondary {
@@ -413,7 +1257,6 @@
         .btn:disabled {
             background: #ccc;
             cursor: not-allowed;
-            transform: none;
         }
 
         .message {
@@ -444,39 +1287,19 @@
             border-left-color: #1976d2;
         }
 
-        .hidden {
-            display: none;
-        }
-
         @media (max-width: 768px) {
             .content-wrapper {
                 flex-direction: column;
             }
-
             .search-column {
                 border-left: none;
                 border-bottom: 1px solid var(--border-color);
             }
-
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
             .top-bar {
                 flex-direction: column;
             }
-
             .branch-selector, .search-container {
                 min-width: 100%;
-            }
-
-            .btn {
-                width: 100%;
-                margin: 5px 0;
-            }
-
-            .cart-actions {
-                flex-direction: column;
             }
         }
     </style>
@@ -493,11 +1316,6 @@
                 <select id="branch-select" class="branch-select">
                     <option value="">-- انتخاب شعبه --</option>
                 </select>
-                <div id="branch-info" class="branch-info" style="display: none;">
-                    <i class="fas fa-box"></i>
-                    <span id="products-count" class="products-count">0</span>
-                    <span>کالا در این شعبه</span>
-                </div>
             </div>
 
             <div class="search-container">
@@ -507,7 +1325,6 @@
                 <button type="button" class="search-btn">
                     <i class="fas fa-search"></i>
                 </button>
-                <div class="search-hint">برای جستجو، ابتدا شعبه را انتخاب کرده و سپس حداقل 2 کاراکتر وارد کنید</div>
             </div>
         </div>
 
@@ -547,7 +1364,6 @@
                     <div id="empty-cart-message" class="empty-cart">
                         <i class="fas fa-shopping-cart"></i>
                         <p>هیچ کالایی انتخاب نشده است</p>
-                        <p>لطفاً از قسمت جستجو کالاهای مورد نظر را انتخاب کنید</p>
                     </div>
                 </div>
             </div>
@@ -558,7 +1374,6 @@
 
     <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
     <script>
-        // تابع برای دریافت cookie
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -574,7 +1389,6 @@
             return cookieValue;
         }
 
-        // تابع برای نمایش پیام
         function showMessage(message, type) {
             const messageClass = type === 'error' ? 'error-message' :
                                 type === 'success' ? 'success-message' : 'info-message';
@@ -588,16 +1402,13 @@
             `);
 
             if (type !== 'error') {
-                setTimeout(() => {
-                    $('#messages').empty();
-                }, 5000);
+                setTimeout(() => $('#messages').empty(), 5000);
             }
         }
 
         let selectedBranchId = '';
         let searchTimeout = null;
 
-        // بارگذاری شعبه‌ها
         function loadBranches() {
             $.ajax({
                 url: "{% url 'get_branches_for_label' %}",
@@ -619,23 +1430,16 @@
             });
         }
 
-        // وقتی شعبه تغییر کرد
         $('#branch-select').change(function() {
             selectedBranchId = $(this).val();
             const branchName = $(this).find('option:selected').text();
 
             if (selectedBranchId) {
-                // فعال کردن جستجو
                 $('#product-search').prop('disabled', false);
                 $('#product-search').attr('placeholder', `جستجو در ${branchName}...`);
-
-                // بارگذاری محصولات شعبه و نمایش همه آنها
-                loadBranchProducts(selectedBranchId);
                 loadAllBranchProducts(selectedBranchId);
-
                 showMessage(`شعبه "${branchName}" انتخاب شد`, 'success');
             } else {
-                // غیرفعال کردن جستجو
                 $('#product-search').prop('disabled', true);
                 $('#product-search').val('');
                 $('#product-search').attr('placeholder', 'ابتدا شعبه را انتخاب کنید...');
@@ -645,39 +1449,15 @@
                         <p>لطفاً ابتدا شعبه را انتخاب کنید</p>
                     </div>
                 `);
-                $('#branch-info').hide();
             }
         });
 
-        // بارگذاری محصولات شعبه برای نمایش تعداد
-        function loadBranchProducts(branchId) {
+        function loadAllBranchProducts(branchId) {
             $.ajax({
                 url: "{% url 'get_branch_products_for_label' %}",
                 data: { branch_id: branchId },
                 success: function(data) {
-                    if (data.products && data.products.length > 0) {
-                        $('#products-count').text(data.products.length);
-                        $('#branch-info').show();
-                    } else {
-                        $('#branch-info').hide();
-                    }
-                },
-                error: function() {
-                    $('#branch-info').hide();
-                }
-            });
-        }
-
-        // بارگذاری تمام محصولات شعبه برای نمایش در لیست
-        function loadAllBranchProducts(branchId) {
-            $.ajax({
-                url: "{% url 'search_products_for_label' %}",
-                data: {
-                    q: '', // کوئری خالی برای دریافت همه محصولات
-                    branch_id: branchId
-                },
-                success: function(data) {
-                    displaySearchResults(data.results);
+                    displaySearchResults(data.products);
                 },
                 error: function() {
                     $('#search-results').html('<div class="search-result-item">خطا در بارگذاری محصولات</div>');
@@ -685,35 +1465,18 @@
             });
         }
 
-        // نمایش نتایج جستجو
         function displaySearchResults(results) {
             if (results && results.length > 0) {
                 let html = '';
                 results.forEach(product => {
                     const price = parseInt(product.price) || 0;
                     const quantity = product.quantity || 0;
-                    const allowPrint = product.allow_print !== false;
-
-                    // تعیین استایل و دکمه بر اساس وضعیت اجازه چاپ
-                    const itemClass = allowPrint ? '' : 'disabled';
-                    const buttonHtml = allowPrint ?
-                        `<button class="add-btn" onclick="addToCart('${product.product_name.replace(/'/g, "\\'")}')">
-                            <i class="fas fa-plus"></i> افزودن
-                        </button>` :
-                        `<button class="add-btn" disabled style="background: #ccc; cursor: not-allowed;">
-                            <i class="fas fa-ban"></i> غیرفعال
-                        </button>`;
 
                     html += `
-                        <div class="search-result-item ${itemClass}"
-                             data-product-name="${product.product_name}"
-                             data-barcode="${product.barcode}"
-                             data-price="${product.price}"
-                             data-branch-id="${product.branch_id}">
+                        <div class="search-result-item" id="product-${product.product_name.replace(/ /g, '-')}">
                             <div class="product-info">
                                 <div class="product-name">
                                     ${product.product_name}
-                                    ${!allowPrint ? '<span class="disabled-badge">غیرفعال</span>' : ''}
                                 </div>
                                 <div class="product-details">
                                     بارکد: ${product.barcode} | قیمت: ${price.toLocaleString()} تومان
@@ -722,7 +1485,9 @@
                                     موجودی: <span class="stock-quantity">${quantity}</span> عدد
                                 </div>
                             </div>
-                            ${buttonHtml}
+                            <button class="add-btn" onclick="addToCart('${product.product_name.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-plus"></i> افزودن
+                            </button>
                         </div>
                     `;
                 });
@@ -732,10 +1497,8 @@
             }
         }
 
-        // جستجوی محصولات
         $('#product-search').on('input', function() {
             const query = $(this).val().trim();
-
             if (!selectedBranchId) {
                 showMessage('لطفاً ابتدا شعبه را انتخاب کنید', 'error');
                 return;
@@ -744,29 +1507,23 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function() {
                 if (query.length < 2) {
-                    // اگر کوئری کمتر از ۲ کاراکتر است، همه محصولات شعبه را نمایش بده
                     loadAllBranchProducts(selectedBranchId);
                     return;
                 }
 
                 $.ajax({
                     url: "{% url 'search_products_for_label' %}",
-                    data: {
-                        q: query,
-                        branch_id: selectedBranchId
-                    },
+                    data: { q: query, branch_id: selectedBranchId },
                     success: function(data) {
                         displaySearchResults(data.results);
                     },
-                    error: function(xhr, status, error) {
-                        console.error('Error searching products:', error);
+                    error: function() {
                         showMessage('خطا در جستجوی کالاها', 'error');
                     }
                 });
             }, 300);
         });
 
-        // افزودن به سبد خرید
         function addToCart(productName) {
             if (!selectedBranchId) {
                 showMessage('لطفاً ابتدا شعبه را انتخاب کنید', 'error');
@@ -788,19 +1545,19 @@
                 success: function(data) {
                     if (data.success) {
                         showMessage(`کالای "${data.product_name}" با موفقیت به سبد اضافه شد`, 'success');
+                        // حذف از لیست جستجو
+                        $(`#product-${productName.replace(/ /g, '-')}`).remove();
                         updateCartDisplay();
                     } else {
                         showMessage('خطا در افزودن کالا: ' + data.error, 'error');
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('Error adding to cart:', error);
+                error: function() {
                     showMessage('خطا در ارتباط با سرور', 'error');
                 }
             });
         }
 
-        // به روزرسانی نمایش سبد خرید
         function updateCartDisplay() {
             $.ajax({
                 url: "{% url 'get_label_cart' %}",
@@ -853,24 +1610,19 @@
             });
         }
 
-        // حذف از سبد خرید
         function removeFromCart(productName) {
             $.ajax({
                 url: "{% url 'remove_from_label_cart' %}",
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({
-                    product_name: productName
-                }),
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
+                data: JSON.stringify({ product_name: productName }),
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
                 success: function(data) {
                     if (data.success) {
                         showMessage('کالا از سبد حذف شد', 'success');
                         updateCartDisplay();
-                    } else {
-                        showMessage('خطا در حذف کالا: ' + data.error, 'error');
+                        // بارگذاری مجدد لیست جستجو
+                        loadAllBranchProducts(selectedBranchId);
                     }
                 },
                 error: function() {
@@ -879,21 +1631,18 @@
             });
         }
 
-        // پاک کردن کل سبد خرید
         $('#clear-cart-btn').click(function() {
             if (confirm('آیا از پاک کردن همه کالاهای سبد خرید اطمینان دارید؟')) {
                 $.ajax({
                     url: "{% url 'clear_label_cart' %}",
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
                     success: function(data) {
                         if (data.success) {
                             showMessage('سبد خرید با موفقیت پاک شد', 'success');
                             updateCartDisplay();
-                        } else {
-                            showMessage('خطا در پاک کردن سبد خرید: ' + data.error, 'error');
+                            // بارگذاری مجدد لیست جستجو
+                            loadAllBranchProducts(selectedBranchId);
                         }
                     },
                     error: function() {
@@ -903,26 +1652,13 @@
             }
         });
 
-        // ادامه به تنظیمات
         $('#continue-btn').click(function() {
             window.location.href = "{% url 'label_settings' %}";
         });
 
-        // مقداردهی اولیه
         $(document).ready(function() {
             loadBranches();
             updateCartDisplay();
-        });
-
-        // جستجو با کلید Enter
-        $('#product-search').on('keypress', function(e) {
-            if (e.which === 13) {
-                e.preventDefault();
-                const query = $(this).val().trim();
-                if (query.length >= 2 && selectedBranchId) {
-                    $(this).trigger('input');
-                }
-            }
         });
     </script>
 </body>
