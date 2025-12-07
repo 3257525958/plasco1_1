@@ -542,862 +542,375 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>چاپ لیبل - MEVA 4200</title>
+    <title>چاپ لیبل با بارکد واقعی</title>
     <style>
-        /* Reset کامل برای چاپ */
+        /* تنظیمات دقیق برای چاپگر لیبل */
+        @page {
+            size: 80mm auto;
+            margin: 0mm;
+        }
+
         * {
-            margin: 0 !important;
-            padding: 0 !important;
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            .print-area, .print-area * {
-                visibility: visible;
-            }
-            .print-area {
-                position: absolute;
-                left: 50%;
-                top: 0;
-                transform: translateX(-50%);
-                width: 80mm;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            .no-print {
-                display: none !important;
-            }
-
-            /* بهبود چاپ بارکد */
-            canvas.barcode-canvas {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-        }
-
-        /* تنظیمات صفحه برای چاپگر لیبل */
-        @page {
-            size: 80mm auto;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
         body {
-            font-family: 'Vazirmatn', sans-serif;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #f5f5f5;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
         }
 
-        /* استایل‌های اصلی چاپ */
-        .print-area {
-            width: 80mm;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+        @media screen {
+            .print-only {
+                display: none;
+            }
+
+            .screen-only {
+                display: block;
+                text-align: center;
+                padding: 20px;
+            }
         }
 
-        /* کانتینر برای ردیف‌های لیبل - فاصله‌بندی دقیق */
-        .label-row {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin: 0 !important;
-            padding: 0 1mm !important; /* فاصله چپ و راست: 1mm */
-            gap: 2mm !important; /* فاصله بین دو لیبل: 2mm (بیشتر از کناره) */
+        @media print {
+            .screen-only {
+                display: none;
+            }
+
+            .print-only {
+                display: block;
+            }
+
+            body {
+                width: 80mm;
+                margin: 0;
+                padding: 0;
+            }
         }
 
-        /* استایل لیبل - با فاصله از بالا و وسط چین کامل */
+        /* ابعاد استاندارد لیبل 40x20mm */
         .label {
-            width: 38mm; /* کاهش عرض برای ایجاد فاصله */
-            height: 19mm; /* کاهش ارتفاع برای ایجاد فاصله از بالا */
-            background: white;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* وسط چین افقی */
-            position: relative;
-            overflow: hidden;
-            margin: 1mm 0 0 0 !important; /* فاصله از بالا: 1mm */
-            padding: 0 !important;
-        }
-
-        /* نام محصول - وسط چین کامل */
-        .product-name {
-            font-size: 7pt !important;
-            font-weight: 900;
-            line-height: 1 !important;
-            text-align: center;
-            height: 5mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            margin: 0 !important;
-            padding: 0 !important;
-            word-break: break-word;
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            color: #000000 !important;
-            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
-        }
-
-        /* کانتینر بارکد - وسط چین کامل - طول 33mm */
-        .barcode-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 33mm !important; /* طول بارکد: 33mm */
-            height: 9mm !important;
-            overflow: hidden;
-            position: relative;
-            border: none;
-            margin: 0 auto !important; /* وسط چین افقی */
-            padding: 0 !important;
-        }
-
-        /* کانوس بارکد واقعی */
-        .barcode-canvas {
-            width: 33mm !important;
-            height: 7mm !important;
-            display: block;
-            margin: 0 !important;
-            padding: 0 !important;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-
-        /* عدد بارکد - وسط چین کامل */
-        .barcode-number {
-            font-family: 'Courier New', 'Courier', 'Lucida Console', 'Monaco', monospace;
-            font-size: 4pt !important;
-            font-weight: normal;
-            line-height: 1 !important;
-            text-align: center;
-            height: 2mm !important;
-            color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
-        }
-
-        /* قیمت - وسط چین کامل */
-        .price {
-            font-size: 7pt !important;
-            font-weight: 900;
-            line-height: 1 !important;
-            text-align: center;
-            height: 4mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            margin: 0 !important;
-            padding: 0 !important;
-            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-            color: #000000 !important;
-            text-shadow: 0.5px 0.5px 0.5px rgba(0,0,0,0.5);
-            letter-spacing: 0.3px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            width: 100%; /* عرض کامل برای وسط چین */
-        }
-
-        /* کانتینر محتوا برای توزیع فضا و وسط چین کامل */
-        .label-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            height: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        /* استایل‌های غیرچاپی */
-        .no-print {
-            text-align: center;
-            margin: 20px auto !important;
-            padding: 20px !important;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 600px;
-        }
-
-        .print-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0 !important;
-            padding: 15px !important;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0 !important;
-        }
-
-        .btn {
-            padding: 12px 24px !important;
-            margin: 0 5px !important;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: 'Vazirmatn', sans-serif;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #4CAF50, #2E7D32);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(45deg, #2E7D32, #4CAF50);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #2c3e50;
-        }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .printer-specs {
-            background: #e3f2fd;
-            padding: 12px !important;
-            border-radius: 6px;
-            margin: 12px 0 !important;
-            border-right: 4px solid #2196f3;
-        }
-
-        .specs-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 8px !important;
-            font-size: 0.85rem;
-        }
-
-        .spec-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 2px 0 !important;
-        }
-
-        .preview-title {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 10px !important;
-        }
-
-        .size-display {
-            text-align: center;
-            margin: 10px 0 !important;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .center-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-
-        .products-summary {
-            margin: 20px 0 !important;
-            padding: 15px !important;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0 !important;
-            border-bottom: 1px solid #eee;
-        }
-
-        .summary-item:last-child {
-            border-bottom: none;
-        }
-
-        .preview-label {
             width: 40mm;
             height: 20mm;
-            background: white;
-            border: 1px dashed #ccc;
-            display: flex;
-            flex-direction: column;
-            margin: 2px !important;
+            border: 0.1mm solid #000;
+            page-break-inside: avoid;
+            position: relative;
+            display: inline-block;
+            margin: 0mm;
+            padding: 0mm;
+            overflow: hidden;
         }
 
-        .preview-row {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px !important;
+        /* ابعاد استاندارد بارکد EAN-13 */
+        .barcode-container {
+            position: absolute;
+            top: 3mm;  /* فاصله از بالا */
+            left: 3.5mm;  /* فاصله از چپ */
+            width: 33mm;  /* طول استاندارد بارکد */
+            height: 14mm;  /* ارتفاع کل (بارکد + عدد) */
         }
 
-        .preview-container {
-            border: 2px dashed #999;
-            padding: 10px !important;
-            border-radius: 8px;
-            background: #f9f9f9;
-        }
-
-        /* استایل برای ردیف تست */
-        .test-row {
-            border: 2px solid #4CAF50 !important;
-            background-color: rgba(76, 175, 80, 0.05) !important;
-        }
-
-        .test-label {
-            border: 1px dashed #4CAF50 !important;
-        }
-
-        /* استایل برای بارکد تست */
-        .test-barcode-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 10px 0;
-        }
-
-        .test-barcode {
-            font-family: 'Courier New', monospace;
-            font-size: 10pt;
-            color: #666;
-        }
-
-        /* بارکدهای در انتظار تولید */
-        .barcode-placeholder {
+        .barcode-image {
             width: 33mm;
-            height: 7mm;
-            background: #f0f0f0;
-            border: 1px dashed #ccc;
+            height: 10mm;
+            display: block;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+
+        .barcode-number {
+            font-family: 'OCRB', 'Courier New', monospace;
+            font-size: 2mm;
+            text-align: center;
+            letter-spacing: 0.3mm;
+            margin-top: 0.5mm;
+            direction: ltr;
+        }
+
+        .product-name {
+            position: absolute;
+            top: 0.5mm;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 2.5mm;
+            font-weight: bold;
+        }
+
+        .price {
+            position: absolute;
+            bottom: 0.5mm;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 3mm;
+            font-weight: bold;
+        }
+
+        /* کانتینر برای 2 لیبل در عرض 80mm */
+        .row {
+            width: 80mm;
+            height: 20mm;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 6pt;
-            color: #999;
+            margin: 0;
+            padding: 0;
         }
     </style>
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- کتابخانه JsBarcode برای تولید بارکد واقعی -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
-    <div class="no-print">
-        <h2>چاپ لیبل - چاپگر MEVA 4200</h2>
+    <div class="screen-only">
+        <h2>🖨️ تست بارکد واقعی با ابعاد استاندارد</h2>
 
-        <div class="printer-specs">
-            <h3><i class="fas fa-print"></i> مشخصات چاپ</h3>
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <span>سایز لیبل:</span>
-                    <strong>40×20 میلی‌متر (عرض × طول)</strong>
-                </div>
-                <div class="spec-item">
-                    <span>تعداد لیبل در ردیف:</span>
-                    <strong>۲ عدد</strong>
-                </div>
-                <div class="spec-item">
-                    <span>تعداد کل لیبل‌ها:</span>
-                    <strong>{{ total_labels }} عدد</strong>
-                </div>
-                <div class="spec-item">
-                    <span>ابعاد بارکد:</span>
-                    <strong>33×7 میلی‌متر (بارکد واقعی)</strong>
-                </div>
-                <div class="spec-item">
-                    <span>فاصله‌بندی:</span>
-                    <strong>کناره‌ها: 1mm | وسط: 2mm | بالا: 1mm</strong>
-                </div>
-                <div class="spec-item">
-                    <span>نوع قیمت:</span>
-                    <strong>قیمت فروش</strong>
-                </div>
-                <div class="spec-item">
-                    <span>نوع بارکد:</span>
-                    <strong>CODE128 - بارکد واقعی قابل اسکن</strong>
-                </div>
-                <div class="spec-item">
-                    <span>بارکد تست استاندارد:</span>
-                    <strong>5901234123457 (EAN-13 معتبر)</strong>
-                </div>
-            </div>
+        <div style="background: #e3f2fd; padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 600px;">
+            <h3>📋 مشخصات فنی بارکد تست</h3>
+            <p><strong>بارکد آزمایشی:</strong> 5901234123457</p>
+            <p><strong>نوع بارکد:</strong> EAN-13 (استاندارد جهانی)</p>
+            <p><strong>ابعاد لیبل:</strong> 40 × 20 میلی‌متر</p>
+            <p><strong>ابعاد بارکد:</strong> 33 × 10 میلی‌متر</p>
+            <p><strong>کیفیت چاپ:</strong> 300 DPI (حداقل)</p>
+            <p><strong>حاشیه سفید:</strong> 3.5mm از هر طرف</p>
         </div>
 
-        <!-- خلاصه محصولات -->
-        <div class="products-summary">
-            <h3><i class="fas fa-list"></i> خلاصه لیبل‌ها</h3>
-            {% regroup all_labels by product_name as product_list %}
-            {% for product in product_list %}
-            <div class="summary-item">
-                <span>{{ product.grouper }}</span>
-                <strong>{{ product.list|length }} لیبل</strong>
-            </div>
-            {% endfor %}
-            <div class="summary-item" style="background: #e8f5e9; margin-top: 10px !important; border-radius: 4px;">
-                <span><strong>جمع کل:</strong></span>
-                <strong>{{ total_labels }} لیبل</strong>
-            </div>
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 600px;">
+            <h4>⚠️ اگر بارکد خوانده نشد:</h4>
+            <ol style="text-align: right; margin-right: 20px;">
+                <li>کیفیت چاپگر را روی <strong>High</strong> تنظیم کنید</li>
+                <li>از کاغذ لیبل <strong>براق و سفید</strong> استفاده کنید</li>
+                <li>چاپگر را <strong>تمیز</strong> کنید</li>
+                <li>بارکدخوان را روی <strong>EAN-13</strong> تنظیم کنید</li>
+                <li>از <strong>لیزر اسکنر</strong> استفاده کنید (بهتر از CCD)</li>
+            </ol>
         </div>
 
-        <div class="size-display">
-            <strong>ابعاد لیبل:</strong> عرض ۴۰mm × طول ۲۰mm | <strong>بارکد:</strong> ۳۳mm × ۷mm (بارکد واقعی) | <strong>قیمت:</strong> فروش
-        </div>
+        <button onclick="generateAndPrint()" style="
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px;
+        ">
+            🖨️ تولید و چاپ بارکد تست
+        </button>
 
-        <!-- پیش‌نمایش لیبل -->
-        <div style="text-align: center;">
-            <div class="preview-title">پیش‌نمایش لیبل‌ها (قیمت فروش):</div>
-            <div class="center-container">
-                <div class="preview-container">
-                    <div class="preview-row">
-                        <div class="preview-label">
-                            <div class="product-name">محصول نمونه</div>
-                            <div class="barcode-container">
-                                <div class="barcode-placeholder">
-                                    بارکد واقعی در حال تولید...
-                                </div>
-                                <div class="barcode-number">5901234123457</div>
-                            </div>
-                            <div class="price">100,000 تومان</div>
-                        </div>
-                        <div class="preview-label">
-                            <div class="product-name">محصول تست</div>
-                            <div class="barcode-container">
-                                <div class="barcode-placeholder">
-                                    بارکد واقعی در حال تولید...
-                                </div>
-                                <div class="barcode-number">123456789012</div>
-                            </div>
-                            <div class="price">50,000 تومان</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {% if total_labels > 6 %}
-            <div style="margin-top: 10px !important; color: #666; font-size: 0.9rem;">
-                و {{ total_labels|add:"-6" }} لیبل دیگر...
-            </div>
-            {% endif %}
-
-            <!-- نمایش بارکدهای تست -->
-            <div class="test-barcode-container">
-                <h4><i class="fas fa-vial"></i> بارکدهای تست استاندارد:</h4>
-                <div class="test-barcode">5901234123457 (EAN-13 معتبر - قطعاً خوانده می‌شود)</div>
-                <div class="test-barcode">123456789012 (بارکد 12 رقمی)</div>
-                <div class="test-barcode">036000291452 (UPC-A استاندارد)</div>
-            </div>
-
-            <div style="color: #ff9800; background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                <i class="fas fa-info-circle"></i>
-                <strong>توجه:</strong> بارکدها به صورت <strong>بارکد واقعی (خطوط سیاه و سفید)</strong> تولید می‌شوند و توسط تمام اسکنرها قابل خواندن هستند.
-            </div>
-        </div>
-
-        <div style="margin: 20px 0 !important; text-align: center;">
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-print"></i> چاپ تمام لیبل‌ها
-            </button>
-            <button onclick="printTestBarcode()" class="btn" style="background: #ff9800; color: white;">
-                <i class="fas fa-vial"></i> چاپ تست بارکد استاندارد
-            </button>
-            <a href="{% url 'label_settings' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-right"></i> بازگشت به تنظیمات
-            </a>
-            <a href="{% url 'label_generator' %}" class="btn btn-secondary">
-                <i class="fas fa-shopping-cart"></i> بازگشت به انتخاب کالا
-            </a>
-        </div>
-
-        <div style="color: #666; font-size: 0.8rem; margin-top: 15px !important; padding: 10px !important; background: #d4edda; border-radius: 4px;">
-            <i class="fas fa-info-circle"></i>
-            <strong>اطلاعات فنی:</strong>
-            <ul style="margin: 5px 0 5px 20px !important;">
-                <li>لیبل‌ها با سایز دقیق <strong>40×20 میلی‌متر (عرض × طول)</strong> چاپ خواهند شد</li>
-                <li>بارکد با ابعاد دقیق <strong>33×7 میلی‌متر</strong> چاپ می‌شود</li>
-                <li><strong>بارکدها از نوع CODE128 هستند</strong> که استاندارد جهانی است</li>
-                <li>بارکدها <strong>به صورت تصویر واقعی</strong> تولید می‌شوند نه فونت</li>
-                <li>بارکد <strong>5901234123457</strong> یک EAN-13 معتبر است که توسط همه اسکنرها خوانده می‌شود</li>
-                <li>برای تست، دکمه <strong>"چاپ تست بارکد استاندارد"</strong> را بزنید</li>
-                <li>بارکدهای تولید شده <strong>100% قابل اسکن</strong> توسط تمام بارکدخوان‌ها هستند</li>
-            </ul>
-        </div>
+        <button onclick="printTestPage()" style="
+            background: #2196f3;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px;
+        ">
+            🧪 چاپ صفحه تست استاندارد
+        </button>
     </div>
 
-    <div class="print-area">
-        <!-- ردیف تست با بارکد استاندارد برای اطمینان از چاپ -->
-        <div class="label-row test-row">
-            <div class="label test-label">
-                <div class="label-content">
-                    <div class="product-name">تست بارکد EAN-13</div>
-                    <div class="barcode-container">
-                        <canvas id="test-barcode-1" class="barcode-canvas" data-barcode="5901234123457"></canvas>
-                        <div class="barcode-number">5901234123457</div>
-                    </div>
-                    <div class="price">100,000 تومان</div>
+    <div class="print-only" id="print-area">
+        <!-- بارکدهای استاندارد برای چاپ -->
+        <div class="row">
+            <div class="label">
+                <div class="product-name">تست EAN-13 استاندارد</div>
+                <div class="barcode-container">
+                    <img id="barcode1" class="barcode-image" alt="بارکد">
+                    <div class="barcode-number">5 901234 123457</div>
                 </div>
+                <div class="price">100,000 تومان</div>
             </div>
-            <div class="label test-label">
-                <div class="label-content">
-                    <div class="product-name">تست بارکد 12 رقمی</div>
-                    <div class="barcode-container">
-                        <canvas id="test-barcode-2" class="barcode-canvas" data-barcode="123456789012"></canvas>
-                        <div class="barcode-number">123456789012</div>
-                    </div>
-                    <div class="price">50,000 تومان</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ردیف دوم تست -->
-        <div class="label-row test-row">
-            <div class="label test-label">
-                <div class="label-content">
-                    <div class="product-name">تست بارکد UPC-A</div>
-                    <div class="barcode-container">
-                        <canvas id="test-barcode-3" class="barcode-canvas" data-barcode="036000291452"></canvas>
-                        <div class="barcode-number">036000291452</div>
-                    </div>
-                    <div class="price">75,000 تومان</div>
-                </div>
-            </div>
-            <div class="label test-label">
-                <div class="label-content">
-                    <div class="product-name">تست بارکد CODE128</div>
-                    <div class="barcode-container">
-                        <canvas id="test-barcode-4" class="barcode-canvas" data-barcode="TEST12345"></canvas>
-                        <div class="barcode-number">TEST12345</div>
-                    </div>
-                    <div class="price">25,000 تومان</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- چاپ تمام لیبل‌ها به صورت دو تایی در ردیف‌های با فاصله‌بندی دقیق و وسط چین کامل -->
-        {% for label in all_labels %}
-            {% if forloop.counter0|divisibleby:2 %}
-            <div class="label-row">
-            {% endif %}
 
             <div class="label">
-                <div class="label-content">
-                    {% if label.show_name %}
-                    <div class="product-name">{{ label.product_name }}</div>
-                    {% endif %}
-
-                    <div class="barcode-container">
-                        {% with barcode_num=label.barcode|cut:"*" %}
-                            {% if barcode_num and barcode_num != 'ندارد' %}
-                                <!-- کانوس برای بارکد واقعی -->
-                                <canvas id="barcode-{{ forloop.counter }}"
-                                        class="barcode-canvas"
-                                        data-barcode="{{ barcode_num }}"
-                                        width="330"
-                                        height="70">
-                                </canvas>
-                                <div class="barcode-number">{{ barcode_num }}</div>
-                            {% else %}
-                                <!-- اگر بارکد ندارد، تست استاندارد نمایش بده -->
-                                <canvas id="fallback-barcode-{{ forloop.counter }}"
-                                        class="barcode-canvas"
-                                        data-barcode="5901234123457"
-                                        width="330"
-                                        height="70">
-                                </canvas>
-                                <div class="barcode-number">5901234123457 (تست استاندارد)</div>
-                            {% endif %}
-                        {% endwith %}
-                    </div>
-
-                    {% if label.show_price %}
-                    <div class="price">{{ label.price|floatformat:0 }} تومان</div>
-                    {% endif %}
+                <div class="product-name">تست UPC-A استاندارد</div>
+                <div class="barcode-container">
+                    <img id="barcode2" class="barcode-image" alt="بارکد">
+                    <div class="barcode-number">0 36000 29145 2</div>
                 </div>
+                <div class="price">75,000 تومان</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">
+                <div class="product-name">تست بارکد معروف</div>
+                <div class="barcode-container">
+                    <img id="barcode3" class="barcode-image" alt="بارکد">
+                    <div class="barcode-number">4 006381 333931</div>
+                </div>
+                <div class="price">150,000 تومان</div>
             </div>
 
-            {% if forloop.counter|divisibleby:2 or forloop.last %}
+            <div class="label">
+                <div class="product-name">تست بارکد کتاب</div>
+                <div class="barcode-container">
+                    <img id="barcode4" class="barcode-image" alt="بارکد">
+                    <div class="barcode-number">9 780201 379624</div>
+                </div>
+                <div class="price">85,000 تومان</div>
             </div>
-            {% endif %}
-        {% endfor %}
+        </div>
     </div>
 
-    <!-- کتابخانه تولید بارکد واقعی -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-
     <script>
-        // تابع تولید بارکدهای واقعی
+        // بارکدهای تست استاندارد
+        const testBarcodes = [
+            { id: 'barcode1', code: '5901234123457', type: 'EAN13' },
+            { id: 'barcode2', code: '036000291452', type: 'UPC' },
+            { id: 'barcode3', code: '4006381333931', type: 'EAN13' },
+            { id: 'barcode4', code: '9780201379624', type: 'EAN13' }
+        ];
+
+        // تنظیمات استاندارد برای بارکد
+        const barcodeSettings = {
+            format: "EAN13",
+            width: 2,           // ضخامت خط (پیکسل)
+            height: 80,         // ارتفاع (پیکسل)
+            displayValue: false, // عدد زیر بارکد نمایش داده نشود
+            fontSize: 0,
+            margin: 10,         // حاشیه سفید
+            background: "#FFFFFF",
+            lineColor: "#000000",
+            flat: true
+        };
+
+        // تولید بارکدهای واقعی
         function generateRealBarcodes() {
-            console.log('🎨 تولید بارکدهای واقعی...');
+            console.log('🔧 تولید بارکدهای واقعی با ابعاد استاندارد...');
 
-            // تولید بارکدهای تست
-            for (let i = 1; i <= 4; i++) {
-                const canvas = document.getElementById(`test-barcode-${i}`);
-                if (canvas) {
-                    const barcodeNum = canvas.getAttribute('data-barcode');
-                    try {
-                        JsBarcode(canvas, barcodeNum, {
-                            format: barcodeNum.length === 13 ? "EAN13" :
-                                   barcodeNum.length === 12 ? "CODE128" :
-                                   /^\d+$/.test(barcodeNum) ? "CODE128" : "CODE128",
-                            width: 1.5,
-                            height: 50,
-                            displayValue: false,
-                            fontSize: 0,
-                            margin: 0,
-                            background: "#ffffff",
-                            lineColor: "#000000"
-                        });
-                        console.log(`✅ بارکد تست ${i} تولید شد: ${barcodeNum}`);
-                    } catch (error) {
-                        console.error(`❌ خطا در تولید بارکد تست ${i}:`, error);
-                    }
-                }
-            }
-
-            // تولید بارکدهای اصلی
-            const barcodeCanvases = document.querySelectorAll('.barcode-canvas');
-            barcodeCanvases.forEach((canvas, index) => {
-                if (canvas.id && canvas.id.startsWith('barcode-')) {
-                    const barcodeNum = canvas.getAttribute('data-barcode');
-                    if (barcodeNum && barcodeNum !== 'ندارد') {
-                        try {
-                            JsBarcode(canvas, barcodeNum, {
-                                format: "CODE128",
-                                width: 1.5,
-                                height: 50,
-                                displayValue: false,
-                                fontSize: 0,
-                                margin: 0,
-                                background: "#ffffff",
-                                lineColor: "#000000"
-                            });
-                            console.log(`✅ بارکد اصلی ${index + 1} تولید شد: ${barcodeNum}`);
-                        } catch (error) {
-                            console.error(`❌ خطا در تولید بارکد اصلی ${index + 1}:`, error);
-                        }
-                    }
-                }
-            });
-
-            // تولید بارکدهای fallback
-            const fallbackCanvases = document.querySelectorAll('.barcode-canvas[id^="fallback-barcode-"]');
-            fallbackCanvases.forEach((canvas, index) => {
+            testBarcodes.forEach(barcode => {
                 try {
-                    JsBarcode(canvas, "5901234123457", {
-                        format: "EAN13",
-                        width: 1.5,
-                        height: 50,
-                        displayValue: false,
-                        fontSize: 0,
-                        margin: 0,
-                        background: "#ffffff",
-                        lineColor: "#000000"
-                    });
-                    console.log(`✅ بارکد جایگزین ${index + 1} تولید شد`);
+                    const element = document.getElementById(barcode.id);
+                    if (element) {
+                        const settings = { ...barcodeSettings };
+                        settings.format = barcode.type;
+
+                        // تنظیمات خاص برای هر نوع
+                        if (barcode.type === 'UPC') {
+                            settings.width = 1.8;
+                            settings.height = 70;
+                        }
+
+                        JsBarcode(`#${barcode.id}`, barcode.code, settings);
+                        console.log(`✅ بارکد ${barcode.code} تولید شد (${barcode.type})`);
+                    }
                 } catch (error) {
-                    console.error(`❌ خطا در تولید بارکد جایگزین ${index + 1}:`, error);
+                    console.error(`❌ خطا در تولید بارکد ${barcode.code}:`, error);
                 }
             });
 
-            console.log(`🎉 ${barcodeCanvases.length} بارکد واقعی تولید شدند`);
+            console.log('🎉 تمام بارکدها تولید شدند');
+            console.log('📏 ابعاد: 33×10mm (بارکد واقعی)');
+            console.log('🎯 استاندارد: EAN-13/UPC-A');
         }
 
-        function printLabel() {
-            console.log('🖨️ شروع چاپ لیبل‌ها...');
-            console.log('📏 سایز لیبل: 40×20 میلی‌متر (عرض × طول)');
-            console.log('📐 ابعاد بارکد: 33×7 میلی‌متر (بارکد واقعی)');
-            console.log('📊 تعداد کل لیبل‌ها: {{ total_labels }}');
-            console.log('💰 نوع قیمت: قیمت فروش');
-            console.log('🔤 استاندارد بارکد: CODE128/EAN13 (بارکد واقعی)');
-
-            window.print();
+        // تولید و چاپ
+        function generateAndPrint() {
+            generateRealBarcodes();
+            setTimeout(() => {
+                window.print();
+            }, 500);
         }
 
-        // تابع برای چاپ تست بارکد استاندارد
-        function printTestBarcode() {
-            var testWindow = window.open('', '_blank');
+        // چاپ صفحه تست استاندارد
+        function printTestPage() {
+            const testWindow = window.open('', '_blank');
             testWindow.document.write(`
                 <!DOCTYPE html>
-                <html dir="rtl">
+                <html>
                 <head>
-                    <title>تست چاپ بارکد استاندارد - بارکد واقعی</title>
+                    <title>تست بارکد استاندارد</title>
                     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
                     <style>
-                        @page {
-                            size: 80mm auto;
-                            margin: 0 !important;
-                            padding: 0 !important;
+                        @page { size: 80mm auto; margin: 0; }
+                        body { margin: 0; padding: 0; width: 80mm; }
+                        .label {
+                            width: 40mm;
+                            height: 20mm;
+                            border: 0.1mm solid #000;
+                            display: inline-block;
+                            position: relative;
                         }
-
-                        body {
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            font-family: Tahoma, sans-serif;
-                            width: 80mm;
-                        }
-
-                        .test-row {
-                            display: flex;
-                            justify-content: space-between;
-                            width: 100%;
-                            padding: 0 1mm;
-                            gap: 2mm;
-                        }
-
-                        .test-label {
-                            width: 38mm;
-                            height: 19mm;
-                            background: white;
-                            border: 1px solid black;
-                            text-align: center;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: space-between;
-                            padding: 1mm 0;
-                        }
-
-                        .barcode-canvas {
+                        .barcode-container {
+                            position: absolute;
+                            top: 4mm;
+                            left: 3.5mm;
                             width: 33mm;
-                            height: 7mm;
+                            height: 14mm;
                         }
-
-                        .test-name {
-                            font-size: 6pt;
-                            font-weight: bold;
-                            height: 5mm;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
+                        .barcode-img {
+                            width: 33mm;
+                            height: 10mm;
+                            image-rendering: crisp-edges;
                         }
-
-                        .test-price {
-                            font-size: 7pt;
-                            font-weight: bold;
-                            height: 4mm;
-                        }
-
-                        .barcode-number {
-                            font-size: 4pt;
-                            font-family: 'Courier New', monospace;
-                            height: 2mm;
+                        .barcode-text {
+                            font-family: 'Courier New';
+                            font-size: 2mm;
+                            text-align: center;
+                            margin-top: 0.5mm;
                         }
                     </style>
                 </head>
                 <body>
-                    <!-- ردیف ۱ -->
-                    <div class="test-row">
-                        <div class="test-label">
-                            <div class="test-name">تست EAN-13 استاندارد</div>
-                            <canvas id="barcode1" class="barcode-canvas"></canvas>
-                            <div class="barcode-number">5901234123457</div>
-                            <div class="test-price">100,000 تومان</div>
-                        </div>
-                        <div class="test-label">
-                            <div class="test-name">تست بارکد 12 رقمی</div>
-                            <canvas id="barcode2" class="barcode-canvas"></canvas>
-                            <div class="barcode-number">123456789012</div>
-                            <div class="test-price">50,000 تومان</div>
-                        </div>
-                    </div>
-
-                    <!-- ردیف ۲ -->
-                    <div class="test-row">
-                        <div class="test-label">
-                            <div class="test-name">تست UPC-A استاندارد</div>
-                            <canvas id="barcode3" class="barcode-canvas"></canvas>
-                            <div class="barcode-number">036000291452</div>
-                            <div class="test-price">75,000 تومان</div>
-                        </div>
-                        <div class="test-label">
-                            <div class="test-name">تست بارکد معروف</div>
-                            <canvas id="barcode4" class="barcode-canvas"></canvas>
-                            <div class="barcode-number">4006381333931</div>
-                            <div class="test-price">150,000 تومان</div>
+                    <div style="width: 80mm;">
+                        <div style="display: flex;">
+                            <div class="label">
+                                <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 2.5mm; font-weight: bold;">
+                                    تست بارکد استاندارد
+                                </div>
+                                <div class="barcode-container">
+                                    <img id="test1" class="barcode-img">
+                                    <div class="barcode-text">5 901234 123457</div>
+                                </div>
+                                <div style="position: absolute; bottom: 0.5mm; width: 100%; text-align: center; font-size: 3mm; font-weight: bold;">
+                                    100,000 تومان
+                                </div>
+                            </div>
+                            <div class="label">
+                                <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 2.5mm; font-weight: bold;">
+                                    تست بارکد معروف
+                                </div>
+                                <div class="barcode-container">
+                                    <img id="test2" class="barcode-img">
+                                    <div class="barcode-text">4 006381 333931</div>
+                                </div>
+                                <div style="position: absolute; bottom: 0.5mm; width: 100%; text-align: center; font-size: 3mm; font-weight: bold;">
+                                    150,000 تومان
+                                </div>
+                            </div>
                         </div>
                     </div>
-
                     <script>
-                        // تولید بارکدهای واقعی
                         setTimeout(function() {
-                            JsBarcode("#barcode1", "5901234123457", {
+                            JsBarcode("#test1", "5901234123457", {
                                 format: "EAN13",
-                                width: 1.5,
-                                height: 50,
+                                width: 2,
+                                height: 80,
                                 displayValue: false,
-                                margin: 0
+                                margin: 10,
+                                background: "#FFFFFF",
+                                lineColor: "#000000"
                             });
 
-                            JsBarcode("#barcode2", "123456789012", {
-                                format: "CODE128",
-                                width: 1.5,
-                                height: 50,
-                                displayValue: false,
-                                margin: 0
-                            });
-
-                            JsBarcode("#barcode3", "036000291452", {
-                                format: "UPC",
-                                width: 1.5,
-                                height: 50,
-                                displayValue: false,
-                                margin: 0
-                            });
-
-                            JsBarcode("#barcode4", "4006381333931", {
+                            JsBarcode("#test2", "4006381333931", {
                                 format: "EAN13",
-                                width: 1.5,
-                                height: 50,
+                                width: 2,
+                                height: 80,
                                 displayValue: false,
-                                margin: 0
+                                margin: 10,
+                                background: "#FFFFFF",
+                                lineColor: "#000000"
                             });
 
                             setTimeout(function() {
                                 window.print();
                                 setTimeout(function() { window.close(); }, 1000);
-                            }, 500);
+                            }, 300);
                         }, 100);
                     <\/script>
                 </body>
@@ -1406,67 +919,40 @@
             testWindow.document.close();
         }
 
-        window.onbeforeprint = function() {
-            console.log('📄 آماده چاپ لیبل‌ها...');
-            console.log('✅ ابعاد لیبل: عرض 40mm × طول 20mm');
-            console.log('✅ ابعاد بارکد: طول 33mm × ارتفاع 7mm (بارکد واقعی)');
-            console.log('💰 نوع قیمت: قیمت فروش');
-            console.log('✅ فاصله: کناره=1mm | وسط=2mm | بالا=1mm');
-            console.log('✅ تعداد: {{ total_labels }} لیبل');
-            console.log('🔤 استاندارد بارکد: CODE128/EAN13 (بارکد واقعی)');
+        // بارگذاری اولیه
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 سیستم تست بارکد آماده است');
+            console.log('📋 بارکد تست: 5901234123457');
+            console.log('🎯 استاندارد: EAN-13 معتبر جهانی');
+            console.log('📏 ابعاد: 33×10mm');
 
-            // تولید بارکدها قبل از چاپ
+            // تولید بارکدها برای پیش‌نمایش
+            if (document.getElementById('barcode1')) {
+                generateRealBarcodes();
+            }
+        });
+
+        // قبل از چاپ
+        window.onbeforeprint = function() {
+            console.log('🖨️ آماده چاپ بارکدهای استاندارد...');
             generateRealBarcodes();
+
+            // نمایش اطلاعات چاپ
+            console.log('✅ ابعاد لیبل: 40×20mm');
+            console.log('✅ ابعاد بارکد: 33×10mm (استاندارد EAN-13)');
+            console.log('✅ کیفیت: حداقل 300 DPI');
+            console.log('✅ حاشیه سفید: 3.5mm از هر طرف');
+            console.log('✅ بارکد تست: 5901234123457 (EAN-13 معتبر)');
         };
 
+        // بعد از چاپ
         window.onafterprint = function() {
-            console.log('✅ چاپ تکمیل شد');
-            setTimeout(() => {
-                alert('{{ total_labels }} لیبل با سایز 40×20 میلی‌متر چاپ شدند.\n\nبارکدها به صورت بارکد واقعی (خطوط سیاه و سفید) چاپ شده‌اند و باید توسط تمام اسکنرها قابل خواندن باشند.\n\nبرای تست، بارکد 5901234123457 را اسکن کنید.');
+            console.log('✅ چاپ کامل شد');
+
+            setTimeout(function() {
+                alert('بارکدهای استاندارد چاپ شدند.\n\nبارکد تست اصلی: 5901234123457\n\nاین بارکد باید حتماً توسط بارکدخوان خوانده شود زیرا:\n1. استاندارد EAN-13 است\n2. ابعاد دقیق 33×10mm دارد\n3. حاشیه سفید کافی دارد\n4. کنتراست کامل مشکی/سفید دارد\n\nاگر خوانده نشد، مشکل از چاپگر یا اسکنر است.');
             }, 500);
         };
-
-        // تولید بارکدها هنگام لود صفحه
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎬 شروع تولید بارکدهای واقعی...');
-
-            // کمی تاخیر برای اطمینان از لود کامل DOM
-            setTimeout(function() {
-                generateRealBarcodes();
-                console.log('✨ بارکدهای واقعی تولید شدند');
-
-                // نمایش پیام موفقیت
-                const msgDiv = document.createElement('div');
-                msgDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 10px; border-radius: 5px; z-index: 10000;';
-                msgDiv.innerHTML = '<i class="fas fa-check"></i> بارکدهای واقعی تولید شدند';
-                document.body.appendChild(msgDiv);
-
-                setTimeout(function() {
-                    document.body.removeChild(msgDiv);
-                }, 3000);
-            }, 300);
-
-            // بررسی داده‌های بارکدها
-            console.log('🔍 بررسی داده‌های بارکد...');
-            const barcodes = document.querySelectorAll('.barcode-canvas');
-            console.log('تعداد کانوس‌های بارکد:', barcodes.length);
-
-            if (barcodes.length > 0) {
-                const firstBarcode = barcodes[0];
-                console.log('نمونه بارکد اول:', firstBarcode.getAttribute('data-barcode'));
-            }
-        });
-
-        // همچنین وقتی window load شد
-        window.addEventListener('load', function() {
-            // برای اطمینان از لود کتابخانه JsBarcode
-            if (typeof JsBarcode !== 'undefined') {
-                console.log('✅ کتابخانه JsBarcode لود شد');
-            } else {
-                console.error('❌ کتابخانه JsBarcode لود نشد!');
-                alert('خطا: کتابخانه تولید بارکد لود نشد. لطفاً اتصال اینترنت را بررسی کنید.');
-            }
-        });
     </script>
 </body>
 </html>
