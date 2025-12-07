@@ -78,9 +78,7 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     # URLهای جدید برای مدیریت شعبه در لیبل
     path('label/get-branches/', views.get_branches_for_label, name='get_branches_for_label'),
     path('label/get-branch-products/', views.get_branch_products_for_label, name='get_branch_products_for_label'),
-
-path('cleanup-barcodes/', views.cleanup_barcodes, name='cleanup_barcodes'),
-
+    # path('label/generate-barcode-image/', views.generate_barcode_image, name='generate_barcode_image'),
     # ------------------------------------برای تعین درصد تعدیل-------------------------------------------------------------
 
     path('product-pricing/', views.product_pricing_list, name='product_pricing_list'),

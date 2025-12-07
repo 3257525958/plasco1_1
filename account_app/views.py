@@ -1408,194 +1408,6 @@ def convert_persian_arabic_to_english(text):
 
 
 # ----------------------- چاپ لیبل -----------------------
-import os
-import tempfile
-import base64
-from io import BytesIO
-from django.core.files.base import ContentFile
-
-
-def generate_barcode_image(barcode_number):
-    """
-    تولید بارکد به صورت تصویر و بازگرداندن به صورت base64
-    """
-    try:
-        # پاکسازی و فرمت‌بندی بارکد
-        import re
-        barcode_str = str(barcode_number).strip()
-
-        # حذف کاراکترهای غیرعددی
-        barcode_digits = re.sub(r'\D', '', barcode_str)
-
-        # اگر بارکد خالی است، یک بارکد تصادفی تولید کن
-        if not barcode_digits or len(barcode_digits) < 8:
-            import random
-            barcode_digits = ''.join([str(random.randint(0, 9)) for _ in range(12)])
-
-        # اطمینان از 12 رقمی بودن
-        if len(barcode_digits) > 12:
-            barcode_digits = barcode_digits[:12]
-        elif len(barcode_digits) < 12:
-            barcode_digits = barcode_digits.ljust(12, '0')
-
-        # تولید بارکد با python-barcode
-        from barcode import Code128
-        from barcode.writer import ImageWriter
-        from PIL import Image
-        import io
-
-        # تنظیمات بارکد
-        barcode_class = Code128(barcode_digits, writer=ImageWriter())
-
-        # ایجاد فایل موقت در حافظه
-        buffer = BytesIO()
-
-        # تنظیمات برای اندازه مناسب
-        options = {
-            'module_height': 8.0,
-            'module_width': 0.2,
-            'quiet_zone': 2.0,
-            'font_size': 0,
-            'write_text': False,
-            'background': 'white',
-            'foreground': 'black',
-            'dpi': 203,
-        }
-
-        # ذخیره بارکد در بافر
-        barcode_class.write(buffer, options=options)
-
-        # بازگرداندن به ابتدای بافر
-        buffer.seek(0)
-
-        # تبدیل به base64
-        barcode_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
-        return f"data:image/png;base64,{barcode_base64}", barcode_digits
-
-    except Exception as e:
-        print(f"❌ خطا در تولید بارکد تصویری: {e}")
-        # در صورت خطا، یک جایگزین ساده برگردان
-        return None, barcode_digits
-
-
-@login_required
-def label_print(request):
-    """صفحه چاپ لیبل"""
-    cart = request.session.get('label_cart', [])
-
-    # ایجاد لیست کامل لیبل‌ها
-    all_labels = []
-    for item in cart:
-        # تولید بارکد برای هر آیتم
-        barcode_image, barcode_number = generate_barcode_image(item['barcode'])
-
-        # اگر تولید بارکد موفق نبود، یک placeholder ایجاد کن
-        if not barcode_image:
-            # ایجاد یک تصویر ساده مشکی و سفید برای تست
-            from PIL import Image, ImageDraw
-            import io
-            import base64
-
-            # ایجاد تصویر 150x50 پیکسل
-            img = Image.new('RGB', (150, 50), color='white')
-            d = ImageDraw.Draw(img)
-
-            # کشتن یک مستطیل ساده (شبیه بارکد)
-            for i in range(10):
-                width = 10
-                x = i * 15
-                d.rectangle([x, 10, x + width, 40], fill='black')
-
-            # ذخیره در بافر
-            buffer = io.BytesIO()
-            img.save(buffer, format='PNG')
-            buffer.seek(0)
-
-            # تبدیل به base64
-            barcode_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-            barcode_image = f"data:image/png;base64,{barcode_base64}"
-
-        for i in range(item['quantity']):
-            label_data = item.copy()
-            label_data['barcode_image'] = barcode_image
-            label_data['barcode_number'] = barcode_number
-            all_labels.append(label_data)
-
-    total_labels = len(all_labels)
-
-    if request.method == 'POST':
-        # ثبت تاریخچه چاپ
-        if cart:
-            try:
-                for item in cart:
-                    product_name = item['product_name']
-                    branch_id = item.get('branch_id')
-
-                    if branch_id:
-                        try:
-                            label_setting, created = ProductLabelSetting.objects.get_or_create(
-                                product_name=product_name,
-                                branch_id=branch_id,
-                                defaults={
-                                    'barcode': item.get('barcode', ''),
-                                    'allow_print': True
-                                }
-                            )
-
-                            LabelPrintItem.objects.create(
-                                label_setting=label_setting,
-                                print_quantity=item['quantity'],
-                                user=request.user
-                            )
-
-                            label_setting.allow_print = False
-                            label_setting.save()
-
-                        except Exception as e:
-                            print(f"❌ خطا در ثبت برای {product_name}: {e}")
-
-            except Exception as e:
-                print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
-
-        return render(request, 'account_app/label_print.html', {
-            'all_labels': all_labels,
-            'total_labels': total_labels,
-            'auto_print': True
-        })
-
-    return render(request, 'account_app/label_print.html', {
-        'all_labels': all_labels,
-        'total_labels': total_labels,
-        'auto_print': False
-    })
-
-import os
-import tempfile
-from django.http import JsonResponse
-
-
-@login_required
-@require_POST
-def cleanup_barcodes(request):
-    """پاک کردن فایل‌های موقت بارکد بعد از چاپ"""
-    try:
-        # پاک کردن فایل‌های موقت قدیمی (بیش از 1 ساعت)
-        temp_dir = tempfile.gettempdir()
-        for filename in os.listdir(temp_dir):
-            if filename.endswith('.png') and 'tmp' in filename:
-                filepath = os.path.join(temp_dir, filename)
-                try:
-                    # حذف فایل‌های قدیمی
-                    if os.path.getmtime(filepath) < time.time() - 3600:
-                        os.unlink(filepath)
-                except:
-                    pass
-
-        return JsonResponse({'success': True, 'message': 'فایل‌های موقت پاک شدند'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-# --------------------------------------
 
 @login_required
 def label_generator(request):
@@ -1934,74 +1746,71 @@ def label_settings(request):
     return render(request, 'account_app/label_settings.html', {'cart': cart})
 
 
-# @login_required
-# def label_print(request):
-#     """صفحه چاپ لیبل - با ثبت تاریخچه و تغییر وضعیت به false فقط در صورت POST"""
-#     cart = request.session.get('label_cart', [])
-#
-#     # ایجاد لیست کامل لیبل‌ها
-#     all_labels = []
-#     for item in cart:
-#         for i in range(item['quantity']):
-#             all_labels.append(item)
-#
-#     total_labels = len(all_labels)
-#
-#     if request.method == 'POST':
-#         # ثبت تاریخچه چاپ و تغییر وضعیت به false فقط هنگام POST
-#         if cart:
-#             try:
-#                 for item in cart:
-#                     product_name = item['product_name']
-#                     branch_id = item.get('branch_id')
-#
-#                     if branch_id:
-#                         try:
-#                             # پیدا کردن یا ایجاد تنظیمات کالا
-#                             label_setting, created = ProductLabelSetting.objects.get_or_create(
-#                                 product_name=product_name,
-#                                 branch_id=branch_id,
-#                                 defaults={
-#                                     'barcode': item.get('barcode', ''),
-#                                     'allow_print': True  # پیش‌فرض true
-#                                 }
-#                             )
-#
-#                             # ایجاد آیتم تاریخچه
-#                             LabelPrintItem.objects.create(
-#                                 label_setting=label_setting,
-#                                 print_quantity=item['quantity'],
-#                                 user=request.user
-#                             )
-#
-#                             # تغییر وضعیت اجازه چاپ به false
-#                             label_setting.allow_print = False
-#                             label_setting.save()
-#
-#                             print(f"✅ ثبت چاپ و غیرفعال کردن: {product_name}")
-#
-#                         except Exception as e:
-#                             print(f"❌ خطا در ثبت برای {product_name}: {e}")
-#
-#             except Exception as e:
-#                 print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
-#
-#         # پس از ثبت، همان صفحه را رندر می‌کنیم تا چاپ انجام شود
-#         return render(request, 'account_app/label_print.html', {
-#             'all_labels': all_labels,
-#             'total_labels': total_labels,
-#             'auto_print': True  # فلگ برای چاپ خودکار
-#         })
-#
-#     # اگر GET باشد، فقط صفحه را نمایش می‌دهیم بدون ثبت تاریخچه
-#     return render(request, 'account_app/label_print.html', {
-#         'all_labels': all_labels,
-#         'total_labels': total_labels,
-#         'auto_print': False
-#     })
+@login_required
+def label_print(request):
+    """صفحه چاپ لیبل - با ثبت تاریخچه و تغییر وضعیت به false فقط در صورت POST"""
+    cart = request.session.get('label_cart', [])
 
+    # ایجاد لیست کامل لیبل‌ها
+    all_labels = []
+    for item in cart:
+        for i in range(item['quantity']):
+            all_labels.append(item)
 
+    total_labels = len(all_labels)
 
+    if request.method == 'POST':
+        # ثبت تاریخچه چاپ و تغییر وضعیت به false فقط هنگام POST
+        if cart:
+            try:
+                for item in cart:
+                    product_name = item['product_name']
+                    branch_id = item.get('branch_id')
+
+                    if branch_id:
+                        try:
+                            # پیدا کردن یا ایجاد تنظیمات کالا
+                            label_setting, created = ProductLabelSetting.objects.get_or_create(
+                                product_name=product_name,
+                                branch_id=branch_id,
+                                defaults={
+                                    'barcode': item.get('barcode', ''),
+                                    'allow_print': True  # پیش‌فرض true
+                                }
+                            )
+
+                            # ایجاد آیتم تاریخچه
+                            LabelPrintItem.objects.create(
+                                label_setting=label_setting,
+                                print_quantity=item['quantity'],
+                                user=request.user
+                            )
+
+                            # تغییر وضعیت اجازه چاپ به false
+                            label_setting.allow_print = False
+                            label_setting.save()
+
+                            print(f"✅ ثبت چاپ و غیرفعال کردن: {product_name}")
+
+                        except Exception as e:
+                            print(f"❌ خطا در ثبت برای {product_name}: {e}")
+
+            except Exception as e:
+                print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
+
+        # پس از ثبت، همان صفحه را رندر می‌کنیم تا چاپ انجام شود
+        return render(request, 'account_app/label_print.html', {
+            'all_labels': all_labels,
+            'total_labels': total_labels,
+            'auto_print': True  # فلگ برای چاپ خودکار
+        })
+
+    # اگر GET باشد، فقط صفحه را نمایش می‌دهیم بدون ثبت تاریخچه
+    return render(request, 'account_app/label_print.html', {
+        'all_labels': all_labels,
+        'total_labels': total_labels,
+        'auto_print': False
+    })
 
 # ویوهای کمکی برای template tags
 def get_label_range(value):
