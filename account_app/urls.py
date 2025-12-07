@@ -89,6 +89,7 @@ path('get-product-details/', views.get_product_details, name='get_product_detail
     path('label/clear-cart/', views.clear_label_cart, name='clear_label_cart'),
     path('label/settings/', views.label_settings, name='label_settings'),
     path('label/print/', views.label_print, name='label_print'),
+
     # ------------------------------------برای تعین درصد تعدیل-------------------------------------------------------------
 
     path('product-pricing/', views.product_pricing_list, name='product_pricing_list'),

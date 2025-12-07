@@ -511,7 +511,13 @@ class StoreInvoiceItems(View):
     def update_product_pricing(self, product_name):
         """
         به روزرسانی ProductPricing برای یک محصول خاص
-        با منطق جدید
+        با منطق جدید:
+        1. اگر قیمت جدید ≤ قیمت قدیم:
+           - هر دو قیمت (معیار و قدیم) برابر با قیمت قدیم می‌شوند
+           - درصد تعدیل = 0%
+        2. اگر قیمت جدید > قیمت قدیم:
+           - هر دو قیمت برابر با قیمت جدید می‌شوند
+           - درصد تعدیل = 0%
         """
         try:
             # یافتن بالاترین قیمت واحد برای این محصول از InvoiceItem
@@ -542,46 +548,40 @@ class StoreInvoiceItems(View):
 
                 # دریافت مقادیر قدیم
                 old_highest_price = product_pricing.highest_purchase_price
-                old_standard_price = product_pricing.standard_price
 
-                print(f"   مقادیر قبلی: highest={old_highest_price}, standard={old_standard_price}")
+                print(f"   قیمت قدیم: highest={old_highest_price}")
 
-                # منطق تصمیم‌گیری
+                # منطق تصمیم‌گیری جدید
                 if new_price <= old_highest_price:
                     print(f"   📉 حالت 1: قیمت جدید ≤ highest قدیم")
+                    print(f"   قیمت معیار = قیمت قدیم = {old_highest_price}")
+
+                    # قیمت معیار را برابر با قیمت قدیم می‌کنیم (هر دو یکی می‌شوند)
+                    product_pricing.standard_price = old_highest_price
+                    product_pricing.adjustment_percentage = 0
+
+                    print(f"   نتیجه: highest={old_highest_price}, "
+                          f"standard={old_highest_price}, adjustment=0%")
+
+                else:  # new_price > old_highest_price
+                    print(f"   📈 حالت 2: قیمت جدید > highest قدیم")
+                    print(f"   هر دو قیمت برابر با قیمت جدید می‌شوند")
+
+                    # به‌روزرسانی هر دو قیمت
                     product_pricing.highest_purchase_price = new_price
                     product_pricing.standard_price = new_price
                     product_pricing.adjustment_percentage = 0
 
-                else:  # new_price > old_highest_price
-                    if new_price < old_standard_price:
-                        print(f"   📊 حالت 2a: قیمت جدید > highest قدیم اما < standard قدیم")
-                        product_pricing.highest_purchase_price = new_price
-                        # standard_price ثابت می‌ماند
+                    print(f"   نتیجه: highest={new_price}, standard={new_price}, adjustment=0%")
 
-                        # محاسبه adjustment_percentage جدید
-                        if new_price > 0:
-                            new_adjustment = (old_standard_price / new_price - 1) * 100
-                            product_pricing.adjustment_percentage = new_adjustment
-                        else:
-                            product_pricing.adjustment_percentage = 0
-
-                    else:  # new_price >= old_standard_price
-                        print(f"   🚀 حالت 2b: قیمت جدید ≥ standard قدیم")
-                        product_pricing.highest_purchase_price = new_price
-                        product_pricing.standard_price = new_price
-                        product_pricing.adjustment_percentage = 0
-
-                # به‌روزرسانی اطلاعات فاکتور
+                # به‌روزرسانی اطلاعات فاکتور (در هر دو حالت)
                 product_pricing.invoice_date = invoice.jalali_date
                 product_pricing.invoice_number = invoice.serial_number
 
                 # ذخیره تغییرات
                 product_pricing.save()
 
-                print(f"   ✅ به‌روزرسانی شد: highest={product_pricing.highest_purchase_price}, "
-                      f"standard={product_pricing.standard_price}, "
-                      f"adjustment={product_pricing.adjustment_percentage:.2f}%")
+                print(f"   ✅ تغییرات ذخیره شد")
 
             else:
                 print(f"⚠️ هیچ فاکتوری برای محصول {product_name} یافت نشد")
@@ -1408,415 +1408,7 @@ def convert_persian_arabic_to_english(text):
 
 
 # ----------------------- چاپ لیبل -----------------------
-#
-# @login_required
-# def label_generator(request):
-#     """صفحه اصلی تولید لیبل - با ریست کردن سشن هنگام بارگذاری"""
-#     # پاک کردن سبد خرید لیبل از session هنگام بارگذاری صفحه
-#     if 'label_cart' in request.session:
-#         del request.session['label_cart']
-#         request.session.modified = True
-#
-#     return render(request, 'account_app/label_generator.html')
-#
-#
-# @login_required
-# @require_GET
-# def get_branches_for_label(request):
-#     """دریافت لیست شعبه‌ها برای صفحه لیبل"""
-#     try:
-#         branches = Branch.objects.all().values('id', 'name')
-#         return JsonResponse({'branches': list(branches)})
-#     except Exception as e:
-#         return JsonResponse({'branches': [], 'error': str(e)})
-#
-#
-# @login_required
-# @require_GET
-# def get_branch_products_for_label(request):
-#     """دریافت محصولات یک شعبه خاص - فقط کالاهای مجاز برای چاپ"""
-#     try:
-#         branch_id = request.GET.get('branch_id')
-#         if not branch_id:
-#             return JsonResponse({'products': []})
-#
-#         # دریافت محصولات این شعبه
-#         products = InventoryCount.objects.filter(
-#             branch_id=branch_id
-#         ).values(
-#             'product_name', 'barcode_data', 'selling_price'
-#         ).annotate(
-#             total_quantity=Sum('quantity')
-#         ).order_by('product_name')
-#
-#         product_list = []
-#         for product in products:
-#             try:
-#                 # بررسی وضعیت اجازه چاپ
-#                 # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
-#                 allow_print = False
-#                 try:
-#                     label_setting = ProductLabelSetting.objects.get(
-#                         product_name=product['product_name'],
-#                         branch_id=branch_id
-#                     )
-#                     allow_print = label_setting.allow_print
-#                 except ProductLabelSetting.DoesNotExist:
-#                     # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
-#                     allow_print = False
-#
-#                 # فقط کالاهای مجاز برای چاپ را اضافه کن
-#                 if allow_print:
-#                     product_list.append({
-#                         'product_name': product['product_name'],
-#                         'barcode': product['barcode_data'] or 'ندارد',
-#                         'price': str(product['selling_price']) if product['selling_price'] else '0',
-#                         'quantity': product['total_quantity'] or 0,
-#                         'branch_id': branch_id,
-#                         'allow_print': allow_print
-#                     })
-#
-#             except Exception as e:
-#                 continue
-#
-#         return JsonResponse({'products': product_list})
-#
-#     except Exception as e:
-#         return JsonResponse({'products': [], 'error': str(e)})
-#
-#
-# @login_required
-# @require_GET
-# def search_products_for_label(request):
-#     """جستجوی محصولات برای لیبل - فقط کالاهای مجاز برای چاپ"""
-#     query = request.GET.get('q', '').strip()
-#     branch_id = request.GET.get('branch_id')
-#
-#     if not branch_id:
-#         return JsonResponse({'results': []})
-#
-#     try:
-#         # فیلتر بر اساس شعبه
-#         base_query = InventoryCount.objects.filter(branch_id=branch_id)
-#
-#         # اگر کوئری وجود دارد جستجو می‌کنیم
-#         if query and len(query) >= 2:
-#             query_english = convert_persian_arabic_to_english(query)
-#             products = base_query.filter(
-#                 Q(product_name__icontains=query_english) |
-#                 Q(barcode_data__icontains=query_english)
-#             ).values(
-#                 'product_name', 'barcode_data', 'selling_price'
-#             ).annotate(
-#                 total_quantity=Sum('quantity')
-#             ).order_by('product_name')
-#         else:
-#             # همه محصولات این شعبه
-#             products = base_query.values(
-#                 'product_name', 'barcode_data', 'selling_price'
-#             ).annotate(
-#                 total_quantity=Sum('quantity')
-#             ).order_by('product_name')
-#
-#         results = []
-#         for product in products:
-#             try:
-#                 # بررسی وضعیت اجازه چاپ
-#                 # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
-#                 allow_print = False
-#                 try:
-#                     label_setting = ProductLabelSetting.objects.get(
-#                         product_name=product['product_name'],
-#                         branch_id=branch_id
-#                     )
-#                     allow_print = label_setting.allow_print
-#                 except ProductLabelSetting.DoesNotExist:
-#                     # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
-#                     allow_print = False
-#
-#                 # فقط کالاهای مجاز برای چاپ را اضافه کن
-#                 if allow_print:
-#                     product_data = {
-#                         'product_name': product['product_name'],
-#                         'barcode': product['barcode_data'] or 'ندارد',
-#                         'price': str(product['selling_price']) if product['selling_price'] else '0',
-#                         'branch_id': branch_id,
-#                         'quantity': product['total_quantity'] or 0,
-#                         'allow_print': allow_print
-#                     }
-#                     results.append(product_data)
-#
-#             except Exception as product_error:
-#                 continue
-#
-#         return JsonResponse({'results': results})
-#
-#     except Exception as e:
-#         return JsonResponse({'results': [], 'error': str(e)})
-#
-#
-# @login_required
-# @require_POST
-# def add_product_to_label_cart(request):
-#     """افزودن محصول به سبد لیبل - با چک مجوز چاپ"""
-#     try:
-#         data = json.loads(request.body)
-#         product_name = data.get('product_name')
-#         branch_id = data.get('branch_id')
-#
-#         if not branch_id:
-#             return JsonResponse({'success': False, 'error': 'شعبه انتخاب نشده است'})
-#
-#         # بررسی اجازه چاپ
-#         # اگر مدل وجود ندارد یا allow_print=false باشد، غیرفعال است
-#         allow_print = False
-#         try:
-#             label_setting = ProductLabelSetting.objects.get(
-#                 product_name=product_name,
-#                 branch_id=branch_id
-#             )
-#             allow_print = label_setting.allow_print
-#         except ProductLabelSetting.DoesNotExist:
-#             # اگر مدل وجود ندارد، غیرفعال در نظر گرفته شود
-#             allow_print = False
-#
-#         if not allow_print:
-#             return JsonResponse({'success': False, 'error': 'این کالا برای چاپ غیرفعال شده است'})
-#
-#         # بقیه کد مثل قبل...
-#         product_aggregate = InventoryCount.objects.filter(
-#             product_name=product_name,
-#             branch_id=branch_id
-#         ).aggregate(
-#             total_quantity=Sum('quantity'),
-#             first_barcode=Min('barcode_data'),
-#             first_price=Min('selling_price')
-#         )
-#
-#         total_quantity = product_aggregate['total_quantity'] or 0
-#
-#         if total_quantity == 0:
-#             return JsonResponse({'success': False, 'error': 'این کالا در انبار این شعبه موجود نیست'})
-#
-#         price = str(product_aggregate['first_price']) if product_aggregate['first_price'] else '0'
-#
-#         product_data = {
-#             'product_name': product_name,
-#             'barcode': product_aggregate['first_barcode'] or 'ندارد',
-#             'price': price,
-#             'quantity': total_quantity,
-#             'show_name': True,
-#             'show_price': True,
-#             'branch_id': branch_id
-#         }
-#
-#         # ذخیره در سشن
-#         if 'label_cart' not in request.session:
-#             request.session['label_cart'] = []
-#
-#         cart = request.session['label_cart']
-#         existing_index = next((i for i, item in enumerate(cart)
-#                                if item['product_name'] == product_name and item['branch_id'] == branch_id), -1)
-#
-#         if existing_index >= 0:
-#             cart[existing_index]['quantity'] = total_quantity
-#         else:
-#             cart.append(product_data)
-#
-#         request.session['label_cart'] = cart
-#         request.session.modified = True
-#
-#         return JsonResponse({
-#             'success': True,
-#             'cart_count': len(cart),
-#             'product_name': product_name,
-#             'quantity': total_quantity
-#         })
-#
-#     except Exception as e:
-#         return JsonResponse({'success': False, 'error': str(e)})
-#
-# @login_required
-# @require_POST
-# def remove_from_label_cart(request):
-#     """حذف محصول از سبد لیبل"""
-#     try:
-#         data = json.loads(request.body)
-#         product_name = data.get('product_name')
-#
-#         cart = request.session.get('label_cart', [])
-#         cart = [item for item in cart if item['product_name'] != product_name]
-#
-#         request.session['label_cart'] = cart
-#         request.session.modified = True
-#
-#         return JsonResponse({'success': True, 'cart_count': len(cart)})
-#
-#     except Exception as e:
-#         return JsonResponse({'success': False, 'error': str(e)})
-#
-#
-# @login_required
-# @require_GET
-# def get_label_cart(request):
-#     """دریافت سبد خرید لیبل - با اطمینان از خالی بودن هنگام بارگذاری اولیه"""
-#     cart = request.session.get('label_cart', [])
-#
-#     # اگر سشن خالی است، مطمئن شویم که آرایه خالی برگردانده شود
-#     if not cart:
-#         request.session['label_cart'] = []
-#         request.session.modified = True
-#
-#     return JsonResponse({'cart': cart})
-#
-# @login_required
-# @require_POST
-# def update_cart_quantity(request):
-#     """به روزرسانی تعداد محصول در سبد خرید"""
-#     try:
-#         data = json.loads(request.body)
-#         product_name = data.get('product_name')
-#         quantity = int(data.get('quantity', 1))
-#
-#         cart = request.session.get('label_cart', [])
-#         for item in cart:
-#             if item['product_name'] == product_name:
-#                 item['quantity'] = max(1, quantity)
-#                 break
-#
-#         request.session['label_cart'] = cart
-#         request.session.modified = True
-#
-#         return JsonResponse({'success': True})
-#
-#     except Exception as e:
-#         return JsonResponse({'success': False, 'error': str(e)})
-#
-#
-# @login_required
-# @require_POST
-# def clear_label_cart(request):
-#     """پاک کردن کل سبد خرید"""
-#     request.session['label_cart'] = []
-#     request.session.modified = True
-#     return JsonResponse({'success': True})
-#
-#
-# @login_required
-# def label_settings(request):
-#     """صفحه تنظیمات لیبل - نسخه اصلاح شده"""
-#     cart = request.session.get('label_cart', [])
-#
-#     if request.method == 'POST':
-#         print("🔍 POST Data:", dict(request.POST))  # برای دیباگ
-#
-#         # لیست تمام محصولات در سبد خرید
-#         product_names = [item['product_name'] for item in cart]
-#
-#         # به روزرسانی وضعیت نمایش برای هر محصول
-#         for product_name in product_names:
-#             for item in cart:
-#                 if item['product_name'] == product_name:
-#                     # بررسی وضعیت نمایش نام
-#                     show_name_key = f'show_name_{product_name}'
-#                     if show_name_key in request.POST:
-#                         item['show_name'] = True
-#                         print(f"✅ نمایش نام برای {product_name}: True")
-#                     else:
-#                         item['show_name'] = False
-#                         print(f"❌ نمایش نام برای {product_name}: False")
-#
-#                     # بررسی وضعیت نمایش قیمت
-#                     show_price_key = f'show_price_{product_name}'
-#                     if show_price_key in request.POST:
-#                         item['show_price'] = True
-#                         print(f"✅ نمایش قیمت برای {product_name}: True")
-#                     else:
-#                         item['show_price'] = False
-#                         print(f"❌ نمایش قیمت برای {product_name}: False")
-#                     break
-#
-#         # ذخیره تغییرات در سشن
-#         request.session['label_cart'] = cart
-#         request.session.modified = True
-#
-#         print("🔍 سبد خرید بعد از به روزرسانی:", cart)  # برای دیباگ
-#         return redirect('label_print')
-#
-#     return render(request, 'account_app/label_settings.html', {'cart': cart})
-#
-#
-# @login_required
-# def label_print(request):
-#     """صفحه چاپ لیبل - با ثبت تاریخچه و تغییر وضعیت به false فقط در صورت POST"""
-#     cart = request.session.get('label_cart', [])
-#
-#     # ایجاد لیست کامل لیبل‌ها
-#     all_labels = []
-#     for item in cart:
-#         for i in range(item['quantity']):
-#             all_labels.append(item)
-#
-#     total_labels = len(all_labels)
-#
-#     if request.method == 'POST':
-#         # ثبت تاریخچه چاپ و تغییر وضعیت به false فقط هنگام POST
-#         if cart:
-#             try:
-#                 for item in cart:
-#                     product_name = item['product_name']
-#                     branch_id = item.get('branch_id')
-#
-#                     if branch_id:
-#                         try:
-#                             # پیدا کردن یا ایجاد تنظیمات کالا
-#                             label_setting, created = ProductLabelSetting.objects.get_or_create(
-#                                 product_name=product_name,
-#                                 branch_id=branch_id,
-#                                 defaults={
-#                                     'barcode': item.get('barcode', ''),
-#                                     'allow_print': True  # پیش‌فرض true
-#                                 }
-#                             )
-#
-#                             # ایجاد آیتم تاریخچه
-#                             LabelPrintItem.objects.create(
-#                                 label_setting=label_setting,
-#                                 print_quantity=item['quantity'],
-#                                 user=request.user
-#                             )
-#
-#                             # تغییر وضعیت اجازه چاپ به false
-#                             label_setting.allow_print = False
-#                             label_setting.save()
-#
-#                             print(f"✅ ثبت چاپ و غیرفعال کردن: {product_name}")
-#
-#                         except Exception as e:
-#                             print(f"❌ خطا در ثبت برای {product_name}: {e}")
-#
-#             except Exception as e:
-#                 print(f"❌ خطا در ثبت تاریخچه چاپ: {e}")
-#
-#         # پس از ثبت، همان صفحه را رندر می‌کنیم تا چاپ انجام شود
-#         return render(request, 'account_app/label_print.html', {
-#             'all_labels': all_labels,
-#             'total_labels': total_labels,
-#             'auto_print': True  # فلگ برای چاپ خودکار
-#         })
-#
-#     # اگر GET باشد، فقط صفحه را نمایش می‌دهیم بدون ثبت تاریخچه
-#     return render(request, 'account_app/label_print.html', {
-#         'all_labels': all_labels,
-#         'total_labels': total_labels,
-#         'auto_print': False
-#     })
-#
-# # ویوهای کمکی برای template tags
-# def get_label_range(value):
-#     """تولید range برای template (برای استفاده در template tags)"""
-#     return range(int(value))
-#
+
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -1968,7 +1560,6 @@ def search_products_for_label(request):
     except Exception as e:
         return JsonResponse({'results': [], 'error': str(e)})
 
-
 @login_required
 @require_POST
 def add_product_to_label_cart(request):
@@ -2008,16 +1599,29 @@ def add_product_to_label_cart(request):
 
         price = str(product_aggregate['selling_price']) if product_aggregate['selling_price'] else '0'
 
+        # --- تغییر اعمال شده: اگر تعداد فرد بود، یکی اضافه کن تا زوج شود ---
+        if total_quantity % 2 == 1:  # فرد است
+            quantity_for_print = total_quantity + 1
+        else:
+            quantity_for_print = total_quantity
+        # دریافت بارکد از InventoryCount
+        inventory_item = InventoryCount.objects.filter(
+            product_name=product_name,
+            branch_id=branch_id
+        ).first()
+
+        if not inventory_item or not inventory_item.barcode_data:
+            return JsonResponse({'success': False, 'error': 'بارکد برای این کالا تعریف نشده است'})
+
         product_data = {
             'product_name': product_name,
-            'barcode': label_setting.barcode,
+            'barcode': inventory_item.barcode_data,  # ← تغییر به این
             'price': price,
-            'quantity': total_quantity,
+            'quantity': quantity_for_print,
             'show_name': True,
             'show_price': True,
             'branch_id': branch_id
         }
-
         # ذخیره در سشن
         if 'label_cart' not in request.session:
             request.session['label_cart'] = []
@@ -2037,12 +1641,11 @@ def add_product_to_label_cart(request):
             'success': True,
             'cart_count': len(cart),
             'product_name': product_name,
-            'quantity': total_quantity
+            'quantity': quantity_for_print  # بازگشت تعداد زوج
         })
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
-
 
 @login_required
 @require_POST
@@ -2198,6 +1801,8 @@ def label_print(request):
         'total_labels': total_labels,
         'auto_print': False
     })
+
+
 # ------------------------------------------------------برای تعین درصد تعدیل----------------------------------------
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -2800,3 +2405,6 @@ def bulk_update_adjustment_percentage(request):
         print(f"❌ خطا در بروزرسانی گروهی درصد تعدیل: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ProductLabelSetting.objects.all().update(allow_print=False)
