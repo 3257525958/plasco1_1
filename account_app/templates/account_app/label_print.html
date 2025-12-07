@@ -542,7 +542,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>چاپ لیبل با بارکد واقعی</title>
+    <title>چاپ لیبل با بارکد واقعی - نسخه پررنگ</title>
     <style>
         /* تنظیمات دقیق برای چاپگر لیبل */
         @page {
@@ -626,11 +626,12 @@
 
         .barcode-number {
             font-family: 'OCRB', 'Courier New', monospace;
-            font-size: 2mm;
+            font-size: 2.2mm; /* کمی بزرگتر برای خوانایی بهتر */
             text-align: center;
             letter-spacing: 0.3mm;
             margin-top: 0.5mm;
             direction: ltr;
+            font-weight: bold; /* پررنگ‌تر کردن عدد بارکد */
         }
 
         .product-name {
@@ -677,33 +678,47 @@
 </head>
 <body>
     <div class="screen-only">
-        <h2>🖨️ تست بارکد واقعی با ابعاد استاندارد</h2>
+        <h2>🖨️ تست بارکد با ضخامت افزایش‌یافته (نسخه پررنگ)</h2>
 
         <div style="background: #e3f2fd; padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 600px;">
-            <h3>📋 مشخصات فنی بارکد تست</h3>
+            <h3>📋 تنظیمات جدید برای پررنگ‌تر شدن بارکد</h3>
             <p><strong>بارکد آزمایشی:</strong> 5901234123457</p>
             <p><strong>نوع بارکد:</strong> EAN-13 (استاندارد جهانی)</p>
             <p><strong>ابعاد لیبل:</strong> 40 × 20 میلی‌متر</p>
-            <p><strong>ابعاد بارکد:</strong> 33 × 10 میلی‌متر</p>
-            <p><strong>کیفیت چاپ:</strong> 300 DPI (حداقل)</p>
-            <p><strong>حاشیه سفید:</strong> 3.5mm از هر طرف</p>
+            <p><strong>ابعاد بارکد:</strong> 33 × 12 میلی‌متر (بلندتر شده)</p>
+            <p><strong>ضخامت خط:</strong> 2.5 پیکسل (افزایش‌یافته)</p>
+            <p><strong>ارتفاع بارکد:</strong> 100 پیکسل (افزایش‌یافته)</p>
+            <p><strong>حاشیه سفید:</strong> 8 پیکسل (کاهش‌یافته)</p>
             <p><strong>فاصله لیبل‌ها:</strong> 3mm بین دو لیبل</p>
             <p><strong>تراز:</strong> وسط‌چین در صفحه 80mm</p>
         </div>
 
-        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 600px;">
-            <h4>⚠️ اگر بارکد خوانده نشد:</h4>
+        <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 600px;">
+            <h4>✅ بهبودهای اعمال‌شده برای پررنگ‌تر شدن:</h4>
             <ol style="text-align: right; margin-right: 20px;">
-                <li>کیفیت چاپگر را روی <strong>High</strong> تنظیم کنید</li>
-                <li>از کاغذ لیبل <strong>براق و سفید</strong> استفاده کنید</li>
-                <li>چاپگر را <strong>تمیز</strong> کنید</li>
-                <li>بارکدخوان را روی <strong>EAN-13</strong> تنظیم کنید</li>
-                <li>از <strong>لیزر اسکنر</strong> استفاده کنید (بهتر از CCD)</li>
+                <li><strong>ضخامت خط از 2 به 2.5 پیکسل</strong> افزایش یافت</li>
+                <li><strong>ارتفاع بارکد از 80 به 100 پیکسل</strong> افزایش یافت</li>
+                <li><strong>حاشیه سفید از 10 به 8 پیکسل</strong> کاهش یافت</li>
+                <li><strong>عدد بارکد پررنگ‌تر</strong> و کمی بزرگتر شد</li>
+                <li><strong>کنتراست کامل</strong> مشکی روی سفید</li>
+                <li><strong>بهینه‌سازی برای چاپگرهای ماتریس سوزنی</strong></li>
+            </ol>
+        </div>
+
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 600px;">
+            <h4>⚠️ راه‌حل‌های اضافی اگر باز هم کمرنگ بود:</h4>
+            <ol style="text-align: right; margin-right: 20px;">
+                <li>در تنظیمات چاپگر، <strong>Quality</strong> را روی <strong>High</strong> بگذارید</li>
+                <li><strong>Density</strong> یا <strong>Darkness</strong> چاپگر را افزایش دهید</li>
+                <li>از <strong>کاغذ لیبل با کیفیت</strong> استفاده کنید</li>
+                <li><strong>سوزن‌های چاپگر</strong> را تمیز یا تعویض کنید</li>
+                <li><strong>رول رنگ</strong> را بررسی کنید (ممکن است کهنه باشد)</li>
+                <li>برای چاپگرهای لیبل، <strong>سرعت چاپ</strong> را کاهش دهید</li>
             </ol>
         </div>
 
         <button onclick="generateAndPrint()" style="
-            background: #4CAF50;
+            background: #28a745;
             color: white;
             padding: 15px 30px;
             border: none;
@@ -713,7 +728,20 @@
             cursor: pointer;
             margin: 20px;
         ">
-            🖨️ تولید و چاپ بارکد تست
+            🖨️ چاپ بارکد پررنگ
+        </button>
+
+        <button onclick="printExtraThickBarcode()" style="
+            background: #dc3545;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px;
+        ">
+            🚀 چاپ بارکد فوق پررنگ
         </button>
 
         <button onclick="printTestPage()" style="
@@ -726,77 +754,47 @@
             cursor: pointer;
             margin: 20px;
         ">
-            🧪 چاپ صفحه تست استاندارد
+            🧪 چاپ تست استاندارد
         </button>
 
         <!-- پیش‌نمایش برای صفحه نمایش -->
         <div style="margin: 40px auto; max-width: 600px; text-align: center;">
-            <h3>👁️ پیش‌نمایش چاپ</h3>
-            <div style="
-                width: 80mm;
-                height: 20mm;
-                margin: 20px auto;
-                border: 1px dashed #ccc;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: relative;
-                background: linear-gradient(90deg, transparent 0%, transparent 3.5mm, #f0f0f0 3.5mm, #f0f0f0 76.5mm, transparent 76.5mm, transparent 100%);
-            ">
-                <div style="
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    gap: 3mm;
-                    position: relative;
-                    z-index: 2;
-                ">
-                    <div style="
-                        width: 40mm;
-                        height: 20mm;
-                        border: 1px solid #666;
-                        background: white;
-                        position: relative;
-                    ">
-                        <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 8px; font-weight: bold;">
-                            تست EAN-13
-                        </div>
-                        <div style="position: absolute; bottom: 0.5mm; width: 100%; text-align: center; font-size: 10px; font-weight: bold;">
-                            100,000 تومان
-                        </div>
-                    </div>
-                    <div style="
-                        width: 40mm;
-                        height: 20mm;
-                        border: 1px solid #666;
-                        background: white;
-                        position: relative;
-                    ">
-                        <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 8px; font-weight: bold;">
-                            تست UPC-A
-                        </div>
-                        <div style="position: absolute; bottom: 0.5mm; width: 100%; text-align: center; font-size: 10px; font-weight: bold;">
-                            75,000 تومان
-                        </div>
-                    </div>
+            <h3>👁️ مقایسه ضخامت بارکد</h3>
+            <div style="display: flex; justify-content: center; gap: 30px; margin: 20px;">
+                <div style="text-align: center;">
+                    <div style="font-weight: bold; color: #666;">نسخه معمولی</div>
+                    <div style="width: 100px; height: 40px; margin: 10px auto; background: repeating-linear-gradient(
+                        90deg,
+                        #000,
+                        #000 1px,
+                        transparent 1px,
+                        transparent 3px
+                    );"></div>
+                    <div style="font-size: 12px; color: #999;">ضخامت: 1px</div>
                 </div>
-                <div style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    color: #999;
-                    font-size: 12px;
-                    z-index: 1;
-                ">
-                    خط وسط صفحه (40mm)
+                <div style="text-align: center;">
+                    <div style="font-weight: bold; color: #000;">نسخه جدید</div>
+                    <div style="width: 100px; height: 40px; margin: 10px auto; background: repeating-linear-gradient(
+                        90deg,
+                        #000,
+                        #000 2px,
+                        transparent 2px,
+                        transparent 4px
+                    );"></div>
+                    <div style="font-size: 12px; color: #000;">ضخامت: 2px</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-weight: bold; color: #000;">نسخه فوق پررنگ</div>
+                    <div style="width: 100px; height: 40px; margin: 10px auto; background: repeating-linear-gradient(
+                        90deg,
+                        #000,
+                        #000 3px,
+                        transparent 3px,
+                        transparent 5px
+                    );"></div>
+                    <div style="font-size: 12px; color: #000;">ضخامت: 3px</div>
                 </div>
             </div>
-            <p style="color: #666; margin-top: 10px;">
-                <strong>محاسبه وسط‌چینی:</strong><br>
-                عرض صفحه: 80mm - عرض دو لیبل: 40mm + 40mm = 80mm - فاصله: 3mm = فضای باقی‌مانده: 0mm<br>
-                بنابراین لیبل‌ها باید دقیقاً در مرکز قرار بگیرند
-            </p>
         </div>
     </div>
 
@@ -804,7 +802,7 @@
         <div class="print-container">
             <div class="labels-row">
                 <div class="label">
-                    <div class="product-name">تست EAN-13 استاندارد</div>
+                    <div class="product-name">تست EAN-13 پررنگ</div>
                     <div class="barcode-container">
                         <img id="barcode1" class="barcode-image" alt="بارکد">
                         <div class="barcode-number">5 901234 123457</div>
@@ -813,7 +811,7 @@
                 </div>
 
                 <div class="label">
-                    <div class="product-name">تست UPC-A استاندارد</div>
+                    <div class="product-name">تست UPC-A پررنگ</div>
                     <div class="barcode-container">
                         <img id="barcode2" class="barcode-image" alt="بارکد">
                         <div class="barcode-number">0 36000 29145 2</div>
@@ -827,7 +825,7 @@
         <div class="print-container" style="page-break-before: always;">
             <div class="labels-row">
                 <div class="label">
-                    <div class="product-name">تست بارکد معروف</div>
+                    <div class="product-name">تست بارکد پررنگ</div>
                     <div class="barcode-container">
                         <img id="barcode3" class="barcode-image" alt="بارکد">
                         <div class="barcode-number">4 006381 333931</div>
@@ -836,7 +834,7 @@
                 </div>
 
                 <div class="label">
-                    <div class="product-name">تست بارکد کتاب</div>
+                    <div class="product-name">تست بارکد پررنگ</div>
                     <div class="barcode-container">
                         <img id="barcode4" class="barcode-image" alt="بارکد">
                         <div class="barcode-number">9 780201 379624</div>
@@ -856,55 +854,77 @@
             { id: 'barcode4', code: '9780201379624', type: 'EAN13' }
         ];
 
-        // تنظیمات استاندارد برای بارکد
+        // تنظیمات استاندارد برای بارکد - نسخه پررنگ
         const barcodeSettings = {
             format: "EAN13",
-            width: 2,           // ضخامت خط (پیکسل)
-            height: 80,         // ارتفاع (پیکسل)
-            displayValue: false, // عدد زیر بارکد نمایش داده نشود
+            width: 2.5,        // افزایش ضخامت خط از 2 به 2.5 پیکسل
+            height: 100,       // افزایش ارتفاع از 80 به 100 پیکسل
+            displayValue: false,
             fontSize: 0,
-            margin: 10,         // حاشیه سفید
+            margin: 8,         // کاهش حاشیه سفید از 10 به 8 پیکسل
+            background: "#FFFFFF",
+            lineColor: "#000000", // سیاه خالص
+            flat: true
+        };
+
+        // تنظیمات فوق‌پررنگ
+        const extraThickBarcodeSettings = {
+            format: "EAN13",
+            width: 3.0,        // ضخامت خیلی زیاد برای چاپگرهای مشکل‌دار
+            height: 110,       // ارتفاع بیشتر
+            displayValue: false,
+            fontSize: 0,
+            margin: 5,         // حاشیه خیلی کم
             background: "#FFFFFF",
             lineColor: "#000000",
             flat: true
         };
 
-        // تولید بارکدهای واقعی
-        function generateRealBarcodes() {
-            console.log('🔧 تولید بارکدهای واقعی با ابعاد استاندارد...');
+        // تولید بارکدهای واقعی با تنظیمات پررنگ
+        function generateRealBarcodes(settings = barcodeSettings) {
+            console.log('🔧 تولید بارکدهای پررنگ با تنظیمات جدید...');
+            console.log('📏 ضخامت خط: ' + settings.width + ' پیکسل');
+            console.log('📐 ارتفاع: ' + settings.height + ' پیکسل');
+            console.log('📐 حاشیه: ' + settings.margin + ' پیکسل');
 
             testBarcodes.forEach(barcode => {
                 try {
                     const element = document.getElementById(barcode.id);
                     if (element) {
-                        const settings = { ...barcodeSettings };
-                        settings.format = barcode.type;
+                        const currentSettings = { ...settings };
+                        currentSettings.format = barcode.type;
 
                         // تنظیمات خاص برای هر نوع
                         if (barcode.type === 'UPC') {
-                            settings.width = 1.8;
-                            settings.height = 70;
+                            currentSettings.width = settings.width * 0.9; // کمی باریک‌تر برای UPC
+                            currentSettings.height = settings.height * 0.9;
                         }
 
-                        JsBarcode(`#${barcode.id}`, barcode.code, settings);
-                        console.log(`✅ بارکد ${barcode.code} تولید شد (${barcode.type})`);
+                        JsBarcode(`#${barcode.id}`, barcode.code, currentSettings);
+                        console.log(`✅ بارکد ${barcode.code} تولید شد (ضخامت: ${currentSettings.width})`);
                     }
                 } catch (error) {
                     console.error(`❌ خطا در تولید بارکد ${barcode.code}:`, error);
                 }
             });
 
-            console.log('🎉 تمام بارکدها تولید شدند');
-            console.log('📏 ابعاد: 33×10mm (بارکد واقعی)');
-            console.log('🎯 استاندارد: EAN-13/UPC-A');
-            console.log('↔️ فاصله لیبل‌ها: 3mm در وسط');
-            console.log('🎯 موقعیت: وسط‌چین در صفحه 80mm');
+            console.log('🎉 تمام بارکدها با ضخامت افزایش‌یافته تولید شدند');
         }
 
-        // تولید و چاپ
+        // تولید و چاپ نسخه پررنگ
         function generateAndPrint() {
-            generateRealBarcodes();
+            generateRealBarcodes(barcodeSettings);
             setTimeout(() => {
+                console.log('🖨️ شروع چاپ با تنظیمات پررنگ...');
+                window.print();
+            }, 500);
+        }
+
+        // چاپ نسخه فوق پررنگ
+        function printExtraThickBarcode() {
+            generateRealBarcodes(extraThickBarcodeSettings);
+            setTimeout(() => {
+                console.log('🖨️ شروع چاپ با تنظیمات فوق‌پررنگ...');
                 window.print();
             }, 500);
         }
@@ -916,7 +936,7 @@
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>تست بارکد استاندارد - وسط‌چین</title>
+                    <title>تست بارکد فوق‌پررنگ</title>
                     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
                     <style>
                         @page {
@@ -967,15 +987,16 @@
 
                         .barcode-img {
                             width: 33mm;
-                            height: 10mm;
+                            height: 12mm;
                             image-rendering: crisp-edges;
                         }
 
                         .barcode-text {
                             font-family: 'Courier New';
-                            font-size: 2mm;
+                            font-size: 2.2mm;
                             text-align: center;
                             margin-top: 0.5mm;
+                            font-weight: bold;
                         }
                     </style>
                 </head>
@@ -984,7 +1005,7 @@
                         <div class="labels-row">
                             <div class="label">
                                 <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 2.5mm; font-weight: bold;">
-                                    تست بارکد استاندارد
+                                    تست بارکد فوق‌پررنگ
                                 </div>
                                 <div class="barcode-container">
                                     <img id="test1" class="barcode-img">
@@ -996,7 +1017,7 @@
                             </div>
                             <div class="label">
                                 <div style="position: absolute; top: 0.5mm; width: 100%; text-align: center; font-size: 2.5mm; font-weight: bold;">
-                                    تست بارکد معروف
+                                    تست بارکد فوق‌پررنگ
                                 </div>
                                 <div class="barcode-container">
                                     <img id="test2" class="barcode-img">
@@ -1010,22 +1031,23 @@
                     </div>
                     <script>
                         setTimeout(function() {
+                            // تنظیمات فوق‌پررنگ
                             JsBarcode("#test1", "5901234123457", {
                                 format: "EAN13",
-                                width: 2,
-                                height: 80,
+                                width: 3.0,    // ضخامت خیلی زیاد
+                                height: 110,   // ارتفاع زیاد
                                 displayValue: false,
-                                margin: 10,
+                                margin: 5,     // حاشیه کم
                                 background: "#FFFFFF",
                                 lineColor: "#000000"
                             });
 
                             JsBarcode("#test2", "4006381333931", {
                                 format: "EAN13",
-                                width: 2,
-                                height: 80,
+                                width: 3.0,
+                                height: 110,
                                 displayValue: false,
-                                margin: 10,
+                                margin: 5,
                                 background: "#FFFFFF",
                                 lineColor: "#000000"
                             });
@@ -1044,32 +1066,31 @@
 
         // بارگذاری اولیه
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔍 سیستم تست بارکد آماده است');
+            console.log('🔍 سیستم تست بارکد پررنگ آماده است');
             console.log('📋 بارکد تست: 5901234123457');
             console.log('🎯 استاندارد: EAN-13 معتبر جهانی');
-            console.log('📏 ابعاد: 33×10mm');
+            console.log('📏 ضخامت جدید: 2.5 پیکسل (افزایش‌یافته)');
+            console.log('📐 ارتفاع جدید: 100 پیکسل (افزایش‌یافته)');
             console.log('↔️ فاصله لیبل‌ها: 3mm در وسط');
-            console.log('🎯 موقعیت: وسط‌چین در صفحه 80mm');
 
-            // تولید بارکدها برای پیش‌نمایش
+            // تولید بارکدها برای پیش‌نمایش با تنظیمات پررنگ
             if (document.getElementById('barcode1')) {
-                generateRealBarcodes();
+                generateRealBarcodes(barcodeSettings);
             }
         });
 
         // قبل از چاپ
         window.onbeforeprint = function() {
-            console.log('🖨️ آماده چاپ بارکدهای استاندارد...');
-            generateRealBarcodes();
+            console.log('🖨️ آماده چاپ بارکدهای پررنگ...');
 
             // نمایش اطلاعات چاپ
             console.log('✅ ابعاد لیبل: 40×20mm');
-            console.log('✅ ابعاد بارکد: 33×10mm (استاندارد EAN-13)');
-            console.log('✅ کیفیت: حداقل 300 DPI');
-            console.log('✅ حاشیه سفید: 3.5mm از هر طرف');
-            console.log('✅ بارکد تست: 5901234123457 (EAN-13 معتبر)');
+            console.log('✅ ابعاد بارکد: 33×12mm (بلندتر شده)');
+            console.log('✅ ضخامت خط: 2.5 پیکسل (افزایش‌یافته)');
+            console.log('✅ ارتفاع بارکد: 100 پیکسل (افزایش‌یافته)');
+            console.log('✅ حاشیه سفید: 8 پیکسل (کاهش‌یافته)');
+            console.log('✅ کنتراست: مشکی خالص روی سفید');
             console.log('✅ فاصله لیبل‌ها: 3mm در وسط');
-            console.log('✅ موقعیت: وسط‌چین کامل در صفحه 80mm');
         };
 
         // بعد از چاپ
@@ -1077,7 +1098,7 @@
             console.log('✅ چاپ کامل شد');
 
             setTimeout(function() {
-                alert('بارکدهای استاندارد چاپ شدند.\n\nبارکد تست اصلی: 5901234123457\n\nویژگی‌های چاپ:\n• ابعاد دقیق 40×20mm\n• فاصله 3mm بین لیبل‌ها\n• وسط‌چین کامل در صفحه\n• ابعاد بارکد 33×10mm\n• حاشیه سفید کافی\n• کنتراست کامل مشکی/سفید\n\nاگر خوانده نشد، مشکل از چاپگر یا اسکنر است.');
+                alert('بارکدهای پررنگ چاپ شدند.\n\nتغییرات اعمال‌شده:\n• ضخامت خط: 2.5 پیکسل (افزایش)\n• ارتفاع بارکد: 100 پیکسل (افزایش)\n• حاشیه سفید: 8 پیکسل (کاهش)\n• عدد بارکد: پررنگ‌تر\n\nاگر باز هم کمرنگ بود:\n1. دکمه "چاپ بارکد فوق پررنگ" را امتحان کنید\n2. Density چاپگر را افزایش دهید\n3. کیفیت چاپ را روی High تنظیم کنید');
             }, 500);
         };
     </script>
