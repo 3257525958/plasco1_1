@@ -172,64 +172,91 @@ def distribute_inventory(request):
         distribution_details = []
         label_settings_updated = []
 
+        # بخش ProductPricing - با منطق StoreInvoiceItems
         for product in products_to_distribute:
-            total_remaining = product['total_remaining']
-            product_distributed = 0
+            product_name = product['name']
+            print(f"💵 پردازش قیمت‌گذاری برای: {product_name}")
 
-            print(f"📤 توزیع محصول: {product['name']} - تعداد: {total_remaining} عدد")
+            try:
+                # یافتن بالاترین قیمت واحد برای این محصول از InvoiceItem
+                highest_price_item = InvoiceItem.objects.filter(
+                    product_name=product_name,
+                    invoice_id__in=selected_invoice_ids
+                ).order_by('-unit_price').first()
 
-            # توزیع به هر شعبه
-            for branch in branches:
-                qty_for_branch = total_remaining
+                if highest_price_item:
+                    new_price = highest_price_item.unit_price
+                    invoice = highest_price_item.invoice
 
-                print(f"   🏪 برای شعبه {branch.name}: {qty_for_branch} عدد")
+                    print(f"🔍 بررسی قیمت برای {product_name}: قیمت جدید = {new_price}")
 
-                try:
-                    # چک کردن آیا قبلاً این محصول در این شعبه وجود دارد
-                    existing_record = InventoryCount.objects.filter(
-                        product_name=product['name'],
-                        branch=branch,
-                        is_new=product['is_new']
-                    ).first()
+                    # یافتن یا ایجاد ProductPricing
+                    product_pricing, created = ProductPricing.objects.get_or_create(
+                        product_name=product_name,
+                        defaults={
+                            'highest_purchase_price': new_price,
+                            'invoice_date': invoice.jalali_date,
+                            'invoice_number': invoice.serial_number,
+                            'standard_price': new_price,
+                            'adjustment_percentage': 0
+                        }
+                    )
 
-                    if existing_record:
-                        # اگر وجود دارد، تعداد را اضافه می‌کنیم
-                        existing_record.quantity += qty_for_branch
-                        existing_record.selling_price = max(
-                            existing_record.selling_price or Decimal('0'),
-                            product['max_selling_price']
-                        )
-                        existing_record.profit_percentage = Decimal('70.00')
-                        existing_record.counter = request.user
-                        existing_record.save()
-                        created = False
-                    else:
-                        # اگر وجود ندارد، رکورد جدید ایجاد می‌کنیم
-                        InventoryCount.objects.create(
-                            product_name=product['name'],
-                            branch=branch,
-                            is_new=product['is_new'],
-                            quantity=qty_for_branch,
-                            counter=request.user,
-                            selling_price=product['max_selling_price'],
-                            profit_percentage=Decimal('70.00')
-                        )
-                        created = True
+                    if created:
+                        print(f"✅ ProductPricing جدید برای: {product_name} ایجاد شد")
+                        continue
 
-                    product_distributed += qty_for_branch
-                    total_distributed += qty_for_branch
+                    # دریافت مقادیر قدیم
+                    old_highest_price = product_pricing.highest_purchase_price
 
-                    print(f"   ✅ شعبه {branch.name}: {qty_for_branch} عدد اضافه شد")
+                    print(f"   قیمت قدیم: highest={old_highest_price}")
 
-                except Exception as e:
-                    print(f"   ❌ خطا در توزیع به شعبه {branch.name}: {str(e)}")
-                    continue
+                    # منطق تصمیم‌گیری جدید
+                    if new_price <= old_highest_price:
+                        print(f"   📉 حالت 1: قیمت جدید ≤ highest قدیم")
+                        print(f"   قیمت معیار = قیمت قدیم = {old_highest_price}")
 
-            distribution_details.append(
-                f"{product['name']} ({product['type']}): هر شعبه {total_remaining} عدد - مجموع: {product_distributed} عدد"
-            )
-            print(f"✅ توزیع محصول {product['name']} تکمیل شد")
+                        # قیمت معیار را برابر با قیمت قدیم می‌کنیم (هر دو یکی می‌شوند)
+                        product_pricing.standard_price = old_highest_price
+                        product_pricing.adjustment_percentage = 0
 
+                        print(f"   نتیجه: highest={old_highest_price}, "
+                              f"standard={old_highest_price}, adjustment=0%")
+
+                    else:  # new_price > old_highest_price
+                        print(f"   📈 حالت 2: قیمت جدید > highest قدیم")
+                        print(f"   هر دو قیمت برابر با قیمت جدید می‌شوند")
+
+                        # به‌روزرسانی هر دو قیمت
+                        product_pricing.highest_purchase_price = new_price
+                        product_pricing.standard_price = new_price
+                        product_pricing.adjustment_percentage = 0
+
+                        print(f"   نتیجه: highest={new_price}, standard={new_price}, adjustment=0%")
+
+                    # به‌روزرسانی اطلاعات فاکتور (در هر دو حالت)
+                    product_pricing.invoice_date = invoice.jalali_date
+                    product_pricing.invoice_number = invoice.serial_number
+
+                    # ذخیره تغییرات
+                    product_pricing.save()
+
+                    print(f"   ✅ تغییرات ذخیره شد")
+
+                else:
+                    print(f"⚠️ هیچ فاکتوری برای محصول {product_name} یافت نشد")
+                    # ایجاد ProductPricing با مقادیر پیشفرض
+                    ProductPricing.objects.get_or_create(
+                        product_name=product_name,
+                        defaults={
+                            'highest_purchase_price': Decimal('0'),
+                            'standard_price': Decimal('0')
+                        }
+                    )
+
+            except Exception as e:
+                print(f"❌ خطا در به روزرسانی ProductPricing برای {product_name}: {str(e)}")
+                continue
         # 🔴 بخش جدید: ایجاد/به‌روزرسانی تنظیمات چاپ لیبل برای هر محصول و هر شعبه
         print("🏷️  شروع به‌روزرسانی تنظیمات چاپ لیبل...")
 
