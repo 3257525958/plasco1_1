@@ -822,7 +822,6 @@ def search_branches_pricing(request):
 
     return JsonResponse({'results': results})
 
-
 def get_branch_products(request):
     """دریافت محصولات یک شعبه برای قیمت‌گذاری"""
     branch_id = request.GET.get('branch_id')
@@ -839,6 +838,7 @@ def get_branch_products(request):
             # دریافت قیمت معیار از مدل ProductPricing
             try:
                 pricing = ProductPricing.objects.get(product_name=item.product_name)
+                # اینجا باید از standard_price استفاده شود چون در جدول نمایش داده می‌شود
                 base_price = pricing.standard_price
             except ProductPricing.DoesNotExist:
                 base_price = 0
@@ -863,18 +863,115 @@ def get_branch_products(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+# def get_branch_products(request):
+#     """دریافت محصولات یک شعبه برای قیمت‌گذاری"""
+#     branch_id = request.GET.get('branch_id')
+#
+#     if not branch_id:
+#         return JsonResponse({'error': 'Branch ID is required'}, status=400)
+#
+#     try:
+#         # دریافت محصولات موجود در انبار شعبه
+#         inventory_items = InventoryCount.objects.filter(branch_id=branch_id)
+#
+#         products_data = []
+#         for item in inventory_items:
+#             # دریافت قیمت معیار از مدل ProductPricing
+#             try:
+#                 pricing = ProductPricing.objects.get(product_name=item.product_name)
+#                 base_price = pricing.standard_price
+#             except ProductPricing.DoesNotExist:
+#                 base_price = 0
+#
+#             # استفاده از قیمت فروش ذخیره شده در InventoryCount
+#             selling_price = item.selling_price if item.selling_price is not None else 0
+#
+#             # محاسبه درصد سود بر اساس قیمت خرید و فروش
+#             profit_percentage = 0
+#             if base_price and base_price > 0 and selling_price and selling_price > 0:
+#                 profit_percentage = float(((selling_price - base_price) / base_price) * 100)
+#
+#             products_data.append({
+#                 'id': item.id,
+#                 'product_name': item.product_name,
+#                 'base_price': float(base_price) if base_price else 0,
+#                 'profit_percentage': profit_percentage,
+#                 'selling_price': float(selling_price) if selling_price else 0
+#             })
+#
+#         return JsonResponse({'products': products_data})
+#
+#     except Exception as e:
+#         return JsonResponse({'error': str(e)}, status=500)
 
-
-
-
-
-
-
-
+# @csrf_exempt
+# def update_inventory_selling_price(request):  # <-- نام جدید
+#     """به روزرسانی قیمت فروش در InventoryCount و محاسبه درصد سود"""
+#     if request.method == 'POST':
+#         try:
+#             # بررسی اینکه کاربر لاگین کرده است
+#             if not request.user.is_authenticated:
+#                 return JsonResponse({'success': False, 'error': 'لطفاً ابتدا وارد سیستم شوید'})
+#
+#             data = json.loads(request.body)
+#             product_name = data.get('product_name')
+#             branch_id = data.get('branch_id')
+#             selling_price = data.get('selling_price')  # دریافت قیمت فروش
+#
+#             # اعتبارسنجی داده‌های ورودی
+#             if not all([product_name, branch_id, selling_price is not None]):
+#                 return JsonResponse({'success': False, 'error': 'داده‌های ورودی ناقص است'})
+#
+#             # تبدیل قیمت فروش به Decimal
+#             try:
+#                 selling_price = Decimal(str(selling_price))
+#             except (ValueError, TypeError):
+#                 return JsonResponse({'success': False, 'error': 'قیمت فروش نامعتبر است'})
+#
+#             # دریافت قیمت خرید از ProductPricing
+#             try:
+#                 pricing = ProductPricing.objects.get(product_name=product_name)
+#                 base_price = pricing.highest_purchase_price
+#             except ProductPricing.DoesNotExist:
+#                 base_price = Decimal('0')
+#
+#             # محاسبه درصد سود بر اساس قیمت خرید و فروش
+#             profit_percentage = Decimal('0')
+#             if base_price and base_price > 0:
+#                 profit_percentage = ((selling_price - base_price) / base_price) * 100
+#
+#             # به روزرسانی قیمت فروش و درصد سود در InventoryCount
+#             try:
+#                 inventory_item = InventoryCount.objects.get(
+#                     product_name=product_name,
+#                     branch_id=branch_id
+#                 )
+#
+#                 inventory_item.selling_price = selling_price
+#                 inventory_item.profit_percentage = profit_percentage
+#                 inventory_item.save()
+#
+#                 return JsonResponse({
+#                     'success': True,
+#                     'message': 'اطلاعات با موفقیت ذخیره شد',
+#                     'profit_percentage': float(profit_percentage)
+#                 })
+#
+#             except InventoryCount.DoesNotExist:
+#                 return JsonResponse({'success': False, 'error': 'محصول در این شعبه یافت نشد'})
+#             except Exception as e:
+#                 return JsonResponse({'success': False, 'error': f'خطا در ذخیره اطلاعات: {str(e)}'})
+#
+#         except json.JSONDecodeError:
+#             return JsonResponse({'success': False, 'error': 'داده‌های ارسالی نامعتبر است'})
+#         except Exception as e:
+#             return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
+#
+#     return JsonResponse({'success': False, 'error': 'متد مجاز نیست'}, status=405)
 
 
 @csrf_exempt
-def update_inventory_selling_price(request):  # <-- نام جدید
+def update_inventory_selling_price(request):
     """به روزرسانی قیمت فروش در InventoryCount و محاسبه درصد سود"""
     if request.method == 'POST':
         try:
@@ -897,17 +994,18 @@ def update_inventory_selling_price(request):  # <-- نام جدید
             except (ValueError, TypeError):
                 return JsonResponse({'success': False, 'error': 'قیمت فروش نامعتبر است'})
 
-            # دریافت قیمت خرید از ProductPricing
+            # دریافت قیمت معیار از ProductPricing (همان standard_price)
             try:
                 pricing = ProductPricing.objects.get(product_name=product_name)
-                base_price = pricing.highest_purchase_price
+                # اینجا هم باید از standard_price استفاده شود
+                standard_price = pricing.standard_price
             except ProductPricing.DoesNotExist:
-                base_price = Decimal('0')
+                standard_price = Decimal('0')
 
-            # محاسبه درصد سود بر اساس قیمت خرید و فروش
+            # محاسبه درصد سود بر اساس قیمت معیار و فروش
             profit_percentage = Decimal('0')
-            if base_price and base_price > 0:
-                profit_percentage = ((selling_price - base_price) / base_price) * 100
+            if standard_price and standard_price > 0:
+                profit_percentage = ((selling_price - standard_price) / standard_price) * 100
 
             # به روزرسانی قیمت فروش و درصد سود در InventoryCount
             try:
@@ -916,14 +1014,39 @@ def update_inventory_selling_price(request):  # <-- نام جدید
                     branch_id=branch_id
                 )
 
+                # دقیقاً همان قیمتی که کاربر وارد کرده را ذخیره می‌کنیم
                 inventory_item.selling_price = selling_price
+                # درصد سود دقیقاً همان چیزی که JS محاسبه کرده
                 inventory_item.profit_percentage = profit_percentage
                 inventory_item.save()
+
+                # بروزرسانی یا ایجاد تنظیمات چاپ لیبل
+                try:
+                    # دریافت بارکد از InventoryCount (اگر وجود دارد)
+                    barcode = inventory_item.barcode if hasattr(inventory_item, 'barcode') else ""
+
+                    label_setting, created = ProductLabelSetting.objects.get_or_create(
+                        product_name=product_name,
+                        branch_id=branch_id,
+                        defaults={
+                            'barcode': barcode,
+                            'allow_print': True  # به صورت پیش‌فرض True
+                        }
+                    )
+
+                    # اگر از قبل وجود داشت، مطمئن شویم که allow_print = True است
+                    if not created:
+                        label_setting.allow_print = True
+                        label_setting.save()
+
+                except Exception as e:
+                    print(f"خطا در بروزرسانی تنظیمات چاپ: {str(e)}")
 
                 return JsonResponse({
                     'success': True,
                     'message': 'اطلاعات با موفقیت ذخیره شد',
-                    'profit_percentage': float(profit_percentage)
+                    'profit_percentage': float(profit_percentage),
+                    'base_price': float(standard_price)  # برای تأیید در فرانت‌اند
                 })
 
             except InventoryCount.DoesNotExist:
@@ -938,14 +1061,75 @@ def update_inventory_selling_price(request):  # <-- نام جدید
 
     return JsonResponse({'success': False, 'error': 'متد مجاز نیست'}, status=405)
 
-
-
-
-
-
-
-
-
+# @csrf_exempt
+# def update_all_product_pricing(request):
+#     """به روزرسانی کلیه قیمت‌های فروش و محاسبه خودکار درصد سود"""
+#     if request.method == 'POST':
+#         try:
+#             # بررسی اینکه کاربر لاگین کرده است
+#             if not request.user.is_authenticated:
+#                 return JsonResponse({'success': False, 'error': 'لطفاً ابتدا وارد سیستم شوید'})
+#
+#             data = json.loads(request.body)
+#             branch_id = data.get('branch_id')
+#             prices = data.get('prices', [])
+#
+#             # اعتبارسنجی داده‌های ورودی
+#             if not branch_id:
+#                 return JsonResponse({'success': False, 'error': 'شناسه شعبه الزامی است'})
+#
+#             # پردازش هر قیمت
+#             for price_data in prices:
+#                 product_name = price_data.get('product_name')
+#                 selling_price = price_data.get('selling_price')
+#
+#                 # رد کردن آیتم‌های ناقص
+#                 if not all([product_name, selling_price is not None]):
+#                     continue
+#
+#                 # تبدیل قیمت فروش به Decimal
+#                 try:
+#                     selling_price = Decimal(str(selling_price))
+#                 except (ValueError, TypeError):
+#                     continue
+#
+#                 # دریافت قیمت خرید از ProductPricing
+#                 try:
+#                     pricing = ProductPricing.objects.get(product_name=product_name)
+#                     base_price = pricing.highest_purchase_price
+#                 except ProductPricing.DoesNotExist:
+#                     base_price = Decimal('0')
+#
+#                 # محاسبه درصد سود بر اساس قیمت خرید و فروش
+#                 profit_percentage = Decimal('0')
+#                 if base_price and base_price > 0:
+#                     profit_percentage = ((selling_price - base_price) / base_price) * 100
+#
+#                 # به روزرسانی قیمت فروش و درصد سود در InventoryCount
+#                 try:
+#                     inventory_item = InventoryCount.objects.get(
+#                         product_name=product_name,
+#                         branch_id=branch_id
+#                     )
+#
+#                     inventory_item.selling_price = selling_price
+#                     inventory_item.profit_percentage = profit_percentage
+#                     inventory_item.save()
+#                 except InventoryCount.DoesNotExist:
+#                     continue
+#                 except Exception as e:
+#                     # لاگ کردن خطا اما ادامه پردازش سایر آیتم‌ها
+#                     print(f"خطا در به روزرسانی محصول {product_name}: {str(e)}")
+#                     continue
+#
+#             return JsonResponse({'success': True, 'message': 'همه اطلاعات با موفقیت ذخیره شدند'})
+#
+#         except json.JSONDecodeError:
+#             return JsonResponse({'success': False, 'error': 'داده‌های ارسالی نامعتبر است'})
+#         except Exception as e:
+#             return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
+#
+#     return JsonResponse({'success': False, 'error': 'متد مجاز نیست'}, status=405)
 
 @csrf_exempt
 def update_all_product_pricing(request):
@@ -979,17 +1163,17 @@ def update_all_product_pricing(request):
                 except (ValueError, TypeError):
                     continue
 
-                # دریافت قیمت خرید از ProductPricing
+                # دریافت قیمت معیار از ProductPricing
                 try:
                     pricing = ProductPricing.objects.get(product_name=product_name)
-                    base_price = pricing.highest_purchase_price
+                    standard_price = pricing.standard_price
                 except ProductPricing.DoesNotExist:
-                    base_price = Decimal('0')
+                    standard_price = Decimal('0')
 
-                # محاسبه درصد سود بر اساس قیمت خرید و فروش
+                # محاسبه درصد سود بر اساس قیمت معیار و فروش
                 profit_percentage = Decimal('0')
-                if base_price and base_price > 0:
-                    profit_percentage = ((selling_price - base_price) / base_price) * 100
+                if standard_price and standard_price > 0:
+                    profit_percentage = ((selling_price - standard_price) / standard_price) * 100
 
                 # به روزرسانی قیمت فروش و درصد سود در InventoryCount
                 try:
@@ -998,13 +1182,34 @@ def update_all_product_pricing(request):
                         branch_id=branch_id
                     )
 
+                    # دقیقاً همان قیمتی که کاربر وارد کرده
                     inventory_item.selling_price = selling_price
                     inventory_item.profit_percentage = profit_percentage
                     inventory_item.save()
+
+                    # بروزرسانی یا ایجاد تنظیمات چاپ لیبل
+                    try:
+                        barcode = inventory_item.barcode if hasattr(inventory_item, 'barcode') else ""
+
+                        label_setting, created = ProductLabelSetting.objects.get_or_create(
+                            product_name=product_name,
+                            branch_id=branch_id,
+                            defaults={
+                                'barcode': barcode,
+                                'allow_print': True
+                            }
+                        )
+
+                        if not created:
+                            label_setting.allow_print = True
+                            label_setting.save()
+
+                    except Exception as e:
+                        print(f"خطا در بروزرسانی تنظیمات چاپ برای {product_name}: {str(e)}")
+
                 except InventoryCount.DoesNotExist:
                     continue
                 except Exception as e:
-                    # لاگ کردن خطا اما ادامه پردازش سایر آیتم‌ها
                     print(f"خطا در به روزرسانی محصول {product_name}: {str(e)}")
                     continue
 
@@ -1016,8 +1221,6 @@ def update_all_product_pricing(request):
             return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
 
     return JsonResponse({'success': False, 'error': 'متد مجاز نیست'}, status=405)
-
-
 def pricing_management(request):
     """صفحه مدیریت قیمت‌گذاری"""
     return render(request, 'inventory_pricing.html')
