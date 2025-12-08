@@ -217,7 +217,7 @@
 {#            position: relative;#}
 {#            width: 100%;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-input {#}
 {#            width: 100%;#}
 {#            padding: 12px 15px;#}
@@ -226,13 +226,13 @@
 {#            font-size: 16px;#}
 {#            background: white;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-input:focus {#}
 {#            border-color: var(--primary-color);#}
 {#            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);#}
 {#            outline: none;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-results {#}
 {#            position: absolute;#}
 {#            top: 100%;#}
@@ -248,7 +248,7 @@
 {#            overflow-y: auto;#}
 {#            margin-top: 5px;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-result-item {#}
 {#            padding: 12px 15px;#}
 {#            border-bottom: 1px solid #eee;#}
@@ -257,26 +257,26 @@
 {#            font-size: 16px;#}
 {#            text-align: right;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-result-item:hover {#}
 {#            background-color: #f1f8e9;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-result-item.new-product {#}
 {#            color: #28a745;#}
 {#            font-weight: bold;#}
 {#        }#}
-{##}
+{#        #}
 {#        .product-search-result-item.error {#}
 {#            color: #dc3545;#}
 {#        }#}
-{##}
+{#        #}
 {#        .search-loading {#}
 {#            padding: 15px;#}
 {#            text-align: center;#}
 {#            color: var(--primary-color);#}
 {#        }#}
-{##}
+{#        #}
 {#        .search-loading i {#}
 {#            margin-left: 8px;#}
 {#        }#}
@@ -478,6 +478,84 @@
 {#            background: var(--accent-color);#}
 {#        }#}
 {##}
+{#        /* استایل‌های مودال انتظار */#}
+{#        .loading-modal {#}
+{#            display: none;#}
+{#            position: fixed;#}
+{#            top: 0;#}
+{#            left: 0;#}
+{#            width: 100%;#}
+{#            height: 100%;#}
+{#            background-color: rgba(0, 0, 0, 0.8);#}
+{#            z-index: 9999;#}
+{#            justify-content: center;#}
+{#            align-items: center;#}
+{#            flex-direction: column;#}
+{#            backdrop-filter: blur(5px);#}
+{#        }#}
+{##}
+{#        .loading-content {#}
+{#            background: white;#}
+{#            padding: 40px;#}
+{#            border-radius: 20px;#}
+{#            text-align: center;#}
+{#            max-width: 500px;#}
+{#            width: 90%;#}
+{#            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);#}
+{#            animation: fadeIn 0.3s ease-out;#}
+{#        }#}
+{##}
+{#        @keyframes fadeIn {#}
+{#            from { opacity: 0; transform: translateY(-20px); }#}
+{#            to { opacity: 1; transform: translateY(0); }#}
+{#        }#}
+{##}
+{#        .loading-spinner {#}
+{#            font-size: 48px;#}
+{#            color: var(--primary-color);#}
+{#            margin-bottom: 20px;#}
+{#            animation: spin 1s linear infinite;#}
+{#        }#}
+{##}
+{#        @keyframes spin {#}
+{#            0% { transform: rotate(0deg); }#}
+{#            100% { transform: rotate(360deg); }#}
+{#        }#}
+{##}
+{#        .loading-message {#}
+{#            font-size: 20px;#}
+{#            color: var(--text-color);#}
+{#            margin-bottom: 15px;#}
+{#            font-weight: bold;#}
+{#        }#}
+{##}
+{#        .loading-submessage {#}
+{#            font-size: 16px;#}
+{#            color: #666;#}
+{#            margin-top: 10px;#}
+{#        }#}
+{##}
+{#        /* استایل برای غیرفعال کردن صفحه */#}
+{#        .page-disabled {#}
+{#            pointer-events: none;#}
+{#            opacity: 0.7;#}
+{#            transition: opacity 0.3s;#}
+{#        }#}
+{##}
+{#        /* استایل برای دکمه غیرفعال */#}
+{#        .btn:disabled {#}
+{#            opacity: 0.6;#}
+{#            cursor: not-allowed;#}
+{#            transform: none !important;#}
+{#            box-shadow: none !important;#}
+{#        }#}
+{##}
+{#        /* استایل برای حالت پردازش */#}
+{#        .processing {#}
+{#            pointer-events: none;#}
+{#            opacity: 0.7;#}
+{#        }#}
+{##}
 {#        @media (max-width: 768px) {#}
 {#            .edit-invoice-container {#}
 {#                padding: 15px;#}
@@ -490,17 +568,17 @@
 {#                overflow-x: auto;#}
 {#                -webkit-overflow-scrolling: touch;#}
 {#            }#}
-{##}
+{#            #}
 {#            .invoice-table thead {#}
 {#                display: none;#}
 {#            }#}
-{##}
+{#            #}
 {#            .invoice-table tbody {#}
 {#                display: flex;#}
 {#                flex-direction: column;#}
 {#                gap: 15px;#}
 {#            }#}
-{##}
+{#            #}
 {#            .item-row {#}
 {#                display: flex;#}
 {#                flex-direction: column;#}
@@ -509,7 +587,7 @@
 {#                padding: 15px;#}
 {#                background: #f9f9f9;#}
 {#            }#}
-{##}
+{#            #}
 {#            .invoice-table td {#}
 {#                display: flex;#}
 {#                flex-direction: column;#}
@@ -518,7 +596,7 @@
 {#                text-align: right;#}
 {#                width: 100% !important;#}
 {#            }#}
-{##}
+{#            #}
 {#            .invoice-table td::before {#}
 {#                content: attr(data-label);#}
 {#                font-weight: bold;#}
@@ -559,22 +637,22 @@
 {#            body {#}
 {#                padding: 10px;#}
 {#            }#}
-{##}
+{#            #}
 {#            .edit-invoice-container {#}
 {#                padding: 10px;#}
 {#                border-radius: 10px;#}
 {#            }#}
-{##}
+{#            #}
 {#            .search-input, .product-search-input {#}
 {#                padding: 10px;#}
 {#                font-size: 14px;#}
 {#            }#}
-{##}
+{#            #}
 {#            .btn {#}
 {#                padding: 10px 15px;#}
 {#                font-size: 14px;#}
 {#            }#}
-{##}
+{#            #}
 {#            .invoice-table td {#}
 {#                padding: 8px 0;#}
 {#            }#}
@@ -590,7 +668,7 @@
 {#        <div class="search-section">#}
 {#            <div class="search-container">#}
 {#                <label class="search-label">جستجوی فاکتور برای ویرایش:</label>#}
-{#                <input type="text" id="edit-invoice-search" class="search-input"#}
+{#                <input type="text" id="edit-invoice-search" class="search-input" #}
 {#                       placeholder="شماره فاکتور، نام فروشنده، نام خانوادگی، نام فروشگاه یا نام کالا...">#}
 {#                <button type="button" class="search-btn">#}
 {#                    <i class="fas fa-search"></i>#}
@@ -663,6 +741,24 @@
 {#        <div id="messages"></div>#}
 {#    </div>#}
 {##}
+{#    <!-- مودال انتظار -->#}
+{#    <div id="loadingModal" class="loading-modal">#}
+{#        <div class="loading-content">#}
+{#            <div class="loading-spinner">#}
+{#                <i class="fas fa-spinner"></i>#}
+{#            </div>#}
+{#            <div class="loading-message" id="loadingMessage">#}
+{#                در حال ذخیره تغییرات...#}
+{#            </div>#}
+{#            <div class="loading-submessage">#}
+{#                لطفاً منتظر بمانید#}
+{#            </div>#}
+{#            <div id="loadingProgress" style="margin-top: 20px; color: #666; font-size: 14px;">#}
+{#                <!-- نمایش وضعیت پیشرفت -->#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
 {#    <!-- کتابخانه‌های JavaScript -->#}
 {#    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>#}
 {#    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>#}
@@ -673,53 +769,54 @@
 {#        let editingInvoice = null;#}
 {#        let editingInvoiceItems = [];#}
 {#        let invoiceSearchTimeout = null;#}
-{##}
+{#        let isSubmitting = false; // برای جلوگیری از کلیک‌های مکرر#}
+{#        #}
 {#        // تابع تبدیل اعداد فارسی و عربی به انگلیسی#}
 {#        function convertPersianToEnglishNumbers(input) {#}
 {#            if (!input) return input;#}
-{##}
+{#            #}
 {#            const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];#}
 {#            const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];#}
-{##}
+{#            #}
 {#            let output = input;#}
 {#            for (let i = 0; i < 10; i++) {#}
 {#                let persianRegex = new RegExp(persianNumbers[i], 'g');#}
 {#                let arabicRegex = new RegExp(arabicNumbers[i], 'g');#}
 {#                output = output.replace(persianRegex, i).replace(arabicRegex, i);#}
 {#            }#}
-{##}
+{#            #}
 {#            return output;#}
 {#        }#}
-{##}
+{#        #}
 {#        // تابع تبدیل عدد به حروف فارسی#}
 {#        function numberToWords(number) {#}
 {#            if (number === 0) return "صفر";#}
-{##}
+{#            #}
 {#            const ones = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];#}
 {#            const tens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];#}
 {#            const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصd", "نهصد"];#}
 {#            const teens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];#}
-{##}
+{#            #}
 {#            let result = "";#}
-{##}
+{#            #}
 {#            // میلیون‌ها#}
 {#            if (number >= 1000000) {#}
 {#                result += numberToWords(Math.floor(number / 1000000)) + " میلیون ";#}
 {#                number %= 1000000;#}
 {#            }#}
-{##}
+{#            #}
 {#            // هزارها#}
 {#            if (number >= 1000) {#}
 {#                result += numberToWords(Math.floor(number / 1000)) + " هزار ";#}
 {#                number %= 1000;#}
 {#            }#}
-{##}
+{#            #}
 {#            // صدها#}
 {#            if (number >= 100) {#}
 {#                result += hundreds[Math.floor(number / 100)] + " و ";#}
 {#                number %= 100;#}
 {#            }#}
-{##}
+{#            #}
 {#            // دهگان و یکان#}
 {#            if (number >= 10 && number < 20) {#}
 {#                result += teens[number - 10];#}
@@ -729,118 +826,118 @@
 {#                    number %= 10;#}
 {#                    if (number > 0) result += " و ";#}
 {#                }#}
-{##}
+{#                #}
 {#                if (number > 0) {#}
 {#                    result += ones[number];#}
 {#                }#}
 {#            }#}
-{##}
+{#            #}
 {#            return result.trim().replace(/ و $/, "");#}
 {#        }#}
-{##}
+{#        #}
 {#        // تابع به‌روزرسانی مبلغ به حروف#}
 {#        function updatePriceWords(input) {#}
 {#            const value = parseInt(input.val()) || 0;#}
 {#            const words = numberToWords(value);#}
 {#            input.siblings('.price-words').text(words + " تومان");#}
 {#        }#}
-{##}
+{#        #}
 {#        // محاسبه جمع‌های فاکتور#}
 {#        function calculateTotals() {#}
 {#            let totalItems = 0;#}
 {#            let totalAmount = 0;#}
 {#            let totalDiscount = 0;#}
-{##}
+{#            #}
 {#            $('.item-row').each(function() {#}
 {#                const quantity = parseInt($(this).find('input[name="quantity[]"]').val()) || 0;#}
 {#                const unitPrice = parseFloat($(this).find('input[name="unit_price[]"]').val()) || 0;#}
 {#                const discount = parseFloat($(this).find('input[name="discount[]"]').val()) || 0;#}
 {#                const lineTotal = quantity * unitPrice;#}
-{##}
+{#                #}
 {#                // به‌روزرسانی جمع کل خط#}
 {#                $(this).find('.line-total-input').val(lineTotal);#}
 {#                updatePriceWords($(this).find('.line-total-input'));#}
-{##}
+{#                #}
 {#                totalItems += quantity;#}
 {#                totalAmount += lineTotal;#}
 {#                totalDiscount += discount;#}
 {#            });#}
-{##}
+{#            #}
 {#            $('#total-items').text(totalItems);#}
 {#            $('#total-amount').text(totalAmount.toLocaleString('fa-IR') + ' تومان');#}
 {#            $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');#}
 {#            $('#final-amount').text((totalAmount - totalDiscount).toLocaleString('fa-IR') + ' تومان');#}
 {#        }#}
-{##}
+{#        #}
 {#        // تابع برای نمایش پیام#}
 {#        function showMessage(message, type) {#}
 {#            const messageClass = type === 'error' ? 'error-message' : 'success-message';#}
 {#            const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';#}
-{##}
+{#            #}
 {#            $('#messages').html(`#}
 {#                <div class="${messageClass}">#}
 {#                    <i class="fas ${icon}"></i> ${message}#}
 {#                </div>#}
 {#            `);#}
-{##}
+{#            #}
 {#            if (type !== 'error') {#}
 {#                setTimeout(() => {#}
 {#                    $('#messages').empty();#}
 {#                }, 5000);#}
 {#            }#}
 {#        }#}
-{##}
+{#        #}
 {#        // تابع جستجوی کالا برای ویرایش فاکتور#}
 {#        function initProductSearchForEdit($input) {#}
 {#            const $container = $input.closest('td');#}
 {#            let $results = $container.find('.product-search-results');#}
-{##}
+{#            #}
 {#            // اگر نتایج جستجو وجود ندارد، ایجاد کن#}
 {#            if ($results.length === 0) {#}
 {#                $results = $('<div class="product-search-results"></div>');#}
 {#                $container.append($results);#}
 {#            }#}
-{##}
+{#            #}
 {#            // جستجوی تاخیری#}
 {#            let searchTimeout;#}
-{##}
+{#            #}
 {#            $input.on('input', function() {#}
 {#                clearTimeout(searchTimeout);#}
-{##}
+{#                #}
 {#                const query = $(this).val().trim();#}
 {#                const queryEnglish = convertPersianToEnglishNumbers(query);#}
-{##}
+{#                #}
 {#                if (queryEnglish.length < 2) {#}
 {#                    $results.empty().hide();#}
 {#                    return;#}
 {#                }#}
-{##}
+{#                #}
 {#                $results.html('<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> در حال جستجو...</div>').show();#}
-{##}
+{#                #}
 {#                searchTimeout = setTimeout(() => {#}
 {#                    performProductSearch(queryEnglish, $results, $input);#}
 {#                }, 300);#}
 {#            });#}
-{##}
+{#            #}
 {#            // انتخاب نتیجه#}
 {#            $results.on('click', '.product-search-result-item', function() {#}
 {#                const productName = $(this).data('name');#}
 {#                $input.val(productName);#}
 {#                $results.empty().hide();#}
-{##}
+{#                #}
 {#                // فوکوس روی قیمت#}
 {#                $input.closest('tr').find('.unit-price').focus();#}
 {#            });#}
-{##}
+{#            #}
 {#            // مخفی کردن نتایج#}
 {#            $(document).on('click', function(e) {#}
-{#                if (!$results.is(e.target) &&#}
+{#                if (!$results.is(e.target) && #}
 {#                    $results.has(e.target).length === 0 &&#}
 {#                    !$input.is(e.target)) {#}
 {#                    $results.hide();#}
 {#                }#}
 {#            });#}
-{##}
+{#            #}
 {#            // نمایش نتایج هنگام فوکوس#}
 {#            $input.on('focus', function() {#}
 {#                if ($results.children().length > 0) {#}
@@ -848,12 +945,12 @@
 {#                }#}
 {#            });#}
 {#        }#}
-{##}
+{#        #}
 {#        // اجرای جستجوی کالا#}
 {#        function performProductSearch(query, $results, $input) {#}
 {#            $.ajax({#}
 {#                url: "{% url 'search_products_invoice_edit' %}",#}
-{#                data: {#}
+{#                data: { #}
 {#                    q: query,#}
 {#                    _: new Date().getTime()#}
 {#                },#}
@@ -861,9 +958,9 @@
 {#                timeout: 5000,#}
 {#                success: function(data) {#}
 {#                    console.log('نتایج جستجوی کالا:', data);#}
-{##}
+{#                    #}
 {#                    $results.empty();#}
-{##}
+{#                    #}
 {#                    if (data.error) {#}
 {#                        $results.append(`#}
 {#                            <div class="product-search-result-item error">#}
@@ -873,7 +970,7 @@
 {#                        `);#}
 {#                        return;#}
 {#                    }#}
-{##}
+{#                    #}
 {#                    if (!data.results || data.results.length === 0) {#}
 {#                        $results.append(`#}
 {#                            <div class="product-search-result-item new-product" data-name="${query.replace(/"/g, '&quot;')}">#}
@@ -883,18 +980,18 @@
 {#                        `);#}
 {#                        return;#}
 {#                    }#}
-{##}
+{#                    #}
 {#                    const uniqueProducts = {};#}
 {#                    data.results.forEach(item => {#}
 {#                        if (item && item.text && !uniqueProducts[item.text]) {#}
 {#                            uniqueProducts[item.text] = true;#}
-{##}
+{#                            #}
 {#                            const isNew = item.type === 'new_product';#}
 {#                            const icon = isNew ? 'fa-plus-circle' : 'fa-box';#}
 {#                            const label = isNew ? ' (جدید)' : '';#}
-{##}
+{#                            #}
 {#                            $results.append(`#}
-{#                                <div class="product-search-result-item ${isNew ? 'new-product' : ''}"#}
+{#                                <div class="product-search-result-item ${isNew ? 'new-product' : ''}" #}
 {#                                     data-name="${String(item.text).replace(/"/g, '&quot;')}">#}
 {#                                    <i class="fas ${icon}"></i>#}
 {#                                    ${item.text}${label}#}
@@ -902,7 +999,7 @@
 {#                            `);#}
 {#                        }#}
 {#                    });#}
-{##}
+{#                    #}
 {#                    // اگر هیچ نتیجه‌ای نبود#}
 {#                    if (Object.keys(uniqueProducts).length === 0) {#}
 {#                        $results.append(`#}
@@ -912,7 +1009,7 @@
 {#                            </div>#}
 {#                        `);#}
 {#                    }#}
-{##}
+{#                    #}
 {#                    $results.show();#}
 {#                },#}
 {#                error: function(xhr, status, error) {#}
@@ -926,17 +1023,17 @@
 {#                }#}
 {#            });#}
 {#        }#}
-{##}
+{#        #}
 {#        // جستجوی فاکتور برای ویرایش#}
 {#        $('#edit-invoice-search').on('input', function() {#}
 {#            const query = $(this).val().trim();#}
 {#            const convertedQuery = convertPersianToEnglishNumbers(query);#}
-{##}
+{#            #}
 {#            if (convertedQuery.length < 2) {#}
 {#                $('#edit-invoice-search-results').hide().empty();#}
 {#                return;#}
 {#            }#}
-{##}
+{#            #}
 {#            clearTimeout(invoiceSearchTimeout);#}
 {#            invoiceSearchTimeout = setTimeout(function() {#}
 {#                $.ajax({#}
@@ -979,14 +1076,14 @@
 {#                });#}
 {#            }, 300);#}
 {#        });#}
-{##}
+{#        #}
 {#        // انتخاب فاکتور از نتایج جستجو#}
 {#        $(document).on('click', '#edit-invoice-search-results .search-result-item', function() {#}
 {#            const invoiceId = $(this).data('invoice-id');#}
 {#            const invoiceText = $(this).find('strong').text();#}
 {#            $('#edit-invoice-search').val(invoiceText);#}
 {#            $('#edit-invoice-search-results').hide();#}
-{##}
+{#            #}
 {#            // دریافت جزئیات فاکتور#}
 {#            $.ajax({#}
 {#                url: "{% url 'get_invoice_for_edit' %}",#}
@@ -996,7 +1093,7 @@
 {#                    if (data.success) {#}
 {#                        editingInvoice = data.invoice;#}
 {#                        editingInvoiceItems = data.items;#}
-{##}
+{#                        #}
 {#                        // نمایش اطلاعات فاکتور#}
 {#                        $('#invoice-info').html(`#}
 {#                            <div class="info-item"><strong>شماره فاکتور:</strong> ${editingInvoice.serial_number}</div>#}
@@ -1015,7 +1112,7 @@
 {#                            </div>#}
 {#                            <input type="hidden" id="invoice-id" value="${editingInvoice.id}">#}
 {#                        `);#}
-{##}
+{#                        #}
 {#                        // مقداردهی اولیه تقویم شمسی برای فیلد تاریخ#}
 {#                        $("#edit-issue-date").persianDatepicker({#}
 {#                            observer: true,#}
@@ -1029,15 +1126,15 @@
 {#                                document.getElementById('edit-issue-date').value = formattedDate;#}
 {#                            }#}
 {#                        });#}
-{##}
+{#                        #}
 {#                        // نمایش تقویم هنگام کلیک روی آیکون تقویم#}
 {#                        document.getElementById('edit-calendar-trigger').addEventListener('click', function () {#}
 {#                            $("#edit-issue-date").persianDatepicker('show');#}
 {#                        });#}
-{##}
+{#                        #}
 {#                        // نمایش آیتم‌های فاکتور#}
 {#                        updateInvoiceItemsList();#}
-{##}
+{#                        #}
 {#                        $('#invoice-details').show();#}
 {#                    } else {#}
 {#                        showMessage(data.error, 'error');#}
@@ -1049,12 +1146,12 @@
 {#                }#}
 {#            });#}
 {#        });#}
-{##}
+{#        #}
 {#        // به روزرسانی لیست آیتم‌های فاکتور#}
 {#        function updateInvoiceItemsList() {#}
 {#            const $itemsList = $('#invoice-items-list');#}
 {#            $itemsList.empty();#}
-{##}
+{#            #}
 {#            editingInvoiceItems.forEach((item, index) => {#}
 {#                const row = `#}
 {#                    <tr class="item-row" data-item-index="${index}">#}
@@ -1085,23 +1182,23 @@
 {#                    </tr>#}
 {#                `;#}
 {#                $itemsList.append(row);#}
-{##}
+{#                #}
 {#                // محاسبه اولیه برای این سطر#}
 {#                const quantity = parseInt(item.quantity) || 0;#}
 {#                const unitPrice = parseFloat(item.unit_price) || 0;#}
 {#                const lineTotal = quantity * unitPrice;#}
-{##}
+{#                #}
 {#                $itemsList.find('tr:last-child .line-total-input').val(lineTotal);#}
 {#                updatePriceWords($itemsList.find('tr:last-child .line-total-input'));#}
 {#                updatePriceWords($itemsList.find('tr:last-child .unit-price'));#}
-{##}
+{#                #}
 {#                // فعال‌سازی جستجوی کالا برای این سطر#}
 {#                initProductSearchForEdit($itemsList.find('tr:last-child .product-name'));#}
 {#            });#}
-{##}
+{#            #}
 {#            calculateTotals();#}
 {#        }#}
-{##}
+{#        #}
 {#        // افزودن آیتم جدید#}
 {#        $('#add-item-btn').click(function() {#}
 {#            const newIndex = editingInvoiceItems.length;#}
@@ -1133,7 +1230,7 @@
 {#                    </td>#}
 {#                </tr>#}
 {#            `;#}
-{##}
+{#            #}
 {#            $('#invoice-items-list').append(newRow);#}
 {#            editingInvoiceItems.push({#}
 {#                product_name: '',#}
@@ -1141,76 +1238,183 @@
 {#                unit_price: 0,#}
 {#                discount: 0#}
 {#            });#}
-{##}
+{#            #}
 {#            // فعال‌سازی جستجوی کالا برای سطر جدید#}
 {#            initProductSearchForEdit($('#invoice-items-list tr:last-child .product-name'));#}
-{##}
+{#            #}
 {#            // افزودن رویداد برای محاسبه#}
 {#            $('#invoice-items-list tr:last-child input').on('input', calculateTotals);#}
-{##}
+{#            #}
 {#            // فعال‌سازی نمایش مبلغ به حروف#}
 {#            $('#invoice-items-list tr:last-child .unit-price').on('input', function() {#}
 {#                updatePriceWords($(this));#}
 {#            });#}
 {#        });#}
-{##}
+{#        #}
 {#        // حذف آیتم#}
 {#        $(document).on('click', '.remove-item', function() {#}
 {#            const index = $(this).data('index');#}
 {#            if (editingInvoiceItems.length > 1) {#}
 {#                $(this).closest('tr').remove();#}
 {#                editingInvoiceItems.splice(index, 1);#}
-{##}
+{#                #}
 {#                // به روزرسانی index برای همه سطرها#}
 {#                $('.item-row').each(function(i) {#}
 {#                    $(this).attr('data-item-index', i);#}
 {#                    $(this).find('.remove-item').attr('data-index', i);#}
 {#                });#}
-{##}
+{#                #}
 {#                calculateTotals();#}
 {#            } else {#}
 {#                showMessage('حداقل یک کالا باید وجود داشته باشد', 'error');#}
 {#            }#}
 {#        });#}
-{##}
+{#        #}
 {#        // محاسبه هنگام تغییر مقادیر#}
 {#        $(document).on('input', 'input[name="quantity[]"], input[name="unit_price[]"], input[name="discount[]"]', function() {#}
 {#            calculateTotals();#}
 {#        });#}
-{##}
+{#        #}
 {#        // به‌روزرسانی مبلغ به حروف هنگام تغییر قیمت#}
 {#        $(document).on('input', '.unit-price', function() {#}
 {#            updatePriceWords($(this));#}
 {#        });#}
-{##}
+{#        #}
+{#        // =============================================#}
+{#        // توابع جدید برای مدیریت مودال و ثبت فاکتور#}
+{#        // =============================================#}
+{#        #}
+{#        /**#}
+{#         * نمایش مودال انتظار#}
+{#         */#}
+{#        function showLoadingModal(message = 'در حال ذخیره تغییرات...') {#}
+{#            $('#loadingMessage').text(message);#}
+{#            $('#loadingModal').fadeIn(300);#}
+{#            $('body').addClass('page-disabled');#}
+{#            #}
+{#            // غیرفعال کردن دکمه ذخیره#}
+{#            $('#edit-invoice-submit-btn').prop('disabled', true);#}
+{#            #}
+{#            // غیرفعال کردن سایر دکمه‌های عملیات#}
+{#            $('#add-item-btn, .remove-item, #edit-invoice-back-btn').prop('disabled', true);#}
+{#            #}
+{#            // غیرفعال کردن فیلدهای ورودی#}
+{#            $('input, select, textarea').prop('disabled', true);#}
+{#        }#}
+{#        #}
+{#        /**#}
+{#         * پنهان کردن مودال انتظار#}
+{#         */#}
+{#        function hideLoadingModal() {#}
+{#            $('#loadingModal').fadeOut(300);#}
+{#            $('body').removeClass('page-disabled');#}
+{#            #}
+{#            // فعال کردن مجدد دکمه ذخیره#}
+{#            $('#edit-invoice-submit-btn').prop('disabled', false);#}
+{#            #}
+{#            // فعال کردن مجدد سایر دکمه‌ها#}
+{#            $('#add-item-btn, .remove-item, #edit-invoice-back-btn').prop('disabled', false);#}
+{#            #}
+{#            // فعال کردن مجدد فیلدهای ورودی#}
+{#            $('input, select, textarea').prop('disabled', false);#}
+{#        }#}
+{#        #}
+{#        /**#}
+{#         * نمایش موفقیت و بازگشت به صفحه اصلی#}
+{#         */#}
+{#        function showSuccessAndRedirect() {#}
+{#            // تغییر پیام مودال به موفقیت#}
+{#            $('#loadingMessage').text('تغییرات با موفقیت ذخیره شد!');#}
+{#            $('.loading-spinner i')#}
+{#                .removeClass('fa-spinner fa-spin')#}
+{#                .addClass('fa-check-circle')#}
+{#                .css('color', '#4CAF50');#}
+{#            #}
+{#            // پس از 2 ثانیه مودال را ببند و به صفحه اصلی برو#}
+{#            setTimeout(() => {#}
+{#                hideLoadingModal();#}
+{#                #}
+{#                // نمایش پیام موفقیت#}
+{#                showMessage('تغییرات با موفقیت ذخیره شد و در حال بازگشت به صفحه اصلی...', 'success');#}
+{#                #}
+{#                // بازگشت به صفحه اصلی پس از 3 ثانیه#}
+{#                setTimeout(() => {#}
+{#                    window.location.href = "{% url 'home' %}";#}
+{#                }, 2000);#}
+{#                #}
+{#            }, 2000);#}
+{#        }#}
+{#        #}
+{#        /**#}
+{#         * نمایش خطا#}
+{#         */#}
+{#        function showErrorAndReset(message) {#}
+{#            // تغییر پیام مودال به خطا#}
+{#            $('#loadingMessage').text('خطا در ذخیره تغییرات');#}
+{#            $('.loading-spinner i')#}
+{#                .removeClass('fa-spinner fa-spin')#}
+{#                .addClass('fa-times-circle')#}
+{#                .css('color', '#F44336');#}
+{#            #}
+{#            // پس از 2 ثانیه مودال را ببند#}
+{#            setTimeout(() => {#}
+{#                hideLoadingModal();#}
+{#                showMessage(message, 'error');#}
+{#                isSubmitting = false; // فعال کردن مجدد امکان ثبت#}
+{#            }, 2000);#}
+{#        }#}
+{#        #}
 {#        // ثبت تغییرات#}
 {#        $('#edit-invoice-submit-btn').click(function() {#}
+{#            // اگر در حال ثبت هستیم، از ثبت مجدد جلوگیری کن#}
+{#            if (isSubmitting) {#}
+{#                showMessage('در حال ذخیره تغییرات هستید، لطفاً منتظر بمانید', 'warning');#}
+{#                return;#}
+{#            }#}
+{#            #}
 {#            if (!editingInvoice) {#}
 {#                showMessage('لطفاً ابتدا یک فاکتور انتخاب کنید', 'error');#}
 {#                return;#}
 {#            }#}
-{##}
+{#            #}
+{#            // علامت‌گذاری که در حال ثبت هستیم#}
+{#            isSubmitting = true;#}
+{#            #}
 {#            // جمع‌آوری داده‌های فرم#}
 {#            const formData = {#}
 {#                invoice_id: $('#invoice-id').val(),#}
 {#                issue_date: $('#edit-issue-date').val(),#}
 {#                items: []#}
 {#            };#}
-{##}
+{#            #}
 {#            let isValid = true;#}
-{##}
+{#            let validationError = '';#}
+{#            #}
+{#            // اعتبارسنجی آیتم‌ها#}
 {#            $('.item-row').each(function() {#}
 {#                const productName = $(this).find('input[name="product_name[]"]').val();#}
 {#                const quantity = $(this).find('input[name="quantity[]"]').val();#}
 {#                const unitPrice = $(this).find('input[name="unit_price[]"]').val();#}
 {#                const discount = $(this).find('input[name="discount[]"]').val();#}
-{##}
-{#                if (!productName || !quantity || !unitPrice) {#}
+{#                #}
+{#                if (!productName || !productName.trim()) {#}
 {#                    isValid = false;#}
-{#                    showMessage('لطفاً تمام فیلدهای ضروری را پر کنید', 'error');#}
+{#                    validationError = 'لطفاً نام کالا را وارد کنید';#}
 {#                    return false;#}
 {#                }#}
-{##}
+{#                #}
+{#                if (!quantity || quantity <= 0) {#}
+{#                    isValid = false;#}
+{#                    validationError = 'لطفاً تعداد معتبر وارد کنید';#}
+{#                    return false;#}
+{#                }#}
+{#                #}
+{#                if (!unitPrice || unitPrice <= 0) {#}
+{#                    isValid = false;#}
+{#                    validationError = 'لطفاً قیمت معتبر وارد کنید';#}
+{#                    return false;#}
+{#                }#}
+{#                #}
 {#                formData.items.push({#}
 {#                    product_name: productName,#}
 {#                    quantity: quantity,#}
@@ -1218,9 +1422,16 @@
 {#                    discount: discount || 0#}
 {#                });#}
 {#            });#}
-{##}
-{#            if (!isValid) return;#}
-{##}
+{#            #}
+{#            if (!isValid) {#}
+{#                isSubmitting = false; // آزاد کردن قفل#}
+{#                showMessage(validationError, 'error');#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            // نمایش مودال انتظار#}
+{#            showLoadingModal('در حال ذخیره تغییرات...');#}
+{#            #}
 {#            // ارسال درخواست به سرور#}
 {#            $.ajax({#}
 {#                url: "{% url 'update_invoice' %}",#}
@@ -1232,34 +1443,39 @@
 {#                },#}
 {#                success: function(data) {#}
 {#                    if (data.success) {#}
-{#                        showMessage('فاکتور با موفقیت به روزرسانی شد', 'success');#}
-{#                        setTimeout(() => {#}
-{#                            window.location.reload();#}
-{#                        }, 2000);#}
+{#                        // نمایش موفقیت و بازگشت#}
+{#                        showSuccessAndRedirect();#}
 {#                    } else {#}
-{#                        showMessage(data.error, 'error');#}
+{#                        // نمایش خطا#}
+{#                        showErrorAndReset(data.error || 'خطا در ذخیره تغییرات');#}
 {#                    }#}
 {#                },#}
 {#                error: function(xhr, status, error) {#}
 {#                    console.error('Error updating invoice:', error);#}
-{#                    showMessage('خطا در به روزرسانی فاکتور', 'error');#}
+{#                    showErrorAndReset('خطا در ارتباط با سرور');#}
+{#                },#}
+{#                complete: function() {#}
+{#                    // در نهایت، متغیر قفل را باز کن#}
+{#                    setTimeout(() => {#}
+{#                        isSubmitting = false;#}
+{#                    }, 1000);#}
 {#                }#}
 {#            });#}
 {#        });#}
-{##}
+{#        #}
 {#        // بازگشت#}
 {#        $('#edit-invoice-back-btn').click(function() {#}
 {#            if (confirm('تغییرات ذخیره نشده از بین خواهند رفت. آیا مطمئن هستید؟')) {#}
 {#                window.location.href = "{% url 'home' %}";#}
 {#            }#}
 {#        });#}
-{##}
+{#        #}
 {#        // مخفی کردن نتایج جستجو هنگام کلیک خارج#}
 {#        $(document).on('click', function(e) {#}
 {#            if (!$(e.target).closest('.search-container').length) {#}
 {#                $('#edit-invoice-search-results').hide();#}
 {#            }#}
-{##}
+{#            #}
 {#            // مخفی کردن نتایج جستجوی کالا#}
 {#            $('.product-search-results').each(function() {#}
 {#                if (!$(this).is(e.target) && $(this).has(e.target).length === 0) {#}
@@ -1267,10 +1483,10 @@
 {#                }#}
 {#            });#}
 {#        });#}
-{##}
+{#        #}
 {#        $(document).ready(function() {#}
 {#            console.log('صفحه ویرایش فاکتور لود شد');#}
-{##}
+{#            #}
 {#            // مدیریت نمایش ریسپانسیو در موبایل#}
 {#            function checkMobileView() {#}
 {#                if ($(window).width() <= 768) {#}
@@ -1281,18 +1497,13 @@
 {#                    $('.item-row').removeClass('mobile-view');#}
 {#                }#}
 {#            }#}
-{##}
+{#            #}
 {#            // بررسی هنگام لود و تغییر سایز صفحه#}
 {#            $(window).on('load resize', checkMobileView);#}
 {#        });#}
 {#    </script>#}
 {#</body>#}
 {#</html>#}
-
-
-
-
-
 
 {% load static %}
 <!DOCTYPE html>
@@ -1506,6 +1717,29 @@
             padding: 8px;
             background-color: #f8f9fa;
             border-radius: 5px;
+        }
+
+        .date-input-container {
+            position: relative;
+            display: inline-block;
+            width: 200px;
+        }
+
+        .shamsi-date-input {
+            width: 100%;
+            padding: 8px 35px 8px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            cursor: pointer;
         }
 
         /* استایل‌های جدید برای جستجوی کالا */
@@ -1782,7 +2016,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.85);
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -1795,9 +2029,9 @@
             padding: 40px;
             border-radius: 20px;
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
             animation: fadeIn 0.3s ease-out;
         }
 
@@ -1819,7 +2053,7 @@
         }
 
         .loading-message {
-            font-size: 20px;
+            font-size: 22px;
             color: var(--text-color);
             margin-bottom: 15px;
             font-weight: bold;
@@ -1829,6 +2063,7 @@
             font-size: 16px;
             color: #666;
             margin-top: 10px;
+            margin-bottom: 20px;
         }
 
         /* استایل برای غیرفعال کردن صفحه */
@@ -1926,6 +2161,11 @@
 
             .invoice-date {
                 align-self: flex-start;
+            }
+
+            .loading-content {
+                padding: 20px;
+                margin: 10px;
             }
         }
 
@@ -2047,10 +2287,10 @@
                 در حال ذخیره تغییرات...
             </div>
             <div class="loading-submessage">
-                لطفاً منتظر بمانید
+                لطفاً منتظر بمانید، این عملیات ممکن است چند لحظه طول بکشد
             </div>
-            <div id="loadingProgress" style="margin-top: 20px; color: #666; font-size: 14px;">
-                <!-- نمایش وضعیت پیشرفت -->
+            <div id="loadingProgress" style="margin-top: 20px; text-align: right; max-height: 200px; overflow-y: auto;">
+                <!-- نمایش مراحل پیشرفت -->
             </div>
         </div>
     </div>
@@ -2454,6 +2694,7 @@
                         <td data-label="نام کالا">
                             <div class="product-search-container">
                                 <input type="text" class="product-search-input product-name" name="product_name[]" value="${item.product_name}" placeholder="جستجوی نام کالا" required>
+                                <input type="hidden" name="item_id[]" value="${item.id || ''}">
                             </div>
                         </td>
                         <td data-label="قیمت خرید">
@@ -2503,6 +2744,7 @@
                     <td data-label="نام کالا">
                         <div class="product-search-container">
                             <input type="text" class="product-search-input product-name" name="product_name[]" placeholder="جستجوی نام کالا" required>
+                            <input type="hidden" name="item_id[]" value="">
                         </div>
                     </td>
                     <td data-label="قیمت خرید">
@@ -2585,6 +2827,7 @@
          */
         function showLoadingModal(message = 'در حال ذخیره تغییرات...') {
             $('#loadingMessage').text(message);
+            $('#loadingProgress').html('');
             $('#loadingModal').fadeIn(300);
             $('body').addClass('page-disabled');
             
@@ -2596,6 +2839,23 @@
             
             // غیرفعال کردن فیلدهای ورودی
             $('input, select, textarea').prop('disabled', true);
+        }
+        
+        /**
+         * اضافه کردن مرحله به نمایش پیشرفت
+         */
+        function addProgressStage(message) {
+            const stageHtml = `
+                <div style="padding: 5px; border-right: 3px solid #4CAF50; margin: 5px 0;">
+                    <i class="fas fa-check" style="color: #4CAF50; margin-left: 5px;"></i>
+                    ${message}
+                </div>
+            `;
+            $('#loadingProgress').append(stageHtml);
+            
+            // اسکرول به پایین
+            const $progress = $('#loadingProgress');
+            $progress.scrollTop($progress[0].scrollHeight);
         }
         
         /**
@@ -2618,27 +2878,37 @@
         /**
          * نمایش موفقیت و بازگشت به صفحه اصلی
          */
-        function showSuccessAndRedirect() {
-            // تغییر پیام مودال به موفقیت
-            $('#loadingMessage').text('تغییرات با موفقیت ذخیره شد!');
+        function showSuccessAndRedirect(changes) {
+            // نمایش تغییرات اعمال شده
+            if (changes && changes.length > 0) {
+                $('#loadingMessage').html(`
+                    <div style="text-align: right;">
+                        <strong>تغییرات با موفقیت اعمال شد:</strong>
+                        <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                            ${changes.map(change => `<div style="margin: 3px 0; color: #333;">${change}</div>`).join('')}
+                        </div>
+                    </div>
+                `);
+            }
+            
             $('.loading-spinner i')
                 .removeClass('fa-spinner fa-spin')
                 .addClass('fa-check-circle')
                 .css('color', '#4CAF50');
             
-            // پس از 2 ثانیه مودال را ببند و به صفحه اصلی برو
+            // پس از 3 ثانیه مودال را ببند و به صفحه اصلی برو
             setTimeout(() => {
                 hideLoadingModal();
                 
                 // نمایش پیام موفقیت
                 showMessage('تغییرات با موفقیت ذخیره شد و در حال بازگشت به صفحه اصلی...', 'success');
                 
-                // بازگشت به صفحه اصلی پس از 3 ثانیه
+                // بازگشت به صفحه اصلی پس از 2 ثانیه
                 setTimeout(() => {
                     window.location.href = "{% url 'home' %}";
                 }, 2000);
                 
-            }, 2000);
+            }, 3000);
         }
         
         /**
@@ -2673,6 +2943,11 @@
                 return;
             }
             
+            // تایید کاربر قبل از انجام تغییرات
+            if (!confirm('آیا از ذخیره تغییرات اطمینان دارید؟ تغییرات ممکن است بر روی قیمت‌گذاری و موجودی کالاها تأثیر بگذارد.')) {
+                return;
+            }
+            
             // علامت‌گذاری که در حال ثبت هستیم
             isSubmitting = true;
             
@@ -2688,12 +2963,13 @@
             
             // اعتبارسنجی آیتم‌ها
             $('.item-row').each(function() {
-                const productName = $(this).find('input[name="product_name[]"]').val();
+                const productName = $(this).find('input[name="product_name[]"]').val().trim();
                 const quantity = $(this).find('input[name="quantity[]"]').val();
                 const unitPrice = $(this).find('input[name="unit_price[]"]').val();
-                const discount = $(this).find('input[name="discount[]"]').val();
+                const discount = $(this).find('input[name="discount[]"]').val() || 0;
+                const itemId = $(this).find('input[name="item_id[]"]').val() || null;
                 
-                if (!productName || !productName.trim()) {
+                if (!productName) {
                     isValid = false;
                     validationError = 'لطفاً نام کالا را وارد کنید';
                     return false;
@@ -2712,10 +2988,11 @@
                 }
                 
                 formData.items.push({
+                    id: itemId,
                     product_name: productName,
-                    quantity: quantity,
-                    unit_price: unitPrice,
-                    discount: discount || 0
+                    quantity: parseInt(quantity),
+                    unit_price: parseFloat(unitPrice),
+                    discount: parseFloat(discount)
                 });
             });
             
@@ -2726,7 +3003,8 @@
             }
             
             // نمایش مودال انتظار
-            showLoadingModal('در حال ذخیره تغییرات...');
+            showLoadingModal('در حال ذخیره تغییرات فاکتور...');
+            addProgressStage('بررسی اعتبار داده‌ها');
             
             // ارسال درخواست به سرور
             $.ajax({
@@ -2739,8 +3017,15 @@
                 },
                 success: function(data) {
                     if (data.success) {
-                        // نمایش موفقیت و بازگشت
-                        showSuccessAndRedirect();
+                        addProgressStage('ذخیره فاکتور');
+                        addProgressStage('بررسی تغییرات نام کالاها');
+                        addProgressStage('بررسی تغییرات قیمت‌ها');
+                        addProgressStage('به‌روزرسانی ProductPricing');
+                        addProgressStage('به‌روزرسانی InventoryCount');
+                        addProgressStage('اتمام عملیات');
+                        
+                        // نمایش موفقیت و تغییرات
+                        showSuccessAndRedirect(data.changes);
                     } else {
                         // نمایش خطا
                         showErrorAndReset(data.error || 'خطا در ذخیره تغییرات');

@@ -1689,6 +1689,139 @@ from django.db import transaction
 import json
 from dashbord_app.models import Invoice, InvoiceItem
 
+from account_app.models import ProductPricing, InventoryCount
+from decimal import Decimal
+import jdatetime
+
+
+@csrf_exempt
+@require_POST
+def update_invoice(request):
+    try:
+        data = json.loads(request.body)
+        invoice_id = data.get('invoice_id')
+        issue_date_shamsi = data.get('issue_date')
+        items_data = data.get('items', [])
+
+        if not invoice_id:
+            return JsonResponse({'success': False, 'error': 'شناسه فاکتور الزامی است'})
+
+        # تبدیل تاریخ شمسی به میلادی
+        try:
+            issue_date_gregorian = shamsi_to_gregorian(issue_date_shamsi)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': 'تاریخ وارد شده معتبر نیست'})
+
+        with transaction.atomic():
+            invoice = Invoice.objects.get(id=invoice_id)
+
+            # ذخیره آیتم‌های قدیمی برای مقایسه
+            old_items = {item.id: item for item in invoice.items.all()}
+
+            # لیست برای ذخیره تغییرات
+            changes_summary = []
+
+            # پردازش هر آیتم برای بررسی تغییرات
+            for item_data in items_data:
+                item_id = item_data.get('id')
+                product_name = item_data.get('product_name', '').strip()
+                new_unit_price = Decimal(str(item_data.get('unit_price', 0)))
+
+                if item_id and item_id in old_items:
+                    # آیتم موجود - بررسی تغییرات
+                    old_item = old_items[item_id]
+                    old_product_name = old_item.product_name.strip()
+                    old_unit_price = Decimal(str(old_item.unit_price))
+
+                    # 1. بررسی تغییر نام کالا
+                    if old_product_name != product_name:
+                        changes_summary.append(f"تغییر نام کالا: «{old_product_name}» به «{product_name}»")
+
+                        # به‌روزرسانی ProductPricing
+                        pricing_entries = ProductPricing.objects.filter(product_name=old_product_name)
+                        for pricing in pricing_entries:
+                            pricing.product_name = product_name
+                            pricing.save()
+
+                        # به‌روزرسانی InventoryCount
+                        inventory_items = InventoryCount.objects.filter(product_name=old_product_name)
+                        if inventory_items.exists():
+                            inventory_items.update(product_name=product_name)
+                            changes_summary.append(f"نام در {inventory_items.count()} رکورد InventoryCount به‌روز شد")
+
+                    # 2. بررسی تغییر قیمت
+                    if new_unit_price != old_unit_price:
+                        changes_summary.append(
+                            f"تغییر قیمت کالا «{product_name}»: {old_unit_price:,} به {new_unit_price:,}")
+
+                        # دریافت یا ایجاد رکورد ProductPricing
+                        pricing, created = ProductPricing.objects.get_or_create(
+                            product_name=product_name,
+                            defaults={
+                                'highest_purchase_price': new_unit_price,
+                                'invoice_date': jdatetime.datetime.now().strftime('%Y/%m/%d'),
+                                'invoice_number': invoice.serial_number,
+                                'adjustment_percentage': Decimal('0'),
+                                'standard_price': new_unit_price
+                            }
+                        )
+
+                        if not created and new_unit_price > pricing.highest_purchase_price:
+                            pricing.highest_purchase_price = new_unit_price
+                            pricing.invoice_date = jdatetime.datetime.now().strftime('%Y/%m/%d')
+                            pricing.invoice_number = invoice.serial_number
+                            pricing.save()  # در اینجا standard_price به طور خودکار محاسبه می‌شود
+                            changes_summary.append(f"highest_purchase_price در ProductPricing به‌روز شد")
+
+                            # به‌روزرسانی قیمت فروش در InventoryCount
+                            inventory_items = InventoryCount.objects.filter(product_name=product_name)
+                            for inventory_item in inventory_items:
+                                # محاسبه قیمت فروش جدید
+                                if pricing.standard_price:
+                                    inventory_item.selling_price = inventory_item.calculate_selling_price(
+                                        pricing.standard_price,
+                                        inventory_item.profit_percentage
+                                    )
+                                    inventory_item.save()
+                            changes_summary.append(
+                                f"قیمت فروش {inventory_items.count()} رکورد در InventoryCount به‌روز شد")
+
+                    # حذف از دیکشنری آیتم‌های پردازش شده
+                    del old_items[item_id]
+
+                else:
+                    # آیتم جدید
+                    changes_summary.append(f"افزودن کالای جدید: «{product_name}»")
+
+            # حذف آیتم‌های قدیمی و ایجاد آیتم‌های جدید
+            invoice.items.all().delete()
+            for item_data in items_data:
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    product_name=item_data.get('product_name', '').strip(),
+                    quantity=item_data.get('quantity', 0),
+                    unit_price=Decimal(str(item_data.get('unit_price', 0))),
+                    discount=Decimal(str(item_data.get('discount', 0)))
+                )
+
+            # به‌روزرسانی تاریخ فاکتور
+            invoice.issue_date = issue_date_gregorian
+            invoice.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'فاکتور با موفقیت به‌روزرسانی شد',
+            'changes': changes_summary
+        })
+
+    except Invoice.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
+    except Exception as e:
+        logger.error(f"خطا در به‌روزرسانی فاکتور: {str(e)}", exc_info=True)
+        return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
+
+# -------------------------------------------------
+
 
 @require_GET
 def search_invoices_for_edit(request):
@@ -1773,53 +1906,53 @@ def get_invoice_for_edit(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
-
-@csrf_exempt
-@require_POST
-def update_invoice(request):
-    try:
-        data = json.loads(request.body)
-        invoice_id = data.get('invoice_id')
-        issue_date_shamsi = data.get('issue_date')
-        items_data = data.get('items', [])
-
-        if not invoice_id:
-            return JsonResponse({'success': False, 'error': 'شناسه فاکتور الزامی است'})
-
-        # تبدیل تاریخ شمسی به میلادی
-        try:
-            issue_date_gregorian = shamsi_to_gregorian(issue_date_shamsi)
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': 'تاریخ وارد شده معتبر نیست'})
-
-        with transaction.atomic():
-            print(issue_date_gregorian)
-            invoice = Invoice.objects.get(id=invoice_id)
-
-            # به روزرسانی تاریخ صدور
-            invoice.issue_date = issue_date_gregorian
-            invoice.save()
-
-            # به روزرسانی آیتم‌ها
-            invoice.items.all().delete()
-            for item_data in items_data:
-                InvoiceItem.objects.create(
-                    invoice=invoice,
-                    product_name=item_data.get('product_name', ''),
-                    quantity=item_data.get('quantity', 0),
-                    unit_price=item_data.get('unit_price', 0),
-                    discount=item_data.get('discount', 0)
-                )
-
-        return JsonResponse({'success': True, 'message': 'فاکتور با موفقیت به روزرسانی شد'})
-
-    except Invoice.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
-    except Exception as e:
-        logger.error(f"Error updating invoice: {str(e)}")
-        return JsonResponse({'success': False, 'error': 'خطای سرور'})
-
-
+#
+# @csrf_exempt
+# @require_POST
+# def update_invoice(request):
+#     try:
+#         data = json.loads(request.body)
+#         invoice_id = data.get('invoice_id')
+#         issue_date_shamsi = data.get('issue_date')
+#         items_data = data.get('items', [])
+#
+#         if not invoice_id:
+#             return JsonResponse({'success': False, 'error': 'شناسه فاکتور الزامی است'})
+#
+#         # تبدیل تاریخ شمسی به میلادی
+#         try:
+#             issue_date_gregorian = shamsi_to_gregorian(issue_date_shamsi)
+#         except Exception as e:
+#             return JsonResponse({'success': False, 'error': 'تاریخ وارد شده معتبر نیست'})
+#
+#         with transaction.atomic():
+#             print(issue_date_gregorian)
+#             invoice = Invoice.objects.get(id=invoice_id)
+#
+#             # به روزرسانی تاریخ صدور
+#             invoice.issue_date = issue_date_gregorian
+#             invoice.save()
+#
+#             # به روزرسانی آیتم‌ها
+#             invoice.items.all().delete()
+#             for item_data in items_data:
+#                 InvoiceItem.objects.create(
+#                     invoice=invoice,
+#                     product_name=item_data.get('product_name', ''),
+#                     quantity=item_data.get('quantity', 0),
+#                     unit_price=item_data.get('unit_price', 0),
+#                     discount=item_data.get('discount', 0)
+#                 )
+#
+#         return JsonResponse({'success': True, 'message': 'فاکتور با موفقیت به روزرسانی شد'})
+#
+#     except Invoice.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
+#     except Exception as e:
+#         logger.error(f"Error updating invoice: {str(e)}")
+#         return JsonResponse({'success': False, 'error': 'خطای سرور'})
+#
+#
 
 def edit_invoice_page(request):
     """صفحه ویرایش فاکتور"""
