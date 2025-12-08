@@ -306,7 +306,6 @@ from django.db.models import Q
 #         messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
 #
 #     return redirect('invoice_list')
-
 @require_POST
 @transaction.atomic
 def distribute_inventory(request):
@@ -370,10 +369,11 @@ def distribute_inventory(request):
 
         print(f"📦 تعداد محصولات برای توزیع: {len(products_to_distribute)}")
 
-        # بخش ProductPricing - با منطق StoreInvoiceItems
+        # بخش ۱: ProductPricing با منطق StoreInvoiceItems
+        print("💵 شروع پردازش قیمت‌گذاری...")
         for product in products_to_distribute:
             product_name = product['name']
-            print(f"💵 پردازش قیمت‌گذاری برای: {product_name}")
+            print(f"  🔍 پردازش قیمت‌گذاری برای: {product_name}")
 
             try:
                 # یافتن بالاترین قیمت واحد برای این محصول از InvoiceItem
@@ -386,7 +386,7 @@ def distribute_inventory(request):
                     new_price = highest_price_item.unit_price
                     invoice = highest_price_item.invoice
 
-                    print(f"🔍 بررسی قیمت برای {product_name}: قیمت جدید = {new_price}")
+                    print(f"    💰 قیمت جدید: {new_price}")
 
                     # یافتن یا ایجاد ProductPricing
                     product_pricing, created = ProductPricing.objects.get_or_create(
@@ -396,69 +396,52 @@ def distribute_inventory(request):
                             'invoice_date': invoice.jalali_date,
                             'invoice_number': invoice.serial_number,
                             'standard_price': new_price,
-                            'adjustment_percentage': 0
+                            'adjustment_percentage': Decimal('0')
                         }
                     )
 
                     if created:
-                        print(f"✅ ProductPricing جدید برای: {product_name} ایجاد شد")
-                        continue
+                        print(f"    ✅ ProductPricing جدید ایجاد شد برای: {product_name}")
+                    else:
+                        # دریافت مقادیر قدیم
+                        old_highest_price = product_pricing.highest_purchase_price or Decimal('0')
+                        print(f"    📊 قیمت قدیم: {old_highest_price}")
 
-                    # دریافت مقادیر قدیم
-                    old_highest_price = product_pricing.highest_purchase_price
+                        # منطق تصمیم‌گیری
+                        if new_price <= old_highest_price:
+                            print(f"    📉 حالت 1: قیمت جدید ≤ قیمت قدیم")
+                            product_pricing.standard_price = old_highest_price
+                            product_pricing.adjustment_percentage = Decimal('0')
+                        else:
+                            print(f"    📈 حالت 2: قیمت جدید > قیمت قدیم")
+                            product_pricing.highest_purchase_price = new_price
+                            product_pricing.standard_price = new_price
+                            product_pricing.adjustment_percentage = Decimal('0')
 
-                    print(f"   قیمت قدیم: highest={old_highest_price}")
-
-                    # منطق تصمیم‌گیری جدید
-                    if new_price <= old_highest_price:
-                        print(f"   📉 حالت 1: قیمت جدید ≤ highest قدیم")
-                        print(f"   قیمت معیار = قیمت قدیم = {old_highest_price}")
-
-                        # قیمت معیار را برابر با قیمت قدیم می‌کنیم (هر دو یکی می‌شوند)
-                        product_pricing.standard_price = old_highest_price
-                        product_pricing.adjustment_percentage = 0
-
-                        print(f"   نتیجه: highest={old_highest_price}, "
-                              f"standard={old_highest_price}, adjustment=0%")
-
-                    else:  # new_price > old_highest_price
-                        print(f"   📈 حالت 2: قیمت جدید > highest قدیم")
-                        print(f"   هر دو قیمت برابر با قیمت جدید می‌شوند")
-
-                        # به‌روزرسانی هر دو قیمت
-                        product_pricing.highest_purchase_price = new_price
-                        product_pricing.standard_price = new_price
-                        product_pricing.adjustment_percentage = 0
-
-                        print(f"   نتیجه: highest={new_price}, standard={new_price}, adjustment=0%")
-
-                    # به‌روزرسانی اطلاعات فاکتور (در هر دو حالت)
-                    product_pricing.invoice_date = invoice.jalali_date
-                    product_pricing.invoice_number = invoice.serial_number
-
-                    # ذخیره تغییرات
-                    product_pricing.save()
-
-                    print(f"   ✅ تغییرات ذخیره شد")
+                        # به‌روزرسانی اطلاعات فاکتور
+                        product_pricing.invoice_date = invoice.jalali_date
+                        product_pricing.invoice_number = invoice.serial_number
+                        product_pricing.save()
+                        print(f"    ✅ قیمت‌گذاری به‌روزرسانی شد برای: {product_name}")
 
                 else:
-                    print(f"⚠️ هیچ فاکتوری برای محصول {product_name} یافت نشد")
+                    print(f"    ⚠️  هیچ فاکتوری برای محصول {product_name} یافت نشد")
                     # ایجاد ProductPricing با مقادیر پیشفرض
                     ProductPricing.objects.get_or_create(
                         product_name=product_name,
                         defaults={
                             'highest_purchase_price': Decimal('0'),
-                            'standard_price': Decimal('0')
+                            'standard_price': Decimal('0'),
+                            'adjustment_percentage': Decimal('0')
                         }
                     )
 
             except Exception as e:
-                print(f"❌ خطا در به‌روزرسانی ProductPricing برای {product_name}: {str(e)}")
+                print(f"    ❌ خطا در قیمت‌گذاری برای {product_name}: {str(e)}")
                 continue
 
-        # 🟢 این بخش را اضافه کنید - توزیع کالاها به انبار
+        # بخش ۲: توزیع کالاها به انبار (InventoryCount)
         print("🚀 شروع توزیع کالاها به شعب...")
-
         total_distributed = 0
         distribution_details = []
 
@@ -469,11 +452,12 @@ def distribute_inventory(request):
             print(f"📤 توزیع محصول: {product['name']} - تعداد: {total_remaining} عدد")
 
             for branch in branches:
-                qty_for_branch = total_remaining
+                qty_for_branch = total_remaining  # هر شعبه کل تعداد را دریافت می‌کند
 
                 print(f"   🏪 برای شعبه {branch.name}: {qty_for_branch} عدد")
 
                 try:
+                    # چک کردن آیا قبلاً این محصول در این شعبه وجود دارد
                     existing_record = InventoryCount.objects.filter(
                         product_name=product['name'],
                         branch=branch,
@@ -481,6 +465,7 @@ def distribute_inventory(request):
                     ).first()
 
                     if existing_record:
+                        # اگر وجود دارد، تعداد را اضافه می‌کنیم
                         existing_record.quantity += qty_for_branch
                         existing_record.selling_price = max(
                             existing_record.selling_price or Decimal('0'),
@@ -489,7 +474,9 @@ def distribute_inventory(request):
                         existing_record.profit_percentage = Decimal('70.00')
                         existing_record.counter = request.user
                         existing_record.save()
+                        print(f"   🔄 موجودی شعبه {branch.name} به‌روزرسانی شد")
                     else:
+                        # اگر وجود ندارد، رکورد جدید ایجاد می‌کنیم
                         InventoryCount.objects.create(
                             product_name=product['name'],
                             branch=branch,
@@ -499,6 +486,7 @@ def distribute_inventory(request):
                             selling_price=product['max_selling_price'],
                             profit_percentage=Decimal('70.00')
                         )
+                        print(f"   ✅ رکورد جدید در شعبه {branch.name} ایجاد شد")
 
                     product_distributed += qty_for_branch
                     total_distributed += qty_for_branch
@@ -514,13 +502,91 @@ def distribute_inventory(request):
             )
             print(f"✅ توزیع محصول {product['name']} تکمیل شد")
 
-        # ادامه بقیه کد (تنظیمات لیبل و ...)
-        # 🔴 بخش جدید: ایجاد/به‌روزرسانی تنظیمات چاپ لیبل برای هر محصول و هر شعبه
+        # بخش ۳: تنظیمات چاپ لیبل (ProductLabelSetting)
         print("🏷️  شروع به‌روزرسانی تنظیمات چاپ لیبل...")
         label_settings_updated = []
 
-        # ... ادامه بقیه کد
+        for product in products_to_distribute:
+            product_name = product['name']
 
+            for branch in branches:
+                try:
+                    # ایجاد بارکد
+                    import hashlib
+                    barcode_data = f"{product_name}-{branch.id}"
+                    barcode_hash = hashlib.md5(barcode_data.encode()).hexdigest()[:10].upper()
+                    barcode = f"PRD-{barcode_hash}"
+
+                    # ایجاد یا به‌روزرسانی تنظیمات چاپ لیبل
+                    label_setting, created = ProductLabelSetting.objects.update_or_create(
+                        product_name=product_name,
+                        branch=branch,
+                        defaults={
+                            'barcode': barcode,
+                            'allow_print': True
+                        }
+                    )
+
+                    if created:
+                        print(f"   ✅ تنظیمات لیبل ایجاد شد: {product_name} - {branch.name}")
+                        label_settings_updated.append(f"{product_name} در شعبه {branch.name}")
+                    else:
+                        # اگر از قبل وجود داشت، فقط allow_print را True می‌کنیم
+                        if not label_setting.allow_print:
+                            label_setting.allow_print = True
+                            label_setting.save()
+                            print(f"   🔄 تنظیمات لیبل به‌روزرسانی شد: {product_name} - {branch.name}")
+                            label_settings_updated.append(f"{product_name} در شعبه {branch.name} (فعال‌سازی)")
+                        else:
+                            print(f"   ℹ️  تنظیمات لیبل از قبل فعال بود: {product_name} - {branch.name}")
+
+                except Exception as e:
+                    print(f"   ❌ خطا در تنظیمات لیبل برای {product_name} - {branch.name}: {str(e)}")
+                    continue
+
+        # بخش ۴: صفر کردن remaining_quantity
+        zeroed_count = all_items.update(remaining_quantity=0)
+        print(f"🔄 {zeroed_count} آیتم صفر شد")
+
+        # محاسبه آماری جدید
+        total_for_each_branch = sum(product['total_remaining'] for product in products_to_distribute)
+        total_for_all_branches = total_for_each_branch * branch_count
+
+        # آماده‌سازی پیام موفقیت
+        detail_message = "\n".join(distribution_details)
+
+        # اطلاعات تنظیمات لیبل
+        label_info = ""
+        if label_settings_updated:
+            unique_labels = set(label_settings_updated)
+            label_info = f"\n🏷️  تنظیمات چاپ لیبل:\n• " + "\n• ".join(unique_labels)
+        else:
+            label_info = "\n🏷️  تنظیمات چاپ لیبل: هیچ تنظیماتی به‌روزرسانی نشد"
+
+        messages.success(
+            request,
+            f'✅ توزیع کامل به همه شعب با موفقیت انجام شد!\n\n'
+            f'📊 خلاصه عملکرد:\n'
+            f'• تعداد کل کالاهای توزیع شده: {total_distributed:,} عدد\n'
+            f'• تعداد کالاهای منحصر به فرد: {len(products_to_distribute)} مورد\n'
+            f'• تعداد شعب: {branch_count} شعبه\n'
+            f'• آیتم‌های به روز شده: {zeroed_count} مورد\n'
+            f'• تنظیمات لیبل به‌روزرسانی شده: {len(set(label_settings_updated))} مورد\n'
+            f'• تعداد برای هر شعبه: {total_for_each_branch:,} عدد\n'
+            f'• مجموع همه شعب: {total_for_all_branches:,} عدد\n'
+            f'{label_info}\n\n'
+            f'📦 جزئیات توزیع:\n{detail_message}'
+        )
+
+        print(f"🎉 فرآیند توزیع با موفقیت پایان یافت. مجموع توزیع: {total_distributed:,} عدد")
+
+    except Exception as e:
+        print(f"❌ خطای کلی در distribute_inventory: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
+
+    return redirect('invoice_list')
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
