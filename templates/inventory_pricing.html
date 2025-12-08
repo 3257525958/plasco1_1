@@ -1,3 +1,650 @@
+{#{% load static %}#}
+{#<!DOCTYPE html>#}
+{#<html lang="fa" dir="rtl">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1.0">#}
+{#    <title>سیستم قیمت‌گذاری کالاها</title>#}
+{#    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">#}
+{#    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">#}
+{#    <style>#}
+{#        :root {#}
+{#            --primary-color: #4CAF50;#}
+{#            --secondary-color: #388E3C;#}
+{#            --accent-color: #2E7D32;#}
+{#            --text-color: #2c3e50;#}
+{#            --light-bg: #f9f9f9;#}
+{#            --border-color: #ddd;#}
+{#            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);#}
+{#            --input-bg: #f1f8e9;#}
+{#            --blue-light: #e3f2fd;#}
+{#            --blue-dark: #2196f3;#}
+{#            --orange: #FF9800;#}
+{#        }#}
+{##}
+{#        * {#}
+{#            box-sizing: border-box;#}
+{#            margin: 0;#}
+{#            padding: 0;#}
+{#            font-family: 'Vazirmatn', sans-serif;#}
+{#        }#}
+{##}
+{#        body {#}
+{#            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);#}
+{#            min-height: 100vh;#}
+{#            padding: 20px;#}
+{#            color: var(--text-color);#}
+{#            direction: rtl;#}
+{#        }#}
+{##}
+{#        .container {#}
+{#            max-width: 1200px;#}
+{#            margin: 0 auto;#}
+{#            background: white;#}
+{#            border-radius: 12px;#}
+{#            overflow: hidden;#}
+{#            box-shadow: var(--shadow);#}
+{#            padding: 20px;#}
+{#        }#}
+{##}
+{#        .header {#}
+{#            text-align: center;#}
+{#            margin-bottom: 30px;#}
+{#            padding-bottom: 20px;#}
+{#            border-bottom: 2px solid var(--border-color);#}
+{#        }#}
+{##}
+{#        .header h1 {#}
+{#            font-size: 2rem;#}
+{#            color: var(--accent-color);#}
+{#            margin-bottom: 10px;#}
+{#        }#}
+{##}
+{#        .pricing-section {#}
+{#            margin-bottom: 30px;#}
+{#            padding: 20px;#}
+{#            background-color: var(--light-bg);#}
+{#            border-radius: 8px;#}
+{#            border: 1px solid var(--border-color);#}
+{#        }#}
+{##}
+{#        .search-container {#}
+{#            position: relative;#}
+{#            margin-bottom: 20px;#}
+{#        }#}
+{##}
+{#        .search-label {#}
+{#            display: block;#}
+{#            margin-bottom: 8px;#}
+{#            font-weight: bold;#}
+{#            color: var(--text-color);#}
+{#        }#}
+{##}
+{#        .search-input {#}
+{#            width: 100%;#}
+{#            padding: 12px 45px 12px 12px;#}
+{#            font-size: 1rem;#}
+{#            border: 2px solid var(--primary-color);#}
+{#            border-radius: 8px;#}
+{#            transition: all 0.3s;#}
+{#            background: var(--input-bg);#}
+{#        }#}
+{##}
+{#        .search-input:focus {#}
+{#            border-color: var(--accent-color);#}
+{#            box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);#}
+{#            outline: none;#}
+{#        }#}
+{##}
+{#        .search-btn {#}
+{#            position: absolute;#}
+{#            left: 12px;#}
+{#            top: 50%;#}
+{#            transform: translateY(-50%);#}
+{#            background: none;#}
+{#            border: none;#}
+{#            color: var(--primary-color);#}
+{#            font-size: 18px;#}
+{#            cursor: pointer;#}
+{#        }#}
+{##}
+{#        .search-results {#}
+{#            border: 1px solid var(--border-color);#}
+{#            border-radius: 5px;#}
+{#            max-height: 200px;#}
+{#            overflow-y: auto;#}
+{#            margin-top: 5px;#}
+{#            background: white;#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.1);#}
+{#            display: none;#}
+{#            z-index: 1000;#}
+{#            position: absolute;#}
+{#            width: 100%;#}
+{#        }#}
+{##}
+{#        .search-result-item {#}
+{#            padding: 10px;#}
+{#            cursor: pointer;#}
+{#            border-bottom: 1px solid var(--border-color);#}
+{#            transition: background 0.2s;#}
+{#        }#}
+{##}
+{#        .search-result-item:hover {#}
+{#            background-color: var(--light-bg);#}
+{#        }#}
+{##}
+{#        .selected-branch {#}
+{#            margin-top: 15px;#}
+{#            padding: 10px;#}
+{#            background-color: var(--blue-light);#}
+{#            border-radius: 5px;#}
+{#            border-right: 4px solid var(--blue-dark);#}
+{#        }#}
+{##}
+{#        .pricing-table {#}
+{#            width: 100%;#}
+{#            border-collapse: collapse;#}
+{#            margin: 20px 0;#}
+{#            box-shadow: 0 0 5px rgba(0,0,0,0.05);#}
+{#        }#}
+{##}
+{#        .pricing-table th {#}
+{#            background-color: var(--secondary-color);#}
+{#            color: white;#}
+{#            padding: 12px;#}
+{#            text-align: center;#}
+{#        }#}
+{##}
+{#        .pricing-table td {#}
+{#            padding: 10px;#}
+{#            border: 1px solid var(--border-color);#}
+{#            text-align: center;#}
+{#        }#}
+{##}
+{#        .selling-price-input {#}
+{#            width: 120px;#}
+{#            text-align: center;#}
+{#            padding: 8px;#}
+{#            border: 1px solid var(--border-color);#}
+{#            border-radius: 4px;#}
+{#        }#}
+{##}
+{#        .profit-display {#}
+{#            font-weight: bold;#}
+{#            color: var(--accent-color);#}
+{#        }#}
+{##}
+{#        .btn {#}
+{#            padding: 10px 20px;#}
+{#            border: none;#}
+{#            border-radius: 25px;#}
+{#            font-size: 1rem;#}
+{#            font-weight: bold;#}
+{#            cursor: pointer;#}
+{#            display: inline-flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            gap: 8px;#}
+{#            transition: all 0.3s ease;#}
+{#            margin: 5px;#}
+{#        }#}
+{##}
+{#        .btn-primary {#}
+{#            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));#}
+{#            color: white;#}
+{#        }#}
+{##}
+{#        .btn-primary:hover {#}
+{#            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));#}
+{#            transform: translateY(-2px);#}
+{#            box-shadow: 0 4px 8px rgba(0,0,0,0.2);#}
+{#        }#}
+{##}
+{#        .btn-sm {#}
+{#            padding: 6px 12px;#}
+{#            font-size: 0.9rem;#}
+{#        }#}
+{##}
+{#        .message {#}
+{#            padding: 12px;#}
+{#            border-radius: 6px;#}
+{#            margin: 12px 0;#}
+{#            border-left: 4px solid;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 8px;#}
+{#        }#}
+{##}
+{#        .error-message {#}
+{#            color: #d32f2f;#}
+{#            background-color: #ffebee;#}
+{#            border-left-color: #d32f2f;#}
+{#        }#}
+{##}
+{#        .success-message {#}
+{#            color: #2E7D32;#}
+{#            background-color: #e8f5e9;#}
+{#            border-left-color: #2E7D32;#}
+{#        }#}
+{##}
+{#        .info-message {#}
+{#            color: #1976d2;#}
+{#            background-color: #e3f2fd;#}
+{#            border-left-color: #1976d2;#}
+{#        }#}
+{##}
+{#        .hidden {#}
+{#            display: none;#}
+{#        }#}
+{##}
+{#        .actions {#}
+{#            display: flex;#}
+{#            gap: 10px;#}
+{#            margin-top: 20px;#}
+{#            flex-wrap: wrap;#}
+{#        }#}
+{##}
+{#        @media (max-width: 768px) {#}
+{#            .container {#}
+{#                padding: 15px;#}
+{#            }#}
+{#            #}
+{#            .header h1 {#}
+{#                font-size: 1.5rem;#}
+{#            }#}
+{#            #}
+{#            .pricing-table {#}
+{#                font-size: 0.9rem;#}
+{#            }#}
+{#            #}
+{#            .btn {#}
+{#                width: 100%;#}
+{#                margin: 5px 0;#}
+{#            }#}
+{#            #}
+{#            .actions {#}
+{#                flex-direction: column;#}
+{#            }#}
+{#        }#}
+{#    </style>#}
+{#</head>#}
+{#<body>#}
+{#    <div class="container">#}
+{#        <div class="header">#}
+{#            <h1>سیستم قیمت‌گذاری کالاها</h1>#}
+{#            <p>مدیریت قیمت‌گذاری کالاها بر اساس شعبه</p>#}
+{#        </div>#}
+{##}
+{#        <!-- بخش جستجوی شعبه -->#}
+{#        <div class="pricing-section">#}
+{#            <div class="search-container">#}
+{#                <label class="search-label">جستجوی شعبه:</label>#}
+{#                <input type="search" id="pricing-branch-search" class="search-input" placeholder="نام شعبه را وارد کنید..." aria-label="جستجوی شعبه">#}
+{#                <button type="button" class="search-btn">#}
+{#                    <i class="fas fa-search"></i>#}
+{#                </button>#}
+{#                <div id="pricing-branch-results" class="search-results"></div>#}
+{#            </div>#}
+{#            #}
+{#            <div id="selected-pricing-branch" class="selected-branch hidden">#}
+{#                <strong>شعبه انتخاب شده: </strong>#}
+{#                <span id="branch-name"></span>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- بخش محصولات و قیمت‌گذاری -->#}
+{#        <div id="pricing-products-section" class="pricing-section hidden">#}
+{#            <div class="search-container">#}
+{#                <label class="search-label">جستجوی کالا:</label>#}
+{#                <input type="search" id="pricing-product-search" class="search-input" placeholder="نام کالا را وارد کنید..." aria-label="جستجوی کالا">#}
+{#                <div class="search-hint">برای جستجو، حداقل 2 کاراکتر وارد کنید</div>#}
+{#            </div>#}
+{##}
+{#            <div class="table-container">#}
+{#                <table class="pricing-table">#}
+{#                    <thead>#}
+{#                        <tr>#}
+{#                            <th>نام کالا</th>#}
+{#                            <th>قیمت معیار (تومان)</th>#}
+{#                            <th>قیمت فروش (تومان)</th>#}
+{#                            <th></th>#}
+{#                            <th>عملیات</th>#}
+{#                        </tr>#}
+{#                    </thead>#}
+{#                    <tbody id="pricing-products-body">#}
+{#                        <!-- محصولات اینجا نمایش داده می‌شوند -->#}
+{#                    </tbody>#}
+{#                </table>#}
+{#            </div>#}
+{##}
+{#            <div class="actions">#}
+{#                <button id="save-all-prices" class="btn btn-primary">#}
+{#                    <i class="fas fa-save"></i> ذخیره همه قیمت‌ها#}
+{#                </button>#}
+{#                <button id="reset-pricing" class="btn">#}
+{#                    <i class="fas fa-redo"></i> بازنشانی#}
+{#                </button>#}
+{#            </div>#}
+{#        </div>        #}
+{##}
+{#        <div id="messages"></div>#}
+{#    </div>#}
+{##}
+{#    <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>#}
+{#    <script>#}
+{#        // متغیرهای global#}
+{#        let selectedPricingBranch = null;#}
+{#        let pricingProducts = [];#}
+{#        let searchTimeout = null;#}
+{##}
+{#        // تابع برای دریافت cookie#}
+{#        function getCookie(name) {#}
+{#            let cookieValue = null;#}
+{#            if (document.cookie && document.cookie !== '') {#}
+{#                const cookies = document.cookie.split(';');#}
+{#                for (let i = 0; i < cookies.length; i++) {#}
+{#                    const cookie = cookies[i].trim();#}
+{#                    if (cookie.substring(0, name.length + 1) === (name + '=')) {#}
+{#                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));#}
+{#                        break;#}
+{#                    }#}
+{#                }#}
+{#            }#}
+{#            return cookieValue;#}
+{#        }#}
+{##}
+{#        // تابع برای نمایش پیام#}
+{#        function showMessage(message, type) {#}
+{#            const messageClass = type === 'error' ? 'error-message' :#}
+{#                                type === 'success' ? 'success-message' : 'info-message';#}
+{#            const icon = type === 'error' ? 'fa-exclamation-circle' :#}
+{#                        type === 'success' ? 'fa-check-circle' : 'fa-info-circle';#}
+{##}
+{#            $('#messages').html(`#}
+{#                <div class="message ${messageClass}">#}
+{#                    <i class="fas ${icon}"></i> ${message}#}
+{#                </div>#}
+{#            `);#}
+{##}
+{#            if (type !== 'error') {#}
+{#                setTimeout(() => {#}
+{#                    $('#messages').empty();#}
+{#                }, 5000);#}
+{#            }#}
+{#        }#}
+{##}
+{#        // جستجوی شعب برای قیمت‌گذاری#}
+{#        $('#pricing-branch-search').on('input', function() {#}
+{#            const query = $(this).val().trim();#}
+{#            #}
+{#            if (query.length < 2) {#}
+{#                $('#pricing-branch-results').hide().empty();#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            clearTimeout(searchTimeout);#}
+{#            searchTimeout = setTimeout(function() {#}
+{#                $.ajax({#}
+{#                    url: "{% url 'search_branches_pricing' %}",#}
+{#                    data: { q: query },#}
+{#                    success: function(data) {#}
+{#                        if (data.results && data.results.length > 0) {#}
+{#                            let html = '';#}
+{#                            data.results.forEach(branch => {#}
+{#                                html += `#}
+{#                                    <div class="search-result-item" data-branch-id="${branch.id}" data-branch-name="${branch.name}">#}
+{#                                        <strong>${branch.name}</strong>#}
+{#                                        <div>${branch.address}</div>#}
+{#                                    </div>#}
+{#                                `;#}
+{#                            });#}
+{#                            $('#pricing-branch-results').html(html).show();#}
+{#                        } else {#}
+{#                            $('#pricing-branch-results').html('<div class="search-result-item">هیچ شعبه‌ای یافت نشد</div>').show();#}
+{#                        }#}
+{#                    },#}
+{#                    error: function() {#}
+{#                        showMessage('خطا در جستجوی شعب', 'error');#}
+{#                    }#}
+{#                });#}
+{#            }, 300);#}
+{#        });#}
+{##}
+{#        // انتخاب شعبه برای قیمت‌گذاری#}
+{#        $(document).on('click', '#pricing-branch-results .search-result-item', function() {#}
+{#            const branchId = $(this).data('branch-id');#}
+{#            const branchName = $(this).data('branch-name');#}
+{#            #}
+{#            selectedPricingBranch = { id: branchId, name: branchName };#}
+{#            $('#pricing-branch-search').val(branchName);#}
+{#            $('#pricing-branch-results').hide();#}
+{#            $('#branch-name').text(branchName);#}
+{#            $('#selected-pricing-branch').removeClass('hidden');#}
+{#            #}
+{#            // بارگذاری محصولات شعبه#}
+{#            loadBranchProducts(branchId);#}
+{#        });#}
+{##}
+{#        // بارگذاری محصولات شعبه#}
+{#        function loadBranchProducts(branchId) {#}
+{#            $.ajax({#}
+{#                url: "{% url 'get_branch_products' %}",#}
+{#                data: { branch_id: branchId },#}
+{#                success: function(data) {#}
+{#                    if (data.products) {#}
+{#                        pricingProducts = data.products;#}
+{#                        displayPricingProducts(pricingProducts);#}
+{#                        $('#pricing-products-section').removeClass('hidden');#}
+{#                    } else if (data.error) {#}
+{#                        showMessage(data.error, 'error');#}
+{#                    }#}
+{#                },#}
+{#                error: function() {#}
+{#                    showMessage('خطا در دریافت محصولات شعبه', 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{##}
+{#        // نمایش محصولات در جدول قیمت‌گذاری#}
+{#        function displayPricingProducts(products) {#}
+{#            const $tbody = $('#pricing-products-body');#}
+{#            $tbody.empty();#}
+{#            #}
+{#            products.forEach(product => {#}
+{#                const row = `#}
+{#                    <tr data-product-name="${product.product_name}">#}
+{#                        <td>${product.product_name}</td>#}
+{#                        <td>${product.base_price.toLocaleString()}</td>#}
+{#                        <td>#}
+{#                            <input type="number" class="selling-price-input" #}
+{#                                   value="${product.selling_price}" #}
+{#                                   min="0" step="1000"#}
+{#                                   data-base-price="${product.base_price}">#}
+{#                        </td>#}
+{#                        <td class="profit-percentage-display">${product.profit_percentage.toFixed(2)}%</td>#}
+{#                        <td>#}
+{#                            <button class="btn btn-sm btn-primary save-pricing-btn" #}
+{#                                    data-product-name="${product.product_name}">#}
+{#                                <i class="fas fa-save"></i> ذخیره#}
+{#                            </button>#}
+{#                        </td>#}
+{#                    </tr>#}
+{#                `;#}
+{#                $tbody.append(row);#}
+{#            });#}
+{#            #}
+{#            // محاسبه درصد سود هنگام تغییر قیمت فروش#}
+{#            $('.selling-price-input').on('input', function() {#}
+{#                const basePrice = parseFloat($(this).data('base-price'));#}
+{#                const sellingPrice = parseFloat($(this).val()) || 0;#}
+{#                #}
+{#                // محاسبه درصد سود#}
+{#                let profitPercentage = 0;#}
+{#                if (basePrice && basePrice > 0) {#}
+{#                    profitPercentage = ((sellingPrice - basePrice) / basePrice) * 100;#}
+{#                }#}
+{#                #}
+{#                // نمایش درصد سود#}
+{#                $(this).closest('tr').find('.profit-percentage-display').text(profitPercentage.toFixed(2) + '%');#}
+{#            });#}
+{#        }#}
+{##}
+{#        // جستجوی محصولات در لیست قیمت‌گذاری#}
+{#        $('#pricing-product-search').on('input', function() {#}
+{#            const query = $(this).val().trim();#}
+{#            #}
+{#            if (!selectedPricingBranch) {#}
+{#                showMessage('لطفاً ابتدا یک شعبه انتخاب کنید', 'error');#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            if (query.length < 2) {#}
+{#                // نمایش همه محصولات اگر کوئری خیلی کوتاه است#}
+{#                displayPricingProducts(pricingProducts);#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            // فیلتر کردن محصولات بر اساس کوئری#}
+{#            const filteredProducts = pricingProducts.filter(product => #}
+{#                product.product_name.includes(query)#}
+{#            );#}
+{#            #}
+{#            displayPricingProducts(filteredProducts);#}
+{#        });#}
+{##}
+{#        // ذخیره قیمت فروش برای یک محصول#}
+{#        $(document).on('click', '.save-pricing-btn', function() {#}
+{#            if (!selectedPricingBranch) {#}
+{#                showMessage('لطفاً ابتدا یک شعبه انتخاب کنید', 'error');#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            const productName = $(this).data('product-name');#}
+{#            const $row = $(this).closest('tr');#}
+{#            const sellingPriceInput = $row.find('.selling-price-input');#}
+{#            #}
+{#            const sellingPrice = parseFloat(sellingPriceInput.val()) || 0;#}
+{#            #}
+{#            // اعتبارسنجی#}
+{#            if (isNaN(sellingPrice) || sellingPrice < 0) {#}
+{#                showMessage('قیمت فروش نامعتبر است', 'error');#}
+{#                sellingPriceInput.focus();#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            // نمایش حالت در حال پردازش#}
+{#            const $button = $(this);#}
+{#            const originalText = $button.html();#}
+{#            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...');#}
+{#            #}
+{#            // ارسال درخواست به سرور#}
+{#            $.ajax({#}
+{#                url: "{% url 'update_product_pricing' %}",#}
+{#                method: 'POST',#}
+{#                contentType: 'application/json',#}
+{#                data: JSON.stringify({#}
+{#                    product_name: productName,#}
+{#                    branch_id: selectedPricingBranch.id,#}
+{#                    selling_price: sellingPrice#}
+{#                }),#}
+{#                headers: {#}
+{#                    'X-CSRFToken': getCookie('csrftoken'),#}
+{#                    'X-Requested-With': 'XMLHttpRequest'#}
+{#                },#}
+{#                success: function(data) {#}
+{#                    if (data.success) {#}
+{#                        showMessage(`قیمت فروش برای ${productName} با موفقیت ذخیره شد`, 'success');#}
+{#                        #}
+{#                        // به روزرسانی درصد سود نمایشی#}
+{#                        $row.find('.profit-percentage-display').text(data.profit_percentage.toFixed(2) + '%');#}
+{#                    } else {#}
+{#                        showMessage('خطا در ذخیره قیمت فروش: ' + (data.error || 'خطای ناشناخته'), 'error');#}
+{#                    }#}
+{#                },#}
+{#                error: function(xhr, status, error) {#}
+{#                    let errorMessage = 'خطا در ارتباط با سرور';#}
+{#                    if (xhr.responseJSON && xhr.responseJSON.error) {#}
+{#                        errorMessage += ': ' + xhr.responseJSON.error;#}
+{#                    }#}
+{#                    showMessage(errorMessage, 'error');#}
+{#                },#}
+{#                complete: function() {#}
+{#                    // بازگرداندن دکمه به حالت عادی#}
+{#                    $button.prop('disabled', false).html(originalText);#}
+{#                }#}
+{#            });#}
+{#        });#}
+{##}
+{#        // ذخیره همه قیمت‌ها#}
+{#        $('#save-all-prices').click(function() {#}
+{#            if (!selectedPricingBranch) {#}
+{#                showMessage('لطفاً ابتدا یک شعبه انتخاب کنید', 'error');#}
+{#                return;#}
+{#            }#}
+{#            #}
+{#            const pricesToSave = [];#}
+{#            $('#pricing-products-body tr').each(function() {#}
+{#                const productName = $(this).data('product-name');#}
+{#                const sellingPrice = parseFloat($(this).find('.selling-price-input').val()) || 0;#}
+{#                #}
+{#                pricesToSave.push({#}
+{#                    product_name: productName,#}
+{#                    selling_price: sellingPrice#}
+{#                });#}
+{#            });#}
+{#            #}
+{#            // ارسال همه قیمت‌ها به سرور#}
+{#            $.ajax({#}
+{#                url: "{% url 'update_all_product_pricing' %}",#}
+{#                method: 'POST',#}
+{#                contentType: 'application/json',#}
+{#                data: JSON.stringify({#}
+{#                    branch_id: selectedPricingBranch.id,#}
+{#                    prices: pricesToSave#}
+{#                }),#}
+{#                headers: {#}
+{#                    'X-CSRFToken': getCookie('csrftoken')#}
+{#                },#}
+{#                success: function(data) {#}
+{#                    if (data.success) {#}
+{#                        showMessage('همه قیمت‌ها با موفقیت ذخیره شدند', 'success');#}
+{#                        #}
+{#                        // بارگذاری مجدد محصولات برای اطمینان از همگام بودن با دیتابیس#}
+{#                        loadBranchProducts(selectedPricingBranch.id);#}
+{#                    } else {#}
+{#                        showMessage('خطا در ذخیره قیمت‌ها: ' + data.error, 'error');#}
+{#                    }#}
+{#                },#}
+{#                error: function() {#}
+{#                    showMessage('خطا در ارتباط با سرور', 'error');#}
+{#                }#}
+{#            });#}
+{#        });#}
+{##}
+{#        // بازنشانی فرم#}
+{#        $('#reset-pricing').click(function() {#}
+{#            if (confirm('آیا از بازنشانی فرم اطمینان دارید؟ تمام تغییرات ذخیره نشده از بین خواهند رفت.')) {#}
+{#                $('#pricing-branch-search').val('');#}
+{#                $('#selected-pricing-branch').addClass('hidden');#}
+{#                $('#pricing-product-search').val('');#}
+{#                $('#pricing-products-body').empty();#}
+{#                $('#pricing-products-section').addClass('hidden');#}
+{#                selectedPricingBranch = null;#}
+{#                pricingProducts = [];#}
+{#            }#}
+{#        });#}
+{##}
+{#        // مخفی کردن نتایج جستجو هنگام کلیک خارج#}
+{#        $(document).on('click', function(e) {#}
+{#            if (!$(e.target).closest('.search-container').length) {#}
+{#                $('.search-results').hide();#}
+{#            }#}
+{#        });#}
+{#    </script>#}
+{#</body>#}
+{#</html>#}
+
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -20,6 +667,8 @@
             --blue-light: #e3f2fd;
             --blue-dark: #2196f3;
             --orange: #FF9800;
+            --changed-color: #fff8e1;
+            --changed-border: #ffb74d;
         }
 
         * {
@@ -45,6 +694,7 @@
             overflow: hidden;
             box-shadow: var(--shadow);
             padding: 20px;
+            position: relative;
         }
 
         .header {
@@ -159,6 +809,7 @@
             padding: 10px;
             border: 1px solid var(--border-color);
             text-align: center;
+            transition: all 0.3s;
         }
 
         .selling-price-input {
@@ -167,6 +818,13 @@
             padding: 8px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .selling-price-input:focus {
+            border-color: var(--blue-dark);
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+            outline: none;
         }
 
         .profit-display {
@@ -198,6 +856,12 @@
             background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .btn-sm {
@@ -234,7 +898,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         .actions {
@@ -242,6 +906,113 @@
             gap: 10px;
             margin-top: 20px;
             flex-wrap: wrap;
+        }
+
+        /* Modal استایل برای */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-spinner {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .modal-message {
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .modal-details {
+            background-color: var(--light-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: right;
+        }
+
+        .modal-details h4 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        /* استایل برای کالاهای تغییر کرده */
+        .changed-row {
+            background-color: var(--changed-color) !important;
+            border-left: 4px solid var(--changed-border) !important;
+        }
+
+        .changed-input {
+            border-color: var(--orange) !important;
+            background-color: #fffde7 !important;
+        }
+
+        /* استایل برای غیرفعال کردن صفحه */
+        .page-disabled {
+            pointer-events: none;
+            opacity: 0.7;
+            filter: blur(1px);
+        }
+
+        .changes-count {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--orange);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: none;
         }
 
         @media (max-width: 768px) {
@@ -265,11 +1036,28 @@
             .actions {
                 flex-direction: column;
             }
+            
+            .modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+            
+            .changes-count {
+                top: 10px;
+                left: 10px;
+                font-size: 0.9rem;
+                padding: 6px 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- شمارنده تغییرات -->
+    <div id="changes-count" class="changes-count">
+        <i class="fas fa-edit"></i> <span id="changes-number">0</span> تغییر
+    </div>
+
+    <div class="container" id="main-container">
         <div class="header">
             <h1>سیستم قیمت‌گذاری کالاها</h1>
             <p>مدیریت قیمت‌گذاری کالاها بر اساس شعبه</p>
@@ -307,7 +1095,7 @@
                             <th>نام کالا</th>
                             <th>قیمت معیار (تومان)</th>
                             <th>قیمت فروش (تومان)</th>
-                            <th></th>
+                            <th>درصد سود</th>
                             <th>عملیات</th>
                         </tr>
                     </thead>
@@ -319,15 +1107,40 @@
 
             <div class="actions">
                 <button id="save-all-prices" class="btn btn-primary">
-                    <i class="fas fa-save"></i> ذخیره همه قیمت‌ها
+                    <i class="fas fa-save"></i> ذخیره همه تغییرات
                 </button>
                 <button id="reset-pricing" class="btn">
                     <i class="fas fa-redo"></i> بازنشانی
+                </button>
+                <button id="refresh-products" class="btn">
+                    <i class="fas fa-sync-alt"></i> بارگذاری مجدد
                 </button>
             </div>
         </div>        
 
         <div id="messages"></div>
+    </div>
+
+    <!-- Modal برای نمایش وضعیت ذخیره -->
+    <div id="save-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-spinner">
+                <i class="fas fa-spinner"></i>
+            </div>
+            <h3 class="modal-title" id="modal-title">در حال ذخیره اطلاعات</h3>
+            <p class="modal-message" id="modal-message">لطفاً منتظر بمانید...</p>
+            <div class="modal-details hidden" id="modal-details">
+                <h4>جزئیات عملیات:</h4>
+                <p id="modal-details-text"></p>
+            </div>
+            <div id="modal-success" class="hidden">
+                <i class="fas fa-check-circle" style="color: #4CAF50; font-size: 48px; margin-bottom: 20px;"></i>
+                <p class="modal-message" id="modal-success-message"></p>
+                <button id="modal-close" class="btn btn-primary" style="margin-top: 20px;">
+                    <i class="fas fa-check"></i> بستن
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="{% static 'js/jQueryv3.7.1.js' %}"></script>
@@ -336,6 +1149,8 @@
         let selectedPricingBranch = null;
         let pricingProducts = [];
         let searchTimeout = null;
+        let hasUnsavedChanges = false;
+        let changedProducts = new Set();
 
         // تابع برای دریافت cookie
         function getCookie(name) {
@@ -371,6 +1186,93 @@
                     $('#messages').empty();
                 }, 5000);
             }
+        }
+
+        // تابع برای نمایش Modal
+        function showModal(title, message, showDetails = false, detailsText = '') {
+            $('#modal-title').text(title);
+            $('#modal-message').text(message);
+            
+            if (showDetails) {
+                $('#modal-details').removeClass('hidden');
+                $('#modal-details-text').text(detailsText);
+            } else {
+                $('#modal-details').addClass('hidden');
+            }
+            
+            $('#modal-success').addClass('hidden');
+            $('#modal-close').off('click').on('click', function() {
+                hideModal();
+            });
+            
+            $('#save-modal').addClass('active');
+            $('#main-container').addClass('page-disabled');
+        }
+
+        // تابع برای نمایش موفقیت در Modal
+        function showSuccessModal(message) {
+            $('#modal-title').text('عملیات موفق');
+            $('#modal-message').addClass('hidden');
+            $('#modal-details').addClass('hidden');
+            $('#modal-success-message').text(message);
+            $('#modal-success').removeClass('hidden');
+            
+            $('#modal-close').off('click').on('click', function() {
+                hideModal();
+                // بارگذاری مجدد صفحه
+                if (selectedPricingBranch) {
+                    loadBranchProducts(selectedPricingBranch.id, true);
+                }
+            });
+        }
+
+        // تابع برای مخفی کردن Modal
+        function hideModal() {
+            $('#save-modal').removeClass('active');
+            $('#main-container').removeClass('page-disabled');
+            setTimeout(() => {
+                $('#modal-success').addClass('hidden');
+                $('#modal-message').removeClass('hidden');
+            }, 300);
+        }
+
+        // تابع برای به‌روزرسانی شمارنده تغییرات
+        function updateChangesCount() {
+            const count = changedProducts.size;
+            if (count > 0) {
+                $('#changes-number').text(count);
+                $('#changes-count').show();
+                $('#save-all-prices').html(`<i class="fas fa-save"></i> ذخیره ${count} تغییر`);
+                hasUnsavedChanges = true;
+            } else {
+                $('#changes-count').hide();
+                $('#save-all-prices').html(`<i class="fas fa-save"></i> ذخیره همه قیمت‌ها`);
+                hasUnsavedChanges = false;
+            }
+        }
+
+        // تابع برای بررسی تغییرات
+        function checkForChanges() {
+            changedProducts.clear();
+            
+            $('#pricing-products-body tr').each(function() {
+                const $row = $(this);
+                const productName = $row.data('product-name');
+                const $input = $row.find('.selling-price-input');
+                const currentPrice = parseFloat($input.val()) || 0;
+                const originalPrice = parseFloat($input.data('original')) || 0;
+                
+                if (currentPrice !== originalPrice) {
+                    changedProducts.add(productName);
+                    $row.addClass('changed-row');
+                    $input.addClass('changed-input');
+                } else {
+                    $row.removeClass('changed-row');
+                    $input.removeClass('changed-input');
+                }
+            });
+            
+            updateChangesCount();
         }
 
         // جستجوی شعب برای قیمت‌گذاری
@@ -426,7 +1328,11 @@
         });
 
         // بارگذاری محصولات شعبه
-        function loadBranchProducts(branchId) {
+        function loadBranchProducts(branchId, showLoading = false) {
+            if (showLoading) {
+                showModal('در حال بارگذاری', 'در حال دریافت اطلاعات محصولات...');
+            }
+            
             $.ajax({
                 url: "{% url 'get_branch_products' %}",
                 data: { branch_id: branchId },
@@ -435,11 +1341,19 @@
                         pricingProducts = data.products;
                         displayPricingProducts(pricingProducts);
                         $('#pricing-products-section').removeClass('hidden');
+                        
+                        if (showLoading) {
+                            setTimeout(() => {
+                                showSuccessModal('محصولات با موفقیت بارگذاری شدند');
+                            }, 1000);
+                        }
                     } else if (data.error) {
+                        if (showLoading) hideModal();
                         showMessage(data.error, 'error');
                     }
                 },
                 error: function() {
+                    if (showLoading) hideModal();
                     showMessage('خطا در دریافت محصولات شعبه', 'error');
                 }
             });
@@ -459,7 +1373,8 @@
                             <input type="number" class="selling-price-input" 
                                    value="${product.selling_price}" 
                                    min="0" step="1000"
-                                   data-base-price="${product.base_price}">
+                                   data-base-price="${product.base_price}"
+                                   data-original="${product.selling_price}">
                         </td>
                         <td class="profit-percentage-display">${product.profit_percentage.toFixed(2)}%</td>
                         <td>
@@ -486,7 +1401,14 @@
                 
                 // نمایش درصد سود
                 $(this).closest('tr').find('.profit-percentage-display').text(profitPercentage.toFixed(2) + '%');
+                
+                // بررسی تغییرات
+                setTimeout(checkForChanges, 100);
             });
+            
+            // ریست کردن تغییرات
+            changedProducts.clear();
+            updateChangesCount();
         }
 
         // جستجوی محصولات در لیست قیمت‌گذاری
@@ -524,6 +1446,13 @@
             const sellingPriceInput = $row.find('.selling-price-input');
             
             const sellingPrice = parseFloat(sellingPriceInput.val()) || 0;
+            const originalPrice = parseFloat(sellingPriceInput.data('original')) || 0;
+            
+            // اگر قیمت تغییر نکرده باشد
+            if (sellingPrice === originalPrice) {
+                showMessage('قیمت این کالا تغییر نکرده است', 'info');
+                return;
+            }
             
             // اعتبارسنجی
             if (isNaN(sellingPrice) || sellingPrice < 0) {
@@ -532,10 +1461,8 @@
                 return;
             }
             
-            // نمایش حالت در حال پردازش
-            const $button = $(this);
-            const originalText = $button.html();
-            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...');
+            // نمایش Modal
+            showModal('در حال ذخیره', `در حال ذخیره قیمت برای "${productName}"...`);
             
             // ارسال درخواست به سرور
             $.ajax({
@@ -553,29 +1480,28 @@
                 },
                 success: function(data) {
                     if (data.success) {
-                        showMessage(`قیمت فروش برای ${productName} با موفقیت ذخیره شد`, 'success');
+                        showSuccessModal(`قیمت فروش برای ${productName} با موفقیت ذخیره شد و چاپ لیبل فعال گردید`);
                         
-                        // به روزرسانی درصد سود نمایشی
-                        $row.find('.profit-percentage-display').text(data.profit_percentage.toFixed(2) + '%');
+                        // حذف از لیست تغییرات
+                        changedProducts.delete(productName);
+                        updateChangesCount();
                     } else {
+                        hideModal();
                         showMessage('خطا در ذخیره قیمت فروش: ' + (data.error || 'خطای ناشناخته'), 'error');
                     }
                 },
                 error: function(xhr, status, error) {
+                    hideModal();
                     let errorMessage = 'خطا در ارتباط با سرور';
                     if (xhr.responseJSON && xhr.responseJSON.error) {
                         errorMessage += ': ' + xhr.responseJSON.error;
                     }
                     showMessage(errorMessage, 'error');
-                },
-                complete: function() {
-                    // بازگرداندن دکمه به حالت عادی
-                    $button.prop('disabled', false).html(originalText);
                 }
             });
         });
 
-        // ذخیره همه قیمت‌ها
+        // ذخیره همه تغییرات
         $('#save-all-prices').click(function() {
             if (!selectedPricingBranch) {
                 showMessage('لطفاً ابتدا یک شعبه انتخاب کنید', 'error');
@@ -583,17 +1509,43 @@
             }
             
             const pricesToSave = [];
+            let changedCount = 0;
+            
             $('#pricing-products-body tr').each(function() {
                 const productName = $(this).data('product-name');
-                const sellingPrice = parseFloat($(this).find('.selling-price-input').val()) || 0;
+                const $input = $(this).find('.selling-price-input');
+                const sellingPrice = parseFloat($input.val()) || 0;
+                const originalPrice = parseFloat($input.data('original')) || 0;
                 
-                pricesToSave.push({
-                    product_name: productName,
-                    selling_price: sellingPrice
-                });
+                // فقط اگر قیمت تغییر کرده باشد
+                if (sellingPrice !== originalPrice) {
+                    pricesToSave.push({
+                        product_name: productName,
+                        selling_price: sellingPrice
+                    });
+                    changedCount++;
+                }
             });
             
-            // ارسال همه قیمت‌ها به سرور
+            if (changedCount === 0) {
+                showMessage('هیچ تغییری در قیمت‌ها انجام نشده است', 'info');
+                return;
+            }
+            
+            // نمایش تأییدیه
+            if (!confirm(`آیا از ذخیره ${changedCount} تغییر قیمت اطمینان دارید؟ چاپ لیبل برای این کالاها فعال خواهد شد.`)) {
+                return;
+            }
+            
+            // نمایش Modal
+            showModal(
+                'در حال ذخیره', 
+                `در حال ذخیره ${changedCount} تغییر قیمت...`,
+                true,
+                `تعداد کالاهای تغییر کرده: ${changedCount}\nشعبه: ${selectedPricingBranch.name}`
+            );
+            
+            // ارسال همه قیمت‌های تغییر کرده به سرور
             $.ajax({
                 url: "{% url 'update_all_product_pricing' %}",
                 method: 'POST',
@@ -607,31 +1559,61 @@
                 },
                 success: function(data) {
                     if (data.success) {
-                        showMessage('همه قیمت‌ها با موفقیت ذخیره شدند', 'success');
+                        showSuccessModal(`${changedCount} تغییر قیمت با موفقیت ذخیره شدند و چاپ لیبل برای کالاهای تغییر کرده فعال گردید`);
                         
-                        // بارگذاری مجدد محصولات برای اطمینان از همگام بودن با دیتابیس
-                        loadBranchProducts(selectedPricingBranch.id);
+                        // پاک کردن همه تغییرات
+                        changedProducts.clear();
+                        updateChangesCount();
                     } else {
+                        hideModal();
                         showMessage('خطا در ذخیره قیمت‌ها: ' + data.error, 'error');
                     }
                 },
-                error: function() {
-                    showMessage('خطا در ارتباط با سرور', 'error');
+                error: function(xhr, status, error) {
+                    hideModal();
+                    let errorMessage = 'خطا در ارتباط با سرور';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMessage += ': ' + xhr.responseJSON.error;
+                    }
+                    showMessage(errorMessage, 'error');
                 }
             });
         });
 
         // بازنشانی فرم
         $('#reset-pricing').click(function() {
-            if (confirm('آیا از بازنشانی فرم اطمینان دارید؟ تمام تغییرات ذخیره نشده از بین خواهند رفت.')) {
-                $('#pricing-branch-search').val('');
-                $('#selected-pricing-branch').addClass('hidden');
-                $('#pricing-product-search').val('');
-                $('#pricing-products-body').empty();
-                $('#pricing-products-section').addClass('hidden');
-                selectedPricingBranch = null;
-                pricingProducts = [];
+            if (hasUnsavedChanges) {
+                if (!confirm('آیا از بازنشانی فرم اطمینان دارید؟ تمام تغییرات ذخیره نشده از بین خواهند رفت.')) {
+                    return;
+                }
             }
+            
+            $('#pricing-branch-search').val('');
+            $('#selected-pricing-branch').addClass('hidden');
+            $('#pricing-product-search').val('');
+            $('#pricing-products-body').empty();
+            $('#pricing-products-section').addClass('hidden');
+            selectedPricingBranch = null;
+            pricingProducts = [];
+            changedProducts.clear();
+            updateChangesCount();
+            showMessage('فرم با موفقیت بازنشانی شد', 'success');
+        });
+
+        // بارگذاری مجدد محصولات
+        $('#refresh-products').click(function() {
+            if (!selectedPricingBranch) {
+                showMessage('لطفاً ابتدا یک شعبه انتخاب کنید', 'error');
+                return;
+            }
+            
+            if (hasUnsavedChanges) {
+                if (!confirm('آیا از بارگذاری مجدد اطمینان دارید؟ تمام تغییرات ذخیره نشده از بین خواهند رفت.')) {
+                    return;
+                }
+            }
+            
+            loadBranchProducts(selectedPricingBranch.id, true);
         });
 
         // مخفی کردن نتایج جستجو هنگام کلیک خارج
@@ -639,6 +1621,19 @@
             if (!$(e.target).closest('.search-container').length) {
                 $('.search-results').hide();
             }
+        });
+
+        // جلوگیری از بسته شدن صفحه هنگام وجود تغییرات ذخیره نشده
+        window.addEventListener('beforeunload', function(e) {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'تغییرات ذخیره نشده‌ای وجود دارد. آیا مطمئنید که می‌خواهید صفحه را ترک کنید؟';
+            }
+        });
+
+        // دکمه بستن Modal
+        $('#modal-close').click(function() {
+            hideModal();
         });
     </script>
 </body>
