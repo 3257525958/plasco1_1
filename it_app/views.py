@@ -307,7 +307,6 @@ from django.db.models import Q
 #
 #     return redirect('invoice_list')
 
-
 @require_POST
 @transaction.atomic
 def distribute_inventory(request):
@@ -454,12 +453,12 @@ def distribute_inventory(request):
                     )
 
             except Exception as e:
-                print(f"❌ خطا در به روزرسانی ProductPricing برای {product_name}: {str(e)}")
+                print(f"❌ خطا در به‌روزرسانی ProductPricing برای {product_name}: {str(e)}")
                 continue
 
+        # 🟢 این بخش را اضافه کنید - توزیع کالاها به انبار
         print("🚀 شروع توزیع کالاها به شعب...")
 
-        # توزیع کالاها - این بخش اصلی توزیع بود که حذف شده بود!
         total_distributed = 0
         distribution_details = []
 
@@ -469,14 +468,12 @@ def distribute_inventory(request):
 
             print(f"📤 توزیع محصول: {product['name']} - تعداد: {total_remaining} عدد")
 
-            # 🔴 تغییر اصلی: به هر شعبه کل تعداد باقیمانده را می‌دهیم
             for branch in branches:
-                qty_for_branch = total_remaining  # هر شعبه کل تعداد را دریافت می‌کند
+                qty_for_branch = total_remaining
 
                 print(f"   🏪 برای شعبه {branch.name}: {qty_for_branch} عدد")
 
                 try:
-                    # چک کردن آیا قبلاً این محصول در این شعبه وجود دارد
                     existing_record = InventoryCount.objects.filter(
                         product_name=product['name'],
                         branch=branch,
@@ -484,7 +481,6 @@ def distribute_inventory(request):
                     ).first()
 
                     if existing_record:
-                        # اگر وجود دارد، تعداد را اضافه می‌کنیم
                         existing_record.quantity += qty_for_branch
                         existing_record.selling_price = max(
                             existing_record.selling_price or Decimal('0'),
@@ -493,9 +489,7 @@ def distribute_inventory(request):
                         existing_record.profit_percentage = Decimal('70.00')
                         existing_record.counter = request.user
                         existing_record.save()
-                        created = False
                     else:
-                        # اگر وجود ندارد، رکورد جدید ایجاد می‌کنیم
                         InventoryCount.objects.create(
                             product_name=product['name'],
                             branch=branch,
@@ -505,7 +499,6 @@ def distribute_inventory(request):
                             selling_price=product['max_selling_price'],
                             profit_percentage=Decimal('70.00')
                         )
-                        created = True
 
                     product_distributed += qty_for_branch
                     total_distributed += qty_for_branch
@@ -521,85 +514,12 @@ def distribute_inventory(request):
             )
             print(f"✅ توزیع محصول {product['name']} تکمیل شد")
 
+        # ادامه بقیه کد (تنظیمات لیبل و ...)
         # 🔴 بخش جدید: ایجاد/به‌روزرسانی تنظیمات چاپ لیبل برای هر محصول و هر شعبه
         print("🏷️  شروع به‌روزرسانی تنظیمات چاپ لیبل...")
         label_settings_updated = []
 
-        for product in products_to_distribute:
-            product_name = product['name']
-
-            for branch in branches:
-                try:
-                    # ایجاد یا به‌روزرسانی تنظیمات چاپ لیبل
-                    label_setting, created = ProductLabelSetting.objects.update_or_create(
-                        product_name=product_name,
-                        branch=branch,
-                        defaults={
-                            'barcode': f'PRD-{product_name}-{branch.id}',
-                            # می‌توانید منطق مناسب‌تر برای بارکد داشته باشید
-                            'allow_print': True
-                        }
-                    )
-
-                    if created:
-                        print(f"   ✅ تنظیمات لیبل ایجاد شد: {product_name} - {branch.name}")
-                        label_settings_updated.append(f"{product_name} در شعبه {branch.name}: ایجاد تنظیمات جدید")
-                    else:
-                        # اگر از قبل وجود داشت، فقط allow_print را True می‌کنیم
-                        if not label_setting.allow_print:
-                            label_setting.allow_print = True
-                            label_setting.save()
-                            print(f"   🔄 تنظیمات لیبل به‌روزرسانی شد: {product_name} - {branch.name}")
-                            label_settings_updated.append(f"{product_name} در شعبه {branch.name}: فعال‌سازی چاپ")
-                        else:
-                            print(f"   ℹ️  تنظیمات لیبل از قبل فعال بود: {product_name} - {branch.name}")
-
-                except Exception as e:
-                    print(f"   ❌ خطا در تنظیمات لیبل برای {product_name} - {branch.name}: {str(e)}")
-                    continue
-
-        # صفر کردن remaining_quantity
-        zeroed_count = all_items.update(remaining_quantity=0)
-        print(f"🔄 صفر شدن {zeroed_count} آیتم")
-
-        # محاسبه آماری جدید
-        total_for_each_branch = sum(product['total_remaining'] for product in products_to_distribute)
-        total_for_all_branches = total_for_each_branch * branch_count
-
-        # آماده‌سازی پیام موفقیت
-        detail_message = "\n".join(distribution_details)
-
-        # اطلاعات تنظیمات لیبل
-        label_info = ""
-        if label_settings_updated:
-            label_info = f"\n🏷️  تنظیمات چاپ لیبل:\n• " + "\n• ".join(label_settings_updated)
-        else:
-            label_info = "\n🏷️  تنظیمات چاپ لیبل: هیچ تنظیماتی به‌روزرسانی نشد"
-
-        messages.success(
-            request,
-            f'✅ توزیع کامل به همه شعب با موفقیت انجام شد!\n\n'
-            f'📊 خلاصه عملکرد:\n'
-            f'• تعداد کل کالاهای توزیع شده: {total_distributed:,} عدد\n'
-            f'• تعداد کالاهای منحصر به فرد: {len(products_to_distribute)} مورد\n'
-            f'• تعداد شعب: {branch_count} شعبه\n'
-            f'• آیتم‌های به روز شده: {zeroed_count} مورد\n'
-            f'• تنظیمات لیبل به‌روزرسانی شده: {len(label_settings_updated)} مورد\n'
-            f'• تعداد برای هر شعبه: {total_for_each_branch:,} عدد\n'
-            f'• مجموع همه شعب: {total_for_all_branches:,} عدد\n'
-            f'{label_info}\n\n'
-            f'📦 جزئیات توزیع:\n{detail_message}'
-        )
-
-        print(f"🎉 فرآیند توزیع با موفقیت پایان یافت. مجموع توزیع: {total_distributed:,} عدد")
-
-    except Exception as e:
-        print(f"❌ خطای کلی در distribute_inventory: {str(e)}")
-        messages.error(request, f'❌ خطا در توزیع کالاها: {str(e)}')
-
-    return redirect('invoice_list')
-
-
+        # ... ادامه بقیه کد
 
 from django.shortcuts import render, redirect
 from django.contrib import messages
