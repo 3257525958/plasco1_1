@@ -1808,47 +1808,24 @@ def label_print(request):
 @require_POST
 def disable_print_and_clear_cart(request):
     """غیرفعال کردن اجازه چاپ برای کالاهای چاپ شده و پاک کردن سبد"""
-    try:
-        cart = request.session.get('label_cart', [])
+    cart = request.session.get('label_cart', [])
 
-        if cart:
-            for item in cart:
-                product_name = item['product_name']
-                branch_id = item.get('branch_id')
+    for item in cart:
+        try:
+            # پیدا کردن تنظیمات کالا و غیرفعال کردن چاپ
+            ProductLabelSetting.objects.filter(
+                product_name=item['product_name'],
+                branch_id=item.get('branch_id')
+            ).update(allow_print=False)
+        except:
+            continue
 
-                if branch_id:
-                    try:
-                        # پیدا کردن تنظیمات کالا
-                        label_setting = ProductLabelSetting.objects.get(
-                            product_name=product_name,
-                            branch_id=branch_id
-                        )
+    # پاک کردن سبد چاپ
+    if 'label_cart' in request.session:
+        del request.session['label_cart']
+        request.session.modified = True
 
-                        # تغییر وضعیت اجازه چاپ به false
-                        label_setting.allow_print = False
-                        label_setting.save()
-
-                        # ایجاد آیتم تاریخچه چاپ
-                        LabelPrintItem.objects.create(
-                            label_setting=label_setting,
-                            print_quantity=item['quantity'],
-                            user=request.user
-                        )
-
-                    except ProductLabelSetting.DoesNotExist:
-                        continue
-                    except Exception as e:
-                        print(f"❌ خطا در غیرفعال کردن چاپ برای {product_name}: {e}")
-
-        # پاک کردن سبد چاپ
-        if 'label_cart' in request.session:
-            del request.session['label_cart']
-            request.session.modified = True
-
-        return JsonResponse({'success': True, 'message': 'اجازه چاپ غیرفعال شد و سبد پاک شد'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
+    return JsonResponse({'success': True, 'message': 'اجازه چاپ غیرفعال شد'})
 #
 # from django.shortcuts import render, redirect
 # from django.http import JsonResponse

@@ -611,3 +611,4 @@ class LabelPrintItem(models.Model):
 
     def __str__(self):
         return f"{self.label_setting.product_name} - {self.print_quantity}"
+
