@@ -368,25 +368,23 @@ def delete_all_product_pricing(request):
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
+from account_app.models import ProductLabelSetting , LabelPrintItem
+
 
 
 @require_POST
 def clear_inventory(request):
     """
-    پاک کردن تمام رکوردهای مدل InventoryCount پس از تأیید کاربر
+    پاک کردن تمام رکوردهای InventoryCount, ProductLabelSetting و LabelPrintItem
     """
     try:
-        # بررسی وجود رکورد برای نمایش پیام مناسب
-        record_count = InventoryCount.objects.count()
+        # حذف با ترتیب مناسب
+        LabelPrintItem.objects.all().delete()
+        ProductLabelSetting.objects.all().delete()
+        deleted_count = InventoryCount.objects.all().delete()[0]
 
-        if record_count == 0:
-            messages.warning(request, "در حال حاضر هیچ داده‌ای در انبار وجود ندارد.")
-        else:
-            # پاک کردن تمام رکوردها
-            deleted_count = InventoryCount.objects.all().delete()[0]
-            messages.success(request, f"✅ تمام داده‌های انبار ({deleted_count} رکورد) با موفقیت پاک شدند.")
-
+        messages.success(request, f"✅ تمام داده‌های انبار و تنظیمات چاپ با موفقیت پاک شدند.")
     except Exception as e:
-        messages.error(request, f"❌ خطا در پاک کردن داده‌های انبار: {str(e)}")
+        messages.error(request, f"❌ خطا در پاک کردن داده‌ها: {str(e)}")
 
     return redirect('invoice_list')
