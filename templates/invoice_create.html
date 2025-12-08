@@ -2155,18 +2155,6 @@ function enablePage() {
             }
         });
 
-        $('#product-search').on('input', function(e) {
-            const value = $(this).val().trim();
-
-            if (value.length >= 8 && /^\d+$/.test(value)) {
-                clearTimeout(barcodeTimeout);
-
-                barcodeTimeout = setTimeout(() => {
-                    processBarcodeScan(value);
-                    $(this).val('');
-                }, 300);
-            }
-        });
     }
 
     function processBarcodeScan(barcode) {
