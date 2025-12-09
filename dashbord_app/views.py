@@ -1681,146 +1681,50 @@ def print_settings(request):
 
 
 # --------------------------ادیت فاکتور-------------------------------------------------------
-# views.py (بخش جدید)
+# dashbord_app/views.py
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.db import transaction
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 import json
+import logging
+import jdatetime
+from decimal import Decimal, InvalidOperation
 from dashbord_app.models import Invoice, InvoiceItem
 
+# ایمپورت مدل‌های مربوطه از اپ دیگر
 from account_app.models import ProductPricing, InventoryCount
-from decimal import Decimal
-import jdatetime
+
+logger = logging.getLogger(__name__)
 
 
-@csrf_exempt
-@require_POST
-def update_invoice(request):
+def convert_persian_arabic_to_english(text):
+    """تبدیل اعداد فارسی و عربی به انگلیسی"""
+    if not text:
+        return text
+
+    persian_numbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+    arabic_numbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']
+
+    for i in range(10):
+        text = text.replace(persian_numbers[i], str(i))
+        text = text.replace(arabic_numbers[i], str(i))
+
+    return text
+
+
+def shamsi_to_gregorian(shamsi_date):
+    """تبدیل تاریخ شمسی به میلادی"""
     try:
-        data = json.loads(request.body)
-        invoice_id = data.get('invoice_id')
-        issue_date_shamsi = data.get('issue_date')
-        items_data = data.get('items', [])
-
-        if not invoice_id:
-            return JsonResponse({'success': False, 'error': 'شناسه فاکتور الزامی است'})
-
-        # تبدیل تاریخ شمسی به میلادی
-        try:
-            issue_date_gregorian = shamsi_to_gregorian(issue_date_shamsi)
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': 'تاریخ وارد شده معتبر نیست'})
-
-        with transaction.atomic():
-            invoice = Invoice.objects.get(id=invoice_id)
-
-            # ذخیره آیتم‌های قدیمی برای مقایسه
-            old_items = {item.id: item for item in invoice.items.all()}
-
-            # لیست برای ذخیره تغییرات
-            changes_summary = []
-
-            # پردازش هر آیتم برای بررسی تغییرات
-            for item_data in items_data:
-                item_id = item_data.get('id')
-                product_name = item_data.get('product_name', '').strip()
-                new_unit_price = Decimal(str(item_data.get('unit_price', 0)))
-
-                if item_id and item_id in old_items:
-                    # آیتم موجود - بررسی تغییرات
-                    old_item = old_items[item_id]
-                    old_product_name = old_item.product_name.strip()
-                    old_unit_price = Decimal(str(old_item.unit_price))
-
-                    # 1. بررسی تغییر نام کالا
-                    if old_product_name != product_name:
-                        changes_summary.append(f"تغییر نام کالا: «{old_product_name}» به «{product_name}»")
-
-                        # به‌روزرسانی ProductPricing
-                        pricing_entries = ProductPricing.objects.filter(product_name=old_product_name)
-                        for pricing in pricing_entries:
-                            pricing.product_name = product_name
-                            pricing.save()
-
-                        # به‌روزرسانی InventoryCount
-                        inventory_items = InventoryCount.objects.filter(product_name=old_product_name)
-                        if inventory_items.exists():
-                            inventory_items.update(product_name=product_name)
-                            changes_summary.append(f"نام در {inventory_items.count()} رکورد InventoryCount به‌روز شد")
-
-                    # 2. بررسی تغییر قیمت
-                    if new_unit_price != old_unit_price:
-                        changes_summary.append(
-                            f"تغییر قیمت کالا «{product_name}»: {old_unit_price:,} به {new_unit_price:,}")
-
-                        # دریافت یا ایجاد رکورد ProductPricing
-                        pricing, created = ProductPricing.objects.get_or_create(
-                            product_name=product_name,
-                            defaults={
-                                'highest_purchase_price': new_unit_price,
-                                'invoice_date': jdatetime.datetime.now().strftime('%Y/%m/%d'),
-                                'invoice_number': invoice.serial_number,
-                                'adjustment_percentage': Decimal('0'),
-                                'standard_price': new_unit_price
-                            }
-                        )
-
-                        if not created and new_unit_price > pricing.highest_purchase_price:
-                            pricing.highest_purchase_price = new_unit_price
-                            pricing.invoice_date = jdatetime.datetime.now().strftime('%Y/%m/%d')
-                            pricing.invoice_number = invoice.serial_number
-                            pricing.save()  # در اینجا standard_price به طور خودکار محاسبه می‌شود
-                            changes_summary.append(f"highest_purchase_price در ProductPricing به‌روز شد")
-
-                            # به‌روزرسانی قیمت فروش در InventoryCount
-                            inventory_items = InventoryCount.objects.filter(product_name=product_name)
-                            for inventory_item in inventory_items:
-                                # محاسبه قیمت فروش جدید
-                                if pricing.standard_price:
-                                    inventory_item.selling_price = inventory_item.calculate_selling_price(
-                                        pricing.standard_price,
-                                        inventory_item.profit_percentage
-                                    )
-                                    inventory_item.save()
-                            changes_summary.append(
-                                f"قیمت فروش {inventory_items.count()} رکورد در InventoryCount به‌روز شد")
-
-                    # حذف از دیکشنری آیتم‌های پردازش شده
-                    del old_items[item_id]
-
-                else:
-                    # آیتم جدید
-                    changes_summary.append(f"افزودن کالای جدید: «{product_name}»")
-
-            # حذف آیتم‌های قدیمی و ایجاد آیتم‌های جدید
-            invoice.items.all().delete()
-            for item_data in items_data:
-                InvoiceItem.objects.create(
-                    invoice=invoice,
-                    product_name=item_data.get('product_name', '').strip(),
-                    quantity=item_data.get('quantity', 0),
-                    unit_price=Decimal(str(item_data.get('unit_price', 0))),
-                    discount=Decimal(str(item_data.get('discount', 0)))
-                )
-
-            # به‌روزرسانی تاریخ فاکتور
-            invoice.issue_date = issue_date_gregorian
-            invoice.save()
-
-        return JsonResponse({
-            'success': True,
-            'message': 'فاکتور با موفقیت به‌روزرسانی شد',
-            'changes': changes_summary
-        })
-
-    except Invoice.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
+        year, month, day = map(int, shamsi_date.split('/'))
+        gregorian_date = jdatetime.date(year, month, day).togregorian()
+        return gregorian_date
     except Exception as e:
-        logger.error(f"خطا در به‌روزرسانی فاکتور: {str(e)}", exc_info=True)
-        return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
-
-# -------------------------------------------------
+        logger.error(f"خطا در تبدیل تاریخ شمسی به میلادی: {e}")
+        return None
 
 
 @require_GET
@@ -1840,7 +1744,7 @@ def search_invoices_for_edit(request):
         Q(seller__name__icontains=query_english) |
         Q(seller__family__icontains=query_english) |
         Q(seller__store_name__icontains=query_english) |
-        Q(items__product_name__icontains=query_english)  # جستجو در نام کالا
+        Q(items__product_name__icontains=query_english)
     ).select_related('seller').prefetch_related('items').distinct().order_by('-date')
 
     results = []
@@ -1851,7 +1755,7 @@ def search_invoices_for_edit(request):
         formatted_date = jalali_date.strftime('%Y/%m/%d')
 
         # گرفتن لیست نام کالاهای این فاکتور برای نمایش در نتایج
-        product_names = list(invoice.items.values_list('product_name', flat=True)[:3])  # حداکثر 3 کالا
+        product_names = list(invoice.items.values_list('product_name', flat=True)[:3])
         products_text = ', '.join(product_names)
         if invoice.items.count() > 3:
             products_text += ' ...'
@@ -1862,10 +1766,12 @@ def search_invoices_for_edit(request):
             'seller_name': f"{invoice.seller.name} {invoice.seller.family}",
             'store_name': invoice.seller.store_name or 'بدون نام فروشگاه',
             'date': formatted_date,
-            'products': products_text  # اضافه کردن لیست کالاها
+            'products': products_text
         })
 
     return JsonResponse({'results': results})
+
+
 @require_GET
 def get_invoice_for_edit(request):
     """دریافت اطلاعات فاکتور برای ویرایش"""
@@ -1878,11 +1784,17 @@ def get_invoice_for_edit(request):
         invoice = Invoice.objects.get(id=invoice_id)
         items = invoice.items.all()
 
+        # تبدیل تاریخ به شمسی
+        gregorian_date = invoice.date
+        jalali_date = jdatetime.date.fromgregorian(date=gregorian_date)
+        formatted_date = jalali_date.strftime('%Y/%m/%d')
+
         invoice_data = {
             'id': invoice.id,
             'serial_number': invoice.serial_number,
             'seller_name': f"{invoice.seller.name} {invoice.seller.family}",
-            'date': invoice.jalali_date
+            'store_name': invoice.seller.store_name or '',
+            'date': formatted_date
         }
 
         items_data = []
@@ -1904,55 +1816,303 @@ def get_invoice_for_edit(request):
     except Invoice.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
     except Exception as e:
+        logger.error(f"خطا در دریافت فاکتور: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)})
 
-#
-# @csrf_exempt
-# @require_POST
-# def update_invoice(request):
-#     try:
-#         data = json.loads(request.body)
-#         invoice_id = data.get('invoice_id')
-#         issue_date_shamsi = data.get('issue_date')
-#         items_data = data.get('items', [])
-#
-#         if not invoice_id:
-#             return JsonResponse({'success': False, 'error': 'شناسه فاکتور الزامی است'})
-#
-#         # تبدیل تاریخ شمسی به میلادی
-#         try:
-#             issue_date_gregorian = shamsi_to_gregorian(issue_date_shamsi)
-#         except Exception as e:
-#             return JsonResponse({'success': False, 'error': 'تاریخ وارد شده معتبر نیست'})
-#
-#         with transaction.atomic():
-#             print(issue_date_gregorian)
-#             invoice = Invoice.objects.get(id=invoice_id)
-#
-#             # به روزرسانی تاریخ صدور
-#             invoice.issue_date = issue_date_gregorian
-#             invoice.save()
-#
-#             # به روزرسانی آیتم‌ها
-#             invoice.items.all().delete()
-#             for item_data in items_data:
-#                 InvoiceItem.objects.create(
-#                     invoice=invoice,
-#                     product_name=item_data.get('product_name', ''),
-#                     quantity=item_data.get('quantity', 0),
-#                     unit_price=item_data.get('unit_price', 0),
-#                     discount=item_data.get('discount', 0)
-#                 )
-#
-#         return JsonResponse({'success': True, 'message': 'فاکتور با موفقیت به روزرسانی شد'})
-#
-#     except Invoice.DoesNotExist:
-#         return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
-#     except Exception as e:
-#         logger.error(f"Error updating invoice: {str(e)}")
-#         return JsonResponse({'success': False, 'error': 'خطای سرور'})
-#
-#
+
+@csrf_exempt
+@require_POST
+@transaction.atomic
+def update_invoice(request):
+    """بروزرسانی فاکتور با اعمال تغییرات در مدل‌های مربوطه"""
+    try:
+        data = json.loads(request.body)
+        invoice_id = data.get('invoice_id')
+        issue_date_shamsi = data.get('issue_date')
+        items_data = data.get('items', [])
+
+        logger.info("=" * 80)
+        logger.info("شروع پردازش بروزرسانی فاکتور")
+        logger.info(f"invoice_id: {invoice_id}")
+        logger.info(f"تعداد آیتم‌ها: {len(items_data)}")
+
+        if not invoice_id:
+            return JsonResponse({'success': False, 'error': 'شناسه فاکتور الزامی است'})
+
+        if not items_data:
+            return JsonResponse({'success': False, 'error': 'لیست کالاها نمی‌تواند خالی باشد'})
+
+        # تبدیل تاریخ شمسی به میلادی
+        try:
+            issue_date_gregorian = shamsi_to_gregorian(issue_date_shamsi)
+        except Exception as e:
+            logger.error(f"خطا در تبدیل تاریخ: {e}")
+            return JsonResponse({'success': False, 'error': 'تاریخ وارد شده معتبر نیست'})
+
+        # گرفتن فاکتور و آیتم‌های قدیمی
+        invoice = Invoice.objects.get(id=invoice_id)
+        old_items = list(invoice.items.all())
+        old_items_dict = {item.id: item for item in old_items}
+
+        # لیست‌ها برای نگهداری تغییرات
+        name_changes = []  # لیست از تپل‌های (old_name, new_name)
+        price_changes = []  # لیست از تپل‌های (product_name, new_price)
+
+        # 1. شناسایی تغییرات
+        logger.info("--- شناسایی تغییرات ---")
+        for item_data in items_data:
+            # گرفتن و پردازش item_id
+            item_id_raw = item_data.get('id')
+            item_id_str = str(item_id_raw) if item_id_raw is not None else ''
+            item_id_clean = item_id_str.strip()
+
+            new_product_name = item_data.get('product_name', '').strip()
+            new_unit_price = Decimal(str(item_data.get('unit_price', 0)))
+
+            logger.info(f"آیتم دریافت شده: id='{item_id_clean}', name='{new_product_name}', price={new_unit_price}")
+
+            # اگر آیتم ID وجود دارد و معتبر است
+            if item_id_clean and item_id_clean not in ['', '0', 'null', 'undefined', 'None']:
+                try:
+                    item_id_int = int(item_id_clean)
+                    old_item = old_items_dict.get(item_id_int)
+
+                    if old_item:
+                        old_product_name = old_item.product_name
+                        old_unit_price = old_item.unit_price
+
+                        logger.info(
+                            f"آیتم قدیمی یافت شد: id={item_id_int}, name='{old_product_name}', price={old_unit_price}")
+
+                        # بررسی تغییر نام
+                        if old_product_name != new_product_name:
+                            name_changes.append((old_product_name, new_product_name))
+                            logger.info(f"✅ تغییر نام شناسایی شد: '{old_product_name}' -> '{new_product_name}'")
+
+                        # بررسی تغییر قیمت - IMPORTANT: همیشه از نام جدید برای تغییر قیمت استفاده می‌کنیم
+                        if old_unit_price != new_unit_price:
+                            # برای تغییر قیمت، همیشه از نام جدید استفاده می‌کنیم
+                            price_changes.append((new_product_name, new_unit_price))
+                            logger.info(
+                                f"✅ تغییر قیمت شناسایی شد: {old_unit_price} -> {new_unit_price} (برای کالای: '{new_product_name}')")
+                    else:
+                        logger.warning(f"⚠️ آیتم با id={item_id_int} در لیست قدیمی یافت نشد")
+                except ValueError as e:
+                    logger.error(f"❌ خطا در تبدیل item_id به عدد: '{item_id_clean}', خطا: {e}")
+            else:
+                logger.info(f"آیتم جدید یا بدون ID: '{new_product_name}'")
+
+        logger.info(f"تعداد تغییرات نام: {len(name_changes)}")
+        logger.info(f"تعداد تغییرات قیمت: {len(price_changes)}")
+
+        # 2. اعمال تغییرات نام کالاها
+        logger.info("--- اعمال تغییرات نام کالاها ---")
+        updated_names_count = 0
+
+        for old_name, new_name in name_changes:
+            logger.info(f"📝 پردازش تغییر نام: '{old_name}' -> '{new_name}'")
+
+            # 2.1. بروزرسانی در ProductPricing
+            try:
+                # بررسی وجود نام قدیمی در ProductPricing
+                pricing_records = ProductPricing.objects.filter(product_name=old_name)
+                pricing_count = pricing_records.count()
+
+                if pricing_count > 0:
+                    # بروزرسانی نام در ProductPricing
+                    updated_count = 0
+                    for pricing in pricing_records:
+                        pricing.product_name = new_name
+                        pricing.save()
+                        updated_count += 1
+                    logger.info(f"✅ ProductPricing: {updated_count} رکورد از '{old_name}' به '{new_name}' بروزرسانی شد")
+                    updated_names_count += updated_count
+                else:
+                    logger.warning(f"⚠️ نام '{old_name}' در ProductPricing یافت نشد")
+
+                    # بررسی آیا نام جدید در ProductPricing وجود دارد؟
+                    new_exists = ProductPricing.objects.filter(product_name=new_name).exists()
+                    if not new_exists:
+                        logger.info(f"📝 ایجاد رکورد جدید ProductPricing برای '{new_name}'")
+                        ProductPricing.objects.create(
+                            product_name=new_name,
+                            highest_purchase_price=Decimal('0'),
+                            adjustment_percentage=Decimal('0'),
+                            standard_price=Decimal('0')
+                        )
+
+            except Exception as e:
+                logger.error(f"❌ خطا در بروزرسانی ProductPricing برای '{old_name}': {str(e)}")
+
+            # 2.2. بروزرسانی در InventoryCount
+            try:
+                # بررسی وجود نام قدیمی در InventoryCount
+                inventory_records = InventoryCount.objects.filter(product_name=old_name)
+                inventory_count = inventory_records.count()
+
+                if inventory_count > 0:
+                    # بروزرسانی نام در InventoryCount
+                    updated_count = inventory_records.update(product_name=new_name)
+                    logger.info(f"✅ InventoryCount: {updated_count} رکورد از '{old_name}' به '{new_name}' بروزرسانی شد")
+                    updated_names_count += updated_count
+                else:
+                    logger.warning(f"⚠️ نام '{old_name}' در InventoryCount یافت نشد")
+
+            except Exception as e:
+                logger.error(f"❌ خطا در بروزرسانی InventoryCount برای '{old_name}': {str(e)}")
+
+        # 3. اعمال تغییرات قیمت - IMPORTANT: این بخش کاملاً بازنویسی شده
+        logger.info("--- اعمال تغییرات قیمت ---")
+        updated_prices_count = 0
+
+        for product_name, new_price in price_changes:
+            logger.info(f"💰 پردازش تغییر قیمت: '{product_name}' -> {new_price}")
+
+            try:
+                # ابتدا بررسی می‌کنیم که آیا این کالا در ProductPricing وجود دارد یا نه
+                # توجه: اگر نام کالا تغییر کرده باشد، product_name در اینجا نام جدید است
+                # که باید بعد از تغییر نام در ProductPricing وجود داشته باشد
+
+                pricing_exists = ProductPricing.objects.filter(product_name=product_name).exists()
+
+                if not pricing_exists:
+                    # اگر کالا وجود ندارد، ابتدا آن را ایجاد می‌کنیم
+                    logger.info(f"📝 کالای '{product_name}' در ProductPricing وجود ندارد، در حال ایجاد...")
+                    pricing = ProductPricing.objects.create(
+                        product_name=product_name,
+                        highest_purchase_price=new_price,
+                        adjustment_percentage=Decimal('0'),
+                        standard_price=new_price
+                    )
+                    logger.info(f"✅ رکورد جدید ProductPricing برای '{product_name}' ایجاد شد")
+                    updated_prices_count += 1
+                else:
+                    # اگر کالا وجود دارد، آن را بروزرسانی می‌کنیم
+                    try:
+                        # پیدا کردن رکورد ProductPricing
+                        pricing = ProductPricing.objects.get(product_name=product_name)
+
+                        # IMPORTANT: قیمت جدید را به عنوان بالاترین قیمت خرید قرار می‌دهیم (بدون شرط)
+                        pricing.highest_purchase_price = new_price
+                        pricing.save()  # این کار باعث محاسبه مجدد standard_price می‌شود
+
+                        logger.info(f"✅ بالاترین قیمت خرید برای '{product_name}' به {new_price} بروزرسانی شد")
+                        updated_prices_count += 1
+
+                    except ProductPricing.DoesNotExist:
+                        logger.error(f"❌ رکورد ProductPricing برای '{product_name}' یافت نشد، در حال ایجاد...")
+                        pricing = ProductPricing.objects.create(
+                            product_name=product_name,
+                            highest_purchase_price=new_price,
+                            adjustment_percentage=Decimal('0'),
+                            standard_price=new_price
+                        )
+                        updated_prices_count += 1
+                    except Exception as e:
+                        logger.error(f"❌ خطا در پردازش ProductPricing برای '{product_name}': {str(e)}")
+                        continue
+
+                # 3.1. بروزرسانی قیمت فروش در InventoryCount
+                try:
+                    # پیدا کردن تمام رکوردهای InventoryCount برای این کالا
+                    inventory_items = InventoryCount.objects.filter(product_name=product_name)
+                    inventory_count = inventory_items.count()
+
+                    if inventory_count > 0:
+                        logger.info(f"🔍 یافتن {inventory_count} رکورد در InventoryCount برای کالای '{product_name}'")
+
+                        # دریافت رکورد بروزرسانی شده ProductPricing
+                        try:
+                            updated_pricing = ProductPricing.objects.get(product_name=product_name)
+
+                            updated_inventory = 0
+                            for item in inventory_items:
+                                # محاسبه قیمت فروش جدید
+                                new_selling_price = item.calculate_selling_price(
+                                    updated_pricing.standard_price,
+                                    item.profit_percentage
+                                )
+
+                                # بروزرسانی قیمت فروش
+                                item.selling_price = new_selling_price
+                                item.save(update_fields=['selling_price'])
+                                updated_inventory += 1
+
+                            logger.info(f"✅ قیمت فروش برای {updated_inventory} رکورد در InventoryCount بروزرسانی شد")
+                            updated_prices_count += updated_inventory
+
+                        except ProductPricing.DoesNotExist:
+                            logger.error(f"❌ رکورد ProductPricing برای '{product_name}' بعد از بروزرسانی یافت نشد")
+                        except Exception as e:
+                            logger.error(f"❌ خطا در محاسبه قیمت فروش برای '{product_name}': {str(e)}")
+                    else:
+                        logger.warning(f"⚠️ هیچ رکوردی در InventoryCount برای کالای '{product_name}' یافت نشد")
+
+                except Exception as e:
+                    logger.error(f"❌ خطا در بروزرسانی InventoryCount برای '{product_name}': {str(e)}")
+
+            except Exception as e:
+                logger.error(f"❌ خطا در پردازش قیمت برای '{product_name}': {str(e)}")
+
+        # 4. بروزرسانی خود فاکتور
+        logger.info("--- بروزرسانی فاکتور اصلی ---")
+        try:
+            # بروزرسانی تاریخ فاکتور
+            invoice.date = issue_date_gregorian
+
+            # حذف آیتم‌های قدیمی فاکتور
+            invoice.items.all().delete()
+
+            # ذخیره فاکتور
+            invoice.save()
+
+            # ایجاد آیتم‌های جدید با تغییرات
+            for item_data in items_data:
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    product_name=item_data.get('product_name', ''),
+                    quantity=item_data.get('quantity', 0),
+                    unit_price=item_data.get('unit_price', 0),
+                    discount=item_data.get('discount', 0)
+                )
+
+            logger.info(f"✅ فاکتور {invoice.serial_number} با موفقیت بروزرسانی شد")
+
+        except Exception as e:
+            logger.error(f"❌ خطا در بروزرسانی فاکتور: {str(e)}")
+            raise
+
+        logger.info("=" * 80)
+        logger.info(f"📊 خلاصه عملیات:")
+        logger.info(f"   تغییرات نام شناسایی شده: {len(name_changes)} مورد")
+        logger.info(f"   تغییرات قیمت شناسایی شده: {len(price_changes)} مورد")
+        logger.info(f"   رکوردهای بروزرسانی شده نام: {updated_names_count}")
+        logger.info(f"   رکوردهای بروزرسانی شده قیمت: {updated_prices_count}")
+        logger.info("=" * 80)
+
+        return JsonResponse({
+            'success': True,
+            'message': 'فاکتور و اطلاعات مربوطه با موفقیت به روزرسانی شد',
+            'changes_summary': {
+                'name_changes_count': len(name_changes),
+                'price_changes_count': len(price_changes),
+                'updated_names_count': updated_names_count,
+                'updated_prices_count': updated_prices_count,
+                'name_changes': name_changes,
+                'price_changes': price_changes,
+            }
+        })
+
+    except Invoice.DoesNotExist:
+        logger.error("❌ فاکتور یافت نشد")
+        return JsonResponse({'success': False, 'error': 'فاکتور یافت نشد'})
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ داده‌های ارسالی معتبر نیست: {str(e)}")
+        return JsonResponse({'success': False, 'error': 'داده‌های ارسالی معتبر نیست'})
+    except Exception as e:
+        logger.error(f"❌ خطای سرور در بروزرسانی فاکتور: {str(e)}", exc_info=True)
+        return JsonResponse({'success': False, 'error': f'خطای سرور: {str(e)}'})
+
 
 def edit_invoice_page(request):
     """صفحه ویرایش فاکتور"""

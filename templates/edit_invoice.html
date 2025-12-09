@@ -1505,6 +1505,7 @@
 {#</body>#}
 {#</html>#}
 
+<!-- templates/edit_invoice.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -1717,29 +1718,6 @@
             padding: 8px;
             background-color: #f8f9fa;
             border-radius: 5px;
-        }
-
-        .date-input-container {
-            position: relative;
-            display: inline-block;
-            width: 200px;
-        }
-
-        .shamsi-date-input {
-            width: 100%;
-            padding: 8px 35px 8px 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .calendar-icon {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary-color);
-            cursor: pointer;
         }
 
         /* استایل‌های جدید برای جستجوی کالا */
@@ -2016,7 +1994,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
+            background-color: rgba(0, 0, 0, 0.8);
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -2029,9 +2007,9 @@
             padding: 40px;
             border-radius: 20px;
             text-align: center;
-            max-width: 600px;
+            max-width: 500px;
             width: 90%;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             animation: fadeIn 0.3s ease-out;
         }
 
@@ -2053,7 +2031,7 @@
         }
 
         .loading-message {
-            font-size: 22px;
+            font-size: 20px;
             color: var(--text-color);
             margin-bottom: 15px;
             font-weight: bold;
@@ -2063,7 +2041,6 @@
             font-size: 16px;
             color: #666;
             margin-top: 10px;
-            margin-bottom: 20px;
         }
 
         /* استایل برای غیرفعال کردن صفحه */
@@ -2085,6 +2062,70 @@
         .processing {
             pointer-events: none;
             opacity: 0.7;
+        }
+
+        /* استایل برای فیلدهای تاریخ */
+        .date-input-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .shamsi-date-input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        /* استایل برای نمایش ریسپانسیو موبایل */
+        .mobile-view .invoice-table {
+            display: block;
+        }
+
+        .mobile-view .invoice-table thead {
+            display: none;
+        }
+
+        .mobile-view .item-row {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+
+        .mobile-view .invoice-table td {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 5px;
+            border: none;
+            text-align: right;
+            width: 100% !important;
+        }
+
+        .mobile-view .invoice-table td::before {
+            content: attr(data-label);
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            font-size: 16px;
         }
 
         @media (max-width: 768px) {
@@ -2162,11 +2203,6 @@
             .invoice-date {
                 align-self: flex-start;
             }
-
-            .loading-content {
-                padding: 20px;
-                margin: 10px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -2192,6 +2228,16 @@
             .invoice-table td {
                 padding: 8px 0;
             }
+            
+            .summary-item {
+                flex-direction: column;
+                gap: 5px;
+                align-items: flex-start;
+            }
+            
+            .summary-item span:first-child {
+                font-weight: bold;
+            }
         }
     </style>
 </head>
@@ -2199,6 +2245,10 @@
     <div class="edit-invoice-container">
         <div class="header-section">
             <h1>ویرایش فاکتور</h1>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-edit" style="color: var(--primary-color); font-size: 24px;"></i>
+                <span style="color: #666; font-size: 14px;">ویرایش فاکتور و مدیریت کالاها</span>
+            </div>
         </div>
 
         <div class="search-section">
@@ -2214,26 +2264,49 @@
                 </div>
             </div>
             <div class="search-hint">
-                برای جستجو، حداقل ۲ کاراکتر وارد کنید - جستجو بر اساس: شماره فاکتور، نام فروشنده، نام خانوادگی، نام فروشگاه و نام کالا
+                <i class="fas fa-info-circle"></i> برای جستجو، حداقل ۲ کاراکتر وارد کنید - جستجو بر اساس: شماره فاکتور، نام فروشنده، نام خانوادگی، نام فروشگاه و نام کالا
             </div>
         </div>
 
         <div id="invoice-details" class="invoice-details">
-            <h3>مشخصات فاکتور</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2><i class="fas fa-file-invoice-dollar"></i> ویرایش فاکتور</h2>
+                <div style="display: flex; align-items: center; gap: 10px; color: #666;">
+                    <i class="fas fa-exclamation-triangle" style="color: #f39c12;"></i>
+                    <small>تغیرات در اینجا بر روی قیمت‌گذاری و موجودی کالاها تأثیر می‌گذارد</small>
+                </div>
+            </div>
+
             <div id="invoice-info" class="invoice-info">
                 <!-- اطلاعات فاکتور اینجا نمایش داده می‌شود -->
             </div>
 
-            <h3>لیست کالاهای فاکتور</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3><i class="fas fa-boxes"></i> لیست کالاهای فاکتور</h3>
+                <small style="color: #666;">تعداد اقلام: <span id="total-items-preview">0</span></small>
+            </div>
+
             <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th width="30%" data-label="نام کالا">نام کالا</th>
-                        <th width="15%" data-label="قیمت خرید">قیمت خرید (تومان)</th>
-                        <th width="10%" data-label="تعداد">تعداد</th>
-                        <th width="15%" data-label="جمع کل">جمع کل (تومان)</th>
-                        <th width="15%" data-label="تخفیف">تخفیف (تومان)</th>
-                        <th width="15%" data-label="عملیات">عملیات</th>
+                        <th width="30%" data-label="نام کالا">
+                            <i class="fas fa-tag"></i> نام کالا
+                        </th>
+                        <th width="15%" data-label="قیمت خرید">
+                            <i class="fas fa-dollar-sign"></i> قیمت خرید (تومان)
+                        </th>
+                        <th width="10%" data-label="تعداد">
+                            <i class="fas fa-sort-amount-up"></i> تعداد
+                        </th>
+                        <th width="15%" data-label="جمع کل">
+                            <i class="fas fa-calculator"></i> جمع کل (تومان)
+                        </th>
+                        <th width="15%" data-label="تخفیف">
+                            <i class="fas fa-percentage"></i> تخفیف (تومان)
+                        </th>
+                        <th width="15%" data-label="عملیات">
+                            <i class="fas fa-cog"></i> عملیات
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="invoice-items-list">
@@ -2242,7 +2315,7 @@
             </table>
 
             <button id="add-item-btn" class="btn btn-secondary">
-                <i class="fas fa-plus"></i> اضافه کردن کالا
+                <i class="fas fa-plus-circle"></i> اضافه کردن کالا
             </button>
 
             <div class="invoice-summary">
@@ -2287,10 +2360,10 @@
                 در حال ذخیره تغییرات...
             </div>
             <div class="loading-submessage">
-                لطفاً منتظر بمانید، این عملیات ممکن است چند لحظه طول بکشد
+                لطفاً منتظر بمانید
             </div>
-            <div id="loadingProgress" style="margin-top: 20px; text-align: right; max-height: 200px; overflow-y: auto;">
-                <!-- نمایش مراحل پیشرفت -->
+            <div id="loadingProgress" style="margin-top: 20px; color: #666; font-size: 14px;">
+                <!-- نمایش وضعیت پیشرفت -->
             </div>
         </div>
     </div>
@@ -2305,7 +2378,7 @@
         let editingInvoice = null;
         let editingInvoiceItems = [];
         let invoiceSearchTimeout = null;
-        let isSubmitting = false; // برای جلوگیری از کلیک‌های مکرر
+        let isSubmitting = false;
         
         // تابع تبدیل اعداد فارسی و عربی به انگلیسی
         function convertPersianToEnglishNumbers(input) {
@@ -2330,7 +2403,7 @@
             
             const ones = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];
             const tens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];
-            const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصd", "نهصد"];
+            const hundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصد", "نهصد"];
             const teens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];
             
             let result = "";
@@ -2390,7 +2463,6 @@
                 const discount = parseFloat($(this).find('input[name="discount[]"]').val()) || 0;
                 const lineTotal = quantity * unitPrice;
                 
-                // به‌روزرسانی جمع کل خط
                 $(this).find('.line-total-input').val(lineTotal);
                 updatePriceWords($(this).find('.line-total-input'));
                 
@@ -2400,9 +2472,17 @@
             });
             
             $('#total-items').text(totalItems);
+            $('#total-items-preview').text(totalItems);
             $('#total-amount').text(totalAmount.toLocaleString('fa-IR') + ' تومان');
             $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');
             $('#final-amount').text((totalAmount - totalDiscount).toLocaleString('fa-IR') + ' تومان');
+            
+            return {
+                totalItems,
+                totalAmount,
+                totalDiscount,
+                finalAmount: totalAmount - totalDiscount
+            };
         }
         
         // تابع برای نمایش پیام
@@ -2428,13 +2508,11 @@
             const $container = $input.closest('td');
             let $results = $container.find('.product-search-results');
             
-            // اگر نتایج جستجو وجود ندارد، ایجاد کن
             if ($results.length === 0) {
                 $results = $('<div class="product-search-results"></div>');
                 $container.append($results);
             }
             
-            // جستجوی تاخیری
             let searchTimeout;
             
             $input.on('input', function() {
@@ -2455,17 +2533,16 @@
                 }, 300);
             });
             
-            // انتخاب نتیجه
             $results.on('click', '.product-search-result-item', function() {
                 const productName = $(this).data('name');
                 $input.val(productName);
                 $results.empty().hide();
                 
-                // فوکوس روی قیمت
-                $input.closest('tr').find('.unit-price').focus();
+                setTimeout(() => {
+                    $input.closest('tr').find('.unit-price').focus();
+                }, 100);
             });
             
-            // مخفی کردن نتایج
             $(document).on('click', function(e) {
                 if (!$results.is(e.target) && 
                     $results.has(e.target).length === 0 &&
@@ -2474,7 +2551,6 @@
                 }
             });
             
-            // نمایش نتایج هنگام فوکوس
             $input.on('focus', function() {
                 if ($results.children().length > 0) {
                     $results.show();
@@ -2536,7 +2612,6 @@
                         }
                     });
                     
-                    // اگر هیچ نتیجه‌ای نبود
                     if (Object.keys(uniqueProducts).length === 0) {
                         $results.append(`
                             <div class="product-search-result-item new-product" data-name="${query.replace(/"/g, '&quot;')}">
@@ -2620,36 +2695,46 @@
             $('#edit-invoice-search').val(invoiceText);
             $('#edit-invoice-search-results').hide();
             
-            // دریافت جزئیات فاکتور
+            showLoadingModal('در حال دریافت اطلاعات فاکتور...');
+            
             $.ajax({
                 url: "{% url 'get_invoice_for_edit' %}",
                 data: { invoice_id: invoiceId },
                 dataType: 'json',
                 success: function(data) {
+                    hideLoadingModal();
                     if (data.success) {
                         editingInvoice = data.invoice;
                         editingInvoiceItems = data.items;
                         
-                        // نمایش اطلاعات فاکتور
                         $('#invoice-info').html(`
-                            <div class="info-item"><strong>شماره فاکتور:</strong> ${editingInvoice.serial_number}</div>
-                            <div class="info-item"><strong>فروشنده:</strong> ${editingInvoice.seller_name}</div>
-                            <div class="info-item">
-                                <strong>تاریخ صدور فاکتور:</strong>
-                                <div class="date-input-container">
-                                    <input type="text" id="edit-issue-date" class="shamsi-date-input"
-                                           placeholder="برای انتخاب تاریخ کلیک کنید"
-                                           value="${editingInvoice.date}" name="issue_date" autocomplete="off">
-                                    <i class="fas fa-calendar-alt calendar-icon" id="edit-calendar-trigger"></i>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                                <div class="info-item">
+                                    <i class="fas fa-hashtag"></i>
+                                    <strong>شماره فاکتور:</strong> ${editingInvoice.serial_number}
                                 </div>
-                                <small style="display: block; margin-top: 5px; color: #666; font-size: 12px;">
-                                    <i class="fas fa-mouse-pointer"></i> برای انتخاب تاریخ کلیک کنید
-                                </small>
+                                <div class="info-item">
+                                    <i class="fas fa-user-tag"></i>
+                                    <strong>فروشنده:</strong> ${editingInvoice.seller_name}
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-store"></i>
+                                    <strong>فروشگاه:</strong> ${editingInvoice.store_name || 'ندارد'}
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <strong>تاریخ صدور فاکتور:</strong>
+                                    <div class="date-input-container">
+                                        <input type="text" id="edit-issue-date" class="shamsi-date-input"
+                                               placeholder="برای انتخاب تاریخ کلیک کنید"
+                                               value="${editingInvoice.date}" name="issue_date" autocomplete="off">
+                                        <i class="fas fa-calendar-alt calendar-icon" id="edit-calendar-trigger"></i>
+                                    </div>
+                                </div>
                             </div>
                             <input type="hidden" id="invoice-id" value="${editingInvoice.id}">
                         `);
                         
-                        // مقداردهی اولیه تقویم شمسی برای فیلد تاریخ
                         $("#edit-issue-date").persianDatepicker({
                             observer: true,
                             format: 'YYYY/MM/DD',
@@ -2663,20 +2748,24 @@
                             }
                         });
                         
-                        // نمایش تقویم هنگام کلیک روی آیکون تقویم
                         document.getElementById('edit-calendar-trigger').addEventListener('click', function () {
                             $("#edit-issue-date").persianDatepicker('show');
                         });
                         
-                        // نمایش آیتم‌های فاکتور
                         updateInvoiceItemsList();
                         
                         $('#invoice-details').show();
+                        
+                        $('html, body').animate({
+                            scrollTop: $('#invoice-details').offset().top - 50
+                        }, 500);
+                        
                     } else {
                         showMessage(data.error, 'error');
                     }
                 },
                 error: function(xhr, status, error) {
+                    hideLoadingModal();
                     console.error('Error getting invoice details:', error);
                     showMessage('خطا در دریافت اطلاعات فاکتور', 'error');
                 }
@@ -2688,39 +2777,50 @@
             const $itemsList = $('#invoice-items-list');
             $itemsList.empty();
             
+            if (editingInvoiceItems.length === 0) {
+                $itemsList.html(`
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #666;">
+                            <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                            هیچ کالایی در این فاکتور وجود ندارد
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+            
             editingInvoiceItems.forEach((item, index) => {
                 const row = `
                     <tr class="item-row" data-item-index="${index}">
                         <td data-label="نام کالا">
                             <div class="product-search-container">
-                                <input type="text" class="product-search-input product-name" name="product_name[]" value="${item.product_name}" placeholder="جستجوی نام کالا" required>
+                                <input type="text" class="product-search-input product-name" name="product_name[]" value="${item.product_name || ''}" placeholder="جستجوی نام کالا" required>
                                 <input type="hidden" name="item_id[]" value="${item.id || ''}">
                             </div>
                         </td>
                         <td data-label="قیمت خرید">
-                            <input type="number" class="unit-price price-input" name="unit_price[]" value="${item.unit_price}" min="0" step="100" required>
+                            <input type="number" class="unit-price price-input" name="unit_price[]" value="${item.unit_price || 0}" min="0" step="100" required>
                             <div class="price-words"></div>
                         </td>
                         <td data-label="تعداد">
-                            <input type="number" name="quantity[]" value="${item.quantity}" min="1" required>
+                            <input type="number" name="quantity[]" value="${item.quantity || 1}" min="1" required>
                         </td>
                         <td data-label="جمع کل">
                             <input type="number" class="line-total-input" readonly>
                             <div class="price-words"></div>
                         </td>
                         <td data-label="تخفیف">
-                            <input type="number" name="discount[]" value="${item.discount}" min="0" step="100">
+                            <input type="number" name="discount[]" value="${item.discount || 0}" min="0" step="100">
                         </td>
                         <td data-label="عملیات">
                             <button type="button" class="btn btn-danger remove-item" data-index="${index}">
-                                <i class="fas fa-trash"></i>
+                                <i class="fas fa-trash"></i> حذف
                             </button>
                         </td>
                     </tr>
                 `;
                 $itemsList.append(row);
                 
-                // محاسبه اولیه برای این سطر
                 const quantity = parseInt(item.quantity) || 0;
                 const unitPrice = parseFloat(item.unit_price) || 0;
                 const lineTotal = quantity * unitPrice;
@@ -2729,7 +2829,6 @@
                 updatePriceWords($itemsList.find('tr:last-child .line-total-input'));
                 updatePriceWords($itemsList.find('tr:last-child .unit-price'));
                 
-                // فعال‌سازی جستجوی کالا برای این سطر
                 initProductSearchForEdit($itemsList.find('tr:last-child .product-name'));
             });
             
@@ -2763,7 +2862,7 @@
                     </td>
                     <td data-label="عملیات">
                         <button type="button" class="btn btn-danger remove-item" data-index="${newIndex}">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash"></i> حذف
                         </button>
                     </td>
                 </tr>
@@ -2774,19 +2873,23 @@
                 product_name: '',
                 quantity: 1,
                 unit_price: 0,
-                discount: 0
+                discount: 0,
+                id: null
             });
             
-            // فعال‌سازی جستجوی کالا برای سطر جدید
             initProductSearchForEdit($('#invoice-items-list tr:last-child .product-name'));
             
-            // افزودن رویداد برای محاسبه
             $('#invoice-items-list tr:last-child input').on('input', calculateTotals);
             
-            // فعال‌سازی نمایش مبلغ به حروف
             $('#invoice-items-list tr:last-child .unit-price').on('input', function() {
                 updatePriceWords($(this));
             });
+            
+            calculateTotals();
+            
+            setTimeout(() => {
+                $('#invoice-items-list tr:last-child .product-name').focus();
+            }, 100);
         });
         
         // حذف آیتم
@@ -2796,13 +2899,14 @@
                 $(this).closest('tr').remove();
                 editingInvoiceItems.splice(index, 1);
                 
-                // به روزرسانی index برای همه سطرها
                 $('.item-row').each(function(i) {
                     $(this).attr('data-item-index', i);
                     $(this).find('.remove-item').attr('data-index', i);
                 });
                 
                 calculateTotals();
+                
+                showMessage('کالا با موفقیت حذف شد', 'success');
             } else {
                 showMessage('حداقل یک کالا باید وجود داشته باشد', 'error');
             }
@@ -2810,7 +2914,14 @@
         
         // محاسبه هنگام تغییر مقادیر
         $(document).on('input', 'input[name="quantity[]"], input[name="unit_price[]"], input[name="discount[]"]', function() {
-            calculateTotals();
+            const totals = calculateTotals();
+            
+            const $row = $(this).closest('tr');
+            const quantity = parseInt($row.find('input[name="quantity[]"]').val()) || 0;
+            const unitPrice = parseFloat($row.find('input[name="unit_price[]"]').val()) || 0;
+            const lineTotal = quantity * unitPrice;
+            $row.find('.line-total-input').val(lineTotal);
+            updatePriceWords($row.find('.line-total-input'));
         });
         
         // به‌روزرسانی مبلغ به حروف هنگام تغییر قیمت
@@ -2819,7 +2930,7 @@
         });
         
         // =============================================
-        // توابع جدید برای مدیریت مودال و ثبت فاکتور
+        // توابع مدیریت مودال و ثبت فاکتور
         // =============================================
         
         /**
@@ -2831,31 +2942,9 @@
             $('#loadingModal').fadeIn(300);
             $('body').addClass('page-disabled');
             
-            // غیرفعال کردن دکمه ذخیره
             $('#edit-invoice-submit-btn').prop('disabled', true);
-            
-            // غیرفعال کردن سایر دکمه‌های عملیات
             $('#add-item-btn, .remove-item, #edit-invoice-back-btn').prop('disabled', true);
-            
-            // غیرفعال کردن فیلدهای ورودی
             $('input, select, textarea').prop('disabled', true);
-        }
-        
-        /**
-         * اضافه کردن مرحله به نمایش پیشرفت
-         */
-        function addProgressStage(message) {
-            const stageHtml = `
-                <div style="padding: 5px; border-right: 3px solid #4CAF50; margin: 5px 0;">
-                    <i class="fas fa-check" style="color: #4CAF50; margin-left: 5px;"></i>
-                    ${message}
-                </div>
-            `;
-            $('#loadingProgress').append(stageHtml);
-            
-            // اسکرول به پایین
-            const $progress = $('#loadingProgress');
-            $progress.scrollTop($progress[0].scrollHeight);
         }
         
         /**
@@ -2865,74 +2954,56 @@
             $('#loadingModal').fadeOut(300);
             $('body').removeClass('page-disabled');
             
-            // فعال کردن مجدد دکمه ذخیره
             $('#edit-invoice-submit-btn').prop('disabled', false);
-            
-            // فعال کردن مجدد سایر دکمه‌ها
             $('#add-item-btn, .remove-item, #edit-invoice-back-btn').prop('disabled', false);
-            
-            // فعال کردن مجدد فیلدهای ورودی
             $('input, select, textarea').prop('disabled', false);
         }
         
         /**
-         * نمایش موفقیت و بازگشت به صفحه اصلی
+         * نمایش موفقیت و بازگشت
          */
-        function showSuccessAndRedirect(changes) {
-            // نمایش تغییرات اعمال شده
-            if (changes && changes.length > 0) {
-                $('#loadingMessage').html(`
-                    <div style="text-align: right;">
-                        <strong>تغییرات با موفقیت اعمال شد:</strong>
-                        <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                            ${changes.map(change => `<div style="margin: 3px 0; color: #333;">${change}</div>`).join('')}
-                        </div>
-                    </div>
-                `);
-            }
-            
+        function showSuccessAndRedirect() {
+            $('#loadingMessage').text('تغییرات با موفقیت ذخیره شد!');
             $('.loading-spinner i')
                 .removeClass('fa-spinner fa-spin')
                 .addClass('fa-check-circle')
                 .css('color', '#4CAF50');
             
-            // پس از 3 ثانیه مودال را ببند و به صفحه اصلی برو
+            $('#loadingProgress').html('<i class="fas fa-check-circle"></i> تمام عملیات با موفقیت انجام شد.');
+            
             setTimeout(() => {
                 hideLoadingModal();
                 
-                // نمایش پیام موفقیت
-                showMessage('تغییرات با موفقیت ذخیره شد و در حال بازگشت به صفحه اصلی...', 'success');
+                showMessage('تغییرات با موفقیت ذخیره شد. در حال بارگذاری مجدد صفحه...', 'success');
                 
-                // بازگشت به صفحه اصلی پس از 2 ثانیه
                 setTimeout(() => {
-                    window.location.href = "{% url 'home' %}";
+                    location.reload();
                 }, 2000);
                 
-            }, 3000);
+            }, 2000);
         }
         
         /**
          * نمایش خطا
          */
         function showErrorAndReset(message) {
-            // تغییر پیام مودال به خطا
             $('#loadingMessage').text('خطا در ذخیره تغییرات');
             $('.loading-spinner i')
                 .removeClass('fa-spinner fa-spin')
                 .addClass('fa-times-circle')
                 .css('color', '#F44336');
             
-            // پس از 2 ثانیه مودال را ببند
+            $('#loadingProgress').html(`<i class="fas fa-times-circle"></i> ${message}`);
+            
             setTimeout(() => {
                 hideLoadingModal();
                 showMessage(message, 'error');
-                isSubmitting = false; // فعال کردن مجدد امکان ثبت
+                isSubmitting = false;
             }, 2000);
         }
         
         // ثبت تغییرات
         $('#edit-invoice-submit-btn').click(function() {
-            // اگر در حال ثبت هستیم، از ثبت مجدد جلوگیری کن
             if (isSubmitting) {
                 showMessage('در حال ذخیره تغییرات هستید، لطفاً منتظر بمانید', 'warning');
                 return;
@@ -2942,14 +3013,6 @@
                 showMessage('لطفاً ابتدا یک فاکتور انتخاب کنید', 'error');
                 return;
             }
-            
-            // تایید کاربر قبل از انجام تغییرات
-            if (!confirm('آیا از ذخیره تغییرات اطمینان دارید؟ تغییرات ممکن است بر روی قیمت‌گذاری و موجودی کالاها تأثیر بگذارد.')) {
-                return;
-            }
-            
-            // علامت‌گذاری که در حال ثبت هستیم
-            isSubmitting = true;
             
             // جمع‌آوری داده‌های فرم
             const formData = {
@@ -2966,8 +3029,8 @@
                 const productName = $(this).find('input[name="product_name[]"]').val().trim();
                 const quantity = $(this).find('input[name="quantity[]"]').val();
                 const unitPrice = $(this).find('input[name="unit_price[]"]').val();
-                const discount = $(this).find('input[name="discount[]"]').val() || 0;
-                const itemId = $(this).find('input[name="item_id[]"]').val() || null;
+                const discount = $(this).find('input[name="discount[]"]').val();
+                const itemId = $(this).find('input[name="item_id[]"]').val();
                 
                 if (!productName) {
                     isValid = false;
@@ -2988,23 +3051,50 @@
                 }
                 
                 formData.items.push({
-                    id: itemId,
+                    id: itemId || '',
                     product_name: productName,
-                    quantity: parseInt(quantity),
-                    unit_price: parseFloat(unitPrice),
-                    discount: parseFloat(discount)
+                    quantity: quantity,
+                    unit_price: unitPrice,
+                    discount: discount || 0
                 });
             });
             
             if (!isValid) {
-                isSubmitting = false; // آزاد کردن قفل
+                isSubmitting = false;
                 showMessage(validationError, 'error');
                 return;
             }
             
+            // نمایش تاییدیه
+            const confirmationMessage = 
+                'آیا از ذخیره تغییرات اطمینان دارید؟\n\n' +
+                'توجه: این تغییرات ممکن است بر موارد زیر تأثیر بگذارد:\n' +
+                '• قیمت‌گذاری کالاها\n' +
+                '• موجودی انبار\n' +
+                '• قیمت فروش کالاها';
+            
+            if (!confirm(confirmationMessage)) {
+                return;
+            }
+            
+            // علامت‌گذاری که در حال ثبت هستیم
+            isSubmitting = true;
+            
             // نمایش مودال انتظار
-            showLoadingModal('در حال ذخیره تغییرات فاکتور...');
-            addProgressStage('بررسی اعتبار داده‌ها');
+            showLoadingModal('در حال ذخیره تغییرات...');
+            
+            // مرحله‌بندی عملیات
+            setTimeout(() => {
+                $('#loadingProgress').html('<i class="fas fa-sync fa-spin"></i> مرحله 1: در حال بررسی تغییرات...');
+            }, 1000);
+            
+            setTimeout(() => {
+                $('#loadingProgress').html('<i class="fas fa-sync fa-spin"></i> مرحله 2: در حال بروزرسانی اطلاعات کالاها...');
+            }, 3000);
+            
+            setTimeout(() => {
+                $('#loadingProgress').html('<i class="fas fa-sync fa-spin"></i> مرحله 3: در حال محاسبه قیمت‌های جدید...');
+            }, 5000);
             
             // ارسال درخواست به سرور
             $.ajax({
@@ -3017,15 +3107,55 @@
                 },
                 success: function(data) {
                     if (data.success) {
-                        addProgressStage('ذخیره فاکتور');
-                        addProgressStage('بررسی تغییرات نام کالاها');
-                        addProgressStage('بررسی تغییرات قیمت‌ها');
-                        addProgressStage('به‌روزرسانی ProductPricing');
-                        addProgressStage('به‌روزرسانی InventoryCount');
-                        addProgressStage('اتمام عملیات');
+                        // نمایش خلاصه تغییرات
+                        const changes = data.changes_summary;
+                        let summaryHtml = '';
                         
-                        // نمایش موفقیت و تغییرات
-                        showSuccessAndRedirect(data.changes);
+                        if (changes.name_changes_count > 0 || changes.price_changes_count > 0) {
+                            summaryHtml += '<div style="text-align: right; margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px;">';
+                            summaryHtml += '<h4 style="color: #4CAF50; margin-bottom: 10px;"><i class="fas fa-clipboard-list"></i> خلاصه تغییرات اعمال شده:</h4>';
+                            
+                            if (changes.name_changes_count > 0) {
+                                summaryHtml += '<p style="font-weight: bold; color: #2c3e50; margin-bottom: 8px;">تغییر نام کالاها:</p>';
+                                changes.name_changes.forEach(change => {
+                                    summaryHtml += `<p style="padding: 5px 10px; background: #e8f5e9; border-radius: 4px; margin-bottom: 5px;">
+                                        <i class="fas fa-arrow-left" style="color: #4CAF50;"></i> 
+                                        <span style="text-decoration: line-through; color: #666;">${change[0]}</span> 
+                                        <i class="fas fa-long-arrow-alt-right" style="color: #4CAF50;"></i> 
+                                        <strong>${change[1]}</strong>
+                                    </p>`;
+                                });
+                            }
+                            
+                            if (changes.price_changes_count > 0) {
+                                summaryHtml += '<p style="font-weight: bold; color: #2c3e50; margin-top: 15px; margin-bottom: 8px;">تغییر قیمت‌ها:</p>';
+                                changes.price_changes.forEach(change => {
+                                    summaryHtml += `<p style="padding: 5px 10px; background: #fff3e0; border-radius: 4px; margin-bottom: 5px;">
+                                        <i class="fas fa-dollar-sign" style="color: #f39c12;"></i> 
+                                        <strong>${change[0]}</strong>: 
+                                        ${Number(change[1]).toLocaleString('fa-IR')} تومان
+                                    </p>`;
+                                });
+                            }
+                            
+                            summaryHtml += '</div>';
+                            $('#loadingProgress').html(summaryHtml);
+                        } else {
+                            $('#loadingProgress').html('<i class="fas fa-check-circle" style="color: #4CAF50;"></i> هیچ تغییر خاصی در کالاها شناسایی نشد.');
+                        }
+                        
+                        // نمایش موفقیت و بازگشت
+                        setTimeout(() => {
+                            $('#loadingMessage').text('تغییرات با موفقیت ذخیره شد!');
+                            $('.loading-spinner i')
+                                .removeClass('fa-spinner fa-spin')
+                                .addClass('fa-check-circle')
+                                .css('color', '#4CAF50');
+                            
+                            setTimeout(() => {
+                                showSuccessAndRedirect();
+                            }, 3000);
+                        }, 2000);
                     } else {
                         // نمایش خطا
                         showErrorAndReset(data.error || 'خطا در ذخیره تغییرات');
@@ -3033,10 +3163,13 @@
                 },
                 error: function(xhr, status, error) {
                     console.error('Error updating invoice:', error);
-                    showErrorAndReset('خطا در ارتباط با سرور');
+                    let errorMessage = 'خطا در ارتباط با سرور';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMessage = xhr.responseJSON.error;
+                    }
+                    showErrorAndReset(errorMessage);
                 },
                 complete: function() {
-                    // در نهایت، متغیر قفل را باز کن
                     setTimeout(() => {
                         isSubmitting = false;
                     }, 1000);
@@ -3046,7 +3179,11 @@
         
         // بازگشت
         $('#edit-invoice-back-btn').click(function() {
-            if (confirm('تغییرات ذخیره نشده از بین خواهند رفت. آیا مطمئن هستید؟')) {
+            if (editingInvoice) {
+                if (confirm('تغییرات ذخیره نشده از بین خواهند رفت. آیا مطمئن هستید؟')) {
+                    window.location.href = "{% url 'home' %}";
+                }
+            } else {
                 window.location.href = "{% url 'home' %}";
             }
         });
@@ -3057,12 +3194,30 @@
                 $('#edit-invoice-search-results').hide();
             }
             
-            // مخفی کردن نتایج جستجوی کالا
             $('.product-search-results').each(function() {
                 if (!$(this).is(e.target) && $(this).has(e.target).length === 0) {
                     $(this).hide();
                 }
             });
+        });
+        
+        // کلیدهای میانبر
+        $(document).on('keydown', function(e) {
+            // Ctrl + Enter برای ذخیره
+            if (e.ctrlKey && e.key === 'Enter') {
+                if ($('#edit-invoice-submit-btn').is(':visible') && !$('#edit-invoice-submit-btn').is(':disabled')) {
+                    e.preventDefault();
+                    $('#edit-invoice-submit-btn').click();
+                }
+            }
+            
+            // Escape برای بازگشت
+            if (e.key === 'Escape') {
+                if ($('#edit-invoice-back-btn').is(':visible')) {
+                    e.preventDefault();
+                    $('#edit-invoice-back-btn').click();
+                }
+            }
         });
         
         $(document).ready(function() {
@@ -3079,8 +3234,12 @@
                 }
             }
             
-            // بررسی هنگام لود و تغییر سایز صفحه
             $(window).on('load resize', checkMobileView);
+            checkMobileView();
+            
+            console.log('راهنمای میانبر:');
+            console.log('• Ctrl + Enter: ذخیره تغییرات');
+            console.log('• Escape: بازگشت به صفحه اصلی');
         });
     </script>
 </body>
