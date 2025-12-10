@@ -180,3 +180,124 @@ def get_changes(request):
 
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)})
+
+
+# اضافه کردن در sync_api/views.py سرور آنلاین
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+from cantact_app.models import Branch
+import json
+
+
+def sync_users_api(request):
+    """API برای همگام‌سازی کاربران"""
+    if request.method == 'GET':
+        try:
+            # دریافت همه کاربران فعال
+            users = User.objects.filter(is_active=True).values(
+                'id', 'username', 'email', 'first_name',
+                'last_name', 'is_active', 'is_staff',
+                'is_superuser', 'date_joined', 'last_login'
+            )
+
+            user_list = list(users)
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'لیست کاربران با موفقیت دریافت شد',
+                'users': user_list,
+                'count': len(user_list)
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در دریافت کاربران: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
+
+def sync_branches_api(request):
+    """API برای همگام‌سازی شعبه‌ها"""
+    if request.method == 'GET':
+        try:
+            # دریافت همه شعبه‌های فعال
+            branches = Branch.objects.filter(is_active=True).values(
+                'id', 'name', 'code', 'address',
+                'phone', 'manager', 'is_active',
+                'created_at', 'updated_at'
+            )
+
+            branch_list = list(branches)
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'لیست شعبه‌ها با موفقیت دریافت شد',
+                'branches': branch_list,
+                'count': len(branch_list)
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در دریافت شعبه‌ها: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
+
+
+def check_dependencies_api(request):
+    """API برای بررسی وابستگی‌های InventoryCount"""
+    if request.method == 'POST':
+        try:
+            # دریافت JSON داده‌ها
+            data = json.loads(request.body)
+
+            # دریافت لیست IDهای مورد نیاز
+            required_branch_ids = data.get('branch_ids', [])
+            required_user_ids = data.get('user_ids', [])
+
+            # بررسی وجود شعبه‌ها
+            existing_branches = Branch.objects.filter(
+                id__in=required_branch_ids,
+                is_active=True
+            ).values_list('id', flat=True)
+
+            # بررسی وجود کاربران
+            existing_users = User.objects.filter(
+                id__in=required_user_ids,
+                is_active=True
+            ).values_list('id', flat=True)
+
+            # تبدیل به لیست
+            existing_branches_list = list(existing_branches)
+            existing_users_list = list(existing_users)
+
+            # محاسبه موارد مفقود
+            missing_branches = [bid for bid in required_branch_ids if bid not in existing_branches_list]
+            missing_users = [uid for uid in required_user_ids if uid not in existing_users_list]
+
+            return JsonResponse({
+                'status': 'success',
+                'existing_branches': existing_branches_list,
+                'existing_users': existing_users_list,
+                'missing_branches': missing_branches,
+                'missing_users': missing_users,
+                'branch_status': 'complete' if not missing_branches else 'incomplete',
+                'user_status': 'complete' if not missing_users else 'incomplete',
+                'overall_status': 'complete' if not missing_branches and not missing_users else 'incomplete'
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'خطا در پردازش JSON'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در بررسی وابستگی‌ها: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'متد غیرمجاز'})
