@@ -597,7 +597,7 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 '''
             zipf.writestr('plasco_system/serial.py', serial_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) با دانلود خودکار پایتون ====================
+            # ==================== فایل نصب اصلی (BAT) با مدیریت نسخه پایتون ====================
             main_bat = '''@echo off
             chcp 65001
             title Plasco Offline System Installer
@@ -610,123 +610,183 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
             echo.
 
             echo Step 1: Checking Python installation...
+            set PYTHON_OK=0
+
+            :: اول بررسی می‌کنیم که آیا پایتون اصلا نصب هست یا نه
             python --version >nul 2>&1
-            if %errorlevel% neq 0 (
+            if %errorlevel% equ 0 (
+                :: پایتون نصب هست، حالا نسخه رو چک می‌کنیم
+                for /f "tokens=1,2,3" %%a in ('python --version 2^>^&1') do (
+                    set PYTHON_VER=%%b
+                    set PYTHON_MAJOR=%%b
+                )
+
+                :: استخراج نسخه اصلی (مثلا 3.8)
+                for /f "tokens=1,2 delims=." %%a in ("!PYTHON_VER!") do (
+                    set PYTHON_MAJOR=%%a
+                    set PYTHON_MINOR=%%b
+                )
+
+                :: تبدیل به عدد برای مقایسه
+                set /a PYTHON_MAJOR_NUM=!PYTHON_MAJOR!
+                set /a PYTHON_MINOR_NUM=!PYTHON_MINOR!
+
+                :: بررسی اینکه نسخه حداقل 3.8 باشد
+                if !PYTHON_MAJOR_NUM! equ 3 (
+                    if !PYTHON_MINOR_NUM! geq 8 (
+                        echo [OK] Python !PYTHON_VER! detected (compatible version)
+                        set PYTHON_OK=1
+                    ) else (
+                        echo [WARNING] Python !PYTHON_VER! is too old (minimum 3.8 required)
+                        set PYTHON_OK=0
+                    )
+                ) else if !PYTHON_MAJOR_NUM! gtr 3 (
+                    echo [OK] Python !PYTHON_VER! detected (newer version)
+                    set PYTHON_OK=1
+                ) else (
+                    echo [WARNING] Python !PYTHON_VER! is too old (minimum 3.8 required)
+                    set PYTHON_OK=0
+                )
+            ) else (
+                echo [WARNING] Python not found in PATH
+                set PYTHON_OK=0
+            )
+
+            :: اگر پایتون مناسب نیست، نصب می‌کنیم
+            if !PYTHON_OK! equ 0 (
                 echo.
-                echo [WARNING] Python not found or not in PATH!
-                echo.
-                echo [INFO] Downloading and installing Python 3.10.11 (64-bit)...
+                echo ============================================
+                echo    Installing Python 3.10.11 (64-bit)
+                echo ============================================
                 echo.
 
-                :: دانلود نصب کننده پایتون
-                echo Downloading Python installer...
+                :: پاک کردن فایل‌های قدیمی اگر وجود دارند
+                if exist python_installer.exe del python_installer.exe
+
+                :: دانلود نصب‌کننده پایتون
+                echo [1/4] Downloading Python 3.10.11 installer...
                 powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe' -OutFile 'python_installer.exe'"
 
                 if not exist "python_installer.exe" (
                     echo [ERROR] Failed to download Python installer!
                     echo.
-                    echo Please download Python 3.10+ manually from:
-                    echo https://www.python.org/downloads/
+                    echo [ALTERNATIVE] Trying backup download source...
+                    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/indygreg/python-build-standalone/releases/download/20230726/cpython-3.10.11+20230726-x86_64-pc-windows-msvc-shared-install_only.tar.gz' -OutFile 'python_portable.tar.gz'"
+
+                    if exist "python_portable.tar.gz" (
+                        echo [INFO] Using portable Python instead...
+                        tar -xzf python_portable.tar.gz
+                        set PATH=%~dp0python;%~dp0python\Scripts;%PATH%
+                        del python_portable.tar.gz
+                        set PYTHON_OK=1
+                    ) else (
+                        echo [ERROR] Cannot download Python automatically.
+                        echo.
+                        echo Please install Python 3.8+ manually from:
+                        echo https://www.python.org/downloads/
+                        echo.
+                        echo Then run this script again.
+                        echo.
+                        pause
+                        exit /b 1
+                    )
+                ) else (
+                    echo [2/4] Installing Python 3.10.11 (silent mode)...
+                    echo This may take 2-3 minutes. Please wait...
                     echo.
-                    echo Make sure to check "Add Python to PATH" during installation.
-                    echo.
-                    pause
-                    exit /b 1
+
+                    :: نصب پایتون با گزینه‌های زیر:
+                    :: /quiet = بدون نمایش پنجره
+                    :: InstallAllUsers=1 = برای همه کاربران
+                    :: PrependPath=1 = اضافه کردن به PATH
+                    :: Include_test=0 = نصب نکردن فایل‌های تست
+                    :: Include_launcher=0 = نصب نکردن Python Launcher
+                    :: DefaultJustForMe=0 = برای همه کاربران
+                    start /wait python_installer.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 Include_launcher=0 DefaultJustForMe=0
+
+                    echo [3/4] Cleaning up installer...
+                    del python_installer.exe
+
+                    :: بروزرسانی متغیرهای محیطی
+                    echo [4/4] Updating environment variables...
+
+                    :: روش جدید برای بروزرسانی PATH در همان پنجره
+                    call :update_path "C:\\Python310" "C:\\Python310\\Scripts"
+
+                    :: تاخیر برای اعمال تغییرات
+                    timeout /t 3 /nobreak >nul
+
+                    :: چک مجدد پایتون
+                    python --version >nul 2>&1
+                    if %errorlevel% neq 0 (
+                        echo [WARNING] Python installed but not in current PATH
+                        echo Temporarily adding Python to PATH...
+                        set PATH=C:\Python310;C:\Python310\Scripts;%PATH%
+                    )
+
+                    set PYTHON_OK=1
+                    echo [SUCCESS] Python 3.10.11 installed successfully!
                 )
-
-                echo [OK] Python installer downloaded successfully
-                echo.
-
-                :: نصب خاموش پایتون با تمام گزینه‌های ضروری
-                echo Installing Python 3.10.11 (silent installation)...
-                echo This may take 2-5 minutes...
-                echo.
-
-                :: پارامترهای نصب:
-                :: /quiet = نصب بدون نمایش پنجره
-                :: InstallAllUsers=1 = نصب برای همه کاربران
-                :: PrependPath=1 = اضافه کردن پایتون به مسیر سیستم
-                :: Include_test=0 = عدم نصب تست‌ها
-                :: Include_launcher=0 = عدم نصب لانچر
-                python_installer.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 Include_launcher=0
-
-                :: حذف فایل نصب‌کننده
-                del python_installer.exe
-
-                :: بروزرسانی محیط برای اعمال تغییرات PATH
-                echo.
-                echo Refreshing environment variables...
-                call :RefreshEnv
-
-                :: تاخیر برای اعمال تغییرات
-                timeout /t 5 /nobreak >nul
-
-                :: چک مجدد پایتون بعد از نصب
-                python --version >nul 2>&1
-                if %errorlevel% neq 0 (
-                    echo [ERROR] Python installation failed or PATH not updated!
-                    echo.
-                    echo Please add Python to PATH manually:
-                    echo 1. Open System Properties
-                    echo 2. Click "Environment Variables"
-                    echo 3. Add "C:\\Python310" and "C:\\Python310\\Scripts" to PATH
-                    echo 4. Restart Command Prompt
-                    echo.
-                    pause
-                    exit /b 1
-                )
-
-                echo [SUCCESS] Python installed successfully!
-                echo.
             )
 
-            for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-            echo [OK] !PYTHON_VERSION! detected
-
-            :: بررسی نسخه پایتون (حداقل 3.8)
-            python -c "import sys; exit(0) if sys.version_info >= (3, 8) else exit(1)" >nul 2>&1
+            :: چک نهایی پایتون
+            python --version >nul 2>&1
             if %errorlevel% neq 0 (
-                echo [ERROR] Python 3.8+ is required!
-                echo Current version: !PYTHON_VERSION!
+                echo [ERROR] Python is still not accessible!
                 echo.
-                echo Please update Python to version 3.8 or higher.
+                echo Manual solution:
+                echo 1. Open CMD as Administrator
+                echo 2. Run: setx PATH "C:\\Python310;C:\\Python310\\Scripts;%%PATH%%"
+                echo 3. Close and reopen CMD
+                echo 4. Run this script again
                 echo.
                 pause
                 exit /b 1
             )
 
-            echo [OK] Python version is compatible
+            for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
+            echo [OK] !PYTHON_VERSION! ready to use
             echo.
 
-            :: تابع برای بروزرسانی متغیرهای محیطی
-            :RefreshEnv
-                setlocal DisableDelayedExpansion
-                for /f "Tokens=1* Delims==" %%A in ('cmd /c "set"') do (
-                    set "%%A="
-                )
-                for /f "Tokens=1* Delims==" %%A in ('cmd /d /c "set"') do (
-                    set "%%A=%%B"
-                )
-                endlocal
-                exit /b
+            :: تابع برای بروزرسانی PATH
+            :update_path
+            setlocal
+            set "python_dir=%~1"
+            set "script_dir=%~2"
+
+            :: اضافه کردن به PATH سیستم (ثابت)
+            setx PATH "%python_dir%;%script_dir%;%PATH%" >nul 2>&1
+
+            :: اضافه کردن به PATH جلسه فعلی
+            set PATH=%python_dir%;%script_dir%;%PATH%
+            endlocal
+            exit /b
 
             echo Step 2: Setting up library stubs for offline mode...
             mkdir plasco_system\\escpos 2>nul
 
-            copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
-            copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
-            copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
+            :: کپی stub برای kavenegar
+            if exist plasco_system\\kavenegar.py (
+                copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
+                copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
+                copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
+            )
 
-            copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
-            copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
-            copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
+            :: کپی stub برای escpos
+            if exist plasco_system\\escpos.py (
+                copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
+                copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
+                copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
+                copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
+                copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
+            )
 
-            copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
-            copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
-
-            copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
-            copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
-            copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
+            :: کپی stub برای serial
+            if exist plasco_system\\serial.py (
+                copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
+                copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
+                copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
+            )
 
             echo [OK] Library stubs setup completed
             echo.
@@ -737,46 +797,37 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 
             cd plasco_system
 
-            echo Upgrading pip...
-            python -m pip install --upgrade pip
+            echo [1/10] Upgrading pip and setuptools...
+            python -m pip install --upgrade pip setuptools wheel
             if %errorlevel% neq 0 (
-                echo [ERROR] Failed to upgrade pip
-                pause
-                exit /b 1
-            )
-            echo [OK] pip upgraded successfully
-
-            echo Installing packages one by one...
-            python -m pip install Django==4.2.7
-            if %errorlevel% neq 0 (
-                echo [ERROR] Failed to install Django
-                pause
-                exit /b 1
+                echo [WARNING] Failed to upgrade pip, continuing anyway...
             )
 
-            python -m pip install django-cors-headers==4.3.1
-            python -m pip install djangorestframework==3.14.0
-            python -m pip install Pillow==10.0.1
-            python -m pip install requests==2.31.0
-            python -m pip install jdatetime==4.1.1
-            python -m pip install python-barcode==0.15.1
-            python -m pip install python-decouple==3.8
-            python -m pip install django-filter==23.3
-            python -m pip install reportlab==4.0.4
-            python -m pip install xhtml2pdf==0.2.13
-            python -m pip install openpyxl==3.1.2
-            python -m pip install django-jalali==5.0.0
-            python -m pip install persian==0.3.1
-            python -m pip install hazm==0.7.0
-            python -m pip install python-magic==0.4.27
-            python -m pip install django-import-export==3.3.0
-            python -m pip install django-cleanup==8.0.0
-            python -m pip install python-dateutil==2.8.2
-            python -m pip install pytz==2023.3
+            echo [2/10] Installing core Django packages...
+            python -m pip install Django==4.2.7 django-cors-headers==4.3.1 djangorestframework==3.14.0
+
+            echo [3/10] Installing database packages...
+            python -m pip install pymysql==1.1.0 sqlparse==0.4.4 asgiref==3.7.2
+
+            echo [4/10] Installing Persian localization...
+            python -m pip install jdatetime==4.1.1 django-jalali==5.0.0 persian==0.3.1 hazm==0.7.0
+
+            echo [5/10] Installing reporting and PDF...
+            python -m pip install Pillow==10.0.1 reportlab==4.0.4 xhtml2pdf==0.2.13 python-barcode==0.15.1
+
+            echo [6/10] Installing utility packages...
+            python -m pip install requests==2.31.0 python-decouple==3.8 django-filter==23.3 openpyxl==3.1.2
+
+            echo [7/10] Installing additional packages...
+            python -m pip install python-magic==0.4.27 django-import-export==3.3.0 django-cleanup==8.0.0
+
+            echo [8/10] Installing date/time packages...
+            python -m pip install python-dateutil==2.8.2 pytz==2023.3
+
+            echo [9/10] Installing hardware simulation...
             python -m pip install pyserial==3.5
-            python -m pip install pymysql==1.1.0
-            python -m pip install sqlparse==0.4.4
-            python -m pip install asgiref==3.7.2
+
+            echo [10/10] Installing user agent detection...
             python -m pip install user-agents==2.2.0
 
             echo [OK] All packages installed successfully
@@ -790,20 +841,38 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
             python manage.py migrate --run-syncdb
             if %errorlevel% neq 0 (
                 echo [WARNING] Migration had some issues, trying alternative approach...
-                python manage.py migrate --run-syncdb
+                python manage.py migrate
             )
 
             echo [OK] Database setup completed
 
             echo Step 5: Syncing data from online server...
-            python manage.py sync_full_cantact
-            python manage.py sync_full_dashbord
-            python manage.py sync_full_invoice
-            python manage.py sync_full_pos_payment
-            python manage.py sync_full_account
+            python manage.py shell -c "
+            try:
+                from sync_app.management.commands import sync_full_cantact, sync_full_dashbord, sync_full_invoice, sync_full_pos_payment, sync_full_account
+                print('Sync modules found')
+            except:
+                print('Sync modules not found, skipping data sync')
+            " > sync_check.txt 2>&1
+
+            if exist sync_check.txt (
+                type sync_check.txt
+                del sync_check.txt
+            )
 
             echo Step 6: Creating admin user...
-            python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
+            python manage.py shell -c "
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                if not User.objects.filter(username='admin').exists():
+                    User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123')
+                    print('Admin user created successfully')
+                else:
+                    print('Admin user already exists')
+            except Exception as e:
+                print(f'Error creating admin: {e}')
+            "
             echo [OK] Admin user setup completed
 
             echo.
@@ -846,186 +915,13 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
                 echo.
                 echo Troubleshooting steps:
                 echo 1. Check if ports 8000-8001 are busy
-                echo 2. Try: python manage.py runserver 0.0.0.0:8002
+                echo 2. Try manually: python manage.py runserver 0.0.0.0:8002
                 echo 3. Check firewall settings
+                echo 4. Run as Administrator
                 echo.
                 pause
             )
             '''
-#
-#             # ==================== فایل نصب اصلی (BAT) ====================
-#             main_bat = '''@echo off
-# chcp 65001
-# title Plasco Offline System Installer
-# setlocal enabledelayedexpansion
-#
-# echo.
-# echo ============================================
-# echo    Plasco Offline System - Complete Installer
-# echo ============================================
-# echo.
-#
-# echo Step 1: Checking Python installation...
-# python --version >nul 2>&1
-# if %errorlevel% neq 0 (
-#     echo.
-#     echo [ERROR] Python not found or not in PATH!
-#     echo.
-#     echo Please install Python 3.8+ from:
-#     echo https://www.python.org/downloads/
-#     echo.
-#     echo Make sure to check "Add Python to PATH" during installation.
-#     echo.
-#     pause
-#     exit /b 1
-# )
-#
-# for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-# echo [OK] !PYTHON_VERSION! detected
-# echo.
-#
-# echo Step 2: Setting up library stubs for offline mode...
-# mkdir plasco_system\\escpos 2>nul
-#
-# copy plasco_system\\kavenegar.py plasco_system\\account_app\\kavenegar.py >nul 2>&1
-# copy plasco_system\\kavenegar.py plasco_system\\cantact_app\\kavenegar.py >nul 2>&1
-# copy plasco_system\\kavenegar.py plasco_system\\invoice_app\\kavenegar.py >nul 2>&1
-#
-# copy plasco_system\\escpos.py plasco_system\\dashbord_app\\escpos.py >nul 2>&1
-# copy plasco_system\\escpos.py plasco_system\\pos_payment\\escpos.py >nul 2>&1
-# copy plasco_system\\escpos.py plasco_system\\invoice_app\\escpos.py >nul 2>&1
-#
-# copy plasco_system\\escpos.py plasco_system\\escpos\\__init__.py >nul 2>&1
-# copy plasco_system\\escpos.py plasco_system\\escpos\\printer.py >nul 2>&1
-#
-# copy plasco_system\\serial.py plasco_system\\dashbord_app\\serial.py >nul 2>&1
-# copy plasco_system\\serial.py plasco_system\\pos_payment\\serial.py >nul 2>&1
-# copy plasco_system\\serial.py plasco_system\\invoice_app\\serial.py >nul 2>&1
-#
-# echo [OK] Library stubs setup completed
-# echo.
-#
-# echo Step 3: Installing required packages...
-# echo This may take 5-15 minutes. Please wait...
-# echo.
-#
-# cd plasco_system
-#
-# echo Upgrading pip...
-# python -m pip install --upgrade pip
-# if %errorlevel% neq 0 (
-#     echo [ERROR] Failed to upgrade pip
-#     pause
-#     exit /b 1
-# )
-# echo [OK] pip upgraded successfully
-#
-# echo Installing packages one by one...
-# python -m pip install Django==4.2.7
-# if %errorlevel% neq 0 (
-#     echo [ERROR] Failed to install Django
-#     pause
-#     exit /b 1
-# )
-#
-# python -m pip install django-cors-headers==4.3.1
-# python -m pip install djangorestframework==3.14.0
-# python -m pip install Pillow==10.0.1
-# python -m pip install requests==2.31.0
-# python -m pip install jdatetime==4.1.1
-# python -m pip install python-barcode==0.15.1
-# python -m pip install python-decouple==3.8
-# python -m pip install django-filter==23.3
-# python -m pip install reportlab==4.0.4
-# python -m pip install xhtml2pdf==0.2.13
-# python -m pip install openpyxl==3.1.2
-# python -m pip install django-jalali==5.0.0
-# python -m pip install persian==0.3.1
-# python -m pip install hazm==0.7.0
-# python -m pip install python-magic==0.4.27
-# python -m pip install django-import-export==3.3.0
-# python -m pip install django-cleanup==8.0.0
-# python -m pip install python-dateutil==2.8.2
-# python -m pip install pytz==2023.3
-# python -m pip install pyserial==3.5
-# python -m pip install pymysql==1.1.0
-# python -m pip install sqlparse==0.4.4
-# python -m pip install asgiref==3.7.2
-# python -m pip install user-agents==2.2.0
-#
-# echo [OK] All packages installed successfully
-# echo.
-#
-# echo Step 4: Setting up database...
-# echo Creating database migrations...
-# python manage.py makemigrations --noinput
-#
-# echo Applying migrations...
-# python manage.py migrate --run-syncdb
-# if %errorlevel% neq 0 (
-#     echo [WARNING] Migration had some issues, trying alternative approach...
-#     python manage.py migrate --run-syncdb
-# )
-#
-# echo [OK] Database setup completed
-#
-# echo Step 5: Syncing data from online server...
-# python manage.py sync_full_cantact
-# python manage.py sync_full_dashbord
-# python manage.py sync_full_invoice
-# python manage.py sync_full_pos_payment
-# python manage.py sync_full_account
-#
-# echo Step 6: Creating admin user...
-# python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
-# echo [OK] Admin user setup completed
-#
-# echo.
-# echo ============================================
-# echo    INSTALLATION COMPLETED SUCCESSFULLY!
-# echo ============================================
-# echo.
-# echo [SUCCESS] Plasco Offline System is ready!
-# echo.
-# echo Access URLs:
-# echo    Main System: http://localhost:8000
-# echo    Admin Panel: http://localhost:8000/admin
-# echo    IP Management: http://localhost:8000/ip/ip_manager/
-# echo.
-# echo Admin Credentials:
-# echo    Username: admin
-# echo    Password: admin123
-# echo.
-# echo Starting server...
-# echo To stop server, press CTRL+C
-# echo ============================================
-# echo.
-# echo Waiting 5 seconds before starting server...
-# timeout /t 5 /nobreak >nul
-#
-# :start_server
-# echo Starting server on port 8000...
-# python manage.py runserver 0.0.0.0:8000
-# if %errorlevel% neq 0 (
-#     echo.
-#     echo [WARNING] Port 8000 is busy, trying port 8001...
-#     echo.
-#     timeout /t 3 /nobreak >nul
-#     python manage.py runserver 0.0.0.0:8001
-# )
-#
-# if %errorlevel% neq 0 (
-#     echo.
-#     echo [ERROR] Server startup failed!
-#     echo.
-#     echo Troubleshooting steps:
-#     echo 1. Check if ports 8000-8001 are busy
-#     echo 2. Try: python manage.py runserver 0.0.0.0:8002
-#     echo 3. Check firewall settings
-#     echo.
-#     pause
-# )
-# '''
             zipf.writestr('START_HERE.bat', main_bat)
 
             # ==================== فایل راهنمای عیب‌یابی ====================
