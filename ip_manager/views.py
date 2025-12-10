@@ -174,9 +174,13 @@ def create_complete_install_package(selected_ips):
 
         logger.info(f"🔹 Creating installation package for IPs: {selected_ips}")
 
+        # ساخت رشته IPها به صورت صحیح
+        all_ips = ['192.168.1.172', '192.168.1.157', '127.0.0.1', 'localhost', '192.168.1.100', '192.168.1.101']
+        all_ips.extend(selected_ips)  # اضافه کردن IPهای انتخابی
+        ips_str = repr(all_ips)  # تبدیل به رشته Python معتبر
+
         with zipfile.ZipFile(temp_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             logger.info("📦 Creating complete installation package...")
-
             # ==================== کپی کردن کل پروژه بدون تغییر ====================
 
             # فایل manage.py
@@ -236,150 +240,180 @@ def create_complete_install_package(selected_ips):
 
             # ==================== فایل settings_offline.py سفارشی ====================
             settings_content = f'''
-"""
-Django settings for plasco project.
-برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
-"""
+        """
+        Django settings for plasco project.
+        برای اجرا روی کامپیوترهای داخلی شرکت - حالت آفلاین
+        """
 
-from pathlib import Path
-import os
+        from pathlib import Path
+        import os
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+        BASE_DIR = Path(__file__).resolve().parent.parent
 
-# حالت آفلاین
-IS_OFFLINE_MODE = True
-SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
-DEBUG = True
+        # حالت آفلاین
+        IS_OFFLINE_MODE = True
+        SECRET_KEY = 'django-insecure-9a=faq-)zl&%@!5(9t8!0r(ar)&()3l+hc#a)+-!eh$-ljkdh@'
+        DEBUG = True
 
-# لیست IPهای مجاز برای حالت آفلاین - IPهای انتخاب شده اضافه شدند
-OFFLINE_ALLOWED_IPS = ['192.168.1.172', '192.168.1.157', '127.0.0.1', 'localhost', '192.168.1.100', '192.168.1.101'] + {selected_ips}
-ALLOWED_HOSTS = OFFLINE_ALLOWED_IPS + ['plasmarket.ir', 'www.plasmarket.ir']
+        # لیست IPهای مجاز برای حالت آفلاین
+        OFFLINE_ALLOWED_IPS = {ips_str}
+        ALLOWED_HOSTS = OFFLINE_ALLOWED_IPS + ['plasmarket.ir', 'www.plasmarket.ir']
 
-print("🟢 اجرا در حالت آفلاین - ديتابيس محلي (Slave)")
+        print("🟢 اجرا در حالت آفلاین - ديتابيس محلي (Slave)")
 
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'corsheaders',
-    'account_app.apps.AccountAppConfig',
-    'dashbord_app.apps.DashbordAppConfig',
-    'cantact_app.apps.CantactAppConfig',
-    'invoice_app.apps.InvoiceAppConfig',
-    'it_app.apps.ItAppConfig',
-    'pos_payment.apps.PosPaymentConfig',
-    'sync_app',
-    'sync_api',
-    'control_panel',
-    'offline_ins',
-    'ip_manager'
-]
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # حتماً از دیتابیس استفاده کنید
-SESSION_COOKIE_NAME = 'plasco_session_id'
-SESSION_COOKIE_AGE = 3600 * 24  # 24 ساعت
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_SECURE = True  # برای HTTPS
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_SAVE_EVERY_REQUEST = True
+        INSTALLED_APPS = [
+            'django.contrib.admin',
+            'django.contrib.auth',
+            'django.contrib.contenttypes',
+            'django.contrib.sessions',
+            'django.contrib.messages',
+            'django.contrib.staticfiles',
+            'rest_framework',
+            'rest_framework.authtoken',
+            'corsheaders',
+            'account_app.apps.AccountAppConfig',
+            'dashbord_app.apps.DashbordAppConfig',
+            'cantact_app.apps.CantactAppConfig',
+            'invoice_app.apps.InvoiceAppConfig',
+            'it_app.apps.ItAppConfig',
+            'pos_payment.apps.PosPaymentConfig',
+            'sync_app',
+            'sync_api',
+            'control_panel',
+            'offline_ins',
+            'ip_manager'
+        ]
+        SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+        SESSION_COOKIE_NAME = 'plasco_session_id'
+        SESSION_COOKIE_AGE = 3600 * 24
+        SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+        SESSION_COOKIE_SECURE = True
+        SESSION_COOKIE_HTTPONLY = True
+        SESSION_COOKIE_SAMESITE = 'Lax'
+        SESSION_SAVE_EVERY_REQUEST = True
 
+        MIDDLEWARE = [
+            'corsheaders.middleware.CorsMiddleware',
+            'django.middleware.security.SecurityMiddleware',
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.middleware.common.CommonMiddleware',
+            'django.middleware.csrf.CsrfViewMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+            'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        ]
 
-MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+        ROOT_URLCONF = 'plasco.urls'
 
-ROOT_URLCONF = 'plasco.urls'
+        TEMPLATES = [
+            {{
+                'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                'DIRS': [BASE_DIR / 'templates'],
+                'APP_DIRS': True,
+                'OPTIONS': {{
+                    'context_processors': [
+                        'django.template.context_processors.request',
+                        'django.contrib.auth.context_processors.auth',
+                        'django.contrib.messages.context_processors.messages',
+                    ],
+                }},
+            }},
+        ]
 
-TEMPLATES = [
-    {{
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {{
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        }},
-    }},
-]
+        WSGI_APPLICATION = 'plasco.wsgi.application'
 
-WSGI_APPLICATION = 'plasco.wsgi.application'
+        # دیتابیس SQLite برای حالت آفلاین
+        DATABASES = {{
+            'default': {{
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db_offline.sqlite3',
+            }}
+        }}
 
-# دیتابیس SQLite برای حالت آفلاین
-DATABASES = {{
-    'default': {{
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db_offline.sqlite3',
-    }}
-}}
+        AUTH_PASSWORD_VALIDATORS = [
+            {{
+                'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+            }},
+            {{
+                'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+            }},
+            {{
+                'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+            }},
+            {{
+                'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+            }},
+        ]
 
-AUTH_PASSWORD_VALIDATORS = [
-    {{
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    }},
-    {{
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    }},
-    {{
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    }},
-    {{
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    }},
-]
+        LANGUAGE_CODE = 'fa-ir'
+        TIME_ZONE = 'Asia/Tehran'
+        USE_I18N = True
+        USE_TZ = True
 
-LANGUAGE_CODE = 'fa-ir'
-TIME_ZONE = 'Asia/Tehran'
-USE_I18N = True
-USE_TZ = True
+        STATIC_URL = '/static/'
+        MEDIA_URL = '/media/'
+        STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+        STATIC_ROOT = '/static/'
+        MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT = '/static/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+        DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+        # تنظیمات همگام‌سازی
+        SYNC_INTERVAL = 60
+        ONLINE_SERVER_URL = "https://plasmarket.ir"
+        OFFLINE_MODE = True
+        ALLOWED_OFFLINE_IPS = OFFLINE_ALLOWED_IPS
 
-# تنظیمات همگام‌سازی
-SYNC_INTERVAL = 60
-ONLINE_SERVER_URL = "https://plasmarket.ir"
-OFFLINE_MODE = True
-ALLOWED_OFFLINE_IPS = OFFLINE_ALLOWED_IPS
+        # ⚠️ اضافه کردن این خط جدید برای غیرفعال کردن سرویس خودکار
+        SYNC_AUTO_START = True
 
-# ⚠️ اضافه کردن این خط جدید برای غیرفعال کردن سرویس خودکار
-SYNC_AUTO_START = True  # غیرفعال کردن سرویس سینک خودکار
-
-# غیرفعال کردن چک‌های امنیتی برای نصب آسان
-SILENCED_SYSTEM_CHECKS = [
-    'security.W001',
-    'security.W002',
-    'security.W004',
-    'security.W008',
-    'security.W009',
-    'security.W019',
-    'security.W020',
-    'urls.W005',
-]
-'''
+        # غیرفعال کردن چک‌های امنیتی برای نصب آسان
+        SILENCED_SYSTEM_CHECKS = [
+            'security.W001',
+            'security.W002',
+            'security.W004',
+            'security.W008',
+            'security.W009',
+            'security.W019',
+            'security.W020',
+            'urls.W005',
+        ]
+        '''
             zipf.writestr('plasco_system/plasco/settings_offline.py', settings_content.strip())
-
+# --------------------------------------------------------------------------------------------------------------------
             # فایل settings.py اصلی که از آفلاین ایمپورت می‌کند
             zipf.writestr('plasco_system/plasco/settings.py', 'from .settings_offline import *\n')
+# -------------------------------------------------------------------------------------------------------------------------
+            # ==================== فایل requirements با jalali-date ====================
+            requirements_content = '''# Plasco Offline System - Python 3.8+ Compatible
+            Django==5.2.4
+            django-cors-headers==4.8.0
+            djangorestframework==3.16.1
+            Pillow==11.3.0
+            requests==2.32.5
+            jdatetime==5.2.0
+            python-barcode==0.15.1
+            django-filter==23.3
+            reportlab==4.4.3
+            xhtml2pdf==0.2.13
+            openpyxl==3.1.2
+            django-jalali==6.0.1
+            jalali-date==1.0.1  # اضافه کردن پکیج مفقوده
+            persian==0.3.1
+            hazm==0.7.0
+            python-magic==0.4.27
+            django-import-export==3.3.0
+            django-cleanup==8.1.0
+            python-dateutil==2.8.2
+            pytz==2025.2
+            pyserial==3.5
+            pymysql==1.1.1
+            sqlparse==0.5.3
+            asgiref==3.9.1
+            user-agents==2.2.0
+            '''
+            zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
+
 
             # ==================== فایل requirements با user-agents ====================
             requirements_content = '''# Plasco Offline System - Python 3.8+ Compatible
@@ -455,7 +489,6 @@ user-agents==2.2.0  # برای middleware
             __all__ = ['get_jalali_date', 'get_jalali_datetime', 'format_jalali']
             '''
             zipf.writestr('plasco_system/jalali_date.py', jalali_date_stub_content)
-
             # ماژول جایگزین kavenegar
             kavenegar_stub_content = '''
 """
@@ -640,7 +673,7 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
 '''
             zipf.writestr('plasco_system/serial.py', serial_stub_content)
 
-            # ==================== فایل نصب اصلی (BAT) ====================
+            # ==================== فایل نصب اصلی (BAT) - اصلاح شده ====================
             main_bat = '''@echo off
             chcp 65001
             title Plasco Offline System Installer
@@ -708,36 +741,36 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
             echo [OK] pip upgraded successfully
 
             echo Installing packages one by one...
-            python -m pip install Django==4.2.7
+            python -m pip install Django==5.2.4
             if %errorlevel% neq 0 (
                 echo [ERROR] Failed to install Django
                 pause
                 exit /b 1
             )
 
-            python -m pip install django-cors-headers==4.3.1
-            python -m pip install djangorestframework==3.14.0
-            python -m pip install Pillow==10.0.1
-            python -m pip install requests==2.31.0
-            python -m pip install jdatetime==4.1.1
+            python -m pip install django-cors-headers==4.8.0
+            python -m pip install djangorestframework==3.16.1
+            python -m pip install Pillow==11.3.0
+            python -m pip install requests==2.32.5
+            python -m pip install jdatetime==5.2.0
             python -m pip install python-barcode==0.15.1
-            python -m pip install python-decouple==3.8
             python -m pip install django-filter==23.3
-            python -m pip install reportlab==4.0.4
+            python -m pip install reportlab==4.4.3
             python -m pip install xhtml2pdf==0.2.13
             python -m pip install openpyxl==3.1.2
-            python -m pip install django-jalali==5.0.0
+            python -m pip install django-jalali==6.0.1
+            python -m pip install jalali-date==1.0.1  # نصب پکیج مفقوده
             python -m pip install persian==0.3.1
             python -m pip install hazm==0.7.0
             python -m pip install python-magic==0.4.27
             python -m pip install django-import-export==3.3.0
-            python -m pip install django-cleanup==8.0.0
+            python -m pip install django-cleanup==8.1.0
             python -m pip install python-dateutil==2.8.2
-            python -m pip install pytz==2023.3
+            python -m pip install pytz==2025.2
             python -m pip install pyserial==3.5
-            python -m pip install pymysql==1.1.0
-            python -m pip install sqlparse==0.4.4
-            python -m pip install asgiref==3.7.2
+            python -m pip install pymysql==1.1.1
+            python -m pip install sqlparse==0.5.3
+            python -m pip install asgiref==3.9.1
             python -m pip install user-agents==2.2.0
 
             echo [OK] All packages installed successfully
@@ -759,57 +792,6 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
             echo Step 5: Creating admin user...
             python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@plasco.com', 'admin123') if not User.objects.filter(username='admin').exists() else print('Admin user already exists')"
             echo [OK] Admin user setup completed
-
-            echo.
-            echo ============================================
-            echo    همگام‌سازی داده‌ها (ترتیبی و بدون پیش‌فرض)
-            echo ============================================
-            echo.
-            echo Step 6: Sequential data synchronization...
-            echo مرحله ۱: همگام‌سازی کاربران و شعبه‌ها...
-            python manage.py sync_full_cantact
-            if %errorlevel% neq 0 (
-                echo [WARNING] sync_full_cantact had issues, but continuing...
-            )
-
-            echo مرحله ۲: همگام‌سازی محصولات و انبار...
-            python manage.py sync_full_account
-            if %errorlevel% neq 0 (
-                echo [WARNING] sync_full_account had issues, but continuing...
-            )
-
-            echo مرحله ۳: همگام‌سازی داشبورد...
-            python manage.py sync_full_dashbord
-            if %errorlevel% neq 0 (
-                echo [WARNING] sync_full_dashbord had issues, but continuing...
-            )
-
-            echo مرحله ۴: همگام‌سازی فاکتورها...
-            python manage.py sync_full_invoice
-            if %errorlevel% neq 0 (
-                echo [WARNING] sync_full_invoice had issues, but continuing...
-            )
-
-            echo مرحله ۵: همگام‌سازی پرداخت‌ها...
-            python manage.py sync_full_pos_payment
-            if %errorlevel% neq 0 (
-                echo [WARNING] sync_full_pos_payment had issues, but continuing...
-            )
-
-            echo.
-            echo ============================================
-            echo    همگام‌سازی ترتیبی کامل انجام شد!
-            echo ============================================
-            echo.
-
-            echo Step 7: Alternative method - Using sequential sync command...
-            echo.
-            echo اگر مرحله قبل با خطا مواجه شد، از دستور ترتیبی استفاده کنید:
-            echo python manage.py sync_sequential
-            echo.
-            echo یا برای اجرای اجباری:
-            echo python manage.py sync_sequential --force
-            echo.
 
             echo.
             echo ============================================
@@ -858,7 +840,6 @@ __all__ = ['Serial', 'serial_for_url', 'list_ports', 'SerialException',
             )
             '''
             zipf.writestr('START_HERE.bat', main_bat)
-
             # ==================== فایل راهنمای عیب‌یابی ====================
             troubleshooting_content = f'''
 Plasco Offline System - Troubleshooting Guide
