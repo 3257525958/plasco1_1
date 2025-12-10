@@ -408,6 +408,7 @@ pymysql==1.1.0
 sqlparse==0.4.4
 asgiref==3.7.2
 user-agents==2.2.0  # برای middleware
+jalali-date==1.2.0  # اضافه شده برای رفع ارور
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
