@@ -407,8 +407,8 @@ pyserial==3.5
 pymysql==1.1.0
 sqlparse==0.4.4
 asgiref==3.7.2
-user-agents==2.2.0  # برای middleware
-jalali-date==1.2.0  # اضافه شده برای رفع ارور
+user-agents==2.2.0  
+jalali-date==1.2.0  
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
@@ -719,6 +719,7 @@ python manage.py sync_full_cantact
 python manage.py sync_full_dashbord
 python manage.py sync_full_invoice
 python manage.py sync_full_pos_payment
+python manage.py transfer_all_data
 python manage.py sync_full_account
 
 echo Step 6: Creating admin user...
