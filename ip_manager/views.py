@@ -411,10 +411,55 @@ pymysql==1.1.0
 sqlparse==0.4.4
 asgiref==3.7.2
 user-agents==2.2.0
+jalali-date==1.0.1  
+jalali_date==1.0.0  
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
             # ==================== فایل‌های جایگزین ====================
+            # ماژول جایگزین jalali_date
+            jalali_date_stub = '''
+"""
+ماژول جایگزین jalali_date برای حالت آفلاین
+"""
+
+from datetime import datetime
+import jdatetime
+
+def get_jalali_date(date_obj=None):
+    """تبدیل تاریخ میلادی به جلالی"""
+    if date_obj is None:
+        date_obj = datetime.now()
+
+    jalali_date = jdatetime.date.fromgregorian(
+        year=date_obj.year,
+        month=date_obj.month,
+        day=date_obj.day
+    )
+    return jalali_date
+
+def get_jalali_datetime(datetime_obj=None):
+    """تبدیل تاریخ و زمان میلادی به جلالی"""
+    if datetime_obj is None:
+        datetime_obj = datetime.now()
+
+    jalali_datetime = jdatetime.datetime.fromgregorian(
+        year=datetime_obj.year,
+        month=datetime_obj.month,
+        day=datetime_obj.day,
+        hour=datetime_obj.hour,
+        minute=datetime_obj.minute,
+        second=datetime_obj.second
+    )
+    return jalali_datetime
+
+def format_jalali(date_obj, format_str="%Y/%m/%d"):
+    """فرمت‌دهی تاریخ جلالی"""
+    return date_obj.strftime(format_str)
+
+__all__ = ['get_jalali_date', 'get_jalali_datetime', 'format_jalali']
+'''
+            zipf.writestr('plasco_system/jalali_date.py', jalali_date_stub)
 
             # ماژول جایگزین kavenegar
             kavenegar_stub_content = '''"""
