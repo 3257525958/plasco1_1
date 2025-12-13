@@ -409,17 +409,10 @@ sqlparse==0.4.4
 asgiref==3.7.2
 user-agents==2.2.0  
 jalali-date==1.2.0  
-django-jalali==6.0.1
-jalali-date==1.0.1
-jalali_date==1.0.0 
 '''
             zipf.writestr('plasco_system/requirements_offline.txt', requirements_content)
 
             # ==================== فایل‌های جایگزین برای کتابخانه‌های مشکل‌ساز ====================
-            # در create_complete_install_package
-            jalali_stub = "print('jalali_date module loaded in offline mode')"
-
-            zipf.writestr('plasco_system/jalali_date.py', jalali_stub)
 
             # ماژول جایگزین kavenegar
             kavenegar_stub_content = '''
