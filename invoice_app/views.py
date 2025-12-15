@@ -3043,606 +3043,606 @@ def filter_invoices(request):
 # from datetime import datetime as datetime_module  # 🔴 تغییر نام برای جلوگیری از conflict
 # from datetime import timedelta
 # import json
-#
-# @login_required
-# def return_goods_main(request):
-#     """صفحه اصلی مرجوع کالا"""
-#     branches = Branch.objects.all()
-#     today = datetime_module.now().date()
-#     today_jalali = jdatetime.fromgregorian(date=today).strftime('%Y/%m/%d')
-#
-#     return render(request, 'invoice_app/return_goods.html', {
-#         'branches': branches,
-#         'today_jalali': today_jalali,
-#     })
-#
-#
-# @login_required
-# @csrf_exempt
-# def get_invoices_by_date(request):
-#     """دریافت فاکتورهای یک تاریخ خاص - نسخه ساده"""
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             date_str = data.get('date', '').strip()
-#             branch_id = data.get('branch_id', 'all')
-#
-#             print(f"🔍 دریافت فاکتورها برای تاریخ: {date_str}")
-#
-#             if not date_str:
-#                 return JsonResponse({
-#                     'status': 'error',
-#                     'message': 'تاریخ الزامی است'
-#                 })
-#
-#             # فیلترهای پایه
-#             invoices = Invoicefrosh.objects.select_related('branch')
-#
-#             # فیلتر بر اساس تاریخ
-#             try:
-#                 date_parts = date_str.split('/')
-#                 if len(date_parts) == 3:
-#                     year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
-#
-#                     # تبدیل تاریخ شمسی به میلادی
-#                     jalali_date = jdatetime.date(year, month, day)
-#                     gregorian_date = jalali_date.togregorian()
-#
-#                     # ایجاد رنج تاریخ
-#                     start_date = dt.combine(gregorian_date, dt.min.time())
-#                     end_date = dt.combine(gregorian_date, dt.max.time())
-#
-#                     # تبدیل به timezone aware
-#                     start_date_tz = timezone.make_aware(start_date)
-#                     end_date_tz = timezone.make_aware(end_date)
-#
-#                     print(f"📅 فیلتر تاریخ: {date_str} -> {gregorian_date}")
-#
-#                     invoices = invoices.filter(
-#                         created_at__gte=start_date_tz,
-#                         created_at__lte=end_date_tz
-#                     )
-#                 else:
-#                     return JsonResponse({
-#                         'status': 'error',
-#                         'message': 'فرمت تاریخ نامعتبر. باید YYYY/MM/DD باشد'
-#                     })
-#             except Exception as e:
-#                 print(f"❌ خطا در تبدیل تاریخ: {e}")
-#                 return JsonResponse({
-#                     'status': 'error',
-#                     'message': f'خطا در پردازش تاریخ: {str(e)}'
-#                 })
-#
-#             # فیلتر بر اساس شعبه
-#             if branch_id and branch_id != 'all':
-#                 invoices = invoices.filter(branch_id=branch_id)
-#
-#             # مرتب‌سازی
-#             invoices = invoices.order_by('-created_at')
-#
-#             print(f"✅ تعداد فاکتورهای یافت شده: {invoices.count()}")
-#
-#             # آماده‌سازی داده‌ها
-#             invoices_data = []
-#             for invoice in invoices:
-#                 item_count = invoice.items.count()
-#
-#                 invoices_data.append({
-#                     'id': invoice.id,
-#                     'serial_number': invoice.serial_number or f'FAK-{invoice.id}',
-#                     'branch_name': invoice.branch.name if invoice.branch else 'نامشخص',
-#                     'branch_id': invoice.branch.id if invoice.branch else 0,
-#                     'customer_name': invoice.customer_name or 'مشتری ناشناس',
-#                     'customer_phone': invoice.customer_phone or '-',
-#                     'total_amount': invoice.total_amount,
-#                     'total_profit': invoice.total_profit,
-#                     'payment_method': invoice.get_payment_method_display(),
-#                     'payment_method_code': invoice.payment_method,
-#                     'created_at': invoice.get_jalali_date() + ' ' + invoice.get_jalali_time(),
-#                     'item_count': item_count,
-#                     'is_paid': invoice.is_paid,
-#                     'is_finalized': invoice.is_finalized,
-#                 })
-#
-#             return JsonResponse({
-#                 'status': 'success',
-#                 'invoices': invoices_data,
-#                 'count': len(invoices_data),
-#                 'date': date_str,
-#             })
-#
-#         except Exception as e:
-#             print(f"❌ خطا در دریافت فاکتورها: {str(e)}")
-#             import traceback
-#             print(traceback.format_exc())
-#             return JsonResponse({
-#                 'status': 'error',
-#                 'message': f'خطا: {str(e)}'
-#             })
-#
-#     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
-# @login_required
-# @csrf_exempt
-# def get_invoice_items(request, invoice_id):
-#     """دریافت آیتم‌های یک فاکتور"""
-#     try:
-#         invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
-#
-#         items = invoice.items.select_related('product').all()
-#
-#         items_data = []
-#         for item in items:
-#             # موجودی فعلی محصول
-#             current_stock = item.product.quantity if item.product else 0
-#
-#             items_data.append({
-#                 'id': item.id,
-#                 'product_id': item.product.id,
-#                 'product_name': item.product.product_name,
-#                 'barcode': item.product.barcode_data or '',
-#                 'quantity': item.quantity,
-#                 'price': item.price,
-#                 'total_price': item.total_price,
-#                 'standard_price': item.standard_price,
-#                 'discount': item.discount,
-#                 'current_stock': current_stock,
-#                 'max_return': item.quantity,  # حداکثر تعداد قابل مرجوع
-#             })
-#
-#         invoice_data = {
-#             'id': invoice.id,
-#             'serial_number': invoice.serial_number,
-#             'branch_name': invoice.branch.name,
-#             'customer_name': invoice.customer_name or 'مشتری ناشناس',
-#             'total_amount': invoice.total_amount,
-#             'total_without_discount': invoice.total_without_discount,
-#             'discount': invoice.discount,
-#             'payment_method': invoice.get_payment_method_display(),
-#             'created_at': invoice.get_jalali_date() + ' ' + invoice.get_jalali_time(),
-#             'is_paid': invoice.is_paid,
-#         }
-#
-#         return JsonResponse({
-#             'status': 'success',
-#             'invoice': invoice_data,
-#             'items': items_data,
-#             'total_items': len(items_data),
-#         })
-#
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
-#
-#
-# @login_required
-# @csrf_exempt
-# def process_return(request):
-#     """پردازش مرجوع کالا"""
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             invoice_id = data.get('invoice_id')
-#             return_items = data.get('return_items', [])
-#             return_reason = data.get('return_reason', '')
-#
-#             print(f"🔄 شروع پردازش مرجوع برای فاکتور {invoice_id}")
-#             print(f"📦 آیتم‌های مرجوع: {return_items}")
-#             print(f"📝 دلیل مرجوع: {return_reason}")
-#
-#             if not invoice_id:
-#                 return JsonResponse({'status': 'error', 'message': 'فاکتور مشخص نشده'})
-#
-#             if not return_items:
-#                 return JsonResponse({'status': 'error', 'message': 'هیچ آیتمی برای مرجوع انتخاب نشده'})
-#
-#             # دریافت فاکتور
-#             invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
-#             print(f"📄 فاکتور یافت شد: {invoice.serial_number}")
-#
-#             # بررسی موجودیت آیتم‌ها
-#             valid_return_items = []
-#             for item in return_items:
-#                 item_id = item.get('item_id')
-#                 return_quantity = int(item.get('return_quantity', 0))
-#
-#                 if return_quantity <= 0:
-#                     continue
-#
-#                 try:
-#                     invoice_item = InvoiceItemfrosh.objects.get(id=item_id, invoice=invoice)
-#
-#                     # بررسی تعداد مرجوع
-#                     if return_quantity > invoice_item.quantity:
-#                         return JsonResponse({
-#                             'status': 'error',
-#                             'message': f'تعداد مرجوع برای کالای {invoice_item.product.product_name} بیشتر از تعداد خریداری شده است'
-#                         })
-#
-#                     valid_return_items.append({
-#                         'item': invoice_item,
-#                         'return_quantity': return_quantity,
-#                         'product': invoice_item.product,
-#                     })
-#
-#                     print(f"✅ آیتم معتبر: {invoice_item.product.product_name} - {return_quantity} عدد")
-#
-#                 except InvoiceItemfrosh.DoesNotExist:
-#                     print(f"⚠️ آیتم با ID {item_id} در فاکتور یافت نشد")
-#                     continue
-#
-#             if not valid_return_items:
-#                 return JsonResponse({'status': 'error', 'message': 'هیچ آیتم معتبری برای مرجوع پیدا نشد'})
-#
-#             # شروع تراکنش
-#             from django.db import transaction
-#
-#             with transaction.atomic():
-#                 # لیست آیتم‌های به‌روز شده و حذف شده
-#                 updated_items = []
-#                 deleted_items = []
-#
-#                 # مجموع مبالغ مرجوع
-#                 total_return_amount = 0
-#                 total_return_profit = 0
-#
-#                 # پردازش هر آیتم مرجوع
-#                 for return_data in valid_return_items:
-#                     item = return_data['item']
-#                     return_quantity = return_data['return_quantity']
-#                     product = return_data['product']
-#
-#                     # محاسبه مبلغ مرجوع برای این آیتم
-#                     item_price = item.price * return_quantity
-#                     item_discount = (item.discount * return_quantity) / item.quantity
-#                     item_total = item_price - item_discount
-#                     total_return_amount += int(item_total)
-#
-#                     # محاسبه سود مرجوع
-#                     item_profit = max(0, (item.price - item.standard_price) * return_quantity)
-#                     total_return_profit += item_profit
-#
-#                     # افزایش موجودی انبار
-#                     product.quantity += return_quantity
-#                     product.save()
-#
-#                     print(f"📦 مرجوع کالا: {product.product_name}")
-#                     print(f"   تعداد مرجوع: {return_quantity}")
-#                     print(f"   موجودی جدید: {product.quantity}")
-#                     print(f"   مبلغ مرجوع: {item_total}")
-#
-#                     # به روزرسانی یا حذف آیتم فاکتور
-#                     if return_quantity == item.quantity:
-#                         # اگر همه کالا مرجوع شد، آیتم را حذف کن
-#                         deleted_items.append({
-#                             'item_id': item.id,
-#                             'quantity': return_quantity,
-#                             'product_name': product.product_name
-#                         })
-#                         item.delete()
-#                         print(f"   ❌ آیتم حذف شد")
-#                     else:
-#                         # کاهش تعداد آیتم
-#                         new_quantity = item.quantity - return_quantity
-#
-#                         # محاسبه تخفیف جدید (نسبتی)
-#                         new_discount = int((item.discount * new_quantity) / item.quantity)
-#
-#                         # به‌روزرسانی آیتم
-#                         item.quantity = new_quantity
-#                         item.discount = new_discount
-#                         item.total_price = (item.price * new_quantity) - new_discount
-#                         item.save()
-#
-#                         updated_items.append({
-#                             'item_id': item.id,
-#                             'old_quantity': item.quantity + return_quantity,
-#                             'new_quantity': new_quantity,
-#                             'product_name': product.product_name
-#                         })
-#                         print(f"   ✅ آیتم به‌روزرسانی شد: {new_quantity} عدد")
-#
-#                 # اگر تمام آیتم‌ها حذف شدند، فاکتور را حذف کن
-#                 remaining_items = invoice.items.count()
-#                 print(f"📊 تعداد آیتم‌های باقیمانده: {remaining_items}")
-#
-#                 if remaining_items == 0:
-#                     print(f"🗑️ فاکتور حذف می‌شود (بدون آیتم باقی‌مانده)")
-#
-#                     # حذف اطلاعات پرداخت مرتبط
-#                     payment_method = invoice.payment_method
-#
-#                     if payment_method == 'check' and hasattr(invoice, 'check_payment'):
-#                         invoice.check_payment.delete()
-#                     elif payment_method == 'credit' and hasattr(invoice, 'credit_payment'):
-#                         invoice.credit_payment.delete()
-#                     elif payment_method == 'cash' and hasattr(invoice, 'cash_payment'):
-#                         invoice.cash_payment.delete()
-#
-#                     invoice.delete()
-#
-#                     return JsonResponse({
-#                         'status': 'success',
-#                         'message': 'تمام کالاهای فاکتور مرجوع شدند و فاکتور حذف گردید',
-#                         'invoice_deleted': True,
-#                         'return_summary': {
-#                             'total_return_amount': total_return_amount,
-#                             'total_return_profit': total_return_profit,
-#                             'updated_items': len(updated_items),
-#                             'deleted_items': len(deleted_items),
-#                         }
-#                     })
-#                 else:
-#                     # محاسبه مجدد مبالغ فاکتور
-#                     items = invoice.items.all()
-#
-#                     total_without_discount = sum(item.price * item.quantity for item in items)
-#                     items_discount = sum(item.discount for item in items)
-#                     invoice_discount = invoice.discount - sum(
-#                         item.discount for item in items if item.id in [u['item_id'] for u in updated_items])
-#                     total_discount = items_discount + max(0, invoice_discount)
-#                     total_amount = max(0, total_without_discount - total_discount)
-#
-#                     # محاسبه مجدد مجموع قیمت معیار
-#                     total_standard_price = sum(item.standard_price * item.quantity for item in items)
-#
-#                     # به‌روزرسانی فاکتور
-#                     invoice.total_without_discount = total_without_discount
-#                     invoice.total_amount = total_amount
-#                     invoice.discount = total_discount
-#                     invoice.total_standard_price = total_standard_price
-#                     invoice.save()  # سود به طور خودکار محاسبه می‌شود
-#
-#                     print(f"💰 فاکتور به‌روزرسانی شد:")
-#                     print(f"   مبلغ جدید: {total_amount}")
-#                     print(f"   تخفیف: {total_discount}")
-#                     print(f"   سود جدید: {invoice.total_profit}")
-#
-#                     # ایجاد لاگ مرجوع (اگر مدل ReturnLog وجود دارد)
-#                     try:
-#                         ReturnLog.objects.create(
-#                             invoice=invoice,
-#                             returned_by=request.user,
-#                             return_amount=total_return_amount,
-#                             return_profit=total_return_profit,
-#                             reason=return_reason,
-#                             return_data=json.dumps({
-#                                 'updated_items': updated_items,
-#                                 'deleted_items': deleted_items,
-#                             }, ensure_ascii=False)
-#                         )
-#                         print(f"📝 لاگ مرجوع ثبت شد")
-#                     except Exception as e:
-#                         print(f"⚠️ خطا در ثبت لاگ: {e}")
-#
-#                     return JsonResponse({
-#                         'status': 'success',
-#                         'message': 'مرجوع کالا با موفقیت انجام شد',
-#                         'invoice_deleted': False,
-#                         'new_invoice_data': {
-#                             'id': invoice.id,
-#                             'total_amount': invoice.total_amount,
-#                             'total_profit': invoice.total_profit,
-#                             'item_count': remaining_items,
-#                         },
-#                         'return_summary': {
-#                             'total_return_amount': total_return_amount,
-#                             'total_return_profit': total_return_profit,
-#                             'updated_items': len(updated_items),
-#                             'deleted_items': len(deleted_items),
-#                         }
-#                     })
-#
-#         except Exception as e:
-#             print(f"❌ خطا در پردازش مرجوع: {str(e)}")
-#             import traceback
-#             print(f"❌ جزئیات خطا: {traceback.format_exc()}")
-#             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
-#
-#     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
-#
-# @login_required
-# @csrf_exempt
-# def get_return_logs(request):
-#     """دریافت لاگ‌های مرجوع"""
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             date_str = data.get('date')
-#             branch_id = data.get('branch_id')
-#
-#             # فیلتر لاگ‌ها
-#             return_logs = ReturnLog.objects.select_related('invoice', 'returned_by', 'invoice__branch')
-#
-#             if date_str:
-#                 try:
-#                     date_parts = date_str.split('/')
-#                     year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
-#                     jalali_date = jdatetime.date(year, month, day)
-#                     gregorian_date = jalali_date.togregorian()
-#
-#                     start_date = timezone.make_aware(
-#                         datetime_module.combine(gregorian_date, datetime_module.min.time()))
-#                     end_date = timezone.make_aware(datetime_module.combine(gregorian_date, datetime_module.max.time()))
-#
-#                     return_logs = return_logs.filter(created_at__range=(start_date, end_date))
-#                 except:
-#                     pass
-#
-#             if branch_id and branch_id != 'all':
-#                 return_logs = return_logs.filter(invoice__branch_id=branch_id)
-#
-#             return_logs = return_logs.order_by('-created_at')[:100]  # فقط 100 مورد آخر
-#
-#             logs_data = []
-#             for log in return_logs:
-#                 logs_data.append({
-#                     'id': log.id,
-#                     'invoice_id': log.invoice.id if log.invoice else None,
-#                     'invoice_serial': log.invoice.serial_number if log.invoice else 'حذف شده',
-#                     'branch_name': log.invoice.branch.name if log.invoice and log.invoice.branch else 'نامشخص',
-#                     'returned_by': log.returned_by.get_full_name() or log.returned_by.username,
-#                     'return_amount': log.return_amount,
-#                     'return_profit': log.return_profit,
-#                     'reason': log.reason or 'بدون دلیل',
-#                     'created_at': jdatetime.fromgregorian(datetime=log.created_at).strftime('%Y/%m/%d %H:%M'),
-#                 })
-#
-#             return JsonResponse({
-#                 'status': 'success',
-#                 'logs': logs_data,
-#                 'count': len(logs_data),
-#             })
-#
-#         except Exception as e:
-#             return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
-#
-#     return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
-#
-#
-#
-# @login_required
-# def daily_invoices(request):
-#     """صفحه اصلی فاکتورهای روزانه - نسخه ساده و بدون مشکل تاریخ"""
-#     # تاریخ امروز به شمسی
-#     today_jalali = jdatetime.datetime.now().strftime('%Y/%m/%d')
-#
-#     # دریافت پارامترهای فیلتر
-#     branch_id = request.GET.get('branch', '')
-#     date_filter = request.GET.get('date', today_jalali)
-#     payment_method_filter = request.GET.get('payment_method', 'all')
-#
-#     print(f"🔍 درخواست فاکتورهای روزانه:")
-#     print(f"   تاریخ: {date_filter}")
-#     print(f"   شعبه: {branch_id}")
-#     print(f"   روش پرداخت: {payment_method_filter}")
-#
-#     # فیلترهای پایه
-#     invoices = Invoicefrosh.objects.select_related('branch', 'created_by')
-#
-#     # فیلتر بر اساس تاریخ (با منطق ساده)
-#     if date_filter:
-#         try:
-#             # تبدیل تاریخ شمسی به میلادی - روش ساده
-#             date_parts = date_filter.split('/')
-#             if len(date_parts) == 3:
-#                 year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
-#
-#                 # ایجاد تاریخ شمسی
-#                 jalali_date = jdatetime.date(year, month, day)
-#
-#                 # تبدیل به میلادی
-#                 gregorian_date = jalali_date.togregorian()
-#
-#                 # ایجاد رنج تاریخ
-#                 start_of_day = dt.combine(gregorian_date, dt.min.time())
-#                 end_of_day = dt.combine(gregorian_date, dt.max.time())
-#
-#                 # تبدیل به timezone aware
-#                 start_of_day_tz = timezone.make_aware(start_of_day)
-#                 end_of_day_tz = timezone.make_aware(end_of_day)
-#
-#                 print(f"📅 تبدیل تاریخ: {date_filter} -> {gregorian_date}")
-#                 print(f"   از: {start_of_day_tz} تا: {end_of_day_tz}")
-#
-#                 # فیلتر بر اساس رنج تاریخ
-#                 invoices = invoices.filter(
-#                     created_at__gte=start_of_day_tz,
-#                     created_at__lte=end_of_day_tz
-#                 )
-#             else:
-#                 # اگر فرمت تاریخ اشتباه بود، از امروز استفاده کن
-#                 print(f"⚠️ فرمت تاریخ اشتباه: {date_filter}")
-#         except Exception as e:
-#             print(f"❌ خطا در تبدیل تاریخ: {e}")
-#
-#     # فیلتر بر اساس شعبه
-#     if branch_id and branch_id != '' and branch_id != 'all':
-#         invoices = invoices.filter(branch_id=branch_id)
-#
-#     # فیلتر بر اساس روش پرداخت
-#     if payment_method_filter and payment_method_filter != 'all':
-#         invoices = invoices.filter(payment_method=payment_method_filter)
-#
-#     # مرتب‌سازی
-#     invoices = invoices.order_by('-created_at')
-#
-#     print(f"✅ تعداد فاکتورهای یافت شده: {invoices.count()}")
-#
-#     # محاسبه آمار
-#     stats = {
-#         'total_count': invoices.count(),
-#         'total_amount': sum(invoice.total_amount for invoice in invoices),
-#         'total_discount': sum(invoice.discount for invoice in invoices),
-#         'total_profit': sum(invoice.total_profit for invoice in invoices),
-#         'paid_count': invoices.filter(is_paid=True).count(),
-#         'unpaid_count': invoices.filter(is_paid=False).count(),
-#     }
-#
-#     # آمار روش‌های پرداخت
-#     payment_stats = {
-#         'cash': {
-#             'count': invoices.filter(payment_method='cash').count(),
-#             'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='cash')),
-#             'paid': invoices.filter(payment_method='cash', is_paid=True).count(),
-#             'unpaid': invoices.filter(payment_method='cash', is_paid=False).count(),
-#         },
-#         'pos': {
-#             'count': invoices.filter(payment_method='pos').count(),
-#             'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='pos')),
-#             'paid': invoices.filter(payment_method='pos', is_paid=True).count(),
-#             'unpaid': invoices.filter(payment_method='pos', is_paid=False).count(),
-#         },
-#         'check': {
-#             'count': invoices.filter(payment_method='check').count(),
-#             'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='check')),
-#             'paid': invoices.filter(payment_method='check', is_paid=True).count(),
-#             'unpaid': invoices.filter(payment_method='check', is_paid=False).count(),
-#         },
-#         'credit': {
-#             'count': invoices.filter(payment_method='credit').count(),
-#             'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='credit')),
-#             'paid': invoices.filter(payment_method='credit', is_paid=True).count(),
-#             'unpaid': invoices.filter(payment_method='credit', is_paid=False).count(),
-#         }
-#     }
-#
-#     # مجموع کل
-#     total_summary = {
-#         'total_all_methods': sum(payment_stats[method]['total'] for method in payment_stats),
-#         'count_all_methods': sum(payment_stats[method]['count'] for method in payment_stats),
-#     }
-#
-#     # دریافت شعبه‌ها
-#     from cantact_app.models import Branch as CantactBranch  # 🔴 این احتمالاً مدل درست است
-#     branches = CantactBranch.objects.all()
-#
-#     context = {
-#         'invoices': invoices,
-#         'stats': stats,
-#         'payment_stats': payment_stats,
-#         'total_summary': total_summary,
-#         'branches': branches,
-#         'selected_branch': branch_id,
-#         'selected_date': date_filter,
-#         'selected_payment_method': payment_method_filter,
-#         'payment_methods': Invoicefrosh.PAYMENT_METHODS,
-#         'today': today_jalali,
-#     }
-#
-#     return render(request, 'invoice_app/daily_invoices.html', context)
-#
-#
-# @login_required
-# def return_goods_main(request):
-#     """صفحه اصلی مرجوع کالا"""
-#     # تاریخ امروز به شمسی
-#     today_jalali = jdatetime.datetime.now().strftime('%Y/%m/%d')
-#
-#     # دریافت شعبه‌ها
-#     from cantact_app.models import Branch
-#     branches = Branch.objects.all()
-#
-#     return render(request, 'invoice_app/return_goods.html', {
-#         'branches': branches,
-#         'today_jalali': today_jalali,
-#     })
+
+@login_required
+def return_goods_main(request):
+    """صفحه اصلی مرجوع کالا"""
+    branches = Branch.objects.all()
+    today = datetime_module.now().date()
+    today_jalali = jdatetime.fromgregorian(date=today).strftime('%Y/%m/%d')
+
+    return render(request, 'invoice_app/return_goods.html', {
+        'branches': branches,
+        'today_jalali': today_jalali,
+    })
+
+
+@login_required
+@csrf_exempt
+def get_invoices_by_date(request):
+    """دریافت فاکتورهای یک تاریخ خاص - نسخه ساده"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            date_str = data.get('date', '').strip()
+            branch_id = data.get('branch_id', 'all')
+
+            print(f"🔍 دریافت فاکتورها برای تاریخ: {date_str}")
+
+            if not date_str:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'تاریخ الزامی است'
+                })
+
+            # فیلترهای پایه
+            invoices = Invoicefrosh.objects.select_related('branch')
+
+            # فیلتر بر اساس تاریخ
+            try:
+                date_parts = date_str.split('/')
+                if len(date_parts) == 3:
+                    year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
+
+                    # تبدیل تاریخ شمسی به میلادی
+                    jalali_date = jdatetime.date(year, month, day)
+                    gregorian_date = jalali_date.togregorian()
+
+                    # ایجاد رنج تاریخ
+                    start_date = dt.combine(gregorian_date, dt.min.time())
+                    end_date = dt.combine(gregorian_date, dt.max.time())
+
+                    # تبدیل به timezone aware
+                    start_date_tz = timezone.make_aware(start_date)
+                    end_date_tz = timezone.make_aware(end_date)
+
+                    print(f"📅 فیلتر تاریخ: {date_str} -> {gregorian_date}")
+
+                    invoices = invoices.filter(
+                        created_at__gte=start_date_tz,
+                        created_at__lte=end_date_tz
+                    )
+                else:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'فرمت تاریخ نامعتبر. باید YYYY/MM/DD باشد'
+                    })
+            except Exception as e:
+                print(f"❌ خطا در تبدیل تاریخ: {e}")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'خطا در پردازش تاریخ: {str(e)}'
+                })
+
+            # فیلتر بر اساس شعبه
+            if branch_id and branch_id != 'all':
+                invoices = invoices.filter(branch_id=branch_id)
+
+            # مرتب‌سازی
+            invoices = invoices.order_by('-created_at')
+
+            print(f"✅ تعداد فاکتورهای یافت شده: {invoices.count()}")
+
+            # آماده‌سازی داده‌ها
+            invoices_data = []
+            for invoice in invoices:
+                item_count = invoice.items.count()
+
+                invoices_data.append({
+                    'id': invoice.id,
+                    'serial_number': invoice.serial_number or f'FAK-{invoice.id}',
+                    'branch_name': invoice.branch.name if invoice.branch else 'نامشخص',
+                    'branch_id': invoice.branch.id if invoice.branch else 0,
+                    'customer_name': invoice.customer_name or 'مشتری ناشناس',
+                    'customer_phone': invoice.customer_phone or '-',
+                    'total_amount': invoice.total_amount,
+                    'total_profit': invoice.total_profit,
+                    'payment_method': invoice.get_payment_method_display(),
+                    'payment_method_code': invoice.payment_method,
+                    'created_at': invoice.get_jalali_date() + ' ' + invoice.get_jalali_time(),
+                    'item_count': item_count,
+                    'is_paid': invoice.is_paid,
+                    'is_finalized': invoice.is_finalized,
+                })
+
+            return JsonResponse({
+                'status': 'success',
+                'invoices': invoices_data,
+                'count': len(invoices_data),
+                'date': date_str,
+            })
+
+        except Exception as e:
+            print(f"❌ خطا در دریافت فاکتورها: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+@login_required
+@csrf_exempt
+def get_invoice_items(request, invoice_id):
+    """دریافت آیتم‌های یک فاکتور"""
+    try:
+        invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
+
+        items = invoice.items.select_related('product').all()
+
+        items_data = []
+        for item in items:
+            # موجودی فعلی محصول
+            current_stock = item.product.quantity if item.product else 0
+
+            items_data.append({
+                'id': item.id,
+                'product_id': item.product.id,
+                'product_name': item.product.product_name,
+                'barcode': item.product.barcode_data or '',
+                'quantity': item.quantity,
+                'price': item.price,
+                'total_price': item.total_price,
+                'standard_price': item.standard_price,
+                'discount': item.discount,
+                'current_stock': current_stock,
+                'max_return': item.quantity,  # حداکثر تعداد قابل مرجوع
+            })
+
+        invoice_data = {
+            'id': invoice.id,
+            'serial_number': invoice.serial_number,
+            'branch_name': invoice.branch.name,
+            'customer_name': invoice.customer_name or 'مشتری ناشناس',
+            'total_amount': invoice.total_amount,
+            'total_without_discount': invoice.total_without_discount,
+            'discount': invoice.discount,
+            'payment_method': invoice.get_payment_method_display(),
+            'created_at': invoice.get_jalali_date() + ' ' + invoice.get_jalali_time(),
+            'is_paid': invoice.is_paid,
+        }
+
+        return JsonResponse({
+            'status': 'success',
+            'invoice': invoice_data,
+            'items': items_data,
+            'total_items': len(items_data),
+        })
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+
+
+@login_required
+@csrf_exempt
+def process_return(request):
+    """پردازش مرجوع کالا"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            invoice_id = data.get('invoice_id')
+            return_items = data.get('return_items', [])
+            return_reason = data.get('return_reason', '')
+
+            print(f"🔄 شروع پردازش مرجوع برای فاکتور {invoice_id}")
+            print(f"📦 آیتم‌های مرجوع: {return_items}")
+            print(f"📝 دلیل مرجوع: {return_reason}")
+
+            if not invoice_id:
+                return JsonResponse({'status': 'error', 'message': 'فاکتور مشخص نشده'})
+
+            if not return_items:
+                return JsonResponse({'status': 'error', 'message': 'هیچ آیتمی برای مرجوع انتخاب نشده'})
+
+            # دریافت فاکتور
+            invoice = get_object_or_404(Invoicefrosh, id=invoice_id)
+            print(f"📄 فاکتور یافت شد: {invoice.serial_number}")
+
+            # بررسی موجودیت آیتم‌ها
+            valid_return_items = []
+            for item in return_items:
+                item_id = item.get('item_id')
+                return_quantity = int(item.get('return_quantity', 0))
+
+                if return_quantity <= 0:
+                    continue
+
+                try:
+                    invoice_item = InvoiceItemfrosh.objects.get(id=item_id, invoice=invoice)
+
+                    # بررسی تعداد مرجوع
+                    if return_quantity > invoice_item.quantity:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': f'تعداد مرجوع برای کالای {invoice_item.product.product_name} بیشتر از تعداد خریداری شده است'
+                        })
+
+                    valid_return_items.append({
+                        'item': invoice_item,
+                        'return_quantity': return_quantity,
+                        'product': invoice_item.product,
+                    })
+
+                    print(f"✅ آیتم معتبر: {invoice_item.product.product_name} - {return_quantity} عدد")
+
+                except InvoiceItemfrosh.DoesNotExist:
+                    print(f"⚠️ آیتم با ID {item_id} در فاکتور یافت نشد")
+                    continue
+
+            if not valid_return_items:
+                return JsonResponse({'status': 'error', 'message': 'هیچ آیتم معتبری برای مرجوع پیدا نشد'})
+
+            # شروع تراکنش
+            from django.db import transaction
+
+            with transaction.atomic():
+                # لیست آیتم‌های به‌روز شده و حذف شده
+                updated_items = []
+                deleted_items = []
+
+                # مجموع مبالغ مرجوع
+                total_return_amount = 0
+                total_return_profit = 0
+
+                # پردازش هر آیتم مرجوع
+                for return_data in valid_return_items:
+                    item = return_data['item']
+                    return_quantity = return_data['return_quantity']
+                    product = return_data['product']
+
+                    # محاسبه مبلغ مرجوع برای این آیتم
+                    item_price = item.price * return_quantity
+                    item_discount = (item.discount * return_quantity) / item.quantity
+                    item_total = item_price - item_discount
+                    total_return_amount += int(item_total)
+
+                    # محاسبه سود مرجوع
+                    item_profit = max(0, (item.price - item.standard_price) * return_quantity)
+                    total_return_profit += item_profit
+
+                    # افزایش موجودی انبار
+                    product.quantity += return_quantity
+                    product.save()
+
+                    print(f"📦 مرجوع کالا: {product.product_name}")
+                    print(f"   تعداد مرجوع: {return_quantity}")
+                    print(f"   موجودی جدید: {product.quantity}")
+                    print(f"   مبلغ مرجوع: {item_total}")
+
+                    # به روزرسانی یا حذف آیتم فاکتور
+                    if return_quantity == item.quantity:
+                        # اگر همه کالا مرجوع شد، آیتم را حذف کن
+                        deleted_items.append({
+                            'item_id': item.id,
+                            'quantity': return_quantity,
+                            'product_name': product.product_name
+                        })
+                        item.delete()
+                        print(f"   ❌ آیتم حذف شد")
+                    else:
+                        # کاهش تعداد آیتم
+                        new_quantity = item.quantity - return_quantity
+
+                        # محاسبه تخفیف جدید (نسبتی)
+                        new_discount = int((item.discount * new_quantity) / item.quantity)
+
+                        # به‌روزرسانی آیتم
+                        item.quantity = new_quantity
+                        item.discount = new_discount
+                        item.total_price = (item.price * new_quantity) - new_discount
+                        item.save()
+
+                        updated_items.append({
+                            'item_id': item.id,
+                            'old_quantity': item.quantity + return_quantity,
+                            'new_quantity': new_quantity,
+                            'product_name': product.product_name
+                        })
+                        print(f"   ✅ آیتم به‌روزرسانی شد: {new_quantity} عدد")
+
+                # اگر تمام آیتم‌ها حذف شدند، فاکتور را حذف کن
+                remaining_items = invoice.items.count()
+                print(f"📊 تعداد آیتم‌های باقیمانده: {remaining_items}")
+
+                if remaining_items == 0:
+                    print(f"🗑️ فاکتور حذف می‌شود (بدون آیتم باقی‌مانده)")
+
+                    # حذف اطلاعات پرداخت مرتبط
+                    payment_method = invoice.payment_method
+
+                    if payment_method == 'check' and hasattr(invoice, 'check_payment'):
+                        invoice.check_payment.delete()
+                    elif payment_method == 'credit' and hasattr(invoice, 'credit_payment'):
+                        invoice.credit_payment.delete()
+                    elif payment_method == 'cash' and hasattr(invoice, 'cash_payment'):
+                        invoice.cash_payment.delete()
+
+                    invoice.delete()
+
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'تمام کالاهای فاکتور مرجوع شدند و فاکتور حذف گردید',
+                        'invoice_deleted': True,
+                        'return_summary': {
+                            'total_return_amount': total_return_amount,
+                            'total_return_profit': total_return_profit,
+                            'updated_items': len(updated_items),
+                            'deleted_items': len(deleted_items),
+                        }
+                    })
+                else:
+                    # محاسبه مجدد مبالغ فاکتور
+                    items = invoice.items.all()
+
+                    total_without_discount = sum(item.price * item.quantity for item in items)
+                    items_discount = sum(item.discount for item in items)
+                    invoice_discount = invoice.discount - sum(
+                        item.discount for item in items if item.id in [u['item_id'] for u in updated_items])
+                    total_discount = items_discount + max(0, invoice_discount)
+                    total_amount = max(0, total_without_discount - total_discount)
+
+                    # محاسبه مجدد مجموع قیمت معیار
+                    total_standard_price = sum(item.standard_price * item.quantity for item in items)
+
+                    # به‌روزرسانی فاکتور
+                    invoice.total_without_discount = total_without_discount
+                    invoice.total_amount = total_amount
+                    invoice.discount = total_discount
+                    invoice.total_standard_price = total_standard_price
+                    invoice.save()  # سود به طور خودکار محاسبه می‌شود
+
+                    print(f"💰 فاکتور به‌روزرسانی شد:")
+                    print(f"   مبلغ جدید: {total_amount}")
+                    print(f"   تخفیف: {total_discount}")
+                    print(f"   سود جدید: {invoice.total_profit}")
+
+                    # ایجاد لاگ مرجوع (اگر مدل ReturnLog وجود دارد)
+                    try:
+                        ReturnLog.objects.create(
+                            invoice=invoice,
+                            returned_by=request.user,
+                            return_amount=total_return_amount,
+                            return_profit=total_return_profit,
+                            reason=return_reason,
+                            return_data=json.dumps({
+                                'updated_items': updated_items,
+                                'deleted_items': deleted_items,
+                            }, ensure_ascii=False)
+                        )
+                        print(f"📝 لاگ مرجوع ثبت شد")
+                    except Exception as e:
+                        print(f"⚠️ خطا در ثبت لاگ: {e}")
+
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'مرجوع کالا با موفقیت انجام شد',
+                        'invoice_deleted': False,
+                        'new_invoice_data': {
+                            'id': invoice.id,
+                            'total_amount': invoice.total_amount,
+                            'total_profit': invoice.total_profit,
+                            'item_count': remaining_items,
+                        },
+                        'return_summary': {
+                            'total_return_amount': total_return_amount,
+                            'total_return_profit': total_return_profit,
+                            'updated_items': len(updated_items),
+                            'deleted_items': len(deleted_items),
+                        }
+                    })
+
+        except Exception as e:
+            print(f"❌ خطا در پردازش مرجوع: {str(e)}")
+            import traceback
+            print(f"❌ جزئیات خطا: {traceback.format_exc()}")
+            return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+
+    return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+
+@login_required
+@csrf_exempt
+def get_return_logs(request):
+    """دریافت لاگ‌های مرجوع"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            date_str = data.get('date')
+            branch_id = data.get('branch_id')
+
+            # فیلتر لاگ‌ها
+            return_logs = ReturnLog.objects.select_related('invoice', 'returned_by', 'invoice__branch')
+
+            if date_str:
+                try:
+                    date_parts = date_str.split('/')
+                    year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
+                    jalali_date = jdatetime.date(year, month, day)
+                    gregorian_date = jalali_date.togregorian()
+
+                    start_date = timezone.make_aware(
+                        datetime_module.combine(gregorian_date, datetime_module.min.time()))
+                    end_date = timezone.make_aware(datetime_module.combine(gregorian_date, datetime_module.max.time()))
+
+                    return_logs = return_logs.filter(created_at__range=(start_date, end_date))
+                except:
+                    pass
+
+            if branch_id and branch_id != 'all':
+                return_logs = return_logs.filter(invoice__branch_id=branch_id)
+
+            return_logs = return_logs.order_by('-created_at')[:100]  # فقط 100 مورد آخر
+
+            logs_data = []
+            for log in return_logs:
+                logs_data.append({
+                    'id': log.id,
+                    'invoice_id': log.invoice.id if log.invoice else None,
+                    'invoice_serial': log.invoice.serial_number if log.invoice else 'حذف شده',
+                    'branch_name': log.invoice.branch.name if log.invoice and log.invoice.branch else 'نامشخص',
+                    'returned_by': log.returned_by.get_full_name() or log.returned_by.username,
+                    'return_amount': log.return_amount,
+                    'return_profit': log.return_profit,
+                    'reason': log.reason or 'بدون دلیل',
+                    'created_at': jdatetime.fromgregorian(datetime=log.created_at).strftime('%Y/%m/%d %H:%M'),
+                })
+
+            return JsonResponse({
+                'status': 'success',
+                'logs': logs_data,
+                'count': len(logs_data),
+            })
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'})
+
+    return JsonResponse({'status': 'error', 'message': 'درخواست نامعتبر'})
+
+
+
+@login_required
+def daily_invoices(request):
+    """صفحه اصلی فاکتورهای روزانه - نسخه ساده و بدون مشکل تاریخ"""
+    # تاریخ امروز به شمسی
+    today_jalali = jdatetime.datetime.now().strftime('%Y/%m/%d')
+
+    # دریافت پارامترهای فیلتر
+    branch_id = request.GET.get('branch', '')
+    date_filter = request.GET.get('date', today_jalali)
+    payment_method_filter = request.GET.get('payment_method', 'all')
+
+    print(f"🔍 درخواست فاکتورهای روزانه:")
+    print(f"   تاریخ: {date_filter}")
+    print(f"   شعبه: {branch_id}")
+    print(f"   روش پرداخت: {payment_method_filter}")
+
+    # فیلترهای پایه
+    invoices = Invoicefrosh.objects.select_related('branch', 'created_by')
+
+    # فیلتر بر اساس تاریخ (با منطق ساده)
+    if date_filter:
+        try:
+            # تبدیل تاریخ شمسی به میلادی - روش ساده
+            date_parts = date_filter.split('/')
+            if len(date_parts) == 3:
+                year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
+
+                # ایجاد تاریخ شمسی
+                jalali_date = jdatetime.date(year, month, day)
+
+                # تبدیل به میلادی
+                gregorian_date = jalali_date.togregorian()
+
+                # ایجاد رنج تاریخ
+                start_of_day = dt.combine(gregorian_date, dt.min.time())
+                end_of_day = dt.combine(gregorian_date, dt.max.time())
+
+                # تبدیل به timezone aware
+                start_of_day_tz = timezone.make_aware(start_of_day)
+                end_of_day_tz = timezone.make_aware(end_of_day)
+
+                print(f"📅 تبدیل تاریخ: {date_filter} -> {gregorian_date}")
+                print(f"   از: {start_of_day_tz} تا: {end_of_day_tz}")
+
+                # فیلتر بر اساس رنج تاریخ
+                invoices = invoices.filter(
+                    created_at__gte=start_of_day_tz,
+                    created_at__lte=end_of_day_tz
+                )
+            else:
+                # اگر فرمت تاریخ اشتباه بود، از امروز استفاده کن
+                print(f"⚠️ فرمت تاریخ اشتباه: {date_filter}")
+        except Exception as e:
+            print(f"❌ خطا در تبدیل تاریخ: {e}")
+
+    # فیلتر بر اساس شعبه
+    if branch_id and branch_id != '' and branch_id != 'all':
+        invoices = invoices.filter(branch_id=branch_id)
+
+    # فیلتر بر اساس روش پرداخت
+    if payment_method_filter and payment_method_filter != 'all':
+        invoices = invoices.filter(payment_method=payment_method_filter)
+
+    # مرتب‌سازی
+    invoices = invoices.order_by('-created_at')
+
+    print(f"✅ تعداد فاکتورهای یافت شده: {invoices.count()}")
+
+    # محاسبه آمار
+    stats = {
+        'total_count': invoices.count(),
+        'total_amount': sum(invoice.total_amount for invoice in invoices),
+        'total_discount': sum(invoice.discount for invoice in invoices),
+        'total_profit': sum(invoice.total_profit for invoice in invoices),
+        'paid_count': invoices.filter(is_paid=True).count(),
+        'unpaid_count': invoices.filter(is_paid=False).count(),
+    }
+
+    # آمار روش‌های پرداخت
+    payment_stats = {
+        'cash': {
+            'count': invoices.filter(payment_method='cash').count(),
+            'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='cash')),
+            'paid': invoices.filter(payment_method='cash', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='cash', is_paid=False).count(),
+        },
+        'pos': {
+            'count': invoices.filter(payment_method='pos').count(),
+            'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='pos')),
+            'paid': invoices.filter(payment_method='pos', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='pos', is_paid=False).count(),
+        },
+        'check': {
+            'count': invoices.filter(payment_method='check').count(),
+            'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='check')),
+            'paid': invoices.filter(payment_method='check', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='check', is_paid=False).count(),
+        },
+        'credit': {
+            'count': invoices.filter(payment_method='credit').count(),
+            'total': sum(invoice.total_amount for invoice in invoices.filter(payment_method='credit')),
+            'paid': invoices.filter(payment_method='credit', is_paid=True).count(),
+            'unpaid': invoices.filter(payment_method='credit', is_paid=False).count(),
+        }
+    }
+
+    # مجموع کل
+    total_summary = {
+        'total_all_methods': sum(payment_stats[method]['total'] for method in payment_stats),
+        'count_all_methods': sum(payment_stats[method]['count'] for method in payment_stats),
+    }
+
+    # دریافت شعبه‌ها
+    from cantact_app.models import Branch as CantactBranch  # 🔴 این احتمالاً مدل درست است
+    branches = CantactBranch.objects.all()
+
+    context = {
+        'invoices': invoices,
+        'stats': stats,
+        'payment_stats': payment_stats,
+        'total_summary': total_summary,
+        'branches': branches,
+        'selected_branch': branch_id,
+        'selected_date': date_filter,
+        'selected_payment_method': payment_method_filter,
+        'payment_methods': Invoicefrosh.PAYMENT_METHODS,
+        'today': today_jalali,
+    }
+
+    return render(request, 'invoice_app/daily_invoices.html', context)
+
+
+@login_required
+def return_goods_main(request):
+    """صفحه اصلی مرجوع کالا"""
+    # تاریخ امروز به شمسی
+    today_jalali = jdatetime.datetime.now().strftime('%Y/%m/%d')
+
+    # دریافت شعبه‌ها
+    from cantact_app.models import Branch
+    branches = Branch.objects.all()
+
+    return render(request, 'invoice_app/return_goods.html', {
+        'branches': branches,
+        'today_jalali': today_jalali,
+    })
