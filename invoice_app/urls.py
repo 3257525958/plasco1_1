@@ -58,5 +58,9 @@ path('api/quick-stats/', views.quick_stats, name='quick_stats'),
     path('update-status/<int:invoice_id>/', views.update_invoice_status, name='update_invoice_status'),
     path('filter/', views.filter_invoices, name='filter_invoices'),
     path('create/', views.create_invoice, name='create_invoice'),
-
+# ------------------------------مرجوعی--------------------------------------------------------
+path('return-goods/', views.return_goods_main, name='return_goods'),
+path('api/get-invoices-by-date/', views.get_invoices_by_date, name='get_invoices_by_date'),
+path('api/get-invoice-items/<int:invoice_id>/', views.get_invoice_items, name='get_invoice_items'),
+path('api/process-return/', views.process_return, name='process_return'),
 ]

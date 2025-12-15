@@ -1,0 +1,1117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم مرجوع کالا</title>
+    
+    <!-- کتابخانه‌های تاریخ شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    
+    <!-- فونت‌ها و آیکون‌ها -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* 🔴 دقیقاً همان استایل daily_invoices.html */
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+            --orange-light: #ffe0b2;
+            --red-light: #ffebee;
+            --red-dark: #d32f2f;
+            --green-light: #e8f5e9;
+            --green-dark: #2E7D32;
+            --purple-light: #f3e5f5;
+            --purple-dark: #7b1fa2;
+            --yellow-light: #fff9c4;
+            --yellow-dark: #f9a825;
+            
+            /* رنگ‌های روش‌های پرداخت */
+            --cash-color: #27ae60;
+            --cash-bg: #d5f4e6;
+            --pos-color: #2980b9;
+            --pos-bg: #d6eaf8;
+            --check-color: #d35400;
+            --check-bg: #fdebd0;
+            --credit-color: #8e44ad;
+            --credit-bg: #e8daef;
+            --total-color: #16a085;
+            --total-bg: #d1f2eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* فیلترها */
+        .filter-section {
+            background-color: var(--light-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: nowrap;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background-color: white;
+            transition: all 0.3s;
+            min-width: 150px;
+            height: 38px;
+        }
+
+        .date-filter-container {
+            position: relative;
+        }
+
+        .shamsi-date-input {
+            width: 160px;
+            padding: 8px 12px;
+            padding-right: 35px;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: var(--input-bg);
+            text-align: center;
+            cursor: pointer;
+            font-family: 'Vazirmatn', sans-serif;
+            height: 38px;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 10px;
+            color: var(--primary-color);
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 10;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            text-decoration: none;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background-color: var(--blue-dark);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1976d2;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background-color: var(--green-dark);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1b5e20;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: var(--red-dark);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c62828;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background-color: var(--orange);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #f57c00;
+            transform: translateY(-2px);
+        }
+
+        /* جدول فاکتورها */
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .invoices-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .invoices-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .invoices-table td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .invoices-table tr:nth-child(even) {
+            background-color: var(--light-bg);
+        }
+
+        .invoices-table tr:hover {
+            background-color: #e8f5e9;
+            transition: background-color 0.2s;
+        }
+
+        .invoice-row {
+            cursor: pointer;
+        }
+
+        .invoice-row.selected {
+            background-color: #e3f2fd !important;
+            border-left: 4px solid var(--blue-dark);
+        }
+
+        /* آیتم‌ها */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table th {
+            background-color: var(--green-dark);
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .items-table td {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .item-row.selected {
+            background-color: #e8f5e9 !important;
+        }
+
+        /* استایل‌های وضعیت */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .paid {
+            background-color: var(--green-light);
+            color: var(--green-dark);
+            border: 1px solid var(--green-dark);
+        }
+
+        .unpaid {
+            background-color: var(--red-light);
+            color: var(--red-dark);
+            border: 1px solid var(--red-dark);
+        }
+
+        /* مودال */
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        /* لودینگ */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* آمار */
+        .stats-card {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-right: 4px solid var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .stats-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .stats-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-undo-alt"></i> سیستم مرجوع کالا</h1>
+            <p>انتخاب فاکتور و مرجوع کالاهای انتخاب شده</p>
+        </div>
+
+        <!-- فیلترها -->
+        <div class="filter-section">
+            <div class="filter-controls">
+                <div class="filter-item">
+                    <span class="filter-label"><i class="fas fa-calendar-alt"></i> تاریخ:</span>
+                    <div class="date-filter-container">
+                        <input type="text" id="date-filter" class="shamsi-date-input"
+                               placeholder="انتخاب تاریخ"
+                               value="{{ today_jalali }}">
+                        <i class="fas fa-calendar-alt calendar-icon" id="calendar-trigger"></i>
+                    </div>
+                </div>
+
+                <div class="filter-item">
+                    <span class="filter-label"><i class="fas fa-store"></i> شعبه:</span>
+                    <select id="branch-filter" class="filter-input">
+                        <option value="all">همه شعبه‌ها</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}">{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button id="search-btn" class="btn btn-primary">
+                        <i class="fas fa-search"></i> جستجو
+                    </button>
+                    <button id="refresh-btn" class="btn btn-success">
+                        <i class="fas fa-sync-alt"></i> بروزرسانی
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- آمار -->
+        <div class="row" id="stats-section" style="display: none;">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-value" id="total-invoices">0</div>
+                    <div class="stats-label">تعداد فاکتورها</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-value" id="selected-items">0</div>
+                    <div class="stats-label">آیتم انتخاب شده</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-value" id="total-return">0</div>
+                    <div class="stats-label">تعداد مرجوع</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-value" id="return-amount">0</div>
+                    <div class="stats-label">مبلغ مرجوع</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <!-- لیست فاکتورها -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        فاکتورهای تاریخ: <span id="selected-date">{{ today_jalali }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-container">
+                            <table class="invoices-table">
+                                <thead>
+                                    <tr>
+                                        <th width="50">#</th>
+                                        <th>شماره فاکتور</th>
+                                        <th>شعبه</th>
+                                        <th>مشتری</th>
+                                        <th>مبلغ</th>
+                                        <th>وضعیت</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invoices-body">
+                                    <!-- فاکتورها اینجا لود می‌شوند -->
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <i class="fas fa-file-invoice fa-2x text-muted mb-3"></i>
+                                            <p class="text-muted">برای مشاهده فاکتورها، تاریخ را انتخاب و جستجو کنید</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- آیتم‌های فاکتور انتخاب شده -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-boxes me-2"></i>
+                        آیتم‌های فاکتور: <span id="selected-invoice">انتخاب نشده</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="invoice-info" class="p-3" style="display: none;">
+                            <div class="alert alert-info mb-0">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small><i class="fas fa-user"></i> مشتری: <span id="invoice-customer"></span></small><br>
+                                        <small><i class="fas fa-phone"></i> تلفن: <span id="invoice-phone"></span></small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small><i class="fas fa-credit-card"></i> پرداخت: <span id="invoice-payment"></span></small><br>
+                                        <small><i class="fas fa-calendar"></i> تاریخ: <span id="invoice-date"></span></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="items-table">
+                                <thead>
+                                    <tr>
+                                        <th width="30">
+                                            <input type="checkbox" id="select-all-items">
+                                        </th>
+                                        <th>نام کالا</th>
+                                        <th>تعداد خرید</th>
+                                        <th>قیمت</th>
+                                        <th>تعداد مرجوع</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="items-body">
+                                    <!-- آیتم‌ها اینجا لود می‌شوند -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="no-items" class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">لطفاً ابتدا یک فاکتور از لیست سمت راست انتخاب کنید</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه‌های عملیات -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button id="process-return-btn" class="btn btn-danger" disabled>
+                            <i class="fas fa-undo-alt me-2"></i> ثبت مرجوع انتخاب شده‌ها
+                        </button>
+                        <button id="select-all-btn" class="btn btn-outline-primary">
+                            <i class="fas fa-check-double me-2"></i> انتخاب همه آیتم‌ها
+                        </button>
+                        <button id="deselect-all-btn" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i> لغو انتخاب
+                        </button>
+                    </div>
+                    <div>
+                        <button id="show-logs-btn" class="btn btn-outline-info">
+                            <i class="fas fa-history me-2"></i> تاریخچه مرجوع
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تأیید مرجوع -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        تأیید مرجوع کالا
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        آیا از مرجوع کالاهای انتخاب شده اطمینان دارید؟
+                    </div>
+                    
+                    <div id="return-summary">
+                        <p><strong>تعداد آیتم‌های انتخاب شده:</strong> <span id="modal-item-count">0</span></p>
+                        <p><strong>مجموع تعداد مرجوع:</strong> <span id="modal-total-quantity">0</span> عدد</p>
+                        <p><strong>فاکتور:</strong> <span id="modal-invoice-number"></span></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="return-reason" class="form-label">دلیل مرجوع (اختیاری):</label>
+                        <textarea id="return-reason" class="form-control" rows="2" 
+                                  placeholder="دلیل مرجوع کالا را وارد کنید..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i> انصراف
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirm-return-btn">
+                        <i class="fas fa-check me-2"></i> تأیید مرجوع
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- لودینگ -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- کتابخانه‌های JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
+    <script>
+        // متغیرهای global
+        let selectedInvoiceId = null;
+        let selectedItems = {};
+        
+        // تابع برای نمایش loading
+        function showLoading() {
+            $('#loading-overlay').fadeIn();
+        }
+        
+        function hideLoading() {
+            $('#loading-overlay').fadeOut();
+        }
+        
+        // تابع برای فرمت کردن اعداد
+        function formatNumber(num) {
+            if (!num) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // تابع برای جستجوی فاکتورها
+        function searchInvoices() {
+            const date = $('#date-filter').val().trim();
+            const branchId = $('#branch-filter').val();
+            
+            if (!date) {
+                alert('لطفا تاریخ را انتخاب کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: "{% url 'invoice_app:get_invoices_by_date' %}",
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: date,
+                    branch_id: branchId
+                }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        displayInvoices(response.invoices);
+                        $('#selected-date').text(date);
+                        $('#stats-section').show();
+                        $('#total-invoices').text(formatNumber(response.count));
+                        
+                        // ریست انتخاب‌ها
+                        selectedInvoiceId = null;
+                        selectedItems = {};
+                        updateStats();
+                        updateProcessButton();
+                        clearItemsTable();
+                    } else {
+                        alert('خطا: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('خطا در دریافت فاکتورها');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // تابع برای نمایش فاکتورها
+        function displayInvoices(invoices) {
+            const $tbody = $('#invoices-body');
+            $tbody.empty();
+            
+            if (invoices.length === 0) {
+                $tbody.append(`
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-file-invoice fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">هیچ فاکتوری برای تاریخ انتخاب شده یافت نشد</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+            
+            invoices.forEach((invoice, index) => {
+                const isSelected = invoice.id === selectedInvoiceId;
+                const paidStatus = invoice.is_paid ? 'پرداخت شده' : 'پرداخت نشده';
+                const paidClass = invoice.is_paid ? 'paid' : 'unpaid';
+                
+                const row = `
+                    <tr class="invoice-row ${isSelected ? 'selected' : ''}" 
+                        onclick="selectInvoice(${invoice.id})"
+                        style="cursor: pointer;">
+                        <td>${index + 1}</td>
+                        <td>
+                            <strong>${invoice.serial_number}</strong>
+                        </td>
+                        <td>${invoice.branch_name}</td>
+                        <td>${invoice.customer_name}</td>
+                        <td>${formatNumber(invoice.total_amount)}</td>
+                        <td>
+                            <span class="status-badge ${paidClass}">${paidStatus}</span>
+                        </td>
+                    </tr>
+                `;
+                $tbody.append(row);
+            });
+        }
+        
+        // تابع برای انتخاب فاکتور
+        function selectInvoice(invoiceId) {
+            if (selectedInvoiceId === invoiceId) return;
+            
+            selectedInvoiceId = invoiceId;
+            selectedItems = {};
+            
+            // آپدیت کلاس‌های selected
+            $('.invoice-row').removeClass('selected');
+            $(`[onclick="selectInvoice(${invoiceId})"]`).addClass('selected');
+            
+            // لود آیتم‌های فاکتور
+            loadInvoiceItems(invoiceId);
+        }
+        
+        // تابع برای لود آیتم‌های فاکتور
+        function loadInvoiceItems(invoiceId) {
+            showLoading();
+            
+            $.ajax({
+                url: `/invoice/api/get-invoice-items/${invoiceId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        displayInvoiceItems(response.invoice, response.items);
+                        updateStats();
+                    } else {
+                        alert('خطا: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('خطا در دریافت آیتم‌های فاکتور');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // تابع برای نمایش آیتم‌های فاکتور
+        function displayInvoiceItems(invoice, items) {
+            // نمایش اطلاعات فاکتور
+            $('#invoice-info').show();
+            $('#selected-invoice').text(invoice.serial_number);
+            $('#invoice-customer').text(invoice.customer_name);
+            $('#invoice-phone').text(invoice.customer_phone || '-');
+            $('#invoice-payment').text(invoice.payment_method);
+            $('#invoice-date').text(invoice.created_at);
+            
+            // نمایش آیتم‌ها
+            const $tbody = $('#items-body');
+            const $noItems = $('#no-items');
+            
+            $tbody.empty();
+            $noItems.hide();
+            
+            if (items.length === 0) {
+                $noItems.show();
+                return;
+            }
+            
+            items.forEach((item, index) => {
+                const isSelected = selectedItems[item.id] || false;
+                const returnQuantity = isSelected ? selectedItems[item.id].quantity : 0;
+                
+                const row = `
+                    <tr class="item-row ${isSelected ? 'selected' : ''}">
+                        <td>
+                            <input type="checkbox" class="item-checkbox" 
+                                   ${isSelected ? 'checked' : ''}
+                                   onchange="toggleItemSelection(${item.id}, ${item.quantity})">
+                        </td>
+                        <td>${item.product_name}</td>
+                        <td>${formatNumber(item.quantity)}</td>
+                        <td>${formatNumber(item.price)}</td>
+                        <td>
+                            <input type="number" 
+                                   class="form-control form-control-sm" 
+                                   min="0" 
+                                   max="${item.quantity}"
+                                   value="${returnQuantity}"
+                                   onchange="updateReturnQuantity(${item.id}, this.value, ${item.quantity})"
+                                   ${isSelected ? '' : 'disabled'}
+                                   style="width: 80px; display: inline-block;">
+                        </td>
+                    </tr>
+                `;
+                $tbody.append(row);
+            });
+            
+            // آپدیت select all
+            const allSelected = Object.keys(selectedItems).length === items.length;
+            $('#select-all-items').prop('checked', allSelected);
+        }
+        
+        // تابع برای پاک کردن جدول آیتم‌ها
+        function clearItemsTable() {
+            $('#items-body').empty();
+            $('#no-items').show();
+            $('#invoice-info').hide();
+            $('#selected-invoice').text('انتخاب نشده');
+        }
+        
+        // تابع برای toggle انتخاب آیتم
+        function toggleItemSelection(itemId, maxQuantity) {
+            if (selectedItems[itemId]) {
+                delete selectedItems[itemId];
+            } else {
+                selectedItems[itemId] = { quantity: 1 };
+            }
+            
+            updateRowSelection(itemId);
+            updateStats();
+            updateProcessButton();
+        }
+        
+        // تابع برای آپدیت ردیف انتخاب شده
+        function updateRowSelection(itemId) {
+            const $row = $(`.item-checkbox[onchange*="${itemId}"]`).closest('tr');
+            const $input = $row.find('input[type="number"]');
+            
+            if (selectedItems[itemId]) {
+                $row.addClass('selected');
+                $row.find('.item-checkbox').prop('checked', true);
+                $input.prop('disabled', false);
+            } else {
+                $row.removeClass('selected');
+                $row.find('.item-checkbox').prop('checked', false);
+                $input.prop('disabled', true).val(0);
+            }
+        }
+        
+        // تابع برای آپدیت تعداد مرجوع
+        function updateReturnQuantity(itemId, quantity, maxQuantity) {
+            quantity = parseInt(quantity) || 0;
+            
+            if (quantity < 0) quantity = 0;
+            if (quantity > maxQuantity) quantity = maxQuantity;
+            
+            if (quantity === 0) {
+                delete selectedItems[itemId];
+                updateRowSelection(itemId);
+            } else {
+                selectedItems[itemId] = { quantity: quantity };
+            }
+            
+            updateStats();
+            updateProcessButton();
+        }
+        
+        // تابع برای انتخاب همه آیتم‌ها
+        function selectAllItems() {
+            const $items = $('#items-body tr');
+            
+            $items.each(function() {
+                const itemId = parseInt($(this).find('.item-checkbox').attr('onchange').match(/\d+/)[0]);
+                const maxQuantity = parseInt($(this).find('input[type="number"]').attr('max'));
+                
+                if (!selectedItems[itemId]) {
+                    selectedItems[itemId] = { quantity: 1 };
+                    $(this).addClass('selected');
+                    $(this).find('.item-checkbox').prop('checked', true);
+                    $(this).find('input[type="number"]').prop('disabled', false).val(1);
+                }
+            });
+            
+            $('#select-all-items').prop('checked', true);
+            updateStats();
+            updateProcessButton();
+        }
+        
+        // تابع برای لغو انتخاب همه آیتم‌ها
+        function deselectAllItems() {
+            const $items = $('#items-body tr');
+            
+            $items.each(function() {
+                const itemId = parseInt($(this).find('.item-checkbox').attr('onchange').match(/\d+/)[0]);
+                
+                delete selectedItems[itemId];
+                $(this).removeClass('selected');
+                $(this).find('.item-checkbox').prop('checked', false);
+                $(this).find('input[type="number"]').prop('disabled', true).val(0);
+            });
+            
+            $('#select-all-items').prop('checked', false);
+            updateStats();
+            updateProcessButton();
+        }
+        
+        // تابع برای آپدیت آمار
+        function updateStats() {
+            const selectedCount = Object.keys(selectedItems).length;
+            let totalReturnQuantity = 0;
+            
+            Object.values(selectedItems).forEach(item => {
+                totalReturnQuantity += item.quantity;
+            });
+            
+            $('#selected-items').text(formatNumber(selectedCount));
+            $('#total-return').text(formatNumber(totalReturnQuantity));
+        }
+        
+        // تابع برای آپدیت وضعیت دکمه پردازش
+        function updateProcessButton() {
+            const selectedCount = Object.keys(selectedItems).length;
+            $('#process-return-btn').prop('disabled', selectedCount === 0 || !selectedInvoiceId);
+        }
+        
+        // تابع برای نمایش مودال تأیید
+        function showConfirmModal() {
+            if (!selectedInvoiceId || Object.keys(selectedItems).length === 0) {
+                alert('لطفا حداقل یک کالا برای مرجوع انتخاب کنید');
+                return;
+            }
+            
+            let totalQuantity = 0;
+            Object.values(selectedItems).forEach(data => {
+                totalQuantity += data.quantity;
+            });
+            
+            $('#modal-item-count').text(formatNumber(Object.keys(selectedItems).length));
+            $('#modal-total-quantity').text(formatNumber(totalQuantity));
+            
+            const $selectedInvoice = $('.invoice-row.selected');
+            const invoiceNumber = $selectedInvoice.find('td:nth-child(2)').text().trim();
+            $('#modal-invoice-number').text(invoiceNumber);
+            
+            $('#confirmModal').modal('show');
+        }
+        
+        // تابع برای دریافت CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Event Listeners
+        $(document).ready(function() {
+            // فعال‌سازی تقویم
+            $("#date-filter").persianDatepicker({
+                observer: true,
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: false,
+                initialValueType: 'persian'
+            });
+            
+            $('#calendar-trigger').click(function() {
+                $('#date-filter').persianDatepicker('show');
+            });
+            
+            // جستجوی اولیه
+            $('#search-btn').click(searchInvoices);
+            
+            $('#refresh-btn').click(function() {
+                searchInvoices();
+            });
+            
+            $('#select-all-btn').click(selectAllItems);
+            $('#deselect-all-btn').click(deselectAllItems);
+            
+            $('#select-all-items').change(function() {
+                if ($(this).is(':checked')) {
+                    selectAllItems();
+                } else {
+                    deselectAllItems();
+                }
+            });
+            
+            $('#process-return-btn').click(showConfirmModal);
+            
+            // جستجوی اولیه هنگام بارگذاری صفحه
+            searchInvoices();
+        });
+        
+        // تابع برای پردازش مرجوع
+function processReturn() {
+    const reason = $('#return-reason').val();
+    
+    // آماده‌سازی داده‌های مرجوع
+    const returnItems = [];
+    
+    Object.entries(selectedItems).forEach(([itemId, data]) => {
+        returnItems.push({
+            item_id: parseInt(itemId),
+            return_quantity: data.quantity
+        });
+    });
+    
+    console.log('📤 ارسال داده‌های مرجوع:', {
+        invoice_id: selectedInvoiceId,
+        return_items: returnItems,
+        return_reason: reason
+    });
+    
+    showLoading();
+    
+    $.ajax({
+        url: "{% url 'invoice_app:process_return' %}",
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            invoice_id: selectedInvoiceId,
+            return_items: returnItems,
+            return_reason: reason
+        }),
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        success: function(response) {
+            console.log('📥 پاسخ سرور:', response);
+            
+            if (response.status === 'success') {
+                $('#confirmModal').modal('hide');
+                
+                // نمایش پیام موفقیت
+                alert('✅ ' + response.message);
+                
+                if (response.invoice_deleted) {
+                    // اگر فاکتور حذف شد
+                    selectedInvoiceId = null;
+                    selectedItems = {};
+                    clearItemsTable();
+                    
+                    // حذف فاکتور از لیست
+                    $(`.invoice-row[onclick*="${selectedInvoiceId}"]`).remove();
+                } else {
+                    // اگر فاکتور به‌روزرسانی شد
+                    // ریفرش آیتم‌ها
+                    loadInvoiceItems(selectedInvoiceId);
+                }
+                
+                // ریست فرم
+                $('#return-reason').val('');
+                selectedItems = {};
+                updateStats();
+                updateProcessButton();
+                
+                // ریفرش لیست فاکتورها
+                searchInvoices();
+                
+            } else {
+                alert('❌ ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ خطای AJAX:', xhr.responseText);
+            
+            let errorMsg = 'خطا در پردازش مرجوع';
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMsg = response.message;
+                }
+            } catch (e) {
+                errorMsg = xhr.statusText;
+            }
+            
+            alert('❌ ' + errorMsg);
+        },
+        complete: function() {
+            hideLoading();
+        }
+    });
+}
+
+// Event listener برای دکمه تأیید
+$(document).ready(function() {
+    // ... کدهای قبلی ...
+    
+    $('#confirm-return-btn').click(processReturn);
+    
+    // همچنین اضافه کردن event listener برای Enter در textarea
+    $('#return-reason').keypress(function(e) {
+        if (e.which === 13 && !e.shiftKey) {
+            e.preventDefault();
+            processReturn();
+        }
+    });
+});
+    </script>
+</body>
+</html>

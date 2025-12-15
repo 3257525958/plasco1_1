@@ -217,3 +217,31 @@ class CashPayment(models.Model):
 
     def __str__(self):
         return f"پرداخت نقدی - فاکتور {self.invoice.id}"
+
+# ------------------------------------------مرجوعی------------------------------------------------------------------------------------
+
+
+class ReturnLog(models.Model):
+    """لاگ مرجوع کالا"""
+    invoice = models.ForeignKey('Invoicefrosh', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='return_logs', verbose_name="فاکتور")
+    returned_by = models.ForeignKey('auth.User', on_delete=models.CASCADE, verbose_name="مرجوع کننده")
+    return_amount = models.PositiveIntegerField(verbose_name="مبلغ مرجوع", default=0)
+    return_profit = models.PositiveIntegerField(verbose_name="سود مرجوع", default=0)
+    reason = models.TextField(verbose_name="دلیل مرجوع", blank=True, null=True)
+    return_data = models.JSONField(verbose_name="داده‌های مرجوع", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ مرجوع")
+
+    class Meta:
+        verbose_name = "لاگ مرجوع"
+        verbose_name_plural = "لاگ‌های مرجوع"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"مرجوع {self.return_amount} - فاکتور {self.invoice.id if self.invoice else 'حذف شده'}"
+
+    def get_jalali_date(self):
+        return jdatetime.fromgregorian(datetime=self.created_at).strftime('%Y/%m/%d')
+
+    def get_jalali_time(self):
+        return jdatetime.fromgregorian(datetime=self.created_at).strftime('%H:%M')
