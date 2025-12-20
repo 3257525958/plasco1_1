@@ -1,0 +1,1075 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت سرمایه‌گذاری</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <!-- Persian Datepicker CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+    <style>
+        :root {
+            --primary-color: #2E7D32;
+            --secondary-color: #388E3C;
+            --accent-color: #1B5E20;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --info-color: #2196F3;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --gradient-primary: linear-gradient(135deg, #2E7D32, #4CAF50);
+        }
+
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 10px;
+            color: var(--text-color);
+            direction: rtl;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .branch-info {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8f5e9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-secondary {
+            background: #78909c;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #546e7a;
+            transform: translateY(-2px);
+        }
+
+        .form-control {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            background-color: var(--input-bg);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(46, 125, 50, 0.25);
+        }
+
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+        }
+
+        .amount-letters-box {
+            background-color: #fff3e0;
+            border: 2px solid #ffb74d;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #e65100;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-info-box {
+            background-color: #e8f5e9;
+            border: 2px solid var(--success-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-message {
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .form-check {
+            margin-bottom: 10px;
+        }
+
+        .form-check-input {
+            margin-left: 5px;
+        }
+
+        .form-check-label {
+            cursor: pointer;
+        }
+
+        /* Persian Datepicker Styles */
+        .pdp-container {
+            z-index: 1050 !important;
+            font-family: 'Vazirmatn' !important;
+            direction: rtl !important;
+        }
+
+        .pdp-header {
+            background-color: var(--primary-color) !important;
+        }
+
+        .pdp-selected {
+            background-color: var(--accent-color) !important;
+        }
+
+        .input-group-text {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .input-group-text:hover {
+            background-color: #e8f5e9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+            
+            .section-card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-hand-holding-usd"></i> ثبت سرمایه‌گذاری</h1>
+        </div>
+
+        <div class="branch-info">
+            <i class="fas fa-store"></i> سیستم مدیریت سرمایه‌گذاری | 
+            <i class="fas fa-user"></i> کاربر: ادمین
+        </div>
+
+        {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        {% if success_message %}
+        <div class="success-message">
+            <i class="fas fa-check-circle"></i> {{ success_message }}
+        </div>
+        {% endif %}
+
+        <div class="section-card">
+            <h3 class="section-title"><i class="fas fa-info-circle"></i> اطلاعات سرمایه‌گذار</h3>
+            
+            <form method="post" id="investmentForm">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="melicode_input" class="form-label">کد ملی</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="melicode_input" 
+                               name="melicode"
+                               maxlength="10"
+                               pattern="\d{10}"
+                               required
+                               placeholder="کد ملی 10 رقمی را وارد کنید">
+                        <div class="form-text">کد ملی باید دقیقاً 10 رقم باشد</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">نام سرمایه‌گذار</label>
+                        <div class="user-info-box" id="userInfoBox">
+                            <i class="fas fa-user"></i>
+                            <span id="userFullName"></span>
+                        </div>
+                        <div class="form-control" style="background-color: #f5f5f5; color: #999;" id="userPlaceholder">
+                            پس از وارد کردن کد ملی، نام سرمایه‌گذار نمایش داده می‌شود
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="investment_date" class="form-label">تاریخ سرمایه‌گذاری (شمسی)</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="investment_date" 
+                                   name="investment_date"
+                                   required
+                                   placeholder="۱۴۰۳/۰۱/۰۱"
+                                   readonly
+                                   style="background-color: white; cursor: pointer;">
+                            <span class="input-group-text" id="datepicker-icon" style="cursor: pointer;">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                        </div>
+                        <input type="hidden" id="gregorian_date" name="gregorian_date">
+                        <div class="form-text" id="dateHelpText">روی آیکن تقویم کلیک کنید یا تاریخ را وارد کنید</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="amount_input" class="form-label">مبلغ سرمایه‌گذاری (تومان)</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="amount_input" 
+                               name="amount"
+                               min="1000"
+                               step="1000"
+                               required
+                               placeholder="مبلغ را به تومان وارد کنید">
+                        <div class="form-text">حداقل مبلغ: 1,000 تومان</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">مبلغ به حروف</label>
+                        <div class="amount-letters-box" id="amountLetters">
+                            مبلغ به حروف در اینجا نمایش داده می‌شود
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">روش پرداخت</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cash" value="cash" checked>
+                            <label class="form-check-label" for="cash">
+                                <i class="fas fa-money-bill-wave"></i> نقدی
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
+                            <label class="form-check-label" for="bank_transfer">
+                                <i class="fas fa-university"></i> واریز به حساب
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="payment_account" class="form-label">انتخاب حساب بانکی</label>
+                        <select class="form-control" id="payment_account" name="payment_account">
+                            <option value="">انتخاب کنید</option>
+                            {% for account in payment_accounts %}
+                            <option value="{{ account.id }}">
+                                {{ account.bank_name }} - {{ account.account_holder }} ({{ account.account_number|slice:"-4:" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text" id="accountHelpText">فقط برای روش "واریز به حساب"</div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-secondary w-100" onclick="window.location.href='/'">
+                            <i class="fas fa-arrow-right"></i> بازگشت به صفحه اصلی
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-check"></i> ثبت سرمایه‌گذاری
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Persian Datepicker JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/persian-date@latest/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+    
+    <script>
+        
+        
+        
+        
+        
+        
+        
+            // تابع تبدیل تاریخ شمسی به میلادی - نسخه اصلاح شده
+    function persianToGregorian(persianDateStr) {
+        try {
+            // نرمال‌سازی تاریخ: حذف فضاهای اضافی
+            persianDateStr = persianDateStr.trim();
+            
+            // جداکننده‌ها می‌توانند / یا - باشند
+            var separator = persianDateStr.includes('/') ? '/' : '-';
+            var parts = persianDateStr.split(separator);
+            
+            if (parts.length !== 3) {
+                // اگر هنوز مشکل داریم، سعی می‌کنیم با هر جداکننده‌ای تقسیم کنیم
+                parts = persianDateStr.split(/[\/\-]/);
+                if (parts.length !== 3) return null;
+            }
+            
+            var year = parseInt(parts[0]);
+            var month = parseInt(parts[1]);
+            var day = parseInt(parts[2]);
+            
+            // اطمینان از اعتبار اعداد
+            if (isNaN(year) || isNaN(month) || isNaN(day)) {
+                return null;
+            }
+            
+            // ایجاد یک تاریخ شمسی و تبدیل به میلادی
+            var pDate = new persianDate([year, month, day]);
+            
+            // بررسی معتبر بودن تاریخ
+            if (!pDate.isValid()) {
+                return null;
+            }
+            
+            var gDate = pDate.toCalendar('gregorian').toDate();
+            
+            return gDate;
+        } catch (error) {
+            console.error('خطا در تبدیل تاریخ:', error);
+            return null;
+        }
+    }
+
+    $(document).ready(function() {
+        // تنظیم تاریخ امروز شمسی به عنوان پیش‌فرض
+        var today = new Date();
+        var pDate = new persianDate(today);
+        var todayPersian = pDate.format('YYYY/MM/DD');
+        $('#investment_date').val(todayPersian);
+        
+        // ذخیره تاریخ میلادی معادل
+        var gregorianDate = persianToGregorian(todayPersian);
+        if (gregorianDate) {
+            $('#gregorian_date').val(gregorianDate.toISOString().split('T')[0]);
+        }
+        
+        // فعال‌سازی Datepicker شمسی
+        $('#investment_date, #datepicker-icon').on('click', function() {
+            $('#investment_date').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                observer: true,
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian',
+                onSelect: function(unixDate) {
+                    var selectedDate = new persianDate(unixDate);
+                    var selectedPersianDate = selectedDate.format('YYYY/MM/DD');
+                    var selectedGregorianDate = selectedDate.toCalendar('gregorian').toDate();
+                    
+                    // به روزرسانی فیلد
+                    $('#investment_date').val(selectedPersianDate);
+                    
+                    // ذخیره تاریخ میلادی در فیلد مخفی
+                    $('#gregorian_date').val(selectedGregorianDate.toISOString().split('T')[0]);
+                    
+                    // نمایش تاریخ انتخاب شده
+                    $('#dateHelpText').html('تاریخ انتخاب شده: ' + selectedPersianDate);
+                }
+            });
+        });
+        
+        // مدیریت انتخاب روش پرداخت
+        $('input[name="payment_method"]').change(function() {
+            if ($(this).val() === 'cash') {
+                $('#payment_account').prop('disabled', true);
+                $('#payment_account').val('');
+                $('#accountHelpText').css('color', '#999');
+            } else {
+                $('#payment_account').prop('disabled', false);
+                $('#accountHelpText').css('color', '#2E7D32');
+            }
+        });
+        
+        // غیرفعال کردن انتخاب حساب در ابتدا
+        $('#payment_account').prop('disabled', true);
+        $('#accountHelpText').css('color', '#999');
+        
+        // بررسی کد ملی
+        $('#melicode_input').on('input', function() {
+            var melicode = $(this).val().trim();
+            
+            // فقط اعداد
+            $(this).val(melicode.replace(/\D/g, ''));
+            
+            if (melicode.length === 10) {
+                checkMelicode(melicode);
+            } else if (melicode.length > 0) {
+                showUserError('کد ملی باید 10 رقم باشد');
+            } else {
+                resetUserInfo();
+            }
+        });
+        
+        // تبدیل مبلغ به حروف
+        $('#amount_input').on('input', function() {
+            var amount = $(this).val().trim();
+            
+            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                convertAmountToWords(amount);
+            } else {
+                resetAmountDisplay();
+            }
+        });
+        
+        // اعتبارسنجی فرم
+        $('#investmentForm').submit(function(e) {
+            e.preventDefault(); // ابتدا جلوگیری می‌کنیم
+            
+            if (!validateForm()) {
+                return false;
+            }
+            
+            // اگر همه چیز درست بود، فرم را ارسال می‌کنیم
+            this.submit();
+        });
+    });
+    
+    // ... توابع checkMelicode, convertAmountToWords, etc. ...
+    
+    function validateForm() {
+        var melicode = $('#melicode_input').val().trim();
+        var amount = $('#amount_input').val().trim();
+        var paymentMethod = $('input[name="payment_method"]:checked').val();
+        var paymentAccount = $('#payment_account').val();
+        var persianDate = $('#investment_date').val().trim();
+        
+        // بررسی کد ملی
+        if (melicode.length !== 10) {
+            alert('لطفاً کد ملی معتبر (10 رقمی) وارد کنید.');
+            $('#melicode_input').focus();
+            return false;
+        }
+        
+        // بررسی مبلغ
+        if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
+            alert('لطفاً مبلغ معتبر وارد کنید.');
+            $('#amount_input').focus();
+            return false;
+        }
+        
+        // بررسی روش پرداخت
+        if (paymentMethod === 'bank_transfer' && !paymentAccount) {
+            alert('برای روش واریز به حساب، لطفاً حساب بانکی را انتخاب کنید.');
+            $('#payment_account').focus();
+            return false;
+        }
+        
+        // **اعتبارسنجی بسیار ساده تاریخ**
+        if (!persianDate) {
+            alert('لطفاً تاریخ را وارد کنید.');
+            $('#investment_date').focus();
+            return false;
+        }
+        
+        // فقط بررسی می‌کنیم که تاریخ حداقل 8 کاراکتر داشته باشد
+        if (persianDate.length < 8) {
+            alert('تاریخ وارد شده بسیار کوتاه است.');
+            $('#investment_date').focus();
+            return false;
+        }
+        
+        // سعی می‌کنیم تاریخ را به میلادی تبدیل کنیم
+        try {
+            var gregorianDate = persianToGregorian(persianDate);
+            if (gregorianDate) {
+                $('#gregorian_date').val(gregorianDate.toISOString().split('T')[0]);
+            } else {
+                console.log('تاریخ تبدیل نشد، اما ادامه می‌دهیم...');
+            }
+        } catch (e) {
+            console.log('خطا در تبدیل تاریخ:', e);
+            // باز هم ادامه می‌دهیم
+        }
+        
+        // اگر به اینجا رسیدیم، همه چیز درست است
+        return true;
+    }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+    // تابع اعتبارسنجی تاریخ شمسی (نسخه ساده‌تر)
+    function validatePersianDate(dateStr) {
+        // نرمال‌سازی: حذف فضاهای اضافی
+        dateStr = dateStr.trim();
+        
+        // بررسی وجود تاریخ
+        if (!dateStr) {
+            return {
+                isValid: false,
+                message: 'تاریخ را وارد کنید'
+            };
+        }
+        
+        // Regex ساده‌تر برای تاریخ شمسی
+        // فرمت: 13XX-14XX/XX/XX یا 13XX-14XX-XX-XX
+        var regex = /^1[3-4]\d{2}[\/\-]\d{1,2}[\/\-]\d{1,2}$/;
+        
+        if (!regex.test(dateStr)) {
+            return {
+                isValid: false,
+                message: 'فرمت تاریخ نامعتبر است. مثال: 1403/01/15 یا 1403-01-15'
+            };
+        }
+        
+        // تبدیل تاریخ
+        var gregorian = persianToGregorian(dateStr);
+        if (!gregorian) {
+            return {
+                isValid: false,
+                message: 'تاریخ وارد شده معتبر نیست'
+            };
+        }
+        
+        return {
+            isValid: true,
+            gregorian: gregorian
+        };
+    }
+
+    $(document).ready(function() {
+        // تنظیم تاریخ امروز شمسی به عنوان پیش‌فرض
+        var today = new Date();
+        var pDate = new persianDate(today);
+        var todayPersian = pDate.format('YYYY/MM/DD');
+        $('#investment_date').val(todayPersian);
+        
+        // ذخیره تاریخ میلادی معادل
+        var gregorianDate = persianToGregorian(todayPersian);
+        if (gregorianDate) {
+            $('#gregorian_date').val(gregorianDate.toISOString().split('T')[0]);
+        }
+        
+        // فعال‌سازی Datepicker شمسی
+        $('#investment_date, #datepicker-icon').on('click', function() {
+            $('#investment_date').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                observer: true,
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian',
+                onSelect: function(unixDate) {
+                    var selectedDate = new persianDate(unixDate);
+                    var selectedPersianDate = selectedDate.format('YYYY/MM/DD');
+                    var selectedGregorianDate = selectedDate.toCalendar('gregorian').toDate();
+                    
+                    // به روزرسانی فیلد
+                    $('#investment_date').val(selectedPersianDate);
+                    
+                    // ذخیره تاریخ میلادی در فیلد مخفی
+                    $('#gregorian_date').val(selectedGregorianDate.toISOString().split('T')[0]);
+                    
+                    // حذف هرگونه علامت خطا
+                    $('#investment_date').removeClass('is-invalid');
+                    $('#dateHelpText').html('تاریخ انتخاب شد: ' + selectedPersianDate);
+                }
+            });
+        });
+        
+        // مدیریت انتخاب روش پرداخت
+        $('input[name="payment_method"]').change(function() {
+            if ($(this).val() === 'cash') {
+                $('#payment_account').prop('disabled', true);
+                $('#payment_account').val('');
+                $('#accountHelpText').css('color', '#999');
+            } else {
+                $('#payment_account').prop('disabled', false);
+                $('#accountHelpText').css('color', '#2E7D32');
+            }
+        });
+        
+        // غیرفعال کردن انتخاب حساب در ابتدا
+        $('#payment_account').prop('disabled', true);
+        $('#accountHelpText').css('color', '#999');
+        
+        // بررسی کد ملی
+        $('#melicode_input').on('input', function() {
+            var melicode = $(this).val().trim();
+            
+            // فقط اعداد
+            $(this).val(melicode.replace(/\D/g, ''));
+            
+            if (melicode.length === 10) {
+                checkMelicode(melicode);
+            } else if (melicode.length > 0) {
+                showUserError('کد ملی باید 10 رقم باشد');
+            } else {
+                resetUserInfo();
+            }
+        });
+        
+        // تبدیل مبلغ به حروف
+        $('#amount_input').on('input', function() {
+            var amount = $(this).val().trim();
+            
+            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                convertAmountToWords(amount);
+            } else {
+                resetAmountDisplay();
+            }
+        });
+        
+        // اعتبارسنجی فرم
+        $('#investmentForm').submit(function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // اگر همه چیز درست بود، فرم ارسال شود
+            return true;
+        });
+    });
+    
+    $(document).ready(function() {
+        // تنظیم تاریخ امروز شمسی به عنوان پیش‌فرض
+        var today = new Date();
+        var pDate = new persianDate(today);
+        var todayPersian = pDate.format('YYYY/MM/DD');
+        $('#investment_date').val(todayPersian);
+        
+        // ذخیره تاریخ میلادی معادل
+        var gregorianDate = persianToGregorian(todayPersian);
+        if (gregorianDate) {
+            $('#gregorian_date').val(gregorianDate.toISOString().split('T')[0]);
+        }
+        
+        // فعال‌سازی Datepicker شمسی
+        $('#investment_date, #datepicker-icon').on('click', function() {
+            $('#investment_date').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                observer: true,
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian',
+                onSelect: function(unixDate) {
+                    var selectedDate = new persianDate(unixDate);
+                    var selectedPersianDate = selectedDate.format('YYYY/MM/DD');
+                    var selectedGregorianDate = selectedDate.toCalendar('gregorian').toDate();
+                    
+                    // به روزرسانی فیلد
+                    $('#investment_date').val(selectedPersianDate);
+                    
+                    // ذخیره تاریخ میلادی در فیلد مخفی
+                    $('#gregorian_date').val(selectedGregorianDate.toISOString().split('T')[0]);
+                    
+                    // حذف اعتبارسنجی خودکار - فقط نمایش تاریخ
+                    $('#investment_date').removeClass('is-invalid');
+                    $('#dateHelpText').html('روی آیکن تقویم کلیک کنید یا تاریخ را وارد کنید');
+                }
+            });
+        });
+        
+        // **حذف اعتبارسنجی blur**
+        // این بخش کاملاً حذف شده
+        
+        // مدیریت انتخاب روش پرداخت
+        $('input[name="payment_method"]').change(function() {
+            if ($(this).val() === 'cash') {
+                $('#payment_account').prop('disabled', true);
+                $('#payment_account').val('');
+                $('#accountHelpText').css('color', '#999');
+            } else {
+                $('#payment_account').prop('disabled', false);
+                $('#accountHelpText').css('color', '#2E7D32');
+            }
+        });
+        
+        // غیرفعال کردن انتخاب حساب در ابتدا
+        $('#payment_account').prop('disabled', true);
+        $('#accountHelpText').css('color', '#999');
+        
+        // بررسی کد ملی
+        $('#melicode_input').on('input', function() {
+            var melicode = $(this).val().trim();
+            
+            // فقط اعداد
+            $(this).val(melicode.replace(/\D/g, ''));
+            
+            if (melicode.length === 10) {
+                checkMelicode(melicode);
+            } else if (melicode.length > 0) {
+                showUserError('کد ملی باید 10 رقم باشد');
+            } else {
+                resetUserInfo();
+            }
+        });
+        
+        // تبدیل مبلغ به حروف
+        $('#amount_input').on('input', function() {
+            var amount = $(this).val().trim();
+            
+            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                convertAmountToWords(amount);
+            } else {
+                resetAmountDisplay();
+            }
+        });
+        
+        // اعتبارسنجی فرم
+        $('#investmentForm').submit(function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        });
+    });
+    
+    // ... باقی توابع بدون تغییر (checkMelicode, convertAmountToWords, etc.)
+    
+    
+    
+    
+    
+    // ... باقی توابع بدون تغییر
+
+        $(document).ready(function() {
+            // تنظیم تاریخ امروز شمسی به عنوان پیش‌فرض
+            var today = new Date();
+            var pDate = new persianDate(today);
+            var todayPersian = pDate.format('YYYY/MM/DD');
+            $('#investment_date').val(todayPersian);
+            
+            // ذخیره تاریخ میلادی معادل
+            var gregorianDate = persianToGregorian(todayPersian);
+            if (gregorianDate) {
+                $('#gregorian_date').val(gregorianDate.toISOString().split('T')[0]);
+            }
+            
+            // فعال‌سازی Datepicker شمسی
+            $('#investment_date, #datepicker-icon').on('click', function() {
+                $('#investment_date').persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    observer: true,
+                    autoClose: true,
+                    initialValue: true,
+                    initialValueType: 'persian',
+                    onSelect: function(unixDate) {
+                        var selectedDate = new persianDate(unixDate);
+                        var selectedPersianDate = selectedDate.format('YYYY/MM/DD');
+                        var selectedGregorianDate = selectedDate.toCalendar('gregorian').toDate();
+                        
+                        // به روزرسانی فیلد
+                        $('#investment_date').val(selectedPersianDate);
+                        
+                        // ذخیره تاریخ میلادی در فیلد مخفی
+                        $('#gregorian_date').val(selectedGregorianDate.toISOString().split('T')[0]);
+                        
+                        // اعتبارسنجی
+                        validatePersianDate(selectedPersianDate);
+                    }
+                });
+            });
+            
+            // اعتبارسنجی دستی تاریخ
+            $('#investment_date').on('blur', function() {
+                var dateStr = $(this).val().trim();
+                if (dateStr) {
+                    validatePersianDate(dateStr);
+                }
+            });
+            
+            // مدیریت انتخاب روش پرداخت
+            $('input[name="payment_method"]').change(function() {
+                if ($(this).val() === 'cash') {
+                    $('#payment_account').prop('disabled', true);
+                    $('#payment_account').val('');
+                    $('#accountHelpText').css('color', '#999');
+                } else {
+                    $('#payment_account').prop('disabled', false);
+                    $('#accountHelpText').css('color', '#2E7D32');
+                }
+            });
+            
+            // غیرفعال کردن انتخاب حساب در ابتدا
+            $('#payment_account').prop('disabled', true);
+            $('#accountHelpText').css('color', '#999');
+            
+            // بررسی کد ملی
+            $('#melicode_input').on('input', function() {
+                var melicode = $(this).val().trim();
+                
+                // فقط اعداد
+                $(this).val(melicode.replace(/\D/g, ''));
+                
+                if (melicode.length === 10) {
+                    checkMelicode(melicode);
+                } else if (melicode.length > 0) {
+                    showUserError('کد ملی باید 10 رقم باشد');
+                } else {
+                    resetUserInfo();
+                }
+            });
+            
+            // تبدیل مبلغ به حروف
+            $('#amount_input').on('input', function() {
+                var amount = $(this).val().trim();
+                
+                if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                    convertAmountToWords(amount);
+                } else {
+                    resetAmountDisplay();
+                }
+            });
+            
+            // اعتبارسنجی فرم
+            $('#investmentForm').submit(function(e) {
+                if (!validateForm()) {
+                    e.preventDefault();
+                    return false;
+                }
+                return true;
+            });
+        });
+        
+        function checkMelicode(melicode) {
+            $.ajax({
+                url: '{% url "cash_management:check_melicode" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ melicode: melicode }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(response) {
+                    if (response.exists) {
+                        showUserInfo(response.fullname);
+                    } else {
+                        showUserError(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showUserError('خطا در ارتباط با سرور');
+                }
+            });
+        }
+        
+        function convertAmountToWords(amount) {
+            $.ajax({
+                url: '{% url "cash_management:convert_amount_to_words" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ amount: amount }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#amountLetters').html(
+                            '<i class="fas fa-file-invoice-dollar"></i> ' + response.amount_letters
+                        );
+                        $('#amountLetters').css({
+                            'background-color': '#f1f8e9',
+                            'border-color': '#4caf50',
+                            'color': '#2e7d32'
+                        });
+                    } else {
+                        $('#amountLetters').html(
+                            '<i class="fas fa-exclamation-triangle"></i> ' + response.error
+                        );
+                        $('#amountLetters').css({
+                            'background-color': '#ffebee',
+                            'border-color': '#f44336',
+                            'color': '#c62828'
+                        });
+                    }
+                },
+                error: function() {
+                    $('#amountLetters').html(
+                        '<i class="fas fa-exclamation-triangle"></i> خطا در تبدیل مبلغ'
+                    );
+                    $('#amountLetters').css({
+                        'background-color': '#fff3e0',
+                        'border-color': '#ff9800',
+                        'color': '#ef6c00'
+                    });
+                }
+            });
+        }
+        
+        function showUserInfo(fullname) {
+            $('#userPlaceholder').hide();
+            $('#userInfoBox').show();
+            $('#userFullName').text(fullname);
+            $('#userInfoBox').css({
+                'background-color': '#e8f5e9',
+                'border-color': '#4caf50',
+                'color': '#2e7d32'
+            });
+        }
+        
+        function showUserError(message) {
+            $('#userPlaceholder').hide();
+            $('#userInfoBox').show();
+            $('#userFullName').html('<i class="fas fa-exclamation-triangle"></i> ' + message);
+            $('#userInfoBox').css({
+                'background-color': '#ffebee',
+                'border-color': '#f44336',
+                'color': '#c62828'
+            });
+        }
+        
+        function resetUserInfo() {
+            $('#userInfoBox').hide();
+            $('#userPlaceholder').show();
+        }
+        
+        function resetAmountDisplay() {
+            $('#amountLetters').text('مبلغ به حروف در اینجا نمایش داده می‌شود');
+            $('#amountLetters').css({
+                'background-color': '#fff3e0',
+                'border-color': '#ffb74d',
+                'color': '#e65100'
+            });
+        }
+            
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

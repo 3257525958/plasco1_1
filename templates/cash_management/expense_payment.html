@@ -1,0 +1,847 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پرداخت هزینه‌ها - پلاسکو</title>
+    
+    <!-- کتابخانه‌های تاریخ شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    
+    <!-- فونت‌ها و آیکون‌ها -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* استایل‌های مشابه فایل قبلی */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #1976D2;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --info-color: #00BCD4;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+            
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 25px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .filter-section {
+            background-color: var(--light-color);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .date-input-container {
+            position: relative;
+            width: 180px;
+        }
+
+        .shamsi-date-input {
+            width: 100%;
+            padding: 10px 15px;
+            padding-right: 40px;
+            border: 2px solid var(--primary-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #2E7D32);
+            color: white;
+        }
+
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin: 20px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .inventory-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- لودینگ -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- هدر -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-credit-card"></i>
+                سیستم پرداخت هزینه‌ها
+            </h1>
+            <p>مدیریت و پرداخت هزینه‌های ثبت شده</p>
+        </div>
+
+        <!-- فیلترها -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        از تاریخ:
+                    </span>
+                    <div class="date-input-container">
+                        <input type="text" id="from-date" class="shamsi-date-input" 
+                               placeholder="انتخاب تاریخ">
+                        <i class="fas fa-calendar-alt calendar-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        تا تاریخ:
+                    </span>
+                    <div class="date-input-container">
+                        <input type="text" id="to-date" class="shamsi-date-input" 
+                               placeholder="انتخاب تاریخ">
+                        <i class="fas fa-calendar-alt calendar-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-filter"></i>
+                        وضعیت:
+                    </span>
+                    <select id="status-filter" class="form-select" style="width: 150px;">
+                        <option value="all">همه</option>
+                        <option value="pending">در انتظار پرداخت</option>
+                        <option value="paid">پرداخت شده</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button class="btn btn-primary" onclick="loadExpensesForPayment()">
+                        <i class="fas fa-search me-2"></i>
+                        جستجو
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- آمار پرداخت‌ها -->
+        <div class="stats-container" id="payment-stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="stat-value" id="total-expenses">0</div>
+                <div class="stat-label">تعداد هزینه‌ها</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-value" id="pending-amount">0</div>
+                <div class="stat-label">مبلغ در انتظار</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" id="paid-amount">0</div>
+                <div class="stat-label">مبلغ پرداخت شده</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stat-value" id="payment-percentage">0%</div>
+                <div class="stat-label">درصد پرداخت</div>
+            </div>
+        </div>
+
+        <!-- لیست هزینه‌ها برای پرداخت -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-credit-card me-2"></i>
+                لیست هزینه‌های در انتظار پرداخت
+                <span class="badge bg-warning" id="pending-count">0</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-container" style="max-height: 500px;">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th width="50">#</th>
+                                <th width="60">انتخاب</th>
+                                <th>عنوان</th>
+                                <th>نوع</th>
+                                <th>مبلغ</th>
+                                <th>تاریخ هزینه</th>
+                                <th>شعبه</th>
+                                <th>روش پرداخت</th>
+                                <th>وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-table-body">
+                            <!-- هزینه‌های در انتظار اینجا لود می‌شوند -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="select-all-payments">
+                        <label class="form-check-label" for="select-all-payments">
+                            انتخاب همه
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <button class="btn btn-success me-2" onclick="processSelectedPayments()" id="process-payment-btn" disabled>
+                            <i class="fas fa-check-circle me-2"></i>
+                            پرداخت انتخاب‌ها
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="exportPaymentReport()">
+                            <i class="fas fa-print me-2"></i>
+                            چاپ لیست
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال پرداخت -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-money-check-alt text-success me-2"></i>
+                        پرداخت هزینه‌ها
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="payment-summary">
+                        <!-- اطلاعات پرداخت اینجا نمایش داده می‌شود -->
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">تاریخ پرداخت</label>
+                        <div class="date-input-container">
+                            <input type="text" id="payment-date" class="shamsi-date-input form-control" 
+                                   placeholder="انتخاب تاریخ">
+                            <i class="fas fa-calendar-alt calendar-icon"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">یادداشت پرداخت (اختیاری)</label>
+                        <textarea class="form-control" id="payment-notes" rows="2" 
+                                  placeholder="توضیحات مربوط به پرداخت..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        انصراف
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmPayment()">
+                        تأیید پرداخت
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کتابخانه‌های JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
+    <script>
+        // توابع کمکی
+        function showLoading() {
+            $('#loading-overlay').fadeIn();
+        }
+        
+        function hideLoading() {
+            $('#loading-overlay').fadeOut();
+        }
+        
+        function showNotification(type, message) {
+            const types = {
+                'success': {icon: 'check-circle', color: 'success'},
+                'error': {icon: 'exclamation-circle', color: 'danger'},
+                'warning': {icon: 'exclamation-triangle', color: 'warning'},
+                'info': {icon: 'info-circle', color: 'info'}
+            };
+            
+            const alert = `
+                <div class="alert alert-${types[type].color} alert-dismissible fade show" role="alert" 
+                     style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    <i class="fas fa-${types[type].icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('body').append(alert);
+            setTimeout(() => $('.alert').alert('close'), 5000);
+        }
+        
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // بارگذاری هزینه‌ها برای پرداخت
+        function loadExpensesForPayment() {
+            const fromDate = $('#from-date').val();
+            const toDate = $('#to-date').val();
+            const status = $('#status-filter').val();
+            
+            if (!fromDate || !toDate) {
+                showNotification('error', 'لطفاً بازه تاریخ را مشخص کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '{% url "cash_management:get_expenses_for_payment" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    from_date: fromDate,
+                    to_date: toDate,
+                    status: status
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        displayPayments(response.expenses);
+                        updatePaymentStats(response);
+                        $('#payment-stats').show();
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در دریافت داده‌ها');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // نمایش هزینه‌های پرداخت
+        function displayPayments(expenses) {
+            const $body = $('#payment-table-body');
+            $body.empty();
+            
+            if (expenses && expenses.length > 0) {
+                expenses.forEach((expense, index) => {
+                    const isPending = expense.payment_status === 'pending';
+                    const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>
+                                <input type="checkbox" class="payment-checkbox" 
+                                       data-id="${expense.id}" ${isPending ? '' : 'disabled'}>
+                            </td>
+                            <td>
+                                <strong>${expense.title}</strong>
+                                ${expense.description ? '<br><small class="text-muted">' + expense.description + '</small>' : ''}
+                            </td>
+                            <td>${getExpenseTypeBadge(expense.expense_type)}</td>
+                            <td class="fw-bold">${formatNumber(expense.amount)} تومان</td>
+                            <td>${expense.expense_date}</td>
+                            <td>${expense.branch_name || '-'}</td>
+                            <td>${getPaymentMethodBadge(expense.payment_method)}</td>
+                            <td>${getExpenseStatusBadge(expense.payment_status)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-success" onclick="paySingleExpense(${expense.id})" ${isPending ? '' : 'disabled'}>
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary ms-1" onclick="viewExpenseDetails(${expense.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $body.append(row);
+                });
+            } else {
+                $body.append(`
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-credit-card fa-2x mb-2"></i>
+                            <p class="text-muted">هیچ هزینه‌ای یافت نشد</p>
+                        </td>
+                    </tr>
+                `);
+            }
+            
+            updatePaymentCounter();
+        }
+        
+        // ایجاد بج نوع هزینه
+        function getExpenseTypeBadge(type) {
+            const types = {
+                'operational': {label: 'عملیاتی', class: 'primary'},
+                'personnel': {label: 'پرسنلی', class: 'info'},
+                'administrative': {label: 'اداری', class: 'success'},
+                'other': {label: 'متفرقه', class: 'warning'}
+            };
+            
+            const typeInfo = types[type] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${typeInfo.class}">${typeInfo.label}</span>`;
+        }
+        
+        // ایجاد بج روش پرداخت
+        function getPaymentMethodBadge(method) {
+            const methods = {
+                'cash': {label: 'نقدی', class: 'success'},
+                'pos': {label: 'دستگاه پوز', class: 'primary'},
+                'check': {label: 'چک', class: 'warning'},
+                'credit': {label: 'نسیه', class: 'info'}
+            };
+            
+            const methodInfo = methods[method] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${methodInfo.class}">${methodInfo.label}</span>`;
+        }
+        
+        // ایجاد بج وضعیت هزینه
+        function getExpenseStatusBadge(status) {
+            const statuses = {
+                'pending': {label: 'در انتظار', class: 'warning'},
+                'paid': {label: 'پرداخت شده', class: 'success'},
+                'cancelled': {label: 'لغو شده', class: 'danger'}
+            };
+            
+            const statusInfo = statuses[status] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${statusInfo.class}">${statusInfo.label}</span>`;
+        }
+        
+        // آپدیت آمار پرداخت
+        function updatePaymentStats(data) {
+            $('#total-expenses').text(data.count || 0);
+            $('#pending-amount').text(formatNumber(data.pending_amount || 0) + ' تومان');
+            $('#paid-amount').text(formatNumber(data.paid_amount || 0) + ' تومان');
+            $('#pending-count').text(data.pending_count || 0);
+            
+            const total = (data.pending_amount || 0) + (data.paid_amount || 0);
+            const percentage = total > 0 ? Math.round((data.paid_amount || 0) / total * 100) : 0;
+            $('#payment-percentage').text(percentage + '%');
+        }
+        
+        // آپدیت شمارنده پرداخت‌ها
+        function updatePaymentCounter() {
+            const selectedCount = $('.payment-checkbox:checked').length;
+            $('#process-payment-btn').prop('disabled', selectedCount === 0);
+        }
+        
+        // انتخاب همه پرداخت‌ها
+        $('#select-all-payments').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.payment-checkbox:not(:disabled)').prop('checked', isChecked);
+            updatePaymentCounter();
+        });
+        
+        // پرداخت هزینه منفرد
+        function paySingleExpense(expenseId) {
+            const expense = getExpenseById(expenseId);
+            if (!expense) return;
+            
+            showPaymentModal([expense]);
+        }
+        
+        // پرداخت انتخاب‌ها
+        function processSelectedPayments() {
+            const selectedExpenses = $('.payment-checkbox:checked').map(function() {
+                const expenseId = $(this).data('id');
+                return getExpenseById(expenseId);
+            }).get();
+            
+            if (selectedExpenses.length === 0) {
+                showNotification('warning', 'لطفاً حداقل یک هزینه را انتخاب کنید');
+                return;
+            }
+            
+            showPaymentModal(selectedExpenses);
+        }
+        
+        // نمایش مودال پرداخت
+        function showPaymentModal(expenses) {
+            let totalAmount = 0;
+            let summaryHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    در حال پرداخت <strong>${expenses.length}</strong> هزینه
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>عنوان</th>
+                                <th>مبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            expenses.forEach((expense, index) => {
+                totalAmount += expense.amount;
+                summaryHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${expense.title}</td>
+                        <td>${formatNumber(expense.amount)} تومان</td>
+                    </tr>
+                `;
+            });
+            
+            summaryHTML += `
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2">مجموع:</th>
+                                <th class="text-success">${formatNumber(totalAmount)} تومان</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+            
+            $('#payment-summary').html(summaryHTML);
+            $('#payment-date').val(new persianDate().format('YYYY/MM/DD'));
+            $('#paymentModal').modal('show');
+        }
+        
+        // تأیید پرداخت
+        function confirmPayment() {
+            const selectedExpenses = $('.payment-checkbox:checked').map(function() {
+                return $(this).data('id');
+            }).get();
+            
+            const paymentDate = $('#payment-date').val();
+            const notes = $('#payment-notes').val();
+            
+            if (!paymentDate) {
+                showNotification('error', 'لطفاً تاریخ پرداخت را انتخاب کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '{% url "cash_management:process_payments" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    expense_ids: selectedExpenses,
+                    payment_date: paymentDate,
+                    notes: notes
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showNotification('success', 'پرداخت با موفقیت انجام شد');
+                        $('#paymentModal').modal('hide');
+                        loadExpensesForPayment();
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در پردازش پرداخت');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // مشاهده جزئیات هزینه
+        function viewExpenseDetails(expenseId) {
+            showNotification('info', `مشاهده جزئیات هزینه ${expenseId}`);
+        }
+        
+        // خروجی گزارش
+        function exportPaymentReport() {
+            showNotification('info', 'در حال تهیه گزارش...');
+        }
+        
+        // تابع کمکی برای دریافت اطلاعات هزینه
+        function getExpenseById(expenseId) {
+            const $row = $(`.payment-checkbox[data-id="${expenseId}"]`).closest('tr');
+            if ($row.length === 0) return null;
+            
+            return {
+                id: expenseId,
+                title: $row.find('td:nth-child(3) strong').text(),
+                amount: parseInt($row.find('td:nth-child(5)').text().replace(/[^\d]/g, ''))
+            };
+        }
+        
+        // بارگذاری اولیه
+        $(document).ready(function() {
+            // تنظیم تاریخ پیش‌فرض
+            const today = new persianDate();
+            const lastWeek = today.clone().subtract('day', 7);
+            
+            $('#from-date').val(lastWeek.format('YYYY/MM/DD'));
+            $('#to-date').val(today.format('YYYY/MM/DD'));
+            $('#payment-date').val(today.format('YYYY/MM/DD'));
+            
+            // فعال‌سازی datepicker
+            $('.shamsi-date-input').persianDatepicker({
+                observer: true,
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian'
+            });
+            
+            // باز کردن datepicker با آیکون
+            $('.calendar-icon').click(function() {
+                $(this).siblings('.shamsi-date-input').persianDatepicker('show');
+            });
+            
+            loadExpensesForPayment();
+        });
+    </script>
+</body>
+</html>

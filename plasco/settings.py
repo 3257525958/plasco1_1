@@ -187,8 +187,10 @@ INSTALLED_APPS = [
     'sync_app',
     'sync_api',
     'control_panel',
-'offline_ins',
-'ip_manager'
+    'offline_ins',
+    'ip_manager'
+    'cash_management'
+
 ]
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # یا 'django.contrib.sessions.backends.cache'
 SESSION_COOKIE_AGE = 1209600  # 2 هفته (پیش‌فرض)
@@ -332,7 +334,8 @@ OFFLINE_MODE = False
 #     'sync_api',
 #     'control_panel',
 #     'offline_ins',
-#     'ip_manager'
+#     'ip_manager',
+#     'cash_management'
 # ]
 #
 #
@@ -533,4 +536,4 @@ OFFLINE_MODE = False
 # #         'level': 'DEBUG',
 # #     },
 # # }
-#
+

@@ -1,0 +1,642 @@
+{% load static %}
+{% load jalali_filters %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گزارش سرمایه‌گذاری‌ها</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2E7D32;
+            --secondary-color: #388E3C;
+            --accent-color: #1B5E20;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --info-color: #2196F3;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --gradient-primary: linear-gradient(135deg, #2E7D32, #4CAF50);
+        }
+
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 10px;
+            color: var(--text-color);
+            direction: rtl;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .table-responsive {
+            margin-top: 20px;
+        }
+
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .form-select, .form-control {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .badge {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> گزارش سرمایه‌گذاری‌ها</h1>
+            <p class="text-muted">آمار و تحلیل سرمایه‌گذاری‌های ثبت شده</p>
+        </div>
+
+        <!-- فیلترها -->
+        <div class="filter-section">
+            <form method="get" id="filterForm" action="{% url 'cash_management:investment_report' %}">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">روش پرداخت</label>
+                        <select name="payment_method" class="form-select" id="paymentMethodSelect">
+                            <option value="all" {% if payment_method == 'all' %}selected{% endif %}>همه روش‌ها</option>
+                            {% for value, label in payment_methods %}
+                            <option value="{{ value }}" {% if payment_method == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- فیلتر حساب بانکی اضافه شده -->
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">حساب بانکی</label>
+                        <select name="account_id" class="form-select" id="accountSelect">
+                            <option value="all" {% if account_id == 'all' %}selected{% endif %}>همه حساب‌ها</option>
+                            {% for account in payment_accounts %}
+                            <option value="{{ account.id }}" {% if account_id == account.id|stringformat:"i" %}selected{% endif %}>
+                                {{ account.name }} - {{ account.bank_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">نوع گزارش</label>
+                        <select name="filter_type" class="form-select" id="filterType">
+                            <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>ماهانه</option>
+                            <option value="yearly" {% if filter_type == 'yearly' %}selected{% endif %}>سالانه</option>
+                            <option value="custom" {% if filter_type == 'custom' %}selected{% endif %}>بازه دلخواه</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3" id="yearField">
+                        <label class="form-label">سال (شمسی)</label>
+                        <select name="year" class="form-select" id="yearSelect">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y|to_persian_digits }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3" id="monthField">
+                        <label class="form-label">ماه</label>
+                        <select name="month" class="form-select" id="monthSelect">
+                            {% for value, name in persian_months %}
+                            <option value="{{ value }}" {% if selected_month == value %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3" id="startDateField" style="display: none;">
+                        <label class="form-label">از تاریخ (شمسی)</label>
+                        <input type="text" name="start_date" class="form-control datepicker" 
+                               placeholder="۱۴۰۳/۰۱/۰۱" value="{{ start_date }}"
+                               id="startDatePicker" autocomplete="off">
+                    </div>
+                    
+                    <div class="col-md-3 mb-3" id="endDateField" style="display: none;">
+                        <label class="form-label">تا تاریخ (شمسی)</label>
+                        <input type="text" name="end_date" class="form-control datepicker" 
+                               placeholder="۱۴۰۳/۱۲/۲۹" value="{{ end_date }}"
+                               id="endDatePicker" autocomplete="off">
+                    </div>
+                    
+                    <div class="col-md-12 mt-3">
+                        <button type="submit" class="btn btn-primary" id="applyFilter">
+                            <i class="fas fa-filter"></i> اعمال فیلتر
+                        </button>
+                        <button type="button" onclick="resetFilters()" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i> بازنشانی فیلترها
+                        </button>
+                        <a href="{% url 'cash_management:investment_registration' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> ثبت جدید
+                        </a>
+                        <button type="button" class="btn btn-info" onclick="window.print()">
+                            <i class="fas fa-print"></i> چاپ گزارش
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- کارت‌های آمار -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <i class="fas fa-wallet fa-2x text-primary"></i>
+                    <div class="stat-value" id="totalAmount">{{ total_amount|persian_intcomma }}</div>
+                    <div class="stat-label">جمع کل سرمایه‌گذاری</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <i class="fas fa-chart-bar fa-2x text-success"></i>
+                    <div class="stat-value">{{ investment_count|to_persian_digits }}</div>
+                    <div class="stat-label">تعداد سرمایه‌گذاری</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <i class="fas fa-calculator fa-2x text-info"></i>
+                    <div class="stat-value">{{ average_amount|floatformat:0|persian_intcomma }}</div>
+                    <div class="stat-label">میانگین هر سرمایه‌گذاری</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <i class="fas fa-calendar-alt fa-2x text-warning"></i>
+                    <div class="stat-value">{{ today_jalali|to_persian_digits }}</div>
+                    <div class="stat-label">تاریخ امروز</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- آمار روش‌های پرداخت -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <h5><i class="fas fa-chart-pie"></i> توزیع بر اساس روش پرداخت</h5>
+                    <div class="chart-container">
+                        <canvas id="paymentMethodChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <h5><i class="fas fa-list"></i> جزئیات روش‌های پرداخت</h5>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>روش پرداخت</th>
+                                <th>تعداد</th>
+                                <th>مبلغ کل</th>
+                                <th>درصد</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in by_payment_method %}
+                            <tr>
+                                <td>
+                                    <span class="badge {% if item.payment_method == 'cash' %}bg-success{% else %}bg-info{% endif %}">
+                                        {{ item.payment_method|payment_method_display }}
+                                    </span>
+                                </td>
+                                <td>{{ item.count|to_persian_digits }}</td>
+                                <td>{{ item.total|persian_intcomma }}</td>
+                                <td>
+                                    {% if total_amount > 0 %}
+                                    {{ item.total|divide:total_amount|multiply:100|floatformat:1|to_persian_digits }}٪
+                                    {% else %}
+                                    ۰٪
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">داده‌ای یافت نشد</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- گزارش حساب‌های بانکی (بخش جدید) -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="stat-card">
+                    <h5><i class="fas fa-university"></i> توزیع سرمایه‌گذاری‌ها بر اساس حساب بانکی</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>نام دستگاه</th>
+                                    <th>بانک</th>
+                                    <th>شماره حساب</th>
+                                    <th>تعداد تراکنش</th>
+                                    <th>مبلغ کل</th>
+                                    <th>درصد</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in by_payment_account %}
+                                <tr>
+                                    <td>{{ item.payment_account__name|default:"-" }}</td>
+                                    <td>{{ item.payment_account__bank_name|default:"-" }}</td>
+                                    <td>
+                                        {% if item.payment_account__account_number %}
+                                        {{ item.payment_account__account_number|slice:"-4:"|to_persian_digits }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.count|to_persian_digits }}</td>
+                                    <td>{{ item.total|persian_intcomma }}</td>
+                                    <td>
+                                        {% if total_amount > 0 %}
+                                        {{ item.total|divide:total_amount|multiply:100|floatformat:1|to_persian_digits }}٪
+                                        {% else %}
+                                        ۰٪
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">هیچ داده‌ای یافت نشد</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if by_payment_account %}
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="3" class="text-end"><strong>جمع کل:</strong></td>
+                                    <td>{{ by_payment_account|length|to_persian_digits }}</td>
+                                    <td colspan="2">{{ total_amount|persian_intcomma }} تومان</td>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- سرمایه‌گذاران برتر -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="stat-card">
+                    <h5><i class="fas fa-users"></i> ۱۰ سرمایه‌گذار برتر</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ردیف</th>
+                                    <th>نام و نام خانوادگی</th>
+                                    <th>کد ملی</th>
+                                    <th>تعداد</th>
+                                    <th>مبلغ کل</th>
+                                    <th>میانگین</th>
+                                    <th>درصد</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for investor in by_investor %}
+                                <tr>
+                                    <td>{{ forloop.counter|to_persian_digits }}</td>
+                                    <td>{{ investor.investor__firstname }} {{ investor.investor__lastname }}</td>
+                                    <td>{{ investor.investor__melicode|to_persian_digits }}</td>
+                                    <td>{{ investor.count|to_persian_digits }}</td>
+                                    <td>{{ investor.total|persian_intcomma }}</td>
+                                    <td>{{ investor.total|divide:investor.count|floatformat:0|persian_intcomma }}</td>
+                                    <td>
+                                        {% if total_amount > 0 %}
+                                        {{ investor.total|divide:total_amount|multiply:100|floatformat:1|to_persian_digits }}٪
+                                        {% else %}
+                                        ۰٪
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">هیچ داده‌ای یافت نشد</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول کامل سرمایه‌گذاری‌ها -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fas fa-table"></i> لیست کامل سرمایه‌گذاری‌ها</h5>
+                        <span class="badge bg-primary">{{ investment_count|to_persian_digits }} رکورد</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ردیف</th>
+                                    <th>سرمایه‌گذار</th>
+                                    <th>تاریخ سرمایه‌گذاری</th>
+                                    <th>مبلغ (تومان)</th>
+                                    <th>روش پرداخت</th>
+                                    <th>حساب بانکی</th>
+                                    <th>تاریخ ثبت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for investment in investments %}
+                                <tr>
+                                    <td>{{ forloop.counter|to_persian_digits }}</td>
+                                    <td>
+                                        <strong>{{ investment.investor.firstname }} {{ investment.investor.lastname }}</strong><br>
+                                        <small class="text-muted">{{ investment.investor.melicode|to_persian_digits }}</small>
+                                    </td>
+                                    <td>{{ investment.jalali_date_str|to_persian_digits }}</td>
+                                    <td class="fw-bold">{{ investment.amount|persian_intcomma }}</td>
+                                    <td>
+                                        <span class="badge {% if investment.payment_method == 'cash' %}bg-success{% else %}bg-info{% endif %}">
+                                            {{ investment.payment_method|payment_method_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if investment.payment_account %}
+                                        <small>
+                                            {{ investment.payment_account.bank_name }} - {{ investment.payment_account.name }}<br>
+                                            {{ investment.payment_account.account_number|slice:"-4:"|to_persian_digits }}
+                                        </small>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ investment.created_at|date:"Y/m/d H:i"|to_persian_digits }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-2x text-muted mb-3"></i><br>
+                                        هیچ سرمایه‌گذاری یافت نشد
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if investments %}
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>جمع کل:</strong></td>
+                                    <td colspan="4"><strong>{{ total_amount|persian_intcomma }} تومان</strong></td>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- اسکریپت‌ها -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/persian-date@latest/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // مدیریت نمایش فیلدها بر اساس نوع گزارش
+            function updateFilterFields() {
+                var filterType = $('#filterType').val();
+                
+                if (filterType === 'monthly') {
+                    $('#yearField').show();
+                    $('#monthField').show();
+                    $('#startDateField').hide();
+                    $('#endDateField').hide();
+                } else if (filterType === 'yearly') {
+                    $('#yearField').show();
+                    $('#monthField').hide();
+                    $('#startDateField').hide();
+                    $('#endDateField').hide();
+                } else if (filterType === 'custom') {
+                    $('#yearField').hide();
+                    $('#monthField').hide();
+                    $('#startDateField').show();
+                    $('#endDateField').show();
+                    
+                    // فعال‌سازی datepicker برای فیلدهای تاریخ
+                    initDatePickers();
+                }
+            }
+            
+            // تابع برای بازنشانی فیلترها
+            window.resetFilters = function() {
+                window.location.href = "{% url 'cash_management:investment_report' %}";
+            }
+            
+            // فعال‌سازی datepicker فارسی
+            function initDatePickers() {
+                $('.datepicker').persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    autoClose: true,
+                    initialValue: false,
+                    observer: true,
+                    calendar: {
+                        persian: {
+                            locale: 'fa'
+                        }
+                    }
+                });
+            }
+            
+            // اگر در حالت custom هستیم، datepickerها را فعال کن
+            if ($('#filterType').val() === 'custom') {
+                initDatePickers();
+            }
+            
+            // تغییر نوع گزارش
+            $('#filterType').change(updateFilterFields);
+            
+            // مدیریت فیلتر حساب بانکی و سایر فیلترها
+            $('#paymentMethodSelect, #accountSelect, #filterType, #yearSelect, #monthSelect').change(function() {
+                $('#filterForm').submit();
+            });
+            
+            // ایجاد نمودار دایره‌ای
+            var ctx = document.getElementById('paymentMethodChart');
+            if (ctx) {
+                var paymentData = {
+                    labels: [
+                        {% for item in by_payment_method %}
+                            '{{ item.payment_method|payment_method_display }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        data: [
+                            {% for item in by_payment_method %}
+                                {{ item.total }},
+                            {% endfor %}
+                        ],
+                        backgroundColor: [
+                            'rgba(46, 125, 50, 0.8)',
+                            'rgba(33, 150, 243, 0.8)',
+                            'rgba(255, 152, 0, 0.8)',
+                            'rgba(156, 39, 176, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 125, 50, 1)',
+                            'rgba(33, 150, 243, 1)',
+                            'rgba(255, 152, 0, 1)',
+                            'rgba(156, 39, 176, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+                
+                var paymentMethodChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: paymentData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                rtl: true,
+                                labels: {
+                                    font: {
+                                        family: 'Vazirmatn',
+                                        size: 12
+                                    },
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                rtl: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        var label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        var value = context.parsed;
+                                        // تبدیل عدد به فارسی
+                                        var persianValue = value.toLocaleString('fa-IR');
+                                        label += persianValue + ' تومان';
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // تبدیل اعداد انگلیسی به فارسی در صفحه
+            function convertNumbersToPersian() {
+                // اعداد در عناصر خاص
+                $('.stat-value, td, .badge').each(function() {
+                    var text = $(this).text();
+                    var persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+                    var englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                    
+                    for (var i = 0; i < 10; i++) {
+                        var regex = new RegExp(englishNumbers[i], 'g');
+                        text = text.replace(regex, persianNumbers[i]);
+                    }
+                    
+                    $(this).text(text);
+                });
+            }
+            
+            // اجرای تبدیل اعداد
+            convertNumbersToPersian();
+            
+            // اول بار که صفحه لود می‌شود، فیلدهای فیلتر را به روز کن
+            updateFilterFields();
+        });
+    </script>
+</body>
+</html>

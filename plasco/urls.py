@@ -32,6 +32,8 @@ urlpatterns = [
     path('switch-to-offline/', switch_to_offline, name='switch_to_offline'),
     path('ip/', include('ip_manager.urls')),
 
+    path('cash/', include('cash_management.urls')),
+
 ]
 
 USE_X_FORWARDED_HOST = True

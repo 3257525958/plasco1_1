@@ -1,0 +1,1704 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صندوق نقدی و حساب‌ها - پلاسکو</title>
+    
+    <!-- کتابخانه‌های تاریخ شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    
+    <!-- فونت‌ها و آیکون‌ها -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* استایل‌های اصلی مشابه فایل daily_invoices.html شما */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #1976D2;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --info-color: #00BCD4;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+            
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 25px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* استایل تب‌ها */
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: #666;
+            font-weight: 600;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            border-radius: 0;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* کارت‌ها */
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* فیلترها */
+        .filter-section {
+            background-color: var(--light-color);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+
+        .date-input-container {
+            position: relative;
+            width: 180px;
+        }
+
+        .shamsi-date-input {
+            width: 100%;
+            padding: 10px 15px;
+            padding-right: 40px;
+            border: 2px solid var(--primary-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        /* دکمه‌ها */
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #2E7D32);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        /* جداول */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin: 20px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .inventory-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .inventory-table tbody tr:hover {
+            background-color: rgba(33, 150, 243, 0.05);
+        }
+
+        /* بج‌های وضعیت */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-confirmed {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .badge-unconfirmed {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
+        }
+
+        .badge-discrepancy {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        /* اینپوت اعداد */
+        .amount-input {
+            width: 150px;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            text-align: center;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .amount-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            outline: none;
+        }
+
+        .amount-input.discrepancy {
+            border-color: var(--danger-color);
+            background-color: rgba(244, 67, 54, 0.05);
+        }
+
+        /* چک‌باکس */
+        .form-check {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .form-check-input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        /* آمار */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* تب‌های داخلی */
+        .sub-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .sub-tab-btn {
+            padding: 8px 20px;
+            border: none;
+            background: none;
+            color: #666;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius) var(--radius) 0 0;
+            transition: all 0.3s;
+        }
+
+        .sub-tab-btn.active {
+            color: var(--primary-color);
+            background-color: rgba(33, 150, 243, 0.1);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* لودینگ */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ریسپانسیو */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .nav-tabs .nav-link {
+                padding: 10px 15px;
+                font-size: 1rem;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .date-input-container {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- لودینگ -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- هدر -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-cash-register"></i>
+                سیستم موجودی صندوق
+            </h1>
+            <p>مدیریت موجودی نقدی و حساب‌های شعب و سرمایه‌گذاران</p>
+        </div>
+
+        <!-- تب‌های اصلی -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="cash-tab" data-bs-toggle="tab" 
+                        data-bs-target="#cash-content" type="button" role="tab">
+                    <i class="fas fa-money-bill-wave"></i> موجودی نقدی
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="account-tab" data-bs-toggle="tab" 
+                        data-bs-target="#account-content" type="button" role="tab">
+                    <i class="fas fa-credit-card"></i> موجودی حساب‌ها
+                </button>
+            </li>
+        </ul>
+
+        <!-- محتوای تب‌ها -->
+        <div class="tab-content mt-4" id="mainTabsContent">
+            <!-- تب موجودی نقدی -->
+            <div class="tab-pane fade show active" id="cash-content" role="tabpanel">
+                <!-- تب‌های داخلی نقدی -->
+                <div class="sub-tabs">
+                    <button class="sub-tab-btn active" data-type="cash" onclick="switchInventoryType('cash')">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        موجودی نقدی
+                    </button>
+                    <button class="sub-tab-btn" data-type="account" onclick="switchInventoryType('account')">
+                        <i class="fas fa-credit-card me-2"></i>
+                        موجودی حساب‌ها
+                    </button>
+                </div>
+
+                <!-- فیلترهای نقدی -->
+                <div class="filter-section">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <span class="filter-label">
+                                <i class="fas fa-calendar-alt"></i>
+                                تاریخ موجودی:
+                            </span>
+                            <div class="date-input-container">
+                                <input type="text" id="cash-inventory-date" class="shamsi-date-input" 
+                                       placeholder="انتخاب تاریخ">
+                                <i class="fas fa-calendar-alt calendar-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-actions">
+                            <button class="btn btn-primary" onclick="loadCashInventoryData()">
+                                <i class="fas fa-search me-2"></i>
+                                بارگذاری داده‌ها
+                            </button>
+                            <button class="btn btn-success" onclick="showInvestmentModal()">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                ثبت سرمایه‌گذاری
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- آمار نقدی -->
+                <div class="stats-container" id="cash-stats-section" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="stat-value" id="total-branches">0</div>
+                        <div class="stat-label">تعداد شعب</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-value" id="total-investors">0</div>
+                        <div class="stat-label">سرمایه‌گذاران</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="stat-value" id="total-calculated">0</div>
+                        <div class="stat-label">مبلغ محاسبه شده</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-money-check-alt"></i>
+                        </div>
+                        <div class="stat-value" id="total-actual">0</div>
+                        <div class="stat-label">مبلغ واقعی</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-value" id="total-discrepancies">0</div>
+                        <div class="stat-label">مغایرت‌ها</div>
+                    </div>
+                </div>
+
+                <!-- جداول نقدی -->
+                <div class="row mt-4">
+                    <!-- جدول شعب -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-store me-2"></i>
+                                موجودی شعب
+                                <span class="badge bg-primary" id="branches-count">0</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-container">
+                                    <table class="inventory-table">
+                                        <thead>
+                                            <tr>
+                                                <th width="50">#</th>
+                                                <th width="60">انتخاب</th>
+                                                <th>نام شعبه</th>
+                                                <th>مبلغ محاسبه شده</th>
+                                                <th>مبلغ واقعی</th>
+                                                <th>وضعیت</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="branches-table-body">
+                                            <!-- داده‌های شعب اینجا لود می‌شوند -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- جدول سرمایه‌گذاران -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-users me-2"></i>
+                                موجودی سرمایه‌گذاران
+                                <span class="badge bg-primary" id="investors-count">0</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-container">
+                                    <table class="inventory-table">
+                                        <thead>
+                                            <tr>
+                                                <th width="50">#</th>
+                                                <th width="60">انتخاب</th>
+                                                <th>نام سرمایه‌گذار</th>
+                                                <th>کد ملی</th>
+                                                <th>مبلغ محاسبه شده</th>
+                                                <th>مبلغ واقعی</th>
+                                                <th>وضعیت</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="investors-table-body">
+                                            <!-- داده‌های سرمایه‌گذاران اینجا لود می‌شوند -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- دکمه‌های عملیات نقدی -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all-branches">
+                                    <label class="form-check-label" for="select-all-branches">
+                                        انتخاب همه شعب
+                                    </label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="select-all-investors">
+                                    <label class="form-check-label" for="select-all-investors">
+                                        انتخاب همه سرمایه‌گذاران
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <button class="btn btn-danger me-2" onclick="showConfirmationModal('cash')" id="confirm-cash-btn" disabled>
+                                    <i class="fas fa-check-double me-2"></i>
+                                    ثبت تایید موجودی
+                                </button>
+                                <button class="btn btn-warning" onclick="exportCashToExcel()">
+                                    <i class="fas fa-file-excel me-2"></i>
+                                    خروجی اکسل
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تب موجودی حساب‌ها -->
+            <div class="tab-pane fade" id="account-content" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    این بخش برای مدیریت موجودی حساب‌ها و چک‌های دریافتی می‌باشد.
+                </div>
+
+                <!-- فیلترهای حساب‌ها -->
+                <div class="filter-section">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <span class="filter-label">
+                                <i class="fas fa-calendar-alt"></i>
+                                تاریخ:
+                            </span>
+                            <div class="date-input-container">
+                                <input type="text" id="account-inventory-date" class="shamsi-date-input" 
+                                       placeholder="انتخاب تاریخ">
+                                <i class="fas fa-calendar-alt calendar-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <span class="filter-label">
+                                <i class="fas fa-filter"></i>
+                                نوع حساب:
+                            </span>
+                            <select id="account-type-filter" class="form-select" style="width: 200px;">
+                                <option value="all">همه حساب‌ها</option>
+                                <option value="check">چک</option>
+                                <option value="credit">اعتباری</option>
+                                <option value="pos">پوز</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-actions">
+                            <button class="btn btn-primary" onclick="loadAccountInventoryData()">
+                                <i class="fas fa-search me-2"></i>
+                                جستجو
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- آمار حساب‌ها -->
+                <div class="stats-container" id="account-stats-section" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="stat-value" id="total-invoices">0</div>
+                        <div class="stat-label">فاکتورهای حساب</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-money-check"></i>
+                        </div>
+                        <div class="stat-value" id="total-amount">0</div>
+                        <div class="stat-label">مجموع مبلغ</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-value" id="confirmed-accounts">0</div>
+                        <div class="stat-label">تایید شده</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-value" id="pending-accounts">0</div>
+                        <div class="stat-label">در انتظار</div>
+                    </div>
+                </div>
+
+                <!-- جدول حساب‌ها -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-credit-card me-2"></i>
+                        لیست حساب‌ها و چک‌ها
+                        <span class="badge bg-primary" id="accounts-count">0</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-container">
+                            <table class="inventory-table">
+                                <thead>
+                                    <tr>
+                                        <th width="50">#</th>
+                                        <th width="60">انتخاب</th>
+                                        <th>شماره فاکتور</th>
+                                        <th>شعبه</th>
+                                        <th>مشتری</th>
+                                        <th>نوع حساب</th>
+                                        <th>مبلغ</th>
+                                        <th>تاریخ سررسید</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accounts-table-body">
+                                    <!-- داده‌های حساب‌ها اینجا لود می‌شوند -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- دکمه‌های عملیات حساب‌ها -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="select-all-accounts">
+                                <label class="form-check-label" for="select-all-accounts">
+                                    انتخاب همه حساب‌ها
+                                </label>
+                            </div>
+                            
+                            <div>
+                                <button class="btn btn-success me-2" onclick="showConfirmationModal('account')" id="confirm-accounts-btn" disabled>
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    تایید انتخاب‌ها
+                                </button>
+                                <button class="btn btn-warning" onclick="exportAccountReport()">
+                                    <i class="fas fa-file-pdf me-2"></i>
+                                    گزارش PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تایید -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        تأیید عملیات
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        آیا از تایید موجودی اطمینان دارید؟
+                    </div>
+                    
+                    <div id="confirmation-details">
+                        <p><strong>تعداد موارد انتخاب شده:</strong> <span id="modal-item-count">0</span></p>
+                        <p><strong>تاریخ:</strong> <span id="modal-date"></span></p>
+                        <p><strong>نوع:</strong> <span id="modal-type"></span></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i> انصراف
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirm-action-btn">
+                        <i class="fas fa-check me-2"></i> تأیید
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال سرمایه‌گذاری -->
+    <div class="modal fade" id="investmentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-hand-holding-usd text-success me-2"></i>
+                        ثبت سرمایه‌گذاری جدید
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <i class="fas fa-user me-2"></i>
+                                    اطلاعات سرمایه‌گذار
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">جستجو با کد ملی *</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="investor-national-id" 
+                                                   placeholder="کد ملی را وارد کنید" maxlength="10">
+                                            <button class="btn btn-primary" type="button" onclick="searchInvestor()">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="investor-info" style="display: none;">
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            سرمایه‌گذار پیدا شد
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <strong>نام و نام خانوادگی:</strong>
+                                            <span id="investor-fullname" class="me-2"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>کد ملی:</strong>
+                                            <span id="investor-national-id-display" class="me-2"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>شماره تماس:</strong>
+                                            <span id="investor-phone" class="me-2"></span>
+                                        </div>
+                                        
+                                        <input type="hidden" id="investor-id">
+                                    </div>
+                                    
+                                    <div id="investor-not-found" style="display: none;">
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            سرمایه‌گذار یافت نشد
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <i class="fas fa-money-bill-wave me-2"></i>
+                                    اطلاعات سرمایه‌گذاری
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">مبلغ سرمایه‌گذاری (تومان) *</label>
+                                        <input type="text" class="form-control" id="investment-amount" 
+                                               placeholder="مثال: 10000000" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">تاریخ سرمایه‌گذاری *</label>
+                                        <div class="date-input-container">
+                                            <input type="text" class="shamsi-date-input form-control" 
+                                                   id="investment-date" placeholder="انتخاب تاریخ" required>
+                                            <i class="fas fa-calendar-alt calendar-icon"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">روش پرداخت *</label>
+                                        <select class="form-select" id="investment-payment-method" required onchange="toggleCreditAccountField()">
+                                            <option value="">انتخاب کنید</option>
+                                            <option value="cash">نقدی</option>
+                                            <option value="credit">حساب</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3" id="credit-account-field" style="display: none;">
+                                        <label class="form-label">حساب اعتباری</label>
+                                        <select class="form-select" id="credit-account">
+                                            <option value="">انتخاب حساب</option>
+                                            <!-- حساب‌ها با AJAX لود می‌شوند -->
+                                        </select>
+                                        <small class="text-muted">حساب‌های اعتباری فعال</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">توضیحات (اختیاری)</label>
+                        <textarea class="form-control" id="investment-notes" 
+                                  rows="2" placeholder="توضیحات اضافی..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i> انصراف
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="submitInvestment()">
+                        <i class="fas fa-save me-2"></i> ثبت سرمایه‌گذاری
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کتابخانه‌های JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
+    <script>
+        // متغیرهای سراسری
+        let currentInventoryType = 'cash';
+        let currentTab = 'cash';
+        let inventoryData = {
+            branches: [],
+            investors: [],
+            accounts: []
+        };
+        
+        // توابع کمکی
+        function showLoading() {
+            $('#loading-overlay').fadeIn();
+        }
+        
+        function hideLoading() {
+            $('#loading-overlay').fadeOut();
+        }
+        
+        function showNotification(type, message) {
+            const types = {
+                'success': {icon: 'check-circle', color: 'success'},
+                'error': {icon: 'exclamation-circle', color: 'danger'},
+                'warning': {icon: 'exclamation-triangle', color: 'warning'},
+                'info': {icon: 'info-circle', color: 'info'}
+            };
+            
+            const alert = `
+                <div class="alert alert-${types[type].color} alert-dismissible fade show" role="alert" 
+                     style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    <i class="fas fa-${types[type].icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('body').append(alert);
+            setTimeout(() => $('.alert').alert('close'), 5000);
+        }
+        
+        // فرمت اعداد
+        function formatNumber(num) {
+            if (!num) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // دریافت CSRF token
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // تغییر نوع موجودی
+        function switchInventoryType(type) {
+            currentInventoryType = type;
+            $('.sub-tab-btn').removeClass('active');
+            $(`.sub-tab-btn[data-type="${type}"]`).addClass('active');
+            loadCashInventoryData();
+        }
+        
+        // بارگذاری داده‌های موجودی نقدی
+        function loadCashInventoryData() {
+            const date = $('#cash-inventory-date').val();
+            if (!date) {
+                showNotification('error', 'لطفاً تاریخ را انتخاب کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '{% url "cash_management:get_cash_data" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: date,
+                    type: currentInventoryType
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        displayCashInventoryData(response);
+                        updateCashStats(response);
+                        $('#cash-stats-section').show();
+                    } else {
+                        showNotification('error', response.message || 'خطا در دریافت داده‌ها');
+                    }
+                },
+                error: function(xhr) {
+                    showNotification('error', 'خطا در ارتباط با سرور');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // نمایش داده‌های موجودی نقدی
+        function displayCashInventoryData(data) {
+            inventoryData = data;
+            
+            // نمایش شعب
+            const $branchesBody = $('#branches-table-body');
+            $branchesBody.empty();
+            
+            if (data.branches && data.branches.length > 0) {
+                data.branches.forEach((branch, index) => {
+                    const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>
+                                <input type="checkbox" class="branch-checkbox" 
+                                       data-id="${branch.id}" ${branch.is_confirmed ? 'checked disabled' : ''}>
+                            </td>
+                            <td>${branch.name}</td>
+                            <td>
+                                <span class="text-success fw-bold">
+                                    ${formatNumber(branch.calculated_amount)} تومان
+                                </span>
+                            </td>
+                            <td>
+                                <input type="text" class="amount-input ${branch.has_discrepancy ? 'discrepancy' : ''}" 
+                                       value="${formatNumber(branch.actual_amount)}"
+                                       data-id="${branch.id}"
+                                       data-type="branch"
+                                       onchange="updateActualAmount(this)">
+                            </td>
+                            <td>
+                                ${getStatusBadge(branch.is_confirmed, branch.has_discrepancy)}
+                            </td>
+                        </tr>
+                    `;
+                    $branchesBody.append(row);
+                });
+            } else {
+                $branchesBody.append(`
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fas fa-store fa-2x mb-2"></i>
+                            <p class="text-muted">هیچ شعبه‌ای یافت نشد</p>
+                        </td>
+                    </tr>
+                `);
+            }
+            
+            // نمایش سرمایه‌گذاران
+            const $investorsBody = $('#investors-table-body');
+            $investorsBody.empty();
+            
+            if (data.investors && data.investors.length > 0) {
+                data.investors.forEach((investor, index) => {
+                    const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>
+                                <input type="checkbox" class="investor-checkbox" 
+                                       data-id="${investor.id}" ${investor.is_confirmed ? 'checked disabled' : ''}>
+                            </td>
+                            <td>${investor.name}</td>
+                            <td>${investor.national_id}</td>
+                            <td>
+                                <span class="text-success fw-bold">
+                                    ${formatNumber(investor.calculated_amount)} تومان
+                                </span>
+                            </td>
+                            <td>
+                                <input type="text" class="amount-input ${investor.has_discrepancy ? 'discrepancy' : ''}" 
+                                       value="${formatNumber(investor.actual_amount)}"
+                                       data-id="${investor.id}"
+                                       data-type="investor"
+                                       onchange="updateActualAmount(this)">
+                            </td>
+                            <td>
+                                ${getStatusBadge(investor.is_confirmed, investor.has_discrepancy)}
+                            </td>
+                        </tr>
+                    `;
+                    $investorsBody.append(row);
+                });
+            } else {
+                $investorsBody.append(`
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <p class="text-muted">هیچ سرمایه‌گذاری یافت نشد</p>
+                        </td>
+                    </tr>
+                `);
+            }
+            
+            updateCashCounters();
+        }
+        
+        // آپدیت آمار نقدی
+        function updateCashStats(data) {
+            const branches = data.branches || [];
+            const investors = data.investors || [];
+            
+            let totalCalculated = 0;
+            let totalActual = 0;
+            let discrepancyCount = 0;
+            
+            branches.forEach(branch => {
+                totalCalculated += branch.calculated_amount;
+                totalActual += branch.actual_amount;
+                if (branch.has_discrepancy) discrepancyCount++;
+            });
+            
+            investors.forEach(investor => {
+                totalCalculated += investor.calculated_amount;
+                totalActual += investor.actual_amount;
+                if (investor.has_discrepancy) discrepancyCount++;
+            });
+            
+            $('#total-branches').text(branches.length);
+            $('#total-investors').text(investors.length);
+            $('#total-calculated').text(formatNumber(totalCalculated) + ' تومان');
+            $('#total-actual').text(formatNumber(totalActual) + ' تومان');
+            $('#total-discrepancies').text(discrepancyCount);
+        }
+        
+        // آپدیت شمارنده‌های نقدی
+        function updateCashCounters() {
+            const branchCount = $('.branch-checkbox:not(:disabled)').length;
+            const investorCount = $('.investor-checkbox:not(:disabled)').length;
+            
+            $('#branches-count').text(branchCount);
+            $('#investors-count').text(investorCount);
+            
+            // فعال/غیرفعال کردن دکمه تأیید
+            const hasSelected = $('.branch-checkbox:checked').length > 0 || $('.investor-checkbox:checked').length > 0;
+            $('#confirm-cash-btn').prop('disabled', !hasSelected);
+        }
+        
+        // ایجاد بج وضعیت
+        function getStatusBadge(isConfirmed, hasDiscrepancy) {
+            if (hasDiscrepancy) {
+                return '<span class="status-badge badge-discrepancy">مغایرت دارد</span>';
+            } else if (isConfirmed) {
+                return '<span class="status-badge badge-confirmed">تایید شده</span>';
+            } else {
+                return '<span class="status-badge badge-unconfirmed">تایید نشده</span>';
+            }
+        }
+        
+        // آپدیت مبلغ واقعی
+        function updateActualAmount(input) {
+            const $input = $(input);
+            const value = $input.val().replace(/,/g, '');
+            const numericValue = parseInt(value) || 0;
+            
+            // فرمت کردن عدد
+            $input.val(formatNumber(numericValue));
+            
+            // بررسی مغایرت
+            const $row = $input.closest('tr');
+            const calculatedAmount = parseInt($row.find('td:nth-child(4) span').text().replace(/[^\d]/g, '') || 0);
+            
+            if (numericValue !== calculatedAmount) {
+                $input.addClass('discrepancy');
+                $row.find('.status-badge')
+                    .removeClass('badge-confirmed badge-unconfirmed')
+                    .addClass('badge-discrepancy')
+                    .text('مغایرت دارد');
+            } else {
+                $input.removeClass('discrepancy');
+                $row.find('.status-badge')
+                    .removeClass('badge-discrepancy')
+                    .addClass('badge-unconfirmed')
+                    .text('تایید نشده');
+            }
+        }
+        
+        // انتخاب همه شعب
+        $('#select-all-branches').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.branch-checkbox:not(:disabled)').prop('checked', isChecked);
+            updateCashCounters();
+        });
+        
+        // انتخاب همه سرمایه‌گذاران
+        $('#select-all-investors').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.investor-checkbox:not(:disabled)').prop('checked', isChecked);
+            updateCashCounters();
+        });
+        
+        // نمایش مودال سرمایه‌گذاری
+        function showInvestmentModal() {
+            $('#investmentModal').modal('show');
+        }
+        
+        // نمایش مودال تأیید
+        function showConfirmationModal(type) {
+            currentTab = type;
+            
+            let selectedCount = 0;
+            let date = '';
+            let typeText = '';
+            
+            if (type === 'cash') {
+                selectedCount = $('.branch-checkbox:checked').length + $('.investor-checkbox:checked').length;
+                date = $('#cash-inventory-date').val();
+                typeText = 'نقدی';
+            } else {
+                selectedCount = $('.account-checkbox:checked').length;
+                date = $('#account-inventory-date').val();
+                typeText = 'حساب';
+            }
+            
+            if (selectedCount === 0) {
+                showNotification('warning', 'لطفاً حداقل یک مورد را انتخاب کنید');
+                return;
+            }
+            
+            $('#modal-item-count').text(selectedCount);
+            $('#modal-date').text(date);
+            $('#modal-type').text(typeText);
+            
+            $('#confirmationModal').modal('show');
+        }
+        
+        // تایید موجودی
+        function confirmInventory() {
+            const date = currentTab === 'cash' ? $('#cash-inventory-date').val() : $('#account-inventory-date').val();
+            const items = [];
+            
+            if (currentTab === 'cash') {
+                $('.branch-checkbox:checked').each(function() {
+                    const $row = $(this).closest('tr');
+                    const actualAmount = $row.find('.amount-input').val().replace(/,/g, '');
+                    items.push({
+                        type: 'branch',
+                        id: $(this).data('id'),
+                        actual_amount: parseInt(actualAmount) || 0
+                    });
+                });
+                
+                $('.investor-checkbox:checked').each(function() {
+                    const $row = $(this).closest('tr');
+                    const actualAmount = $row.find('.amount-input').val().replace(/,/g, '');
+                    items.push({
+                        type: 'investor',
+                        id: $(this).data('id'),
+                        actual_amount: parseInt(actualAmount) || 0
+                    });
+                });
+            } else {
+                $('.account-checkbox:checked').each(function() {
+                    items.push({
+                        type: 'account',
+                        id: $(this).data('id')
+                    });
+                });
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '{% url "cash_management:confirm_inventory" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: date,
+                    type: currentTab,
+                    items: items
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showNotification('success', 'موجودی با موفقیت تایید شد');
+                        $('#confirmationModal').modal('hide');
+                        
+                        // رفرش داده‌ها
+                        if (currentTab === 'cash') {
+                            loadCashInventoryData();
+                        } else {
+                            loadAccountInventoryData();
+                        }
+                    } else {
+                        showNotification('error', response.message || 'خطا در تایید موجودی');
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در ارتباط با سرور');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // جستجوی سرمایه‌گذار
+        function searchInvestor() {
+            const nationalId = $('#investor-national-id').val().trim();
+            
+            if (!nationalId || nationalId.length !== 10) {
+                showNotification('error', 'لطفاً کد ملی ۱۰ رقمی معتبر وارد کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '{% url "cash_management:search_investor" %}',
+                method: 'GET',
+                data: { national_id: nationalId },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#investor-fullname').text(response.investor.firstname + ' ' + response.investor.lastname);
+                        $('#investor-national-id-display').text(response.investor.national_id);
+                        $('#investor-phone').text(response.investor.phone || '-');
+                        $('#investor-id').val(response.investor.id);
+                        
+                        $('#investor-info').show();
+                        $('#investor-not-found').hide();
+                        
+                        showNotification('success', 'سرمایه‌گذار با موفقیت پیدا شد');
+                    } else {
+                        $('#investor-info').hide();
+                        $('#investor-not-found').show();
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در جستجوی سرمایه‌گذار');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // تغییر وضعیت فیلد حساب اعتباری
+        function toggleCreditAccountField() {
+            const paymentMethod = $('#investment-payment-method').val();
+            
+            if (paymentMethod === 'credit') {
+                $('#credit-account-field').show();
+                loadCreditAccounts();
+            } else {
+                $('#credit-account-field').hide();
+            }
+        }
+        
+        // بارگذاری حساب‌های اعتباری
+        function loadCreditAccounts() {
+            $.ajax({
+                url: '{% url "cash_management:get_credit_accounts" %}',
+                method: 'GET',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        const $select = $('#credit-account');
+                        $select.empty();
+                        $select.append('<option value="">انتخاب حساب</option>');
+                        
+                        response.accounts.forEach(account => {
+                            $select.append(`
+                                <option value="${account.id}">
+                                    ${account.customer_name} ${account.customer_family} - 
+                                    ${account.national_id} - 
+                                    ${formatNumber(account.remaining_amount)} تومان
+                                </option>
+                            `);
+                        });
+                    }
+                }
+            });
+        }
+        
+        // ثبت سرمایه‌گذاری
+        function submitInvestment() {
+            const investorId = $('#investor-id').val();
+            const amount = $('#investment-amount').val();
+            const date = $('#investment-date').val();
+            const paymentMethod = $('#investment-payment-method').val();
+            
+            if (!investorId) {
+                showNotification('error', 'لطفاً ابتدا سرمایه‌گذار را جستجو و انتخاب کنید');
+                return;
+            }
+            
+            if (!amount || !date || !paymentMethod) {
+                showNotification('error', 'لطفاً فیلدهای ضروری را پر کنید');
+                return;
+            }
+            
+            if (paymentMethod === 'credit' && !$('#credit-account').val()) {
+                showNotification('error', 'برای روش پرداخت حساب، لطفاً حساب اعتباری را انتخاب کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            const formData = {
+                national_id: $('#investor-national-id-display').text(),
+                amount: amount.replace(/,/g, ''),
+                date: date,
+                payment_method: paymentMethod,
+                credit_account_id: $('#credit-account').val(),
+                notes: $('#investment-notes').val()
+            };
+            
+            $.ajax({
+                url: '{% url "cash_management:register_investment" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showNotification('success', 'سرمایه‌گذاری با موفقیت ثبت شد');
+                        $('#investmentModal').modal('hide');
+                        resetInvestmentForm();
+                        
+                        // رفرش داده‌های نقدی
+                        loadCashInventoryData();
+                    } else {
+                        showNotification('error', response.message);
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در ثبت سرمایه‌گذاری');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // ریست فرم سرمایه‌گذاری
+        function resetInvestmentForm() {
+            $('#investor-national-id').val('');
+            $('#investment-amount').val('');
+            $('#investment-date').val(new persianDate().format('YYYY/MM/DD'));
+            $('#investment-payment-method').val('');
+            $('#investment-notes').val('');
+            $('#investor-info').hide();
+            $('#investor-not-found').hide();
+            $('#credit-account-field').hide();
+        }
+        
+        // بارگذاری داده‌های حساب‌ها
+// در فایل cash_inventory.html، تابع loadAccountInventoryData را به این شکل تغییر دهید:
+
+function   loadAccountInventoryData() {
+    const date = $('#account-inventory-date').val();
+    const accountType = $('#account-type-filter').val();
+    
+    if (!date) {
+        showNotification('error', 'لطفاً تاریخ را انتخاب کنید');
+        return;
+    }
+    
+    showLoading();
+    
+    $.ajax({
+        url: '{% url "cash_management:get_account_data" %}',  // این خط همان است
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            date: date,
+            account_type: accountType
+        }),
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        },
+        success: function(response) {
+            if (response.status === 'success') {
+                displayAccountInventoryData(response.accounts);
+                updateAccountStats(response);
+                $('#account-stats-section').show();
+            } else {
+                showNotification('error', response.message);
+            }
+        },
+        error: function() {
+            showNotification('error', 'خطا در دریافت داده‌ها');
+        },
+        complete: function() {
+            hideLoading();
+        }
+    });
+}        
+        // نمایش داده‌های حساب‌ها
+        function displayAccountInventoryData(accounts) {
+            const $body = $('#accounts-table-body');
+            $body.empty();
+            
+            if (accounts && accounts.length > 0) {
+                accounts.forEach((account, index) => {
+                    const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>
+                                <input type="checkbox" class="account-checkbox" 
+                                       data-id="${account.id}" ${account.is_confirmed ? 'disabled' : ''}>
+                            </td>
+                            <td>
+                                <a href="#" onclick="viewInvoiceDetails(${account.invoice_id})" class="text-primary">
+                                    ${account.invoice_number}
+                                </a>
+                            </td>
+                            <td>${account.branch_name}</td>
+                            <td>${account.customer_name}</td>
+                            <td>${getAccountTypeBadge(account.account_type)}</td>
+                            <td class="fw-bold">${formatNumber(account.amount)} تومان</td>
+                            <td>${account.due_date || '-'}</td>
+                            <td>${getAccountStatusBadge(account.status)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewAccountDetails(${account.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $body.append(row);
+                });
+            } else {
+                $body.append(`
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-credit-card fa-2x mb-2"></i>
+                            <p class="text-muted">هیچ حسابی برای تاریخ انتخاب شده یافت نشد</p>
+                        </td>
+                    </tr>
+                `);
+            }
+            
+            updateAccountCounters();
+        }
+        
+        // آپدیت آمار حساب‌ها
+        function updateAccountStats(data) {
+            $('#total-invoices').text(data.total_invoices || 0);
+            $('#total-amount').text(formatNumber(data.total_amount || 0) + ' تومان');
+            $('#confirmed-accounts').text(data.confirmed_count || 0);
+            $('#pending-accounts').text(data.pending_count || 0);
+            $('#accounts-count').text(data.accounts ? data.accounts.length : 0);
+        }
+        
+        // ایجاد بج نوع حساب
+        function getAccountTypeBadge(type) {
+            const types = {
+                'check': {label: 'چک', class: 'warning'},
+                'credit': {label: 'اعتباری', class: 'info'},
+                'pos': {label: 'پوز', class: 'success'}
+            };
+            
+            const typeInfo = types[type] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${typeInfo.class}">${typeInfo.label}</span>`;
+        }
+        
+        // ایجاد بج وضعیت حساب
+        function getAccountStatusBadge(status) {
+            const statuses = {
+                'pending': {label: 'در انتظار', class: 'warning'},
+                'confirmed': {label: 'تایید شده', class: 'success'},
+                'cancelled': {label: 'لغو شده', class: 'danger'},
+                'expired': {label: 'منقضی', class: 'secondary'}
+            };
+            
+            const statusInfo = statuses[status] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${statusInfo.class}">${statusInfo.label}</span>`;
+        }
+        
+        // آپدیت شمارنده حساب‌ها
+        function updateAccountCounters() {
+            const count = $('.account-checkbox:not(:disabled)').length;
+            const selectedCount = $('.account-checkbox:checked').length;
+            
+            $('#accounts-count').text(count);
+            $('#confirm-accounts-btn').prop('disabled', selectedCount === 0);
+        }
+        
+        // انتخاب همه حساب‌ها
+        $('#select-all-accounts').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.account-checkbox:not(:disabled)').prop('checked', isChecked);
+            updateAccountCounters();
+        });
+        
+        // مشاهده جزئیات فاکتور
+        function viewInvoiceDetails(invoiceId) {
+            showNotification('info', `مشاهده جزئیات فاکتور ${invoiceId}`);
+        }
+        
+        // مشاهده جزئیات حساب
+        function viewAccountDetails(accountId) {
+            showNotification('info', `مشاهده جزئیات حساب ${accountId}`);
+        }
+        
+        // خروجی اکسل نقدی
+        function exportCashToExcel() {
+            showNotification('info', 'در حال تولید خروجی اکسل...');
+        }
+        
+        // گزارش PDF حساب‌ها
+        function exportAccountReport() {
+            showNotification('info', 'در حال تولید گزارش PDF...');
+        }
+        
+        // بارگذاری اولیه
+        $(document).ready(function() {
+            // تنظیم تاریخ امروز
+            const today = new persianDate().format('YYYY/MM/DD');
+            $('.shamsi-date-input').val(today);
+            $('#investment-date').val(today);
+            
+            // فعال‌سازی datepicker
+            $('.shamsi-date-input').persianDatepicker({
+                observer: true,
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian'
+            });
+            
+            // باز کردن datepicker با آیکون
+            $('.calendar-icon').click(function() {
+                $(this).siblings('.shamsi-date-input').persianDatepicker('show');
+            });
+            
+            // رویداد تایید موجودی
+            $('#confirm-action-btn').click(confirmInventory);
+            
+            // بارگذاری اولیه داده‌های نقدی
+            loadCashInventoryData();
+        });
+    </script>
+</body>
+</html>

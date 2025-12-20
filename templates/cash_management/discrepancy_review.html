@@ -1,0 +1,871 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بررسی مغایرت‌ها - پلاسکو</title>
+    
+    <!-- کتابخانه‌های تاریخ شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    
+    <!-- فونت‌ها و آیکون‌ها -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* استایل‌های مشابه فایل قبلی */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #1976D2;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --info-color: #00BCD4;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+            
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 25px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .filter-section {
+            background-color: var(--light-color);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .date-input-container {
+            position: relative;
+            width: 180px;
+        }
+
+        .shamsi-date-input {
+            width: 100%;
+            padding: 10px 15px;
+            padding-right: 40px;
+            border: 2px solid var(--primary-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .calendar-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #2E7D32);
+            color: white;
+        }
+
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin: 20px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .inventory-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .inventory-table tbody tr:hover {
+            background-color: rgba(33, 150, 243, 0.05);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .text-success {
+            color: var(--success-color) !important;
+        }
+
+        .text-danger {
+            color: var(--danger-color) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- لودینگ -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- هدر -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-search-dollar"></i>
+                سیستم بررسی مغایرت‌ها
+            </h1>
+            <p>بررسی و رفع مغایرت‌های مالی سیستم</p>
+        </div>
+
+        <!-- فیلترهای بررسی مغایرت -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        از تاریخ:
+                    </span>
+                    <div class="date-input-container">
+                        <input type="text" id="discrepancy-from-date" class="shamsi-date-input" 
+                               placeholder="انتخاب تاریخ">
+                        <i class="fas fa-calendar-alt calendar-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        تا تاریخ:
+                    </span>
+                    <div class="date-input-container">
+                        <input type="text" id="discrepancy-to-date" class="shamsi-date-input" 
+                               placeholder="انتخاب تاریخ">
+                        <i class="fas fa-calendar-alt calendar-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-filter"></i>
+                        وضعیت:
+                    </span>
+                    <select id="discrepancy-status-filter" class="form-select" style="width: 180px;">
+                        <option value="all">همه</option>
+                        <option value="pending">در انتظار بررسی</option>
+                        <option value="reviewed">بررسی شده</option>
+                        <option value="resolved">رفع شده</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-filter"></i>
+                        نوع:
+                    </span>
+                    <select id="discrepancy-type-filter" class="form-select" style="width: 150px;">
+                        <option value="all">همه</option>
+                        <option value="branch">شعبه</option>
+                        <option value="investor">سرمایه‌گذار</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button class="btn btn-primary" onclick="loadDiscrepancies()">
+                        <i class="fas fa-search me-2"></i>
+                        جستجو
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="resetFilters()">
+                        <i class="fas fa-redo me-2"></i>
+                        بازنشانی
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- آمار مغایرت‌ها -->
+        <div class="stats-container" id="discrepancy-stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-value" id="total-discrepancies">0</div>
+                <div class="stat-label">کل مغایرت‌ها</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-value" id="pending-discrepancies">0</div>
+                <div class="stat-label">در انتظار بررسی</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" id="resolved-discrepancies">0</div>
+                <div class="stat-label">رفع شده</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-value" id="total-difference">0</div>
+                <div class="stat-label">مجموع تفاوت</div>
+            </div>
+        </div>
+
+        <!-- جدول مغایرت‌ها -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-search-dollar me-2"></i>
+                لیست مغایرت‌های مالی
+                <span class="badge bg-warning" id="discrepancies-count">0</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-container" style="max-height: 600px;">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th width="50">#</th>
+                                <th>تاریخ مغایرت</th>
+                                <th>نوع</th>
+                                <th>نام</th>
+                                <th>مبلغ قبل</th>
+                                <th>مبلغ بعد</th>
+                                <th>تفاوت</th>
+                                <th>دلیل مغایرت</th>
+                                <th>وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="discrepancies-table-body">
+                            <!-- مغایرت‌ها اینجا لود می‌شوند -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال بررسی مغایرت -->
+    <div class="modal fade" id="discrepancyReviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-search-dollar text-warning me-2"></i>
+                        بررسی مغایرت
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="discrepancy-details">
+                        <!-- جزئیات مغایرت اینجا نمایش داده می‌شود -->
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="form-label">یادداشت بررسی *</label>
+                        <textarea class="form-control" id="review-notes" rows="3" 
+                                  placeholder="توضیحات بررسی و اقدامات انجام شده..." required></textarea>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">اقدام *</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="resolution-action" 
+                                   id="action-resolve" value="resolve" checked>
+                            <label class="form-check-label" for="action-resolve">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                تایید مبلغ جدید و رفع مغایرت
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="resolution-action" 
+                                   id="action-adjust" value="adjust">
+                            <label class="form-check-label" for="action-adjust">
+                                <i class="fas fa-undo text-warning me-1"></i>
+                                بازگشت به مبلغ قبلی
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        انصراف
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="submitDiscrepancyReview()">
+                        <i class="fas fa-check me-2"></i>
+                        ثبت بررسی
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کتابخانه‌های JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
+    <script>
+        // متغیر سراسری
+        let currentDiscrepancyId = null;
+        
+        // توابع کمکی
+        function showLoading() {
+            $('#loading-overlay').fadeIn();
+        }
+        
+        function hideLoading() {
+            $('#loading-overlay').fadeOut();
+        }
+        
+        function showNotification(type, message) {
+            const types = {
+                'success': {icon: 'check-circle', color: 'success'},
+                'error': {icon: 'exclamation-circle', color: 'danger'},
+                'warning': {icon: 'exclamation-triangle', color: 'warning'},
+                'info': {icon: 'info-circle', color: 'info'}
+            };
+            
+            const alert = `
+                <div class="alert alert-${types[type].color} alert-dismissible fade show" role="alert" 
+                     style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    <i class="fas fa-${types[type].icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('body').append(alert);
+            setTimeout(() => $('.alert').alert('close'), 5000);
+        }
+        
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // بارگذاری مغایرت‌ها
+        function loadDiscrepancies() {
+            const fromDate = $('#discrepancy-from-date').val();
+            const toDate = $('#discrepancy-to-date').val();
+            const status = $('#discrepancy-status-filter').val();
+            const type = $('#discrepancy-type-filter').val();
+            
+            if (!fromDate || !toDate) {
+                showNotification('error', 'لطفاً بازه تاریخ را مشخص کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '{% url "cash_management:get_discrepancies" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    from_date: fromDate,
+                    to_date: toDate,
+                    status: status,
+                    type: type
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        displayDiscrepancies(response.discrepancies);
+                        updateDiscrepancyStats(response);
+                        $('#discrepancy-stats').show();
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در دریافت مغایرت‌ها');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // نمایش مغایرت‌ها
+        function displayDiscrepancies(discrepancies) {
+            const $body = $('#discrepancies-table-body');
+            $body.empty();
+            
+            if (discrepancies && discrepancies.length > 0) {
+                discrepancies.forEach((discrepancy, index) => {
+                    const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${discrepancy.discrepancy_date}</td>
+                            <td>${getDiscrepancyTypeBadge(discrepancy.type)}</td>
+                            <td>
+                                <strong>${discrepancy.name}</strong>
+                                ${discrepancy.description ? '<br><small class="text-muted">' + discrepancy.description + '</small>' : ''}
+                            </td>
+                            <td class="text-danger fw-bold">${formatNumber(discrepancy.old_amount)}</td>
+                            <td class="text-primary fw-bold">${formatNumber(discrepancy.new_amount)}</td>
+                            <td class="${discrepancy.difference >= 0 ? 'text-success' : 'text-danger'} fw-bold">
+                                ${formatNumber(discrepancy.difference)}
+                            </td>
+                            <td>${discrepancy.description || '-'}</td>
+                            <td>${getDiscrepancyStatusBadge(discrepancy.status)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-warning" onclick="reviewDiscrepancy(${discrepancy.id})" ${discrepancy.status !== 'pending' ? 'disabled' : ''}>
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info ms-1" onclick="viewDiscrepancyDetails(${discrepancy.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $body.append(row);
+                });
+            } else {
+                $body.append(`
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-search-dollar fa-2x mb-2"></i>
+                            <p class="text-muted">هیچ مغایرتی یافت نشد</p>
+                        </td>
+                    </tr>
+                `);
+            }
+            
+            updateDiscrepancyCounter();
+        }
+        
+        // ایجاد بج نوع مغایرت
+        function getDiscrepancyTypeBadge(type) {
+            const types = {
+                'branch': {label: 'شعبه', class: 'primary'},
+                'investor': {label: 'سرمایه‌گذار', class: 'info'}
+            };
+            
+            const typeInfo = types[type] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${typeInfo.class}">${typeInfo.label}</span>`;
+        }
+        
+        // ایجاد بج وضعیت مغایرت
+        function getDiscrepancyStatusBadge(status) {
+            const statuses = {
+                'pending': {label: 'در انتظار', class: 'warning'},
+                'reviewed': {label: 'بررسی شده', class: 'info'},
+                'resolved': {label: 'رفع شده', class: 'success'}
+            };
+            
+            const statusInfo = statuses[status] || {label: 'نامشخص', class: 'secondary'};
+            return `<span class="badge bg-${statusInfo.class}">${statusInfo.label}</span>`;
+        }
+        
+        // آپدیت آمار مغایرت‌ها
+        function updateDiscrepancyStats(data) {
+            $('#total-discrepancies').text(data.total || 0);
+            $('#pending-discrepancies').text(data.pending || 0);
+            $('#resolved-discrepancies').text(data.resolved || 0);
+            $('#total-difference').text(formatNumber(data.total_difference || 0));
+            $('#discrepancies-count').text(data.discrepancies ? data.discrepancies.length : 0);
+        }
+        
+        // آپدیت شمارنده مغایرت‌ها
+        function updateDiscrepancyCounter() {
+            const count = $('#discrepancies-table-body tr').length - 1;
+            $('#discrepancies-count').text(count);
+        }
+        
+        // بررسی مغایرت
+        function reviewDiscrepancy(discrepancyId) {
+            currentDiscrepancyId = discrepancyId;
+            
+            // دریافت اطلاعات مغایرت
+            showLoading();
+            
+            $.ajax({
+                url: `/cash/api/get-discrepancy/${discrepancyId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showDiscrepancyModal(response.discrepancy);
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در دریافت اطلاعات مغایرت');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // نمایش مودال بررسی
+        function showDiscrepancyModal(discrepancy) {
+            const detailsHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    بررسی مغایرت شماره ${discrepancy.id}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>تاریخ مغایرت:</strong>
+                            <span class="me-2">${discrepancy.discrepancy_date}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>نوع:</strong>
+                            <span class="me-2">${discrepancy.type === 'branch' ? 'شعبه' : 'سرمایه‌گذار'}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>نام:</strong>
+                            <span class="me-2">${discrepancy.name}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>تایید کننده:</strong>
+                            <span class="me-2">${discrepancy.user_name || '-'}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>زمان ایجاد:</strong>
+                            <span class="me-2">${discrepancy.created_at}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-header bg-danger text-white">
+                                مبلغ قبل از تغییر
+                            </div>
+                            <div class="card-body">
+                                <h4 class="text-danger">${formatNumber(discrepancy.old_amount)}</h4>
+                                <small>تومان</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-header bg-primary text-white">
+                                مبلغ بعد از تغییر
+                            </div>
+                            <div class="card-body">
+                                <h4 class="text-primary">${formatNumber(discrepancy.new_amount)}</h4>
+                                <small>تومان</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-header ${discrepancy.difference >= 0 ? 'bg-success' : 'bg-danger'} text-white">
+                                تفاوت
+                            </div>
+                            <div class="card-body">
+                                <h4 class="${discrepancy.difference >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${formatNumber(discrepancy.difference)}
+                                </h4>
+                                <small>تومان</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <strong>دلیل مغایرت:</strong>
+                    <p class="text-muted">${discrepancy.description || 'ثبت نشده'}</p>
+                </div>
+            `;
+            
+            $('#discrepancy-details').html(detailsHTML);
+            $('#review-notes').val('');
+            $('#discrepancyReviewModal').modal('show');
+        }
+        
+        // ثبت بررسی مغایرت
+        function submitDiscrepancyReview() {
+            const notes = $('#review-notes').val();
+            const action = $('input[name="resolution-action"]:checked').val();
+            
+            if (!notes.trim()) {
+                showNotification('error', 'لطفاً یادداشت بررسی را وارد کنید');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: `/cash/api/resolve-discrepancy/${currentDiscrepancyId}/`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    resolution_notes: notes,
+                    action: action
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showNotification('success', 'بررسی مغایرت با موفقیت ثبت شد');
+                        $('#discrepancyReviewModal').modal('hide');
+                        loadDiscrepancies();
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'خطا در ثبت بررسی');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // مشاهده جزئیات مغایرت
+        function viewDiscrepancyDetails(discrepancyId) {
+            showNotification('info', `مشاهده جزئیات مغایرت ${discrepancyId}`);
+        }
+        
+        // بازنشانی فیلترها
+        function resetFilters() {
+            const today = new persianDate();
+            const lastMonth = today.clone().subtract('month', 1);
+            
+            $('#discrepancy-from-date').val(lastMonth.format('YYYY/MM/DD'));
+            $('#discrepancy-to-date').val(today.format('YYYY/MM/DD'));
+            $('#discrepancy-status-filter').val('all');
+            $('#discrepancy-type-filter').val('all');
+            
+            loadDiscrepancies();
+        }
+        
+        // بارگذاری اولیه
+        $(document).ready(function() {
+            // تنظیم تاریخ پیش‌فرض
+            const today = new persianDate();
+            const lastMonth = today.clone().subtract('month', 1);
+            
+            $('#discrepancy-from-date').val(lastMonth.format('YYYY/MM/DD'));
+            $('#discrepancy-to-date').val(today.format('YYYY/MM/DD'));
+            
+            // فعال‌سازی datepicker
+            $('.shamsi-date-input').persianDatepicker({
+                observer: true,
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian'
+            });
+            
+            // باز کردن datepicker با آیکون
+            $('.calendar-icon').click(function() {
+                $(this).siblings('.shamsi-date-input').persianDatepicker('show');
+            });
+            
+            loadDiscrepancies();
+        });
+    </script>
+</body>
+</html>
