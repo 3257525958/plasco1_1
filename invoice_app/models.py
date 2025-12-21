@@ -52,18 +52,18 @@ class Paymentnumber(models.Model):
     def __str__(self):
         return f"{self.name} - {self.bank_name} - {self.ip_address}:{self.port}"
 
-    # def save(self, *args, **kwargs):
-    #     if self.is_default:
-    #         POSDevice.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
-    #     elif not POSDevice.objects.filter(is_default=True).exists():
-    #         self.is_default = True
-    #     super().save(*args, **kwargs)
     def save(self, *args, **kwargs):
         if self.is_default:
-            Paymentnumber.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
-        elif not Paymentnumber.objects.filter(is_default=True).exists():
+            POSDevice.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
+        elif not POSDevice.objects.filter(is_default=True).exists():
             self.is_default = True
         super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if self.is_default:
+    #         Paymentnumber.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
+    #     elif not Paymentnumber.objects.filter(is_default=True).exists():
+    #         self.is_default = True
+    #     super().save(*args, **kwargs)
 
 class Invoicefrosh(models.Model):
     PAYMENT_METHODS = [
