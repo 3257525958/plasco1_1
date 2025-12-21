@@ -2142,8 +2142,8 @@ def search_products(request):
 
         # محدود کردن نتایج جستجو
         products = ProductPricing.objects.filter(
-            product_name__icontains=query
-        ).order_by('product_name')[:20]  # فقط 20 نتیجه
+            Q(product_name__icontains=query) | Q(invoice_number__icontains=query)
+        ).order_by('product_name')[:500]
 
         branches = Branch.objects.all()
         branch_dict = {branch.id: branch for branch in branches}
