@@ -188,8 +188,8 @@ INSTALLED_APPS = [
     'sync_api',
     'control_panel',
     'offline_ins',
-    'ip_manager'
-    'cash_management'
+    'ip_manager',
+    'cash_management',
 
 ]
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # یا 'django.contrib.sessions.backends.cache'
