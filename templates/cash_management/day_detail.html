@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جزئیات روز {{ jalali_date }}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Vazirmatn Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container-main {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            transition: transform 0.2s;
+            background: white;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header-custom {
+            background-color: var(--light-bg);
+            border-bottom: 2px solid var(--primary-color);
+            font-weight: bold;
+            padding: 18px 25px;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .status-verified {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .amount-input {
+            text-align: left;
+            direction: ltr;
+            font-family: monospace;
+            font-weight: bold;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            padding: 10px 15px;
+            transition: all 0.3s;
+        }
+
+        .amount-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+            transform: scale(1.02);
+        }
+
+        .amount-input:disabled {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .verify-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+        }
+
+        .verify-checkbox:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .verify-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .total-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            height: 100%;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .total-box:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+        }
+
+        .total-amount {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 15px 0;
+            color: var(--dark);
+        }
+
+        .back-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background-color: #5a6268;
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .action-buttons {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn {
+            padding: 15px 35px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-verify {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+        }
+
+        .btn-verify:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            color: white;
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #495057, #343a40);
+            color: white;
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .table-custom {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .table-custom th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 18px 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .table-custom td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        .table-custom tbody tr {
+            transition: all 0.2s;
+        }
+
+        .table-custom tbody tr:hover {
+            background-color: rgba(76, 175, 80, 0.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            opacity: 0.3;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container-main {
+                padding: 0 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
+                padding: 15px;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .table-custom {
+                font-size: 0.9rem;
+            }
+
+            .table-custom th,
+            .table-custom td {
+                padding: 10px 8px;
+            }
+
+            .amount-input {
+                font-size: 0.9rem;
+                padding: 8px 10px;
+            }
+
+            .total-amount {
+                font-size: 1.8rem;
+            }
+        }
+
+        .date-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .date-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 25px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #6b7280;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-select:disabled {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        .form-select {
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            padding: 10px 15px;
+            transition: all 0.3s;
+        }
+
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+        }
+
+        .account-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .verified-list {
+            border-top: 3px solid var(--primary-color);
+        }
+
+        .account-badge {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        
+        .branch-id-field {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <!-- هدر -->
+        <div class="header">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{% url 'cash_management:calendar' %}" class="back-btn">
+                        <i class="bi bi-arrow-right"></i>
+                        بازگشت به تقویم
+                    </a>
+                </div>
+                <div class="user-info">
+                    <i class="bi bi-person-circle"></i>
+                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                </div>
+            </div>
+
+            <div class="date-header">
+                <div class="date-badge">
+                    <i class="bi bi-calendar-date"></i>
+                    تاریخ شمسی: {{ jalali_date }}
+                </div>
+                <div class="date-badge">
+                    <i class="bi bi-calendar"></i>
+                    تاریخ میلادی: {{ gregorian_date }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-cash-stack me-2"></i>
+                    جزئیات گردش مالی روزانه
+                </h1>
+                <div>
+                    {% if daily_status.is_verified %}
+                    <span class="status-badge status-verified">
+                        <i class="bi bi-check-circle me-2"></i> تایید شده
+                        {% if daily_status.verified_by %}
+                        <span class="ms-2">توسط: {{ daily_status.verified_by.get_full_name|default:daily_status.verified_by.username }}</span>
+                        {% endif %}
+                    </span>
+                    {% else %}
+                    <span class="status-badge status-pending">
+                        <i class="bi bi-exclamation-circle me-2"></i> نیاز به بررسی
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- اطلاعات روز -->
+        <input type="hidden" id="currentDate" value="{{ date_str }}">
+        <input type="hidden" id="isVerified" value="{{ daily_status.is_verified|yesno:'true,false' }}">
+        {% csrf_token %}
+
+        <!-- کارت‌های مجموع -->
+        <div class="row mb-5">
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="total-box">
+                    <div class="small text-muted">مجموع نقدی</div>
+                    <div class="total-amount" id="total-cash">{{ total_cash|floatformat:0 }}</div>
+                    <div class="small">از {{ branch_cashes|length }} شعبه</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="total-box">
+                    <div class="small text-muted">مجموع پوز</div>
+                    <div class="total-amount" id="total-pos">{{ total_pos|floatformat:0 }}</div>
+                    <div class="small">از {{ branch_cashes|length }} شعبه</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="total-box">
+                    <div class="small text-muted">سرمایه‌گذاری</div>
+                    <div class="total-amount" id="total-investments">{{ total_investments|floatformat:0 }}</div>
+                    <div class="small">{{ investments|length }} مورد</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="total-box">
+                    <div class="small text-muted">کل روز</div>
+                    <div class="total-amount" id="total-all">{{ total_all|floatformat:0 }}</div>
+                    <div class="small">جمع کل گردش مالی</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- بخش شعب -->
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-shop me-2"></i> گردش شعب
+                        </span>
+                        <span class="badge bg-primary">{{ branch_cashes|length }} شعبه</span>
+                    </div>
+                    <div class="card-body">
+                        {% if branch_cashes %}
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>شعبه</th>
+                                        <th>نقدی</th>
+                                        <th>پوز</th>
+                                        <th class="text-center">تایید</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for branch_cash in branch_cashes %}
+                                    <tr id="branch-row-{{ branch_cash.id }}">
+                                        <td>
+                                            <strong>{{ branch_cash.branch.name }}</strong>
+                                            <input type="hidden" class="branch-id-field" value="{{ branch_cash.branch.id }}">
+                                            {% if branch_cash.is_verified %}
+                                            <span class="badge bg-success ms-2">تایید شده</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="form-control amount-input branch-cash-input" 
+                                                   data-id="{{ branch_cash.id }}"
+                                                   data-branch-id="{{ branch_cash.branch.id }}"
+                                                   data-field="cash"
+                                                   value="{{ branch_cash.cash_amount|floatformat:0 }}"
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="form-control amount-input branch-pos-input" 
+                                                   data-id="{{ branch_cash.id }}"
+                                                   data-branch-id="{{ branch_cash.branch.id }}"
+                                                   data-field="pos"
+                                                   value="{{ branch_cash.pos_amount|floatformat:0 }}"
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" 
+                                                   class="form-check-input verify-checkbox" 
+                                                   data-type="branch_cash"
+                                                   data-id="{{ branch_cash.id }}"
+                                                   data-branch-id="{{ branch_cash.branch.id }}"
+                                                   {% if branch_cash.is_verified %}checked{% endif %}
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-shop"></i>
+                            <h5>هیچ شعبه‌ای یافت نشد</h5>
+                            <p class="text-muted">لطفاً ابتدا شعبه‌ها را در سیستم تعریف کنید.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- بخش سرمایه‌گذاری‌ها -->
+            <div class="col-lg-6 mb-4">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-graph-up me-2"></i> سرمایه‌گذاری‌ها
+                        </span>
+                        <span class="badge bg-primary">{{ investments|length }} مورد</span>
+                    </div>
+                    <div class="card-body">
+                        {% if investments %}
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>سرمایه‌گذار</th>
+                                        <th>مبلغ</th>
+                                        <th>روش و حساب</th>
+                                        <th class="text-center">تایید</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for investment in investments %}
+                                    <tr id="investment-row-{{ investment.id }}">
+                                        <td>
+                                            <div class="fw-bold">{{ investment.investor_name }}</div>
+                                            <small class="text-muted">{{ investment.investor_melicode }}</small>
+                                            {% if investment.is_verified %}
+                                            <span class="badge bg-success ms-2">تایید شده</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="form-control amount-input investment-amount-input" 
+                                                   data-id="{{ investment.id }}"
+                                                   value="{{ investment.investment_amount|floatformat:0 }}"
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                        <td>
+                                            <select class="form-select investment-method-select mb-2" 
+                                                    data-id="{{ investment.id }}"
+                                                    {% if daily_status.is_verified %}disabled{% endif %}>
+                                                <option value="cash" {% if investment.payment_method == 'cash' %}selected{% endif %}>نقدی</option>
+                                                <option value="bank" {% if investment.payment_method == 'bank' %}selected{% endif %}>واریز به حساب</option>
+                                                <option value="cheque" {% if investment.payment_method == 'cheque' %}selected{% endif %}>چک</option>
+                                                <option value="other" {% if investment.payment_method == 'other' %}selected{% endif %}>سایر</option>
+                                            </select>
+                                            
+                                            <!-- انتخاب حساب برای روش بانکی -->
+                                            <div class="investment-account-container" 
+                                                 style="display: {% if investment.payment_method == 'bank' %}block{% else %}none{% endif %};">
+                                                <select class="form-select investment-account-select" 
+                                                        data-id="{{ investment.id }}"
+                                                        {% if daily_status.is_verified %}disabled{% endif %}>
+                                                    <option value="">انتخاب حساب بانکی</option>
+                                                    {% for account in payment_accounts %}
+                                                    <option value="{{ account.id }}" 
+                                                            data-account-name="{{ account.name }}"
+                                                            data-bank-name="{{ account.bank_name }}"
+                                                            {% if investment.destination_account == account.id|stringformat:"i" %}selected{% endif %}>
+                                                        {{ account.name }} - {{ account.bank_name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- نمایش حساب انتخاب شده -->
+                                            {% if investment.payment_method == 'bank' and investment.destination_account %}
+                                            {% for account in payment_accounts %}
+                                            {% if investment.destination_account == account.id|stringformat:"i" %}
+                                            <div class="account-info mt-1">
+                                                <span class="account-badge">
+                                                    <i class="bi bi-bank"></i>
+                                                    {{ account.name }} - {{ account.bank_name }}
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" 
+                                                   class="form-check-input verify-checkbox" 
+                                                   data-type="investment"
+                                                   data-id="{{ investment.id }}"
+                                                   {% if investment.is_verified %}checked{% endif %}
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-graph-up"></i>
+                            <h5>هیچ سرمایه‌گذاری ثبت نشده</h5>
+                            <p class="text-muted">برای این روز هیچ سرمایه‌گذاری ثبت نشده است.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- بخش چک‌ها و نسیه‌ها -->
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-bank me-2"></i> چک‌ها
+                        </span>
+                        <span class="badge bg-primary">{{ cheques|length }} چک</span>
+                    </div>
+                    <div class="card-body">
+                        {% if cheques %}
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>شماره چک</th>
+                                        <th>مبلغ</th>
+                                        <th>وضعیت و حساب</th>
+                                        <th class="text-center">تایید</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cheque in cheques %}
+                                    <tr id="cheque-row-{{ cheque.id }}">
+                                        <td>
+                                            <div class="fw-bold">{{ cheque.cheque_number }}</div>
+                                            <small class="text-muted">{{ cheque.branch.name }} - {{ cheque.bank_name|default:'نامشخص' }}</small>
+                                            {% if cheque.is_verified %}
+                                            <span class="badge bg-success ms-2">تایید شده</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold">{{ cheque.cheque_amount|floatformat:0 }}</td>
+                                        <td>
+                                            <select class="form-select cheque-status-select mb-2" 
+                                                    data-id="{{ cheque.id }}"
+                                                    {% if daily_status.is_verified %}disabled{% endif %}>
+                                                <option value="pending" {% if cheque.status == 'pending' %}selected{% endif %}>در انتظار</option>
+                                                <option value="passed" {% if cheque.status == 'passed' %}selected{% endif %}>پاس شده</option>
+                                                <option value="returned" {% if cheque.status == 'returned' %}selected{% endif %}>برگشت خورده</option>
+                                                <option value="blocked" {% if cheque.status == 'blocked' %}selected{% endif %}>مسدود شده</option>
+                                            </select>
+                                            
+                                            <!-- انتخاب حساب برای چک پاس شده -->
+                                            <div class="cheque-account-container" 
+                                                 style="display: {% if cheque.status == 'passed' %}block{% else %}none{% endif %};">
+                                                <select class="form-select cheque-account-select" 
+                                                        data-id="{{ cheque.id }}"
+                                                        {% if daily_status.is_verified %}disabled{% endif %}>
+                                                    <option value="">انتخاب حساب بانکی</option>
+                                                    {% for account in payment_accounts %}
+                                                    <option value="{{ account.id }}" 
+                                                            data-account-name="{{ account.name }}"
+                                                            data-bank-name="{{ account.bank_name }}"
+                                                            {% if cheque.destination_account == account.id|stringformat:"i" %}selected{% endif %}>
+                                                        {{ account.name }} - {{ account.bank_name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- نمایش حساب انتخاب شده -->
+                                            {% if cheque.status == 'passed' and cheque.destination_account %}
+                                            {% for account in payment_accounts %}
+                                            {% if cheque.destination_account == account.id|stringformat:"i" %}
+                                            <div class="account-info mt-1">
+                                                <span class="account-badge">
+                                                    <i class="bi bi-bank"></i>
+                                                    {{ account.name }} - {{ account.bank_name }}
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" 
+                                                   class="form-check-input verify-checkbox" 
+                                                   data-type="cheque"
+                                                   data-id="{{ cheque.id }}"
+                                                   {% if cheque.is_verified %}checked{% endif %}
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-bank"></i>
+                            <h5>هیچ چکی وجود ندارد</h5>
+                            <p class="text-muted">برای امروز هیچ چکی سررسید نشده است.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-clock-history me-2"></i> نسیه‌ها
+                        </span>
+                        <span class="badge bg-primary">{{ credits|length }} نسیه</span>
+                    </div>
+                    <div class="card-body">
+                        {% if credits %}
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>مشتری</th>
+                                        <th>مبلغ</th>
+                                        <th>وضعیت و روش</th>
+                                        <th class="text-center">تایید</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for credit in credits %}
+                                    <tr id="credit-row-{{ credit.id }}">
+                                        <td>
+                                            <div class="fw-bold">{{ credit.customer_name }}</div>
+                                            <small class="text-muted">{{ credit.branch.name }}</small>
+                                            {% if credit.customer_phone %}
+                                            <small class="text-muted d-block">{{ credit.customer_phone }}</small>
+                                            {% endif %}
+                                            {% if credit.is_verified %}
+                                            <span class="badge bg-success ms-2">تایید شده</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold">{{ credit.credit_amount|floatformat:0 }}</td>
+                                        <td>
+                                            <select class="form-select credit-status-select mb-2" 
+                                                    data-id="{{ credit.id }}"
+                                                    {% if daily_status.is_verified %}disabled{% endif %}>
+                                                <option value="pending" {% if credit.status == 'pending' %}selected{% endif %}>در انتظار</option>
+                                                <option value="paid" {% if credit.status == 'paid' %}selected{% endif %}>پرداخت شده</option>
+                                                <option value="delayed" {% if credit.status == 'delayed' %}selected{% endif %}>معوق</option>
+                                                <option value="forgiven" {% if credit.status == 'forgiven' %}selected{% endif %}>بخشوده شده</option>
+                                            </select>
+                                            
+                                            <!-- انتخاب روش پرداخت برای نسیه پرداخت شده -->
+                                            <div class="credit-method-container" 
+                                                 style="display: {% if credit.status == 'paid' %}block{% else %}none{% endif %};">
+                                                <select class="form-select credit-method-select" 
+                                                        data-id="{{ credit.id }}"
+                                                        {% if daily_status.is_verified %}disabled{% endif %}>
+                                                    <option value="cash" {% if credit.payment_method == 'cash' %}selected{% endif %}>نقدی</option>
+                                                    <option value="bank" {% if credit.payment_method == 'bank' %}selected{% endif %}>واریز به حساب</option>
+                                                    <option value="pos" {% if credit.payment_method == 'pos' %}selected{% endif %}>پوز</option>
+                                                    <option value="other" {% if credit.payment_method == 'other' %}selected{% endif %}>سایر</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- نمایش روش پرداخت -->
+                                            {% if credit.status == 'paid' and credit.payment_method %}
+                                            <div class="account-info mt-1">
+                                                <span class="account-badge">
+                                                    <i class="bi bi-cash-coin"></i>
+                                                    {% if credit.payment_method == 'cash' %}نقدی
+                                                    {% elif credit.payment_method == 'bank' %}واریز به حساب
+                                                    {% elif credit.payment_method == 'pos' %}پوز
+                                                    {% else %}سایر{% endif %}
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" 
+                                                   class="form-check-input verify-checkbox" 
+                                                   data-type="credit"
+                                                   data-id="{{ credit.id }}"
+                                                   {% if credit.is_verified %}checked{% endif %}
+                                                   {% if daily_status.is_verified %}disabled{% endif %}>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-clock-history"></i>
+                            <h5>هیچ نسیه‌ای وجود ندارد</h5>
+                            <p class="text-muted">برای امروز هیچ نسیه‌ای سررسید نشده است.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- لیست موارد تایید شده -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card-custom verified-list">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-check-circle me-2"></i> موارد تایید شده برای ثبت نهایی
+                        </span>
+                        <span class="badge bg-success" id="verified-count">{{ verified_items|length }} مورد</span>
+                    </div>
+                    <div class="card-body">
+                        {% if verified_items %}
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>ردیف</th>
+                                        <th>نوع</th>
+                                        <th>شرح</th>
+                                        <th>حساب/روش</th>
+                                        <th class="text-end">مبلغ (تومان)</th>
+                                        <th class="text-center">عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="verified-items-body">
+                                    {% for item in verified_items %}
+                                    <tr id="verified-item-{{ item.item_type }}-{{ item.item_id }}">
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>
+                                            {% if item.type == 'شعبه' %}
+                                            <span class="badge bg-primary">شعبه</span>
+                                            {% elif item.type == 'سرمایه‌گذاری' %}
+                                            <span class="badge bg-success">سرمایه‌گذاری</span>
+                                            {% elif item.type == 'چک' %}
+                                            <span class="badge bg-warning text-dark">چک</span>
+                                            {% elif item.type == 'نسیه' %}
+                                            <span class="badge bg-info">نسیه</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.name }}</td>
+                                        <td>
+                                            {% if item.account %}
+                                            <span class="account-badge">
+                                                {% if item.type == 'سرمایه‌گذاری' or item.type == 'چک' %}
+                                                <i class="bi bi-bank"></i>
+                                                {% else %}
+                                                <i class="bi bi-cash-coin"></i>
+                                                {% endif %}
+                                                {{ item.account }}
+                                            </span>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end fw-bold">{{ item.amount|floatformat:0 }}</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="removeFromVerifiedList('{{ item.item_type }}', {{ item.item_id }})">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-success">
+                                        <td colspan="4" class="text-start fw-bold">جمع کل موارد تایید شده:</td>
+                                        <td class="text-end fw-bold fs-5" id="total-verified-amount">{{ total_verified|floatformat:0 }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-check-circle"></i>
+                            <h5>هیچ موردی تایید نشده است</h5>
+                            <p class="text-muted">لطفاً موارد مورد نظر را تایید کنید تا در اینجا نمایش داده شوند.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه‌های عملیات -->
+        {% if not daily_status.is_verified %}
+        <div class="action-buttons">
+            <button class="btn action-btn btn-secondary" onclick="window.location.href='{% url 'cash_management:calendar' %}'">
+                <i class="bi bi-arrow-right"></i>
+                بازگشت به تقویم
+            </button>
+            
+            <button class="btn action-btn btn-secondary" onclick="cancelChanges()">
+                <i class="bi bi-x-circle"></i>
+                انصراف
+            </button>
+            
+            <button class="btn action-btn btn-verify" onclick="finalizeDay()" id="finalizeBtn" {% if not is_all_verified %}disabled{% endif %}>
+                <i class="bi bi-check-circle"></i>
+                تایید نهایی و ثبت در صندوق
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- فوتر -->
+        <div class="footer">
+            سیستم مدیریت صندوق - نسخه 1.0
+            <br>
+            تمامی حقوق محفوظ است © {% now "Y" %}
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // متغیرهای URL با استفاده از template tags
+    const URLS = {
+        saveBranchCash: "{% url 'cash_management:save_branch_cash' %}",
+        saveCheque: "{% url 'cash_management:save_cheque' %}",
+        saveCredit: "{% url 'cash_management:save_credit' %}",
+        saveInvestment: "{% url 'cash_management:save_investment' %}",
+        verifyItem: "{% url 'cash_management:verify_item' %}",
+        finalizeDay: "{% url 'cash_management:finalize_day' %}",
+        calendar: "{% url 'cash_management:calendar' %}"
+    };
+
+    // ذخیره موارد تایید شده در آرایه
+    let verifiedItems = {};
+    {% for item in verified_items %}
+    verifiedItems['{{ item.item_type }}_{{ item.item_id }}'] = {
+        type: '{{ item.type }}',
+        name: '{{ item.name|escapejs }}',
+        amount: {{ item.amount }},
+        item_type: '{{ item.item_type }}',
+        item_id: {{ item.item_id }},
+        account: {% if item.account %}'{{ item.account|escapejs }}'{% else %}null{% endif %}
+    };
+    {% endfor %}
+
+    // تابع تبدیل اعداد فارسی/عربی به انگلیسی
+    function convertToEnglish(numberStr) {
+        if (!numberStr) return "0";
+
+        const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+        let result = numberStr.toString();
+
+        // تبدیل اعداد فارسی
+        for (let i = 0; i < 10; i++) {
+            const persianRegex = new RegExp(persianDigits[i], 'g');
+            const arabicRegex = new RegExp(arabicDigits[i], 'g');
+            result = result.replace(persianRegex, i);
+            result = result.replace(arabicRegex, i);
+        }
+
+        // حذف جداکننده‌ها
+        result = result.replace(/[٬,]/g, '');
+        result = result.replace(/\s/g, '');
+
+        return result || "0";
+    }
+
+    // تابع فرمت اعداد به فارسی
+    function formatNumber(num) {
+        if (!num || num === "0") return "۰";
+        const numInt = parseInt(convertToEnglish(num));
+        if (isNaN(numInt)) return "۰";
+        return numInt.toLocaleString('fa-IR');
+    }
+
+    // تابع دریافت CSRF Token
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    }
+
+    // تابع نمایش پیام
+    function showMessage(message, type = 'success') {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-circle';
+
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" 
+                 style="z-index: 9999; max-width: 500px;" role="alert">
+                <i class="bi ${icon} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        $('body').append(alertHtml);
+
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+
+    // تابع ارسال درخواست Ajax
+    function sendRequest(url, data, successCallback, errorCallback = null) {
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: JSON.stringify(data),
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            success: function(response) {
+                if (response.success) {
+                    successCallback(response);
+                } else {
+                    showMessage('خطا: ' + response.error, 'danger');
+                    if (errorCallback) errorCallback(response);
+                }
+            },
+            error: function(xhr, status, error) {
+                showMessage('خطا در ارتباط با سرور', 'danger');
+                console.error('Error:', error);
+                if (errorCallback) errorCallback({error: error});
+            }
+        });
+    }
+
+    // تابع نمایش روش پرداخت
+    function getMethodDisplay(method) {
+        switch(method) {
+            case 'cash': return 'نقدی';
+            case 'bank': return 'واریز به حساب';
+            case 'pos': return 'پوز';
+            case 'cheque': return 'چک';
+            case 'other': return 'سایر';
+            default: return method;
+        }
+    }
+
+// تابع استخراج اطلاعات آیتم - نسخه اصلاح شده
+function extractItemInfo(itemType, itemId, row) {
+    let itemInfo = {
+        type: '',
+        name: '',
+        amount: 0,
+        item_type: itemType,
+        item_id: itemId,
+        account: null
+    };
+    
+    try {
+        if (itemType === 'branch_cash') {
+            const branchName = row.find('td:first strong').text().trim();
+            const cashInput = row.find('.branch-cash-input');
+            const posInput = row.find('.branch-pos-input');
+            
+            // بررسی کنید که کدام فیلد مقدار دارد
+            const cashAmount = parseFloat(convertToEnglish(cashInput.val())) || 0;
+            const posAmount = parseFloat(convertToEnglish(posInput.val())) || 0;
+            
+            // فقط اگر حداقل یکی از مقادیر غیرصفر باشد
+            if (cashAmount > 0 || posAmount > 0) {
+                // اگر هر دو مقدار دارند، دو آیتم جداگانه ایجاد کنیم
+                if (cashAmount > 0 && posAmount > 0) {
+                    // در این حالت بهتر است دو آیتم جداگانه برگردانیم؟
+                    // برای سادگی، فقط نقدی را برمی‌گردانیم
+                    itemInfo.type = 'شعبه';
+                    itemInfo.name = `${branchName} - نقدی`;
+                    itemInfo.amount = cashAmount;
+                } else if (cashAmount > 0) {
+                    itemInfo.type = 'شعبه';
+                    itemInfo.name = `${branchName} - نقدی`;
+                    itemInfo.amount = cashAmount;
+                } else if (posAmount > 0) {
+                    itemInfo.type = 'شعبه';
+                    itemInfo.name = `${branchName} - پوز`;
+                    itemInfo.amount = posAmount;
+                }
+            } else {
+                // اگر هر دو صفر هستند، null برگردان
+                return null;
+            }
+            
+        } else if (itemType === 'investment') {
+            const investorName = row.find('td:first .fw-bold').text().trim();
+            const method = row.find('.investment-method-select').val();
+            const amount = parseFloat(convertToEnglish(row.find('.investment-amount-input').val())) || 0;
+            
+            // فقط اگر مقدار غیرصفر باشد
+            if (amount > 0) {
+                let account = null;
+                
+                if (method === 'bank') {
+                    const accountSelect = row.find('.investment-account-select');
+                    const selectedOption = accountSelect.find('option:selected');
+                    if (selectedOption.val()) {
+                        account = selectedOption.data('account-name') + ' - ' + selectedOption.data('bank-name');
+                    }
+                }
+                
+                itemInfo.type = 'سرمایه‌گذاری';
+                itemInfo.name = `${investorName}`;
+                itemInfo.amount = amount;
+                itemInfo.account = account;
+            } else {
+                return null;
+            }
+            
+        } else if (itemType === 'cheque') {
+            const chequeNumber = row.find('td:first .fw-bold').text().trim();
+            const branchName = row.find('td:first small.text-muted').text().split(' - ')[0];
+            const amountText = row.find('td:nth-child(2)').text();
+            const amount = parseFloat(amountText.replace(/,/g, '')) || 0;
+            const status = row.find('.cheque-status-select').val();
+            
+            // فقط اگر چک پاس شده باشد
+            if (status === 'passed' && amount > 0) {
+                let account = null;
+                const accountSelect = row.find('.cheque-account-select');
+                const selectedOption = accountSelect.find('option:selected');
+                if (selectedOption.val()) {
+                    account = selectedOption.data('account-name') + ' - ' + selectedOption.data('bank-name');
+                }
+                
+                itemInfo.type = 'چک';
+                itemInfo.name = `${chequeNumber} - ${branchName}`;
+                itemInfo.amount = amount;
+                itemInfo.account = account;
+            } else {
+                return null;
+            }
+            
+        } else if (itemType === 'credit') {
+            const customerName = row.find('td:first .fw-bold').text().trim();
+            const branchName = row.find('td:first small.text-muted').text().split(' - ')[0];
+            const amountText = row.find('td:nth-child(2)').text();
+            const amount = parseFloat(amountText.replace(/,/g, '')) || 0;
+            const status = row.find('.credit-status-select').val();
+            
+            // فقط اگر نسیه پرداخت شده باشد
+            if (status === 'paid' && amount > 0) {
+                let account = null;
+                const method = row.find('.credit-method-select').val();
+                account = getMethodDisplay(method);
+                
+                itemInfo.type = 'نسیه';
+                itemInfo.name = `${customerName} - ${branchName}`;
+                itemInfo.amount = amount;
+                itemInfo.account = account;
+            } else {
+                return null;
+            }
+        }
+    } catch (error) {
+        console.error('خطا در استخراج اطلاعات آیتم:', error);
+        return null;
+    }
+    
+    // اگر اطلاعاتی استخراج نشده، null برگردان
+    if (!itemInfo.name || itemInfo.amount === 0) {
+        return null;
+    }
+    
+    return itemInfo;
+}
+
+// تابع اضافه کردن به لیست تایید شده
+function addToVerifiedList(itemType, itemId, row) {
+    const key = `${itemType}_${itemId}`;
+    
+    // اگر قبلاً اضافه شده، حذف کن
+    if (verifiedItems[key]) {
+        return;
+    }
+    
+    // استخراج اطلاعات از ردیف
+    let itemInfo = extractItemInfo(itemType, itemId, row);
+    
+    // اگر اطلاعات استخراج نشد یا مقدار صفر است، برگرد
+    if (!itemInfo) {
+        console.log('آیتم حذف شد چون مقدار صفر دارد یا اطلاعات ناقص است:', itemType, itemId);
+        return;
+    }
+    
+    // ذخیره در آرایه
+    verifiedItems[key] = itemInfo;
+    
+    // به‌روزرسانی لیست نمایش
+    updateVerifiedListDisplay();
+    
+    // به‌روزرسانی وضعیت کلی تایید
+    checkAllVerified();
+    
+    console.log('آیتم اضافه شد:', itemInfo);
+}
+
+    // تابع به‌روزرسانی لیست تایید شده
+    function updateVerifiedListDisplay() {
+        const tbody = $('#verified-items-body');
+        tbody.empty();
+        
+        let total = 0;
+        let index = 1;
+        
+        // تبدیل object به آرایه
+        const itemsArray = Object.values(verifiedItems);
+        
+        if (itemsArray.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle display-4 opacity-25"></i>
+                        <h5 class="mt-3">هیچ موردی تایید نشده است</h5>
+                        <p>لطفاً موارد مورد نظر را تایید کنید تا در اینجا نمایش داده شوند.</p>
+                    </td>
+                </tr>
+            `);
+            
+            $('#verified-count').text('0 مورد');
+            $('#total-verified-amount').text('۰');
+            return;
+        }
+        
+        itemsArray.forEach(item => {
+            if (!item) return;
+            
+            total += item.amount;
+            
+            // تعیین بج بر اساس نوع
+            let badgeHtml = '';
+            switch(item.type) {
+                case 'شعبه':
+                    badgeHtml = '<span class="badge bg-primary">شعبه</span>';
+                    break;
+                case 'سرمایه‌گذاری':
+                    badgeHtml = '<span class="badge bg-success">سرمایه‌گذاری</span>';
+                    break;
+                case 'چک':
+                    badgeHtml = '<span class="badge bg-warning text-dark">چک</span>';
+                    break;
+                case 'نسیه':
+                    badgeHtml = '<span class="badge bg-info">نسیه</span>';
+                    break;
+            }
+            
+            const row = `
+                <tr id="verified-item-${item.item_type}-${item.item_id}">
+                    <td>${index}</td>
+                    <td>${badgeHtml}</td>
+                    <td>${item.name}</td>
+                    <td>
+                        ${item.account ? 
+                        `<span class="account-badge">
+                            ${item.type === 'سرمایه‌گذاری' || item.type === 'چک' ? 
+                                '<i class="bi bi-bank"></i>' : 
+                                '<i class="bi bi-cash-coin"></i>'}
+                            ${item.account}
+                        </span>` : 
+                        '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-end fw-bold">${formatNumber(item.amount.toFixed(0))}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="removeFromVerifiedList('${item.item_type}', ${item.item_id})">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            
+            tbody.append(row);
+            index++;
+        });
+        
+        // به‌روزرسانی تعداد و مجموع
+        $('#verified-count').text(itemsArray.length + ' مورد');
+        $('#total-verified-amount').text(formatNumber(total.toFixed(0)));
+    }
+
+    // تابع حذف از لیست تایید شده
+    function removeFromVerifiedList(itemType, itemId) {
+        const key = `${itemType}_${itemId}`;
+        delete verifiedItems[key];
+        
+        // به‌روزرسانی چک‌باکس
+        $(`.verify-checkbox[data-type="${itemType}"][data-id="${itemId}"]`).prop('checked', false);
+        
+        // به‌روزرسانی لیست نمایش
+        updateVerifiedListDisplay();
+        
+        // به‌روزرسانی وضعیت کلی تایید
+        checkAllVerified();
+    }
+
+// تابع بررسی وضعیت کلی تایید
+function checkAllVerified() {
+    // شمارش چک‌باکس‌های تایید شده که مقدارشان > 0 است
+    let verifiedCount = 0;
+    let totalCount = 0;
+    
+    // بررسی شعبه‌ها
+    $('.branch-cash-input, .branch-pos-input').each(function() {
+        const input = $(this);
+        const value = parseFloat(convertToEnglish(input.val())) || 0;
+        if (value > 0) {
+            totalCount++;
+            const row = input.closest('tr');
+            const checkbox = row.find('.verify-checkbox');
+            if (checkbox.is(':checked')) {
+                verifiedCount++;
+            }
+        }
+    });
+    
+    // بررسی سرمایه‌گذاری‌ها
+    $('.investment-amount-input').each(function() {
+        const value = parseFloat(convertToEnglish($(this).val())) || 0;
+        if (value > 0) {
+            totalCount++;
+            const row = $(this).closest('tr');
+            const checkbox = row.find('.verify-checkbox');
+            if (checkbox.is(':checked')) {
+                verifiedCount++;
+            }
+        }
+    });
+    
+    // بررسی چک‌ها (فقط پاس شده)
+    $('.cheque-status-select').each(function() {
+        if ($(this).val() === 'passed') {
+            totalCount++;
+            const row = $(this).closest('tr');
+            const checkbox = row.find('.verify-checkbox');
+            if (checkbox.is(':checked')) {
+                verifiedCount++;
+            }
+        }
+    });
+    
+    // بررسی نسیه‌ها (فقط پرداخت شده)
+    $('.credit-status-select').each(function() {
+        if ($(this).val() === 'paid') {
+            totalCount++;
+            const row = $(this).closest('tr');
+            const checkbox = row.find('.verify-checkbox');
+            if (checkbox.is(':checked')) {
+                verifiedCount++;
+            }
+        }
+    });
+    
+    console.log(`تایید شده‌ها: ${verifiedCount} از ${totalCount}`);
+    
+    // اگر همه آیتم‌ها تایید شده‌اند، دکمه تایید نهایی فعال شود
+    const finalizeBtn = $('#finalizeBtn');
+    if (totalCount > 0 && verifiedCount === totalCount) {
+        finalizeBtn.prop('disabled', false);
+        finalizeBtn.removeAttr('title');
+    } else {
+        finalizeBtn.prop('disabled', true);
+        finalizeBtn.attr('title', `لطفاً ابتدا همه موارد را تایید کنید (${verifiedCount}/${totalCount})`);
+    }
+}
+
+    // تابع به‌روزرسانی مجموع‌ها
+    function updateTotals() {
+        // محاسبه مجدد مجموع‌ها از روی مقادیر ورودی
+        let totalCash = 0;
+        let totalPos = 0;
+        let totalInvestments = 0;
+        
+        $('.branch-cash-input').each(function() {
+            totalCash += parseFloat(convertToEnglish($(this).val())) || 0;
+        });
+        
+        $('.branch-pos-input').each(function() {
+            totalPos += parseFloat(convertToEnglish($(this).val())) || 0;
+        });
+        
+        $('.investment-amount-input').each(function() {
+            totalInvestments += parseFloat(convertToEnglish($(this).val())) || 0;
+        });
+        
+        // محاسبه چک‌های پاس شده
+        let totalCheques = 0;
+        $('.cheque-status-select').each(function() {
+            if ($(this).val() === 'passed') {
+                const amountText = $(this).closest('tr').find('td:nth-child(2)').text();
+                totalCheques += parseFloat(amountText.replace(/,/g, '')) || 0;
+            }
+        });
+        
+        // محاسبه نسیه‌های پرداخت شده
+        let totalCredits = 0;
+        $('.credit-status-select').each(function() {
+            if ($(this).val() === 'paid') {
+                const amountText = $(this).closest('tr').find('td:nth-child(2)').text();
+                totalCredits += parseFloat(amountText.replace(/,/g, '')) || 0;
+            }
+        });
+        
+        // به‌روزرسانی نمایش
+        $('#total-cash').text(formatNumber(totalCash.toFixed(0)));
+        $('#total-pos').text(formatNumber(totalPos.toFixed(0)));
+        $('#total-investments').text(formatNumber(totalInvestments.toFixed(0)));
+        
+        const totalAll = totalCash + totalPos + totalCheques + totalCredits + totalInvestments;
+        $('#total-all').text(formatNumber(totalAll.toFixed(0)));
+    }
+
+    // تابع انصراف
+    function cancelChanges() {
+        if (confirm('آیا از انصراف مطمئن هستید؟ تغییرات ذخیره نشده از بین می‌روند.')) {
+            window.location.href = URLS.calendar;
+        }
+    }
+
+    // تابع تایید نهایی روز
+    function finalizeDay() {
+        if (!confirm('آیا از تایید نهایی این روز مطمئن هستید؟ پس از تایید، امکان ویرایش وجود نخواهد داشت و اطلاعات در صندوق ثبت می‌شوند.')) {
+            return;
+        }
+        
+        const data = {
+            date: $('#currentDate').val()
+        };
+        
+        sendRequest(
+            URLS.finalizeDay,
+            data,
+            function(response) {
+                showMessage(response.message);
+                setTimeout(function() {
+                    window.location.href = response.redirect_url || URLS.calendar;
+                }, 2000);
+            }
+        );
+    }
+
+    // رویداد تغییر مبالغ شعب
+    $(document).on('change', '.branch-cash-input, .branch-pos-input', function() {
+        if ($('#isVerified').val() === 'true') return;
+
+        const input = $(this);
+        const row = input.closest('tr');
+        
+        // گرفتن branch_id از input
+        let branchId = input.data('branch-id');
+        
+        // اگر از data-branch-id نتوانستیم بگیریم، از hidden field بگیریم
+        if (!branchId) {
+            branchId = row.find('.branch-id-field').val();
+        }
+        
+        if (!branchId) {
+            showMessage('خطا: شناسه شعبه یافت نشد', 'danger');
+            return;
+        }
+        
+        const field = input.data('field');
+        const value = convertToEnglish(input.val());
+        const branchName = row.find('td:first strong').text().trim();
+
+        // پیدا کردن مقدار دیگر
+        const otherField = field === 'cash' ? 'pos' : 'cash';
+        const otherInput = row.find(`.branch-${otherField}-input`);
+        const otherValue = otherInput.length ? convertToEnglish(otherInput.val()) : "0";
+
+        const data = {
+            date: $('#currentDate').val(),
+            branch_id: branchId,
+            cash_amount: field === 'cash' ? value : otherValue,
+            pos_amount: field === 'pos' ? value : otherValue
+        };
+
+        sendRequest(
+            URLS.saveBranchCash,
+            data,
+            function(response) {
+                showMessage(response.message);
+                updateTotals();
+            },
+            function(error) {
+                console.error('خطای سرور:', error);
+            }
+        );
+    });
+
+    // مدیریت نمایش فیلد حساب برای سرمایه‌گذاری بانکی
+    $(document).on('change', '.investment-method-select', function() {
+        const investmentId = $(this).data('id');
+        const method = $(this).val();
+        const accountContainer = $(this).closest('td').find('.investment-account-container');
+        
+        if (method === 'bank') {
+            accountContainer.show();
+        } else {
+            accountContainer.hide();
+        }
+        
+        // ذخیره تغییر
+        saveInvestmentChanges(investmentId);
+    });
+
+    // تابع ذخیره تغییرات سرمایه‌گذاری
+    function saveInvestmentChanges(investmentId) {
+        if ($('#isVerified').val() === 'true') return;
+        
+        const amountInput = $(`.investment-amount-input[data-id="${investmentId}"]`);
+        const methodSelect = $(`.investment-method-select[data-id="${investmentId}"]`);
+        const accountSelect = $(`.investment-account-select[data-id="${investmentId}"]`);
+        
+        const data = {
+            investment_id: investmentId,
+            amount: convertToEnglish(amountInput.val()),
+            payment_method: methodSelect.val(),
+            destination_account: methodSelect.val() === 'bank' ? accountSelect.val() : ''
+        };
+        
+        sendRequest(
+            URLS.saveInvestment,
+            data,
+            function(response) {
+                showMessage(response.message);
+                updateTotals();
+            }
+        );
+    }
+
+    // مدیریت نمایش فیلد حساب برای چک پاس شده
+    $(document).on('change', '.cheque-status-select', function() {
+        const chequeId = $(this).data('id');
+        const status = $(this).val();
+        const accountContainer = $(this).closest('td').find('.cheque-account-container');
+        
+        if (status === 'passed') {
+            accountContainer.show();
+        } else {
+            accountContainer.hide();
+        }
+        
+        // ذخیره تغییر
+        saveChequeChanges(chequeId);
+    });
+
+    // تابع ذخیره تغییرات چک
+    function saveChequeChanges(chequeId) {
+        if ($('#isVerified').val() === 'true') return;
+        
+        const statusSelect = $(`.cheque-status-select[data-id="${chequeId}"]`);
+        const accountSelect = $(`.cheque-account-select[data-id="${chequeId}"]`);
+        
+        const data = {
+            cheque_id: chequeId,
+            status: statusSelect.val(),
+            destination_account: statusSelect.val() === 'passed' ? accountSelect.val() : ''
+        };
+        
+        sendRequest(
+            URLS.saveCheque,
+            data,
+            function(response) {
+                showMessage(response.message);
+                updateTotals();
+            }
+        );
+    }
+
+    // مدیریت نمایش فیلد روش پرداخت برای نسیه پرداخت شده
+    $(document).on('change', '.credit-status-select', function() {
+        const creditId = $(this).data('id');
+        const status = $(this).val();
+        const methodContainer = $(this).closest('td').find('.credit-method-container');
+        
+        if (status === 'paid') {
+            methodContainer.show();
+        } else {
+            methodContainer.hide();
+        }
+        
+        // ذخیره تغییر
+        saveCreditChanges(creditId);
+    });
+
+    // تابع ذخیره تغییرات نسیه
+    function saveCreditChanges(creditId) {
+        if ($('#isVerified').val() === 'true') return;
+        
+        const statusSelect = $(`.credit-status-select[data-id="${creditId}"]`);
+        const methodSelect = $(`.credit-method-select[data-id="${creditId}"]`);
+        
+        const data = {
+            credit_id: creditId,
+            status: statusSelect.val(),
+            payment_method: statusSelect.val() === 'paid' ? methodSelect.val() : ''
+        };
+        
+        sendRequest(
+            URLS.saveCredit,
+            data,
+            function(response) {
+                showMessage(response.message);
+                updateTotals();
+            }
+        );
+    }
+    // رویداد تایید آیتم‌ها
+$(document).on('change', '.verify-checkbox', function() {
+    if ($('#isVerified').val() === 'true') return;
+
+    const checkbox = $(this);
+    const itemType = checkbox.data('type');
+    const itemId = checkbox.data('id');
+    const isChecked = checkbox.is(':checked');
+
+    const data = {
+        item_type: itemType,
+        item_id: itemId
+    };
+
+    sendRequest(
+        URLS.verifyItem,
+        data,
+        function(response) {
+            showMessage(response.message);
+            checkbox.prop('checked', response.is_verified);
+
+            const row = checkbox.closest('tr');
+            if (response.is_verified) {
+                // اضافه کردن به لیست تایید شده
+                if (response.item_info) {
+                    const key = `${response.item_info.type}_${response.item_info.id}`;
+                    verifiedItems[key] = {
+                        type: getTypeDisplay(response.item_info.type),
+                        name: response.item_info.name,
+                        amount: response.item_info.amount,
+                        item_type: response.item_info.type,
+                        item_id: response.item_info.id,
+                        account: response.item_info.account
+                    };
+                    
+                    // به‌روزرسانی لیست نمایش
+                    updateVerifiedListDisplay();
+                }
+                
+                // به‌روزرسانی نشان تایید در جدول
+                const existingBadge = row.find('.badge.bg-success');
+                if (existingBadge.length === 0) {
+                    row.find('td:first').append('<span class="badge bg-success ms-2">تایید شده</span>');
+                }
+            } else {
+                // حذف از لیست تایید شده
+                const key = `${itemType}_${itemId}`;
+                delete verifiedItems[key];
+                updateVerifiedListDisplay();
+                row.find('.badge.bg-success').remove();
+            }
+            
+            // بررسی وضعیت کلی تایید
+            checkAllVerified();
+        }
+    );
+});
+
+// تابع نمایش نوع آیتم
+function getTypeDisplay(itemType) {
+    switch(itemType) {
+        case 'branch_cash': return 'شعبه';
+        case 'investment': return 'سرمایه‌گذاری';
+        case 'cheque': return 'چک';
+        case 'credit': return 'نسیه';
+        default: return itemType;
+    }
+}
+
+    // رویداد ورود اعداد در فیلدهای مبلغ
+    $(document).on('input', '.amount-input', function() {
+        let value = $(this).val();
+        value = convertToEnglish(value);
+        $(this).val(value);
+    });
+
+    // رویداد فرمت اعداد هنگام از دست دادن فوکوس
+    $(document).on('blur', '.amount-input', function() {
+        let value = $(this).val();
+        value = formatNumber(value);
+        $(this).val(value);
+    });
+
+    // فرمت اعداد هنگام لود صفحه
+    $(document).ready(function() {
+        // فرمت اعداد ورودی
+        $('.amount-input').each(function() {
+            const value = $(this).val();
+            if (value) {
+                $(this).val(formatNumber(value));
+            }
+        });
+        
+        // فرمت اعداد در کارت‌های مجموع
+        $('.total-amount').each(function() {
+            const value = $(this).text().trim();
+            $(this).text(formatNumber(value));
+        });
+        
+        // تبدیل اعداد فارسی در جداول
+        $('.table-custom td.fw-bold').each(function() {
+            const value = $(this).text().trim();
+            if (value.match(/^\d+$/)) {
+                $(this).text(formatNumber(value));
+            }
+        });
+        
+        // مقداردهی اولیه لیست تایید شده
+        updateVerifiedListDisplay();
+        checkAllVerified();
+    });
+    
+</script>
+
+</body>
+</html>

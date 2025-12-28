@@ -52,18 +52,18 @@ class Paymentnumber(models.Model):
     def __str__(self):
         return f"{self.name} - {self.bank_name} - {self.ip_address}:{self.port}"
 
-    def save(self, *args, **kwargs):
-        if self.is_default:
-            POSDevice.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
-        elif not POSDevice.objects.filter(is_default=True).exists():
-            self.is_default = True
-        super().save(*args, **kwargs)
     # def save(self, *args, **kwargs):
     #     if self.is_default:
-    #         Paymentnumber.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
-    #     elif not Paymentnumber.objects.filter(is_default=True).exists():
+    #         POSDevice.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
+    #     elif not POSDevice.objects.filter(is_default=True).exists():
     #         self.is_default = True
     #     super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            Paymentnumber.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
+        elif not Paymentnumber.objects.filter(is_default=True).exists():
+            self.is_default = True
+        super().save(*args, **kwargs)
 
 class Invoicefrosh(models.Model):
     PAYMENT_METHODS = [
@@ -75,7 +75,7 @@ class Invoicefrosh(models.Model):
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, verbose_name="شعبه")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="ایجاد کننده")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    created_at = models.DateTimeField(verbose_name="تاریخ ایجاد")
     payment_date = models.DateTimeField(null=True, blank=True, verbose_name="تاریخ پرداخت")
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='pos', verbose_name="روش پرداخت")
     pos_device = models.ForeignKey(POSDevice, on_delete=models.SET_NULL, null=True, blank=True,
@@ -83,7 +83,7 @@ class Invoicefrosh(models.Model):
     total_amount = models.PositiveIntegerField(default=0, verbose_name="مبلغ کل")
     total_without_discount = models.PositiveIntegerField(default=0, verbose_name="مبلغ بدون تخفیف")
     discount = models.PositiveIntegerField(default=0, verbose_name="تخفیف")
-    is_finalized = models.BooleanField(default=False, verbose_name="نهایی شده")
+    is_finalized = models.BooleanField(default=False, verbose_name="در انتظار تایید")
     is_paid = models.BooleanField(default=False, verbose_name="پرداخت شده")
     customer_name = models.CharField(max_length=100, blank=True, null=True, verbose_name="نام خریدار")
     customer_phone = models.CharField(max_length=15, blank=True, null=True, verbose_name="تلفن خریدار")
@@ -173,6 +173,8 @@ class CheckPayment(models.Model):
     pos_device = models.ForeignKey(POSDevice, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="دستگاه پوز برای باقیمانده")
     check_date = models.DateField(verbose_name="تاریخ چک")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_finalized = models.BooleanField(default=False, verbose_name="در انتظار تایید")
+
 
 
 # models.py - اصلاح مدل CreditPayment
@@ -194,6 +196,7 @@ class CreditPayment(models.Model):
                                    verbose_name="دستگاه پوز برای باقیمانده")
 
     created_at = models.DateTimeField(auto_now_add=True)
+    is_finalized = models.BooleanField(default=False, verbose_name="در انتظار تایید")
 
 
 # invoice_app/models.py (بخش اصلاح شده)

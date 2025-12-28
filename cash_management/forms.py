@@ -1,5 +1,5 @@
 from django import forms
-from .models import Investment
+from .models import Investment, DailyCashAdjustment
 from cantact_app.models import accuntmodel
 from invoice_app.models import Paymentnumber
 
@@ -59,3 +59,12 @@ class InvestmentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['payment_account'].queryset = Paymentnumber.objects.filter(is_active=True)
+
+
+class AdjustmentForm(forms.ModelForm):
+    class Meta:
+        model = DailyCashAdjustment
+        fields = ['adjustment_type', 'description', 'amount', 'is_positive']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }

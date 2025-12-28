@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>جزئیات روز {{ jalali_date }}</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --text-color: #2c3e50;
+            --light-bg: #f9f9f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f1f8e9;
+            --blue-light: #e3f2fd;
+            --blue-dark: #2196f3;
+            --orange: #FF9800;
+            --red-light: #ffebee;
+            --red-dark: #d32f2f;
+            --green-light: #e8f5e9;
+            --green-dark: #2E7D32;
+            --purple-light: #f3e5f5;
+            --purple-dark: #7b1fa2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e8f5e9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .date-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .date-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .date-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-pending {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .status-confirmed {
+            background: #d1fae5;
+            color: #059669;
+            border: 1px solid #6ee7b7;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: var(--blue-light);
+            border-radius: 8px;
+            border-right: 4px solid var(--blue-dark);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--blue-dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-count {
+            background: var(--primary-color);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .branch-card {
+            background: var(--light-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .branch-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
+        }
+
+        .branch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .branch-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .branch-status {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-unfinalized {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .status-finalized {
+            background: #d1fae5;
+            color: #059669;
+            border: 1px solid #6ee7b7;
+        }
+
+        .status-no-data {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .payment-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .payment-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .payment-table tr:nth-child(even) {
+            background-color: var(--light-bg);
+        }
+
+        .payment-table tr:hover {
+            background-color: var(--green-light);
+            transition: background-color 0.2s;
+        }
+
+        .method-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            margin: 0 auto;
+        }
+
+        .icon-cash {
+            background: #10b981;
+            color: white;
+        }
+
+        .icon-pos {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .icon-check {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .icon-credit {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .amount-cell {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+        }
+
+        .count-cell {
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .investment-section {
+            margin-top: 30px;
+        }
+
+        .investment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .method-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .method-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .method-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .method-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .investor-item {
+            background: var(--light-bg);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .investor-item:hover {
+            background: var(--green-light);
+            border-color: var(--primary-color);
+        }
+
+        .investor-info {
+            flex: 1;
+        }
+
+        .investor-name {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .investor-details {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .investor-amount {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #8b5cf6;
+            min-width: 150px;
+            text-align: left;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+            background: var(--light-bg);
+            border-radius: 8px;
+            border: 2px dashed #cbd5e1;
+            margin: 20px 0;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            border-left-color: #d32f2f;
+        }
+
+        .success-message {
+            color: #2E7D32;
+            background-color: #e8f5e9;
+            border-left-color: #2E7D32;
+        }
+
+        .info-message {
+            color: #1976d2;
+            background-color: #e3f2fd;
+            border-left-color: #1976d2;
+        }
+
+        .warning-message {
+            color: #f57c00;
+            background-color: #fff3e0;
+            border-left-color: #f57c00;
+        }
+
+        .check-credit-section {
+            margin-top: 40px;
+            padding: 25px;
+            background: linear-gradient(135deg, #fff3e0, #fff8e1);
+            border-radius: 8px;
+            border: 2px solid #FF9800;
+        }
+
+        .check-credit-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .check-credit-table th {
+            background: #FF9800;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+        }
+
+        .check-credit-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ffe0b2;
+        }
+
+        .check-credit-table tr:nth-child(even) {
+            background-color: #fff8e1;
+        }
+
+        .check-credit-table tr:hover {
+            background-color: #ffecb3;
+        }
+
+        .payment-date {
+            font-weight: 600;
+            color: #e65100;
+        }
+
+        .customer-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .customer-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .customer-phone {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .maturity-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .maturity-upcoming {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .maturity-past {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .maturity-future {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .date-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .stat-item {
+                min-width: 100%;
+            }
+
+            .payment-table {
+                font-size: 0.9rem;
+            }
+
+            .payment-table th,
+            .payment-table td {
+                padding: 10px 8px;
+            }
+
+            .investment-methods {
+                grid-template-columns: 1fr;
+            }
+
+            .investor-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .investor-amount {
+                text-align: right;
+                width: 100%;
+            }
+
+            .check-credit-table {
+                font-size: 0.9rem;
+            }
+
+            .check-credit-table th,
+            .check-credit-table td {
+                padding: 10px 8px;
+            }
+        }
+
+        .branch-summary {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 10px 15px;
+            min-width: 120px;
+        }
+
+        .summary-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--blue-dark);
+            margin-bottom: 5px;
+        }
+
+        .summary-label {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .system-info {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: var(--purple-light);
+            border-radius: 8px;
+            border-right: 4px solid var(--purple-dark);
+        }
+
+        .system-info h3 {
+            color: var(--purple-dark);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .system-info p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .editable-amount {
+            cursor: pointer;
+            border-bottom: 1px dashed #4CAF50;
+            transition: all 0.3s;
+        }
+        
+        .editable-amount:hover {
+            background-color: #f0f9ff;
+            border-color: #2196F3;
+        }
+        
+        .due-today-section {
+            margin-top: 30px;
+            background: #fff3e0;
+            border: 2px solid #FF9800;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .discrepancy-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <!-- بخش اصلی صفحه -->
+    
+    <!-- بخش شعبه‌ها (فقط نقدی و پوز) -->
+    <div class="section">
+        <h3><i class="fas fa-store"></i> مجموع نقدی و پوز هر شعبه</h3>
+        {% for branch_data in branches_data %}
+        <div class="branch-card">
+            <h4>{{ branch_data.branch.name }}</h4>
+            <div class="amount-row">
+                <span>نقدی: </span>
+                <span class="editable-amount" 
+                      data-item-type="invoice_cash"
+                      data-branch-id="{{ branch_data.branch.id }}"
+                      data-original-amount="{{ branch_data.cash_total }}">
+                    {{ branch_data.cash_total|floatformat:0 }}
+                </span> تومان
+            </div>
+            <div class="amount-row">
+                <span>پوز: </span>
+                <span class="editable-amount"
+                      data-item-type="invoice_pos"
+                      data-branch-id="{{ branch_data.branch.id }}"
+                      data-original-amount="{{ branch_data.pos_total }}">
+                    {{ branch_data.pos_total|floatformat:0 }}
+                </span> تومان
+            </div>
+            <div class="total-row">
+                <strong>مجموع: {{ branch_data.cash_pos_total|floatformat:0 }} تومان</strong>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- بخش چک‌ها و نسیه‌های سررسید امروز -->
+    <div class="due-today-section">
+        <h3><i class="fas fa-calendar-day"></i> چک‌ها و نسیه‌های سررسید امروز</h3>
+        {% if due_today_data %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>شعبه</th>
+                    <th>نوع</th>
+                    <th>مشتری</th>
+                    <th>مبلغ</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in due_today_data %}
+                <tr>
+                    <td>{{ item.branch_name }}</td>
+                    <td>{{ item.type_fa }}</td>
+                    <td>{{ item.customer_name }}</td>
+                    <td>
+                        <span class="editable-amount"
+                              data-item-type="invoice_{{ item.type }}"
+                              data-item-id="{{ item.invoice_id }}"
+                              data-branch-id="{{ item.branch.id }}"
+                              data-original-amount="{{ item.amount }}">
+                            {{ item.amount|floatformat:0 }}
+                        </span> تومان
+                    </td>
+                    <td>{{ item.created_date|date:"Y/m/d" }}</td>
+                    <td>
+                        {% if item.is_paid %}
+                        <span class="badge bg-success">پرداخت شده</span>
+                        {% else %}
+                        <span class="badge bg-warning">در انتظار</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>هیچ چک یا نسیه‌ای برای امروز سررسید نشده است.</p>
+        {% endif %}
+    </div>
+    
+    <!-- بخش سرمایه‌گذاری‌ها -->
+    <div class="section">
+        <h3><i class="fas fa-hand-holding-usd"></i> سرمایه‌گذاری‌ها</h3>
+        {% for investment in investment_data %}
+        <div class="investment-item">
+            <div class="investor-info">
+                {{ investment.investor_name }}
+            </div>
+            <div class="amount-row">
+                <span class="editable-amount"
+                      data-item-type="investment"
+                      data-item-id="{{ investment.id }}"
+                      data-original-amount="{{ investment.amount }}">
+                    {{ investment.amount|floatformat:0 }}
+                </span> تومان
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- بخش مغایرت‌ها -->
+    <div class="section">
+        <h3><i class="fas fa-exclamation-triangle"></i> مغایرت‌های ثبت شده</h3>
+        <div id="discrepancies-container">
+            <!-- مغایرت‌ها با AJAX لود می‌شوند -->
+        </div>
+    </div>
+    
+    <!-- Modal ویرایش مبلغ -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h4>ویرایش مبلغ</h4>
+            <form id="editAmountForm">
+                <input type="hidden" id="editItemType">
+                <input type="hidden" id="editItemId">
+                <input type="hidden" id="editBranchId">
+                
+                <div class="form-group">
+                    <label>مبلغ قبلی:</label>
+                    <input type="text" id="previousAmount" readonly class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>مبلغ جدید:</label>
+                    <input type="number" id="newAmount" required class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>توضیح مختصر:</label>
+                    <input type="text" id="description" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>علت مغایرت:</label>
+                    <textarea id="reason" rows="3" required class="form-control"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>کد ملی رسیدگی کننده:</label>
+                    <input type="text" id="reviewerMelicode" value="{{ current_user_melicode }}" readonly class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>کد ملی پاسخ دهنده:</label>
+                    <input type="text" id="responderMelicode" required class="form-control">
+                </div>
+                
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">لغو</button>
+                    <button type="submit" class="btn btn-primary">ثبت مغایرت</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // متغیرهای global
+        let currentEditElement = null;
+        
+        // باز کردن modal برای ویرایش
+        document.querySelectorAll('.editable-amount').forEach(element => {
+            element.addEventListener('click', function() {
+                currentEditElement = this;
+                
+                document.getElementById('editItemType').value = this.dataset.itemType;
+                document.getElementById('editItemId').value = this.dataset.itemId || '';
+                document.getElementById('editBranchId').value = this.dataset.branchId || '';
+                document.getElementById('previousAmount').value = this.dataset.originalAmount;
+                document.getElementById('newAmount').value = this.dataset.originalAmount;
+                
+                document.getElementById('editModal').style.display = 'block';
+            });
+        });
+        
+        // بستن modal
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditElement = null;
+        }
+        
+        // ارسال فرم ویرایش
+        document.getElementById('editAmountForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const data = {
+                item_type: document.getElementById('editItemType').value,
+                item_id: document.getElementById('editItemId').value,
+                new_amount: document.getElementById('newAmount').value,
+                reason: document.getElementById('reason').value,
+                branch_id: document.getElementById('editBranchId').value,
+                description: document.getElementById('description').value,
+                reviewer_melicode: document.getElementById('reviewerMelicode').value,
+                responder_melicode: document.getElementById('responderMelicode').value
+            };
+            
+            fetch('/cash_management/update_amount/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // به‌روزرسانی نمایش مبلغ
+                    if (currentEditElement) {
+                        currentEditElement.textContent = data.new_amount + ' تومان';
+                        currentEditElement.dataset.originalAmount = data.new_amount;
+                    }
+                    
+                    // رفرش لیست مغایرت‌ها
+                    loadDiscrepancies();
+                    
+                    // بستن modal
+                    closeModal();
+                    
+                    alert('مغایرت با موفقیت ثبت شد. منتظر تایید بررسی کننده باشید.');
+                } else {
+                    alert('خطا: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('خطا در ارتباط با سرور');
+                console.error(error);
+            });
+        });
+        
+        // بارگذاری لیست مغایرت‌ها
+        function loadDiscrepancies() {
+            const dateStr = '{{ date_str }}';
+            
+            fetch(`/cash_management/get_discrepancies/?date=${dateStr}`)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    renderDiscrepancies(result.discrepancies);
+                }
+            });
+        }
+        
+        // رندر کردن لیست مغایرت‌ها
+        function renderDiscrepancies(discrepancies) {
+            const container = document.getElementById('discrepancies-container');
+            
+            if (discrepancies.length === 0) {
+                container.innerHTML = '<p>هیچ مغایرتی ثبت نشده است.</p>';
+                return;
+            }
+            
+            let html = '<table class="table"><thead><tr>' +
+                '<th>شعبه</th><th>نوع</th><th>مبلغ قبلی</th><th>مبلغ جدید</th>' +
+                '<th>تفاوت</th><th>وضعیت بررسی</th><th>علت</th><th>تاریخ</th>' +
+                '</tr></thead><tbody>';
+            
+            discrepancies.forEach(disc => {
+                const statusClass = disc.review_status.includes('pending') ? 'status-pending' :
+                                  disc.review_status.includes('approved') ? 'status-approved' : 'status-rejected';
+                
+                html += `<tr>
+                    <td>${disc.branch_name}</td>
+                    <td>${disc.item_type}</td>
+                    <td>${disc.previous_amount.toLocaleString()}</td>
+                    <td>${disc.new_amount.toLocaleString()}</td>
+                    <td>${disc.difference.toLocaleString()}</td>
+                    <td><span class="discrepancy-status ${statusClass}">${disc.review_status}</span></td>
+                    <td>${disc.reason.substring(0, 50)}...</td>
+                    <td>${disc.created_at}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        // تابع کمکی برای دریافت CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // بارگذاری اولیه مغایرت‌ها
+        document.addEventListener('DOMContentLoaded', loadDiscrepancies);
+    </script>
+</body>
+</html>

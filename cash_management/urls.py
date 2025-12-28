@@ -5,30 +5,6 @@ from . import views
 app_name = 'cash_management'
 
 urlpatterns = [
-    # صفحات اصلی
-    path('cash-inventory/', views.cash_inventory_view, name='cash_inventory'),
-    path('expense-registration/', views.expense_registration_view, name='expense_registration'),
-    path('expense-payment/', views.expense_payment_view, name='expense_payment'),
-    path('discrepancy-review/', views.discrepancy_review_view, name='discrepancy_review'),
-
-    # API endpoints برای AJAX
-    path('api/get-cash-data/', views.get_cash_inventory_data, name='get_cash_data'),
-    path('api/get-account-data/', views.get_account_inventory_data, name='get_account_data'),  # <- این خط اضافه شود
-    path('api/confirm-inventory/', views.confirm_inventory, name='confirm_inventory'),
-    path('api/register-investment/', views.register_investment, name='register_investment'),
-    path('api/search-investor/', views.search_investor, name='search_investor'),
-    path('api/get-credit-accounts/', views.get_credit_accounts, name='get_credit_accounts'),
-    path('api/resolve-discrepancy/<int:discrepancy_id>/', views.resolve_discrepancy, name='resolve_discrepancy'),
-
-    # APIهای جدید
-    path('api/get-expenses-for-payment/', views.get_expenses_for_payment, name='get_expenses_for_payment'),
-    path('api/process-payments/', views.process_payments, name='process_payments'),
-    path('api/register-expense/', views.register_expense, name='register_expense'),
-    path('api/get-today-expenses/', views.get_today_expenses, name='get_today_expenses'),
-    path('api/delete-expense/<int:expense_id>/', views.delete_expense, name='delete_expense'),
-    path('api/get-discrepancies/', views.get_discrepancies, name='get_discrepancies'),
-    path('api/get-discrepancy/<int:discrepancy_id>/', views.get_discrepancy_detail, name='get_discrepancy_detail'),
-
     # -----------------------------------------------سرمایه گزاری------------------------------------------
     path('investment/', views.investment_registration, name='investment_registration'),
     path('check-melicode/', views.check_melicode, name='check_melicode'),
@@ -37,5 +13,34 @@ urlpatterns = [
     # ----------------------------گزارش سرمایه گزاری------------------------------------------------------------------------
 
     path('investment-report/', views.investment_report_view, name='investment_report'),
+
+    # ---------------------------تایید پرداخت---------------------------------------------------------------------------
+
+    path('investment/registration/', views.investment_registration, name='investment_registration'),
+    path('investment/report/', views.investment_report_view, name='investment_report'),
+    path('investment/check-melicode/', views.check_melicode, name='check_melicode'),
+    path('investment/convert-amount/', views.convert_amount_to_words, name='convert_amount_to_words'),
+
+    # تقویم و مدیریت روزانه
+    path('calendar/', views.calendar_view, name='calendar'),
+    path('day-detail/', views.day_detail_view, name='day_detail'),
+
+    # ذخیره اطلاعات
+    path('save-branch-cash/', views.save_branch_cash, name='save_branch_cash'),
+    path('save-cheque/', views.save_cheque, name='save_cheque'),
+    path('save-credit/', views.save_credit, name='save_credit'),
+    path('save-investment/', views.save_investment, name='save_investment'),
+
+    # تایید و عملیات
+    path('verify-item/', views.verify_item, name='verify_item'),
+    path('finalize-day/', views.finalize_day, name='finalize_day'),
+
+    # تنظیمات و مغایرت
+    path('add-adjustment/', views.add_adjustment, name='add_adjustment'),
+    path('bulk-update/', views.bulk_update, name='bulk_update'),
+    path('get-discrepancies/', views.get_discrepancies, name='get_discrepancies'),
+
+    # ------------------------------------------------------گزارش صندوق---------------------------------------
+    path('cash-balance-report/', views.cash_balance_report, name='cash_balance_report'),
 
 ]

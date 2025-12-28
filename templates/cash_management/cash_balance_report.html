@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گزارش موجودی صندوق</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Vazirmatn Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #2E7D32;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container-main {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            transition: transform 0.2s;
+            background: white;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header-custom {
+            background-color: var(--light-bg);
+            border-bottom: 2px solid var(--primary-color);
+            font-weight: bold;
+            padding: 18px 25px;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .form-select-custom {
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            padding: 10px 15px;
+            transition: all 0.3s;
+        }
+
+        .form-select-custom:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+        }
+
+        .total-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            height: 100%;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .total-box:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+        }
+
+        .total-amount {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 15px 0;
+            color: var(--dark);
+        }
+
+        .total-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .total-subtitle {
+            font-size: 0.8rem;
+            color: #adb5bd;
+        }
+
+        .table-custom {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .table-custom th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 18px 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .table-custom td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        .table-custom tbody tr {
+            transition: all 0.2s;
+        }
+
+        .table-custom tbody tr:hover {
+            background-color: rgba(76, 175, 80, 0.05);
+        }
+
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .status-verified {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+            color: white;
+        }
+
+        .back-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background-color: #5a6268;
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .amount-cell {
+            font-family: monospace;
+            font-weight: bold;
+            text-align: left;
+            direction: ltr;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .summary-card {
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            background: var(--light-bg);
+            border-radius: 8px;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .container-main {
+                padding: 0 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .table-custom {
+                font-size: 0.9rem;
+            }
+
+            .table-custom th,
+            .table-custom td {
+                padding: 10px 8px;
+            }
+
+            .total-amount {
+                font-size: 1.8rem;
+            }
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .date-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 25px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            background: linear-gradient(135deg, #495057, #343a40);
+            transform: translateY(-2px);
+            color: white;
+        }
+        
+        .progress-bar {
+            background-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <!-- هدر -->
+        <div class="header">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{% url 'cash_management:calendar' %}" class="back-btn">
+                        <i class="bi bi-arrow-right"></i>
+                        بازگشت به تقویم
+                    </a>
+                </div>
+                <div class="user-info">
+                    <i class="bi bi-person-circle"></i>
+                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                </div>
+            </div>
+
+            <div class="date-header">
+                <div class="date-badge">
+                    <i class="bi bi-calendar-date"></i>
+                    امروز: {{ today_jalali }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-cash-stack me-2"></i>
+                    گزارش موجودی صندوق
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="export-btn" onclick="exportToExcel()">
+                        <i class="bi bi-file-earmark-excel"></i> خروجی Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- فیلترها -->
+        <div class="filter-section">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">نوع گزارش</label>
+                        <select class="form-select form-select-custom" name="filter_type" id="filterType">
+                            <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>ماهانه</option>
+                            <option value="yearly" {% if filter_type == 'yearly' %}selected{% endif %}>سالانه</option>
+                            <option value="custom" {% if filter_type == 'custom' %}selected{% endif %}>بازه دلخواه</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">شعبه</label>
+                        <select class="form-select form-select-custom" name="branch_id">
+                            <option value="all" {% if branch_id == 'all' %}selected{% endif %}>همه شعب</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if branch_id == branch.id|stringformat:"i" %}selected{% endif %}>
+                                {{ branch.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-3" id="yearField">
+                        <label class="form-label">سال</label>
+                        <select class="form-select form-select-custom" name="year">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-3" id="monthField">
+                        <label class="form-label">ماه</label>
+                        <select class="form-select form-select-custom" name="month">
+                            {% for month_num, month_name in persian_months %}
+                            <option value="{{ month_num }}" {% if month_num == selected_month %}selected{% endif %}>
+                                {{ month_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3" id="customDateFields" style="display: none;">
+                        <label class="form-label">بازه زمانی</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="text" class="form-control form-select-custom" name="start_date" 
+                                       placeholder="شروع (YYYY/MM/DD)" value="{{ start_date }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="text" class="form-control form-select-custom" name="end_date" 
+                                       placeholder="پایان (YYYY/MM/DD)" value="{{ end_date }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary-custom w-100">
+                            <i class="bi bi-search"></i> اعمال فیلتر
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- کارت‌های مجموع -->
+        <div class="row">
+            <div class="col-md-2 col-6 mb-3">
+                <div class="total-box">
+                    <div class="total-label">موجودی نقدی</div>
+                    <div class="total-amount" id="total-cash">{{ total_cash|floatformat:0 }}</div>
+                    <div class="total-subtitle">تومان</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="total-box">
+                    <div class="total-label">موجودی پوز</div>
+                    <div class="total-amount" id="total-pos">{{ total_pos|floatformat:0 }}</div>
+                    <div class="total-subtitle">تومان</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="total-box">
+                    <div class="total-label">چک‌ها</div>
+                    <div class="total-amount" id="total-cheque">{{ total_cheque|floatformat:0 }}</div>
+                    <div class="total-subtitle">تومان</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="total-box">
+                    <div class="total-label">نسیه‌ها</div>
+                    <div class="total-amount" id="total-credit">{{ total_credit|floatformat:0 }}</div>
+                    <div class="total-subtitle">تومان</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="total-box">
+                    <div class="total-label">سرمایه‌گذاری</div>
+                    <div class="total-amount" id="total-investment">{{ total_investment|floatformat:0 }}</div>
+                    <div class="total-subtitle">تومان</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="total-box" style="border-color: var(--primary-color);">
+                    <div class="total-label">مجموع کل</div>
+                    <div class="total-amount" id="total-all">{{ total_all|floatformat:0 }}</div>
+                    <div class="total-subtitle">از {{ record_count }} رکورد</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- خلاصه گزارش -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom">
+                        <i class="bi bi-graph-up me-2"></i>خلاصه آماری
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="summary-card">
+                                    <div class="summary-title">میانگین نقدی روزانه</div>
+                                    <div class="summary-value">
+                                        {{ avg_daily_cash|floatformat:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="summary-card">
+                                    <div class="summary-title">بیشترین مبلغ نقدی</div>
+                                    <div class="summary-value">
+                                        {{ max_cash|floatformat:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="summary-card">
+                                    <div class="summary-title">تعداد روزهای ثبت شده</div>
+                                    <div class="summary-value">{{ record_count }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="summary-card">
+                                    <div class="summary-title">آخرین بروزرسانی</div>
+                                    <div class="summary-value">
+                                        {% if cash_registers %}
+                                            {% with cash_registers|first as last %}
+                                                {{ last.jalali_date_str }}
+                                            {% endwith %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول رکوردها -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-table me-2"></i> رکوردهای صندوق
+                        </span>
+                        <span class="badge bg-primary">{{ record_count }} رکورد</span>
+                    </div>
+                    <div class="card-body">
+                        {% if cash_registers %}
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>ردیف</th>
+                                        <th>تاریخ</th>
+                                        <th>شعبه</th>
+                                        <th class="text-end">نقدی</th>
+                                        <th class="text-end">پوز</th>
+                                        <th class="text-end">چک</th>
+                                        <th class="text-end">نسیه</th>
+                                        <th class="text-end">سرمایه‌گذاری</th>
+                                        <th class="text-end">مجموع</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cr in cash_registers %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>
+                                            <strong>{{ cr.jalali_date_str }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ cr.date }}</small>
+                                        </td>
+                                        <td>
+                                            {% if cr.branch %}
+                                                {{ cr.branch.name }}
+                                            {% else %}
+                                                <span class="text-muted">مرکزی</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end amount-cell">{{ cr.cash_amount|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ cr.pos_amount|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ cr.cheque_amount|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ cr.credit_amount|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ cr.investment_amount|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell fw-bold">{{ cr.total|floatformat:0 }}</td>
+                                        <td>
+                                            <span class="status-badge status-verified">
+                                                <i class="bi bi-check-circle me-1"></i> تایید شده
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="viewDetails('{{ cr.id }}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-success">
+                                        <td colspan="3" class="text-start fw-bold">جمع کل:</td>
+                                        <td class="text-end fw-bold">{{ total_cash|floatformat:0 }}</td>
+                                        <td class="text-end fw-bold">{{ total_pos|floatformat:0 }}</td>
+                                        <td class="text-end fw-bold">{{ total_cheque|floatformat:0 }}</td>
+                                        <td class="text-end fw-bold">{{ total_credit|floatformat:0 }}</td>
+                                        <td class="text-end fw-bold">{{ total_investment|floatformat:0 }}</td>
+                                        <td class="text-end fw-bold fs-5">{{ total_all|floatformat:0 }}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-cash-stack display-4 text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ رکوردی یافت نشد</h5>
+                            <p class="text-muted">با تغییر فیلترها دوباره جستجو کنید.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- گروه‌بندی بر اساس شعبه -->
+        {% if by_branch %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card-custom">
+                    <div class="card-header card-header-custom">
+                        <i class="bi bi-shop me-2"></i>گروه‌بندی بر اساس شعبه
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>شعبه</th>
+                                        <th class="text-end">نقدی</th>
+                                        <th class="text-end">پوز</th>
+                                        <th class="text-end">چک</th>
+                                        <th class="text-end">نسیه</th>
+                                        <th class="text-end">سرمایه‌گذاری</th>
+                                        <th class="text-end">مجموع</th>
+                                        <th>تعداد رکورد</th>
+                                        <th>درصد</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for branch in by_branch %}
+                                    <tr>
+                                        <td>{{ branch.branch__name }}</td>
+                                        <td class="text-end amount-cell">{{ branch.cash_total|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ branch.pos_total|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ branch.cheque_total|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ branch.credit_total|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell">{{ branch.investment_total|floatformat:0 }}</td>
+                                        <td class="text-end amount-cell fw-bold">
+                                            {{ branch.total|floatformat:0 }}
+                                        </td>
+                                        <td class="text-center">{{ branch.record_count }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ branch.percentage|floatformat:0 }}%">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ branch.percentage|floatformat:1 }}%
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- فوتر -->
+        <div class="footer mt-5 text-center text-muted">
+            <p>سیستم مدیریت صندوق - گزارش موجودی</p>
+            <p>تاریخ تولید گزارش: {{ today_jalali }}</p>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SheetJS برای خروجی اکسل -->
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+    <script>
+        // مدیریت نمایش فیلدهای تاریخ بر اساس نوع گزارش
+        document.getElementById('filterType').addEventListener('change', function() {
+            const filterType = this.value;
+            const yearField = document.getElementById('yearField');
+            const monthField = document.getElementById('monthField');
+            const customDateFields = document.getElementById('customDateFields');
+            
+            if (filterType === 'monthly') {
+                yearField.style.display = 'block';
+                monthField.style.display = 'block';
+                customDateFields.style.display = 'none';
+            } else if (filterType === 'yearly') {
+                yearField.style.display = 'block';
+                monthField.style.display = 'none';
+                customDateFields.style.display = 'none';
+            } else if (filterType === 'custom') {
+                yearField.style.display = 'none';
+                monthField.style.display = 'none';
+                customDateFields.style.display = 'block';
+            }
+        });
+
+        // اجرای اولیه
+        document.getElementById('filterType').dispatchEvent(new Event('change'));
+
+        // تابع مشاهده جزئیات
+        function viewDetails(cashRegisterId) {
+            // می‌توانید این تابع را برای نمایش جزئیات تکمیل کنید
+            alert('مشاهده جزئیات رکورد با شناسه: ' + cashRegisterId);
+            // window.location.href = `/cash-management/cash-register/${cashRegisterId}/`;
+        }
+
+        // تابع خروجی Excel
+        function exportToExcel() {
+            try {
+                // ایجاد workbook جدید
+                const wb = XLSX.utils.book_new();
+                
+                // داده‌های جدول اصلی
+                const table = document.querySelector('.table-custom');
+                const ws = XLSX.utils.table_to_sheet(table);
+                
+                // تنظیم عرض ستون‌ها
+                const wscols = [
+                    {wch: 5},  // ردیف
+                    {wch: 12}, // تاریخ
+                    {wch: 20}, // شعبه
+                    {wch: 15}, // نقدی
+                    {wch: 15}, // پوز
+                    {wch: 15}, // چک
+                    {wch: 15}, // نسیه
+                    {wch: 15}, // سرمایه‌گذاری
+                    {wch: 15}, // مجموع
+                    {wch: 15}, // وضعیت
+                    {wch: 10}, // عملیات
+                ];
+                ws['!cols'] = wscols;
+                
+                // اضافه کردن sheet به workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'گزارش صندوق');
+                
+                // ایجاد فایل و دانلود
+                const date = new Date().toLocaleDateString('fa-IR').replace(/\//g, '-');
+                const filename = `گزارش-صندوق-${date}.xlsx`;
+                XLSX.writeFile(wb, filename);
+                
+                alert('فایل اکسل با موفقیت تولید شد.');
+            } catch (error) {
+                console.error('خطا در تولید فایل اکسل:', error);
+                alert('خطا در تولید فایل اکسل.');
+            }
+        }
+
+        // تابع تبدیل اعداد فارسی/عربی به انگلیسی
+        function convertToEnglish(numberStr) {
+            if (!numberStr) return "0";
+
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+            let result = numberStr.toString();
+
+            // تبدیل اعداد فارسی
+            for (let i = 0; i < 10; i++) {
+                const persianRegex = new RegExp(persianDigits[i], 'g');
+                const arabicRegex = new RegExp(arabicDigits[i], 'g');
+                result = result.replace(persianRegex, i);
+                result = result.replace(arabicRegex, i);
+            }
+
+            // حذف جداکننده‌ها
+            result = result.replace(/[٬,]/g, '');
+            result = result.replace(/\s/g, '');
+
+            return result || "0";
+        }
+
+        // تابع فرمت اعداد به فارسی
+        function formatNumber(num) {
+            if (!num || num === "0") return "۰";
+            try {
+                // حذف کاما و تبدیل به عدد
+                const numStr = num.toString().replace(/,/g, '');
+                const numInt = parseInt(convertToEnglish(numStr));
+                if (isNaN(numInt)) return "۰";
+                return numInt.toLocaleString('fa-IR');
+            } catch (e) {
+                console.error('خطا در فرمت عدد:', e);
+                return "۰";
+            }
+        }
+
+        // فرمت اعداد فارسی هنگام لود صفحه
+        $(document).ready(function() {
+            // فرمت اعداد در کارت‌های مجموع
+            $('.total-amount').each(function() {
+                const value = $(this).text().trim();
+                if (value.match(/^\d+$/)) {
+                    $(this).text(formatNumber(value));
+                }
+            });
+            
+            // فرمت اعداد در جدول
+            $('.amount-cell').each(function() {
+                const value = $(this).text().trim();
+                if (value.match(/^\d+$/)) {
+                    $(this).text(formatNumber(value));
+                }
+            });
+        });
+    </script>
+</body>
+</html>
