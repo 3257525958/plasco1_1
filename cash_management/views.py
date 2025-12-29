@@ -944,7 +944,7 @@ def create_branch_records_for_day(daily_status, branches):
 
 @login_required
 def day_detail_view(request):
-    """نمایش جزئیات روز"""
+    """نمایش جزئیات روز - نسخه کامل"""
     date_str = request.GET.get('date', '')
 
     if not date_str:
@@ -959,139 +959,342 @@ def day_detail_view(request):
         gregorian_date = jdate.togregorian().date()
         jalali_date = f"{year}/{month}/{day}"
 
-        # ایجاد یا دریافت وضعیت روز
+        # 1. ایجاد یا دریافت وضعیت روز
         daily_status, created = DailyCashStatus.objects.get_or_create(
             date=gregorian_date,
-            defaults={'is_verified': False}
+            defaults={'is_verified': False, 'created_by': request.user}
         )
 
-        if created:
-            daily_status.created_by = request.user
-            daily_status.save()
-
-        # دریافت همه شعبه‌ها
+        # 2. دریافت شعبه‌ها و ساخت branch_data
         branches = Branch.objects.all()
+        branch_data = []
 
-        # ایجاد رکوردهای پیش‌فرض برای شعبه‌ها
-        create_branch_records_for_day(daily_status, branches)
+        for branch in branches:
+            # دریافت یا ایجاد رکورد روزانه شعبه
+            branch_cash, _ = DailyBranchCash.objects.get_or_create(
+                daily_status=daily_status,
+                branch=branch,
+                defaults={
+                    'cash_amount': Decimal('0'),
+                    'pos_amount': Decimal('0'),
+                    'is_verified': False,
+                    'created_by': request.user
+                }
+            )
 
-        # دریافت چک‌های سررسید شده
+            # محاسبه فاکتورهای نقدی این شعبه
+            cash_invoices = Invoicefrosh.objects.filter(
+                branch=branch,
+                created_at__date=gregorian_date,
+                payment_method='cash',
+                is_paid=True
+            )
+            cash_total = cash_invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+            # محاسبه فاکتورهای پوز با تفکیک دستگاه
+            pos_invoices = Invoicefrosh.objects.filter(
+                branch=branch,
+                created_at__date=gregorian_date,
+                payment_method='pos',
+                is_paid=True
+            ).select_related('pos_device')
+
+            pos_details = []
+            pos_total = Decimal('0')
+
+            # گروه‌بندی بر اساس دستگاه پوز
+            device_groups = {}
+            for invoice in pos_invoices:
+                device_id = invoice.pos_device.id if invoice.pos_device else 'unknown'
+                if device_id not in device_groups:
+                    device_name = invoice.pos_device.device_name if invoice.pos_device else 'نامشخص'
+                    bank_name = invoice.pos_device.bank_name if invoice.pos_device else 'نامشخص'
+                    device_groups[device_id] = {
+                        'device_name': device_name,
+                        'bank_name': bank_name,
+                        'amount': Decimal('0'),
+                        'count': 0
+                    }
+
+                device_groups[device_id]['amount'] += invoice.total_amount
+                device_groups[device_id]['count'] += 1
+                pos_total += invoice.total_amount
+
+            # تبدیل دیکشنری به لیست
+            for device_id, info in device_groups.items():
+                pos_details.append(info)
+
+            # اگر کاربر مقداری وارد نکرده، از فاکتورها استفاده کن
+            if branch_cash.cash_amount == 0 and cash_total > 0:
+                branch_cash.cash_amount = cash_total
+
+            if branch_cash.pos_amount == 0 and pos_total > 0:
+                branch_cash.pos_amount = pos_total
+
+            branch_cash.save()
+
+            # آماده‌سازی داده‌ها
+            branch_data.append({
+                'branch': branch,
+                'branch_cash': branch_cash,
+                'cash_total': cash_total,
+                'pos_total': pos_total,
+                'pos_details': pos_details,
+                'cash_invoice_count': cash_invoices.count(),
+                'pos_invoice_count': pos_invoices.count(),
+                'total_invoices': cash_invoices.count() + pos_invoices.count()
+            })
+
+        # 3. دریافت چک‌های سررسید شده (همان کدهای اصلی شما)
+        existing_cheque_invoices = DailyCheque.objects.filter(
+            daily_status=daily_status
+        ).values_list('invoice_id', flat=True)
+
         cheque_payments = CheckPayment.objects.filter(
             check_date=gregorian_date
+        ).exclude(
+            invoice_id__in=existing_cheque_invoices
         ).select_related('pos_device', 'invoice__branch')
 
         for cheque in cheque_payments:
-            # تعیین نام بانک
             bank_name = 'نامشخص'
             if cheque.pos_device:
                 bank_name = cheque.pos_device.bank_name
-            elif hasattr(cheque, 'bank_name'):
-                bank_name = cheque.bank_name
 
-            DailyCheque.objects.get_or_create(
+            DailyCheque.objects.create(
                 daily_status=daily_status,
                 invoice=cheque.invoice,
-                defaults={
-                    'branch': cheque.invoice.branch,
-                    'cheque_amount': cheque.amount,
-                    'cheque_number': cheque.check_number,
-                    'due_date': gregorian_date,
-                    'bank_name': bank_name,
-                    'status': 'pending',
-                    'is_verified': False
-                }
+                branch=cheque.invoice.branch,
+                cheque_amount=cheque.amount,
+                cheque_number=cheque.check_number,
+                due_date=gregorian_date,
+                bank_name=bank_name,
+                status='pending',
+                is_verified=False,
+                created_by=request.user
             )
 
-        # دریافت نسیه‌های سررسید شده
+        # 4. دریافت نسیه‌های سررسید شده
+        existing_credit_invoices = DailyCredit.objects.filter(
+            daily_status=daily_status
+        ).values_list('invoice_id', flat=True)
+
         credit_payments = CreditPayment.objects.filter(
             due_date=gregorian_date
+        ).exclude(
+            invoice_id__in=existing_credit_invoices
         ).select_related('invoice__branch')
 
         for credit in credit_payments:
-            DailyCredit.objects.get_or_create(
+            DailyCredit.objects.create(
                 daily_status=daily_status,
                 invoice=credit.invoice,
+                branch=credit.invoice.branch,
+                credit_amount=credit.credit_amount,
+                customer_name=f"{credit.customer_name} {credit.customer_family}".strip(),
+                customer_phone=credit.phone or '',
+                due_date=gregorian_date,
+                status='pending',
+                is_verified=False,
+                created_by=request.user
+            )
+
+        # 5. دریافت سرمایه‌گذاری‌های این روز
+        investments = Investment.objects.filter(
+            investment_date=gregorian_date
+        ).select_related('investor', 'payment_account')
+
+        for inv in investments:
+            daily_inv, created = DailyInvestment.objects.get_or_create(
+                daily_status=daily_status,
+                investor_melicode=inv.investor.melicode,
                 defaults={
-                    'branch': credit.invoice.branch,
-                    'credit_amount': credit.credit_amount,
-                    'customer_name': f"{credit.customer_name} {credit.customer_family}",
-                    'customer_phone': credit.phone or '',
-                    'due_date': gregorian_date,
-                    'status': 'pending',
-                    'is_verified': False
+                    'investor_name': f"{inv.investor.firstname} {inv.investor.lastname}",
+                    'investment_amount': inv.amount,
+                    'investor_phone': inv.investor.phonnumber or '',
+                    'payment_method': inv.payment_method,
+                    'destination_account': inv.payment_account.name if inv.payment_account else '',
+                    'receipt_number': f"INV-{inv.id}",
+                    'is_verified': False,
+                    'created_by': request.user
                 }
             )
 
-        # بقیه کد بدون تغییر...
-        # [کدهای مربوط به سرمایه‌گذاری و جمع‌آوری داده‌ها]
+            if not created:
+                daily_inv.investment_amount = inv.amount
+                daily_inv.payment_method = inv.payment_method
+                daily_inv.destination_account = inv.payment_account.name if inv.payment_account else ''
+                daily_inv.save()
 
-        # دریافت داده‌ها برای نمایش
-        branch_cashes = DailyBranchCash.objects.filter(daily_status=daily_status).select_related('branch')
-        cheques = DailyCheque.objects.filter(daily_status=daily_status).select_related('branch')
-        credits = DailyCredit.objects.filter(daily_status=daily_status).select_related('branch')
-        investments = DailyInvestment.objects.filter(daily_status=daily_status)
+        # 6. دریافت داده‌ها برای نمایش
+        cheques = DailyCheque.objects.filter(
+            daily_status=daily_status
+        ).select_related('branch').order_by('cheque_number')
 
-        # محاسبه وضعیت کلی روز
-        all_items_verified = True
-        unverified_items = []
+        credits = DailyCredit.objects.filter(
+            daily_status=daily_status
+        ).select_related('branch').order_by('customer_name')
 
-        for bc in branch_cashes:
-            if not bc.is_verified:
-                all_items_verified = False
-                unverified_items.append(f"شعبه {bc.branch.name}")
+        daily_investments = DailyInvestment.objects.filter(
+            daily_status=daily_status
+        ).order_by('investor_name')
+
+        # 7. محاسبه وضعیت تایید روز
+        has_unverified_non_zero = False
+
+        for item in branch_data:
+            branch_cash = item['branch_cash']
+            if (branch_cash.cash_amount > 0 or branch_cash.pos_amount > 0) and not branch_cash.is_verified:
+                has_unverified_non_zero = True
+                break
+
+        if not has_unverified_non_zero:
+            for cheque in cheques:
+                if cheque.status == 'passed' and cheque.cheque_amount > 0 and not cheque.is_verified:
+                    has_unverified_non_zero = True
+                    break
+
+        if not has_unverified_non_zero:
+            for credit in credits:
+                if credit.status == 'paid' and credit.credit_amount > 0 and not credit.is_verified:
+                    has_unverified_non_zero = True
+                    break
+
+        if not has_unverified_non_zero:
+            for investment in daily_investments:
+                if investment.investment_amount > 0 and not investment.is_verified:
+                    has_unverified_non_zero = True
+                    break
+
+        # 8. محاسبه مجموع‌های مالی
+        total_cash = Decimal('0')
+        total_pos = Decimal('0')
+
+        for item in branch_data:
+            total_cash += item['branch_cash'].cash_amount or Decimal('0')
+            total_pos += item['branch_cash'].pos_amount or Decimal('0')
+
+        total_cheques = cheques.filter(status='passed', is_verified=True).aggregate(
+            total=Sum('cheque_amount')
+        )['total'] or Decimal('0')
+
+        total_credits = credits.filter(status='paid', is_verified=True).aggregate(
+            total=Sum('credit_amount')
+        )['total'] or Decimal('0')
+
+        total_investments = daily_investments.filter(is_verified=True).aggregate(
+            total=Sum('investment_amount')
+        )['total'] or Decimal('0')
+
+        total_all = float(total_cash) + float(total_pos) + float(total_cheques) + float(total_credits) + float(
+            total_investments)
+
+        # 9. حساب‌های بانکی
+        payment_accounts = Paymentnumber.objects.all()
+
+        # 10. لیست آیتم‌های تایید شده
+        verified_items = []
+        for item in branch_data:
+            branch_cash = item['branch_cash']
+            if branch_cash.is_verified:
+                if branch_cash.cash_amount > 0:
+                    verified_items.append({
+                        'type': 'شعبه',
+                        'name': f"{item['branch'].name} - نقدی",
+                        'amount': float(branch_cash.cash_amount),
+                        'item_type': 'branch_cash',
+                        'item_id': branch_cash.id,
+                        'account': None
+                    })
+
+                if branch_cash.pos_amount > 0:
+                    verified_items.append({
+                        'type': 'شعبه',
+                        'name': f"{item['branch'].name} - پوز",
+                        'amount': float(branch_cash.pos_amount),
+                        'item_type': 'branch_cash',
+                        'item_id': branch_cash.id,
+                        'account': None
+                    })
 
         for cheque in cheques:
-            if not cheque.is_verified:
-                all_items_verified = False
-                unverified_items.append(f"چک {cheque.cheque_number}")
+            if cheque.is_verified and cheque.status == 'passed' and cheque.cheque_amount > 0:
+                account_info = cheque.destination_account
+                if not account_info:
+                    for account in payment_accounts:
+                        if str(account.id) == cheque.destination_account:
+                            account_info = f"{account.name} - {account.bank_name}"
+                            break
+
+                verified_items.append({
+                    'type': 'چک',
+                    'name': f"{cheque.cheque_number} - {cheque.branch.name}",
+                    'amount': float(cheque.cheque_amount),
+                    'item_type': 'cheque',
+                    'item_id': cheque.id,
+                    'account': account_info
+                })
 
         for credit in credits:
-            if not credit.is_verified:
-                all_items_verified = False
-                unverified_items.append(f"نسیه {credit.customer_name}")
+            if credit.is_verified and credit.status == 'paid' and credit.credit_amount > 0:
+                verified_items.append({
+                    'type': 'نسیه',
+                    'name': f"{credit.customer_name} - {credit.branch.name}",
+                    'amount': float(credit.credit_amount),
+                    'item_type': 'credit',
+                    'item_id': credit.id,
+                    'account': credit.payment_method
+                })
 
-        for investment in investments:
-            if not investment.is_verified:
-                all_items_verified = False
-                unverified_items.append(f"سرمایه‌گذاری {investment.investor_name}")
+        for inv in daily_investments:
+            if inv.is_verified and inv.investment_amount > 0:
+                verified_items.append({
+                    'type': 'سرمایه‌گذاری',
+                    'name': f"{inv.investor_name}",
+                    'amount': float(inv.investment_amount),
+                    'item_type': 'investment',
+                    'item_id': inv.id,
+                    'account': inv.destination_account
+                })
 
-        # محاسبه مجموع‌ها
-        total_cash = branch_cashes.aggregate(total=Sum('cash_amount'))['total'] or Decimal('0')
-        total_pos = branch_cashes.aggregate(total=Sum('pos_amount'))['total'] or Decimal('0')
-        total_cheques = cheques.filter(status='passed').aggregate(total=Sum('cheque_amount'))['total'] or Decimal('0')
-        total_credits = credits.filter(status='paid').aggregate(total=Sum('credit_amount'))['total'] or Decimal('0')
-        total_investments = investments.aggregate(total=Sum('investment_amount'))['total'] or Decimal('0')
+        total_verified = sum(item['amount'] for item in verified_items)
 
+        # 11. تهیه context
         context = {
             'jalali_date': jalali_date,
             'date_str': date_str,
             'gregorian_date': gregorian_date,
             'daily_status': daily_status,
-            'branches': branches,
-            'branch_cashes': branch_cashes,
+            'branch_data': branch_data,
             'cheques': cheques,
             'credits': credits,
-            'investments': investments,
+            'investments': daily_investments,
+            'payment_accounts': payment_accounts,
             'total_cash': total_cash,
             'total_pos': total_pos,
             'total_cheques': total_cheques,
             'total_credits': total_credits,
             'total_investments': total_investments,
-            'total_all': float(total_cash) + float(total_pos) + float(total_cheques) + float(total_credits) + float(
-                total_investments),
-            'is_all_verified': all_items_verified,
-            'unverified_items': unverified_items,
+            'total_all': total_all,
+            'is_all_verified': not has_unverified_non_zero,
+            'has_unverified_non_zero': has_unverified_non_zero,
+            'verified_items': verified_items,
+            'total_verified': total_verified,
+            'user': request.user,
         }
 
         return render(request, 'cash_management/day_detail.html', context)
 
     except Exception as e:
         logger.error(f"خطا در نمایش جزئیات روز: {str(e)}", exc_info=True)
-        return render(request, 'cash_management/error.html', {
-            'error': f'خطا در نمایش جزئیات: {str(e)}',
-            'date_str': date_str
-        })
 
+        error_context = {
+            'error': f'خطا در نمایش جزئیات: {str(e)}',
+            'date_str': date_str,
+            'jalali_date': date_str.replace('-', '/') if date_str else ''
+        }
+
+        return render(request, 'cash_management/error.html', error_context)
 # -------------------------------------------------------------------
 # توابع AJAX برای ذخیره داده‌ها
 # -------------------------------------------------------------------
@@ -1405,7 +1608,7 @@ def save_investment(request):
 @require_POST
 @csrf_exempt
 def verify_item(request):
-    """تایید یک آیتم"""
+    """تایید یک آیتم - نسخه اصلاح شده"""
     try:
         data = json.loads(request.body)
         logger.info(f"verify_item دریافت داده: {data}")
@@ -1413,33 +1616,42 @@ def verify_item(request):
         item_type = data.get('item_type')
         item_id = data.get('item_id')
 
+        # دریافت آیتم
         if item_type == 'branch_cash':
             item = DailyBranchCash.objects.get(id=item_id)
             item_name = f"شعبه {item.branch.name}"
-            # محاسبه مجموع مبلغ نقدی و پوز
+
+            # بررسی آیا آیتم مقدار غیرصفر دارد؟
             cash_amount = item.cash_amount if item.cash_amount else Decimal('0')
             pos_amount = item.pos_amount if item.pos_amount else Decimal('0')
-            item_amount = cash_amount + pos_amount
-            item_account = None
+            has_amount = cash_amount > 0 or pos_amount > 0
+
         elif item_type == 'cheque':
             item = DailyCheque.objects.get(id=item_id)
             item_name = f"چک {item.cheque_number}"
-            item_amount = item.cheque_amount
-            item_account = item.destination_account if item.destination_account else None
+            has_amount = item.cheque_amount > 0 and item.status == 'passed'
+
         elif item_type == 'credit':
             item = DailyCredit.objects.get(id=item_id)
             item_name = f"نسیه {item.customer_name}"
-            item_amount = item.credit_amount
-            item_account = item.payment_method if item.payment_method else None
+            has_amount = item.credit_amount > 0 and item.status == 'paid'
+
         elif item_type == 'investment':
             item = DailyInvestment.objects.get(id=item_id)
             item_name = f"سرمایه‌گذاری {item.investor_name}"
-            item_amount = item.investment_amount
-            item_account = item.destination_account if item.destination_account else None
+            has_amount = item.investment_amount > 0
+
         else:
             return JsonResponse({
                 'success': False,
                 'error': 'نوع آیتم نامعتبر'
+            })
+
+        # اگر آیتم مقدار صفر دارد، تایید معنی ندارد
+        if not has_amount:
+            return JsonResponse({
+                'success': False,
+                'error': 'آیتم‌های با مبلغ صفر نیازی به تایید ندارند'
             })
 
         # تغییر وضعیت تایید
@@ -1462,7 +1674,7 @@ def verify_item(request):
         }
 
         # اگر تایید شده، اطلاعات آیتم را هم بفرست
-        if item.is_verified and item_amount > 0:
+        if item.is_verified:
             # برای شعبه، باید دو آیتم جداگانه بفرستیم (نقدی و پوز)
             if item_type == 'branch_cash':
                 items_info = []
@@ -1489,13 +1701,23 @@ def verify_item(request):
 
                 response_data['items_info'] = items_info
             else:
-                response_data['item_info'] = {
-                    'type': item_type,
-                    'id': item_id,
-                    'name': item_name,
-                    'amount': float(item_amount),
-                    'account': item_account
-                }
+                item_amount = None
+                if item_type == 'cheque':
+                    item_amount = item.cheque_amount
+                elif item_type == 'credit':
+                    item_amount = item.credit_amount
+                elif item_type == 'investment':
+                    item_amount = item.investment_amount
+
+                if item_amount and item_amount > 0:
+                    response_data['item_info'] = {
+                        'type': item_type,
+                        'id': item_id,
+                        'name': item_name,
+                        'amount': float(item_amount),
+                        'account': getattr(item, 'destination_account', None) or
+                                   getattr(item, 'payment_method', None)
+                    }
 
         logger.info(f"verify_item پاسخ: {response_data}")
         return JsonResponse(response_data)
@@ -1505,8 +1727,9 @@ def verify_item(request):
         return JsonResponse({
             'success': False,
             'error': str(e)
-        })
-@login_required
+        })@login_required
+
+
 @require_POST
 @csrf_exempt
 def finalize_day(request):

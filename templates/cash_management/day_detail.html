@@ -403,8 +403,17 @@
             margin-right: 5px;
         }
         
-        .branch-id-field {
-            display: none;
+        .pos-device-row {
+            background-color: #f8f9fa;
+        }
+        
+        .pos-device-row td {
+            padding-left: 40px !important;
+            font-size: 0.9rem;
+        }
+        
+        .branch-section {
+            border-left: 4px solid var(--primary-color);
         }
     </style>
 </head>
@@ -421,7 +430,7 @@
                 </div>
                 <div class="user-info">
                     <i class="bi bi-person-circle"></i>
-                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <span>{{ user.get_full_name|default:user.username }}</span>
                 </div>
             </div>
 
@@ -451,7 +460,12 @@
                     </span>
                     {% else %}
                     <span class="status-badge status-pending">
-                        <i class="bi bi-exclamation-circle me-2"></i> نیاز به بررسی
+                        <i class="bi bi-exclamation-circle me-2"></i> 
+                        {% if has_unverified_non_zero %}
+                            نیاز به بررسی
+                        {% else %}
+                            آماده تایید
+                        {% endif %}
                     </span>
                     {% endif %}
                 </div>
@@ -465,28 +479,42 @@
 
         <!-- کارت‌های مجموع -->
         <div class="row mb-5">
-            <div class="col-md-3 col-sm-6 mb-4">
+            <div class="col-md-2 col-sm-6 mb-4">
                 <div class="total-box">
                     <div class="small text-muted">مجموع نقدی</div>
                     <div class="total-amount" id="total-cash">{{ total_cash|floatformat:0 }}</div>
-                    <div class="small">از {{ branch_cashes|length }} شعبه</div>
+                    <div class="small">از {{ branch_data|length }} شعبه</div>
                 </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-4">
+            <div class="col-md-2 col-sm-6 mb-4">
                 <div class="total-box">
                     <div class="small text-muted">مجموع پوز</div>
                     <div class="total-amount" id="total-pos">{{ total_pos|floatformat:0 }}</div>
-                    <div class="small">از {{ branch_cashes|length }} شعبه</div>
+                    <div class="small">از {{ branch_data|length }} شعبه</div>
                 </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-4">
+            <div class="col-md-2 col-sm-6 mb-4">
+                <div class="total-box">
+                    <div class="small text-muted">چک پاس شده</div>
+                    <div class="total-amount" id="total-cheques">{{ total_cheques|floatformat:0 }}</div>
+                    <div class="small">{{ cheques|length }} چک</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-4">
+                <div class="total-box">
+                    <div class="small text-muted">نسیه پرداخت شده</div>
+                    <div class="total-amount" id="total-credits">{{ total_credits|floatformat:0 }}</div>
+                    <div class="small">{{ credits|length }} نسیه</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-4">
                 <div class="total-box">
                     <div class="small text-muted">سرمایه‌گذاری</div>
                     <div class="total-amount" id="total-investments">{{ total_investments|floatformat:0 }}</div>
                     <div class="small">{{ investments|length }} مورد</div>
                 </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-4">
+            <div class="col-md-2 col-sm-6 mb-4">
                 <div class="total-box">
                     <div class="small text-muted">کل روز</div>
                     <div class="total-amount" id="total-all">{{ total_all|floatformat:0 }}</div>
@@ -495,76 +523,184 @@
             </div>
         </div>
 
-        <!-- بخش شعب -->
+        <!-- بخش اصلی -->
         <div class="row">
+            <!-- بخش شعب -->
             <div class="col-lg-6 mb-4">
                 <div class="card-custom">
                     <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
                         <span>
                             <i class="bi bi-shop me-2"></i> گردش شعب
                         </span>
-                        <span class="badge bg-primary">{{ branch_cashes|length }} شعبه</span>
+                        <span class="badge bg-primary">{{ branch_data|length }} شعبه</span>
                     </div>
                     <div class="card-body">
-                        {% if branch_cashes %}
-                        <div class="table-responsive">
-                            <table class="table table-custom">
-                                <thead>
-                                    <tr>
-                                        <th>شعبه</th>
-                                        <th>نقدی</th>
-                                        <th>پوز</th>
-                                        <th class="text-center">تایید</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for branch_cash in branch_cashes %}
-                                    <tr id="branch-row-{{ branch_cash.id }}">
-                                        <td>
-                                            <strong>{{ branch_cash.branch.name }}</strong>
-                                            <input type="hidden" class="branch-id-field" value="{{ branch_cash.branch.id }}">
-                                            {% if branch_cash.is_verified %}
-                                            <span class="badge bg-success ms-2">تایید شده</span>
+                        {% if branch_data %}
+                            {% for item in branch_data %}
+                            <div class="branch-section mb-4 p-3 border rounded">
+                                <!-- هدر شعبه -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-building me-2"></i>
+                                        <strong>{{ item.branch.name }}</strong>
+                                    </h5>
+                                    {% if item.branch_cash.is_verified %}
+                                    <span class="badge bg-success">تایید شده</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- جدول اطلاعات فاکتورها -->
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th colspan="3" class="text-center">
+                                                    گزارش فاکتورهای {{ item.branch.name }}
+                                                    <small class="text-muted">
+                                                        ({{ item.total_invoices }} فاکتور)
+                                                    </small>
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th>نوع</th>
+                                                <th>تعداد</th>
+                                                <th class="text-end">مبلغ (تومان)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- ردیف نقدی -->
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-cash-coin text-success me-2"></i>
+                                                    <strong>نقدی</strong>
+                                                </td>
+                                                <td>{{ item.cash_invoice_count }}</td>
+                                                <td class="text-end fw-bold">
+                                                    {{ item.cash_total|floatformat:0 }}
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- ردیف پوز -->
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-credit-card text-primary me-2"></i>
+                                                    <strong>پوز</strong>
+                                                </td>
+                                                <td>{{ item.pos_invoice_count }}</td>
+                                                <td class="text-end fw-bold">
+                                                    {{ item.pos_total|floatformat:0 }}
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- تفکیک دستگاه‌های پوز -->
+                                            {% if item.pos_details %}
+                                                {% for pos in item.pos_details %}
+                                                <tr class="pos-device-row">
+                                                    <td class="ps-4">
+                                                        <i class="bi bi-phone me-2"></i>
+                                                        {{ pos.device_name }} ({{ pos.bank_name }})
+                                                    </td>
+                                                    <td>{{ pos.count }}</td>
+                                                    <td class="text-end">
+                                                        {{ pos.amount|floatformat:0 }}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
                                             {% endif %}
-                                        </td>
-                                        <td>
+                                            
+                                            <!-- ردیف جمع کل -->
+                                            <tr class="table-success">
+                                                <td><strong>جمع کل این شعبه</strong></td>
+                                                <td>{{ item.cash_invoice_count|add:item.pos_invoice_count }}</td>
+                                                <td class="text-end fw-bold">
+                                                    {{ item.cash_total|add:item.pos_total|floatformat:0 }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- فیلدهای ورودی مبالغ -->
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">
+                                                <i class="bi bi-cash-coin text-success"></i>
+                                            </span>
                                             <input type="text" 
                                                    class="form-control amount-input branch-cash-input" 
-                                                   data-id="{{ branch_cash.id }}"
-                                                   data-branch-id="{{ branch_cash.branch.id }}"
+                                                   data-id="{{ item.branch_cash.id }}"
+                                                   data-branch-id="{{ item.branch.id }}"
                                                    data-field="cash"
-                                                   value="{{ branch_cash.cash_amount|floatformat:0 }}"
-                                                   {% if daily_status.is_verified %}disabled{% endif %}>
-                                        </td>
-                                        <td>
+                                                   value="{{ item.branch_cash.cash_amount|floatformat:0 }}"
+                                                   {% if daily_status.is_verified %}disabled{% endif %}
+                                                   placeholder="مبلغ نقدی">
+                                            <span class="input-group-text">تومان</span>
+                                        </div>
+                                        <small class="text-muted d-block text-end mt-1">
+                                            از مجموع {{ item.cash_total|floatformat:0 }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">
+                                                <i class="bi bi-credit-card text-primary"></i>
+                                            </span>
                                             <input type="text" 
                                                    class="form-control amount-input branch-pos-input" 
-                                                   data-id="{{ branch_cash.id }}"
-                                                   data-branch-id="{{ branch_cash.branch.id }}"
+                                                   data-id="{{ item.branch_cash.id }}"
+                                                   data-branch-id="{{ item.branch.id }}"
                                                    data-field="pos"
-                                                   value="{{ branch_cash.pos_amount|floatformat:0 }}"
-                                                   {% if daily_status.is_verified %}disabled{% endif %}>
-                                        </td>
-                                        <td class="text-center">
-                                            <input type="checkbox" 
-                                                   class="form-check-input verify-checkbox" 
-                                                   data-type="branch_cash"
-                                                   data-id="{{ branch_cash.id }}"
-                                                   data-branch-id="{{ branch_cash.branch.id }}"
-                                                   {% if branch_cash.is_verified %}checked{% endif %}
-                                                   {% if daily_status.is_verified %}disabled{% endif %}>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                                                   value="{{ item.branch_cash.pos_amount|floatformat:0 }}"
+                                                   {% if daily_status.is_verified %}disabled{% endif %}
+                                                   placeholder="مبلغ پوز">
+                                            <span class="input-group-text">تومان</span>
+                                        </div>
+                                        <small class="text-muted d-block text-end mt-1">
+                                            از مجموع {{ item.pos_total|floatformat:0 }}
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <!-- تیک تایید -->
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" 
+                                               class="form-check-input verify-checkbox" 
+                                               data-type="branch_cash"
+                                               data-id="{{ item.branch_cash.id }}"
+                                               data-branch-id="{{ item.branch.id }}"
+                                               {% if item.branch_cash.is_verified %}checked{% endif %}
+                                               {% if daily_status.is_verified %}disabled{% endif %}
+                                               id="verify-{{ item.branch_cash.id }}">
+                                        <label class="form-check-label" for="verify-{{ item.branch_cash.id }}">
+                                            {% if item.branch_cash.is_verified %}
+                                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                                تایید شده
+                                            {% else %}
+                                                تایید این شعبه
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="text-muted small">
+                                        <i class="bi bi-clock-history me-1"></i>
+                                        آخرین تغییر: 
+                                        {% if item.branch_cash.updated_at %}
+                                            {{ item.branch_cash.updated_at|date:"H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         {% else %}
-                        <div class="empty-state">
-                            <i class="bi bi-shop"></i>
-                            <h5>هیچ شعبه‌ای یافت نشد</h5>
-                            <p class="text-muted">لطفاً ابتدا شعبه‌ها را در سیستم تعریف کنید.</p>
-                        </div>
+                            <div class="empty-state">
+                                <i class="bi bi-shop"></i>
+                                <h5>هیچ شعبه‌ای یافت نشد</h5>
+                                <p class="text-muted">لطفاً ابتدا شعبه‌ها را در سیستم تعریف کنید.</p>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
@@ -987,807 +1123,457 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-    // متغیرهای URL با استفاده از template tags
-    const URLS = {
-        saveBranchCash: "{% url 'cash_management:save_branch_cash' %}",
-        saveCheque: "{% url 'cash_management:save_cheque' %}",
-        saveCredit: "{% url 'cash_management:save_credit' %}",
-        saveInvestment: "{% url 'cash_management:save_investment' %}",
-        verifyItem: "{% url 'cash_management:verify_item' %}",
-        finalizeDay: "{% url 'cash_management:finalize_day' %}",
-        calendar: "{% url 'cash_management:calendar' %}"
-    };
+    <script>
+        // متغیرهای URL با استفاده از template tags
+        const URLS = {
+            saveBranchCash: "{% url 'cash_management:save_branch_cash' %}",
+            saveCheque: "{% url 'cash_management:save_cheque' %}",
+            saveCredit: "{% url 'cash_management:save_credit' %}",
+            saveInvestment: "{% url 'cash_management:save_investment' %}",
+            verifyItem: "{% url 'cash_management:verify_item' %}",
+            finalizeDay: "{% url 'cash_management:finalize_day' %}",
+            calendar: "{% url 'cash_management:calendar' %}"
+        };
 
-    // ذخیره موارد تایید شده در آرایه
-    let verifiedItems = {};
-    {% for item in verified_items %}
-    verifiedItems['{{ item.item_type }}_{{ item.item_id }}'] = {
-        type: '{{ item.type }}',
-        name: '{{ item.name|escapejs }}',
-        amount: {{ item.amount }},
-        item_type: '{{ item.item_type }}',
-        item_id: {{ item.item_id }},
-        account: {% if item.account %}'{{ item.account|escapejs }}'{% else %}null{% endif %}
-    };
-    {% endfor %}
+        // ذخیره موارد تایید شده در آرایه
+        let verifiedItems = {};
+        {% for item in verified_items %}
+        verifiedItems['{{ item.item_type }}_{{ item.item_id }}'] = {
+            type: '{{ item.type }}',
+            name: '{{ item.name|escapejs }}',
+            amount: {{ item.amount }},
+            item_type: '{{ item.item_type }}',
+            item_id: {{ item.item_id }},
+            account: {% if item.account %}'{{ item.account|escapejs }}'{% else %}null{% endif %}
+        };
+        {% endfor %}
 
-    // تابع تبدیل اعداد فارسی/عربی به انگلیسی
-    function convertToEnglish(numberStr) {
-        if (!numberStr) return "0";
+        // تابع تبدیل اعداد فارسی/عربی به انگلیسی
+        function convertToEnglish(numberStr) {
+            if (!numberStr) return "0";
 
-        const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-        const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
 
-        let result = numberStr.toString();
+            let result = numberStr.toString();
 
-        // تبدیل اعداد فارسی
-        for (let i = 0; i < 10; i++) {
-            const persianRegex = new RegExp(persianDigits[i], 'g');
-            const arabicRegex = new RegExp(arabicDigits[i], 'g');
-            result = result.replace(persianRegex, i);
-            result = result.replace(arabicRegex, i);
+            // تبدیل اعداد فارسی
+            for (let i = 0; i < 10; i++) {
+                const persianRegex = new RegExp(persianDigits[i], 'g');
+                const arabicRegex = new RegExp(arabicDigits[i], 'g');
+                result = result.replace(persianRegex, i);
+                result = result.replace(arabicRegex, i);
+            }
+
+            // حذف جداکننده‌ها
+            result = result.replace(/[٬,]/g, '');
+            result = result.replace(/\s/g, '');
+
+            return result || "0";
         }
 
-        // حذف جداکننده‌ها
-        result = result.replace(/[٬,]/g, '');
-        result = result.replace(/\s/g, '');
-
-        return result || "0";
-    }
-
-    // تابع فرمت اعداد به فارسی
-    function formatNumber(num) {
-        if (!num || num === "0") return "۰";
-        const numInt = parseInt(convertToEnglish(num));
-        if (isNaN(numInt)) return "۰";
-        return numInt.toLocaleString('fa-IR');
-    }
-
-    // تابع دریافت CSRF Token
-    function getCSRFToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-    }
-
-    // تابع نمایش پیام
-    function showMessage(message, type = 'success') {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-circle';
-
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" 
-                 style="z-index: 9999; max-width: 500px;" role="alert">
-                <i class="bi ${icon} me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-
-        $('body').append(alertHtml);
-
-        setTimeout(() => {
-            $('.alert').alert('close');
-        }, 5000);
-    }
-
-    // تابع ارسال درخواست Ajax
-    function sendRequest(url, data, successCallback, errorCallback = null) {
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: JSON.stringify(data),
-            contentType: 'application/json',
-            headers: {
-                'X-CSRFToken': getCSRFToken()
-            },
-            success: function(response) {
-                if (response.success) {
-                    successCallback(response);
-                } else {
-                    showMessage('خطا: ' + response.error, 'danger');
-                    if (errorCallback) errorCallback(response);
-                }
-            },
-            error: function(xhr, status, error) {
-                showMessage('خطا در ارتباط با سرور', 'danger');
-                console.error('Error:', error);
-                if (errorCallback) errorCallback({error: error});
-            }
-        });
-    }
-
-    // تابع نمایش روش پرداخت
-    function getMethodDisplay(method) {
-        switch(method) {
-            case 'cash': return 'نقدی';
-            case 'bank': return 'واریز به حساب';
-            case 'pos': return 'پوز';
-            case 'cheque': return 'چک';
-            case 'other': return 'سایر';
-            default: return method;
+        // تابع فرمت اعداد به فارسی
+        function formatNumber(num) {
+            if (!num || num === "0") return "۰";
+            const numInt = parseInt(convertToEnglish(num));
+            if (isNaN(numInt)) return "۰";
+            return numInt.toLocaleString('fa-IR');
         }
-    }
 
-// تابع استخراج اطلاعات آیتم - نسخه اصلاح شده
-function extractItemInfo(itemType, itemId, row) {
-    let itemInfo = {
-        type: '',
-        name: '',
-        amount: 0,
-        item_type: itemType,
-        item_id: itemId,
-        account: null
-    };
-    
-    try {
-        if (itemType === 'branch_cash') {
-            const branchName = row.find('td:first strong').text().trim();
-            const cashInput = row.find('.branch-cash-input');
-            const posInput = row.find('.branch-pos-input');
-            
-            // بررسی کنید که کدام فیلد مقدار دارد
-            const cashAmount = parseFloat(convertToEnglish(cashInput.val())) || 0;
-            const posAmount = parseFloat(convertToEnglish(posInput.val())) || 0;
-            
-            // فقط اگر حداقل یکی از مقادیر غیرصفر باشد
-            if (cashAmount > 0 || posAmount > 0) {
-                // اگر هر دو مقدار دارند، دو آیتم جداگانه ایجاد کنیم
-                if (cashAmount > 0 && posAmount > 0) {
-                    // در این حالت بهتر است دو آیتم جداگانه برگردانیم؟
-                    // برای سادگی، فقط نقدی را برمی‌گردانیم
-                    itemInfo.type = 'شعبه';
-                    itemInfo.name = `${branchName} - نقدی`;
-                    itemInfo.amount = cashAmount;
-                } else if (cashAmount > 0) {
-                    itemInfo.type = 'شعبه';
-                    itemInfo.name = `${branchName} - نقدی`;
-                    itemInfo.amount = cashAmount;
-                } else if (posAmount > 0) {
-                    itemInfo.type = 'شعبه';
-                    itemInfo.name = `${branchName} - پوز`;
-                    itemInfo.amount = posAmount;
+        // تابع دریافت CSRF Token
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        }
+
+        // تابع نمایش پیام
+        function showMessage(message, type = 'success') {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-circle';
+
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" 
+                     style="z-index: 9999; max-width: 500px;" role="alert">
+                    <i class="bi ${icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            $('body').append(alertHtml);
+
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 5000);
+        }
+
+        // تابع ارسال درخواست Ajax
+        function sendRequest(url, data, successCallback, errorCallback = null) {
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        successCallback(response);
+                    } else {
+                        showMessage('خطا: ' + response.error, 'danger');
+                        if (errorCallback) errorCallback(response);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showMessage('خطا در ارتباط با سرور', 'danger');
+                    console.error('Error:', error);
+                    if (errorCallback) errorCallback({error: error});
                 }
-            } else {
-                // اگر هر دو صفر هستند، null برگردان
-                return null;
-            }
+            });
+        }
+
+        // تابع به‌روزرسانی مجموع‌ها
+        function updateTotals() {
+            let totalCash = 0;
+            let totalPos = 0;
             
-        } else if (itemType === 'investment') {
-            const investorName = row.find('td:first .fw-bold').text().trim();
-            const method = row.find('.investment-method-select').val();
-            const amount = parseFloat(convertToEnglish(row.find('.investment-amount-input').val())) || 0;
+            $('.branch-cash-input').each(function() {
+                totalCash += parseFloat(convertToEnglish($(this).val())) || 0;
+            });
             
-            // فقط اگر مقدار غیرصفر باشد
-            if (amount > 0) {
-                let account = null;
-                
-                if (method === 'bank') {
-                    const accountSelect = row.find('.investment-account-select');
-                    const selectedOption = accountSelect.find('option:selected');
-                    if (selectedOption.val()) {
-                        account = selectedOption.data('account-name') + ' - ' + selectedOption.data('bank-name');
+            $('.branch-pos-input').each(function() {
+                totalPos += parseFloat(convertToEnglish($(this).val())) || 0;
+            });
+            
+            $('#total-cash').text(formatNumber(totalCash.toFixed(0)));
+            $('#total-pos').text(formatNumber(totalPos.toFixed(0)));
+            
+            const totalAll = totalCash + totalPos;
+            $('#total-all').text(formatNumber(totalAll.toFixed(0)));
+        }
+
+        // تابع بررسی وضعیت کلی تایید
+        function checkAllVerified() {
+            let nonZeroItemsNeedingVerification = 0;
+            let verifiedNonZeroItems = 0;
+            
+            // بررسی شعبه‌ها
+            $('.branch-cash-input, .branch-pos-input').each(function() {
+                const value = parseFloat(convertToEnglish($(this).val())) || 0;
+                if (value > 0) {
+                    nonZeroItemsNeedingVerification++;
+                    const row = $(this).closest('.branch-section');
+                    const checkbox = row.find('.verify-checkbox');
+                    if (checkbox.is(':checked')) {
+                        verifiedNonZeroItems++;
                     }
                 }
-                
-                itemInfo.type = 'سرمایه‌گذاری';
-                itemInfo.name = `${investorName}`;
-                itemInfo.amount = amount;
-                itemInfo.account = account;
-            } else {
-                return null;
-            }
+            });
             
-        } else if (itemType === 'cheque') {
-            const chequeNumber = row.find('td:first .fw-bold').text().trim();
-            const branchName = row.find('td:first small.text-muted').text().split(' - ')[0];
-            const amountText = row.find('td:nth-child(2)').text();
-            const amount = parseFloat(amountText.replace(/,/g, '')) || 0;
-            const status = row.find('.cheque-status-select').val();
-            
-            // فقط اگر چک پاس شده باشد
-            if (status === 'passed' && amount > 0) {
-                let account = null;
-                const accountSelect = row.find('.cheque-account-select');
-                const selectedOption = accountSelect.find('option:selected');
-                if (selectedOption.val()) {
-                    account = selectedOption.data('account-name') + ' - ' + selectedOption.data('bank-name');
+            // بررسی سرمایه‌گذاری‌ها
+            $('.investment-amount-input').each(function() {
+                const value = parseFloat(convertToEnglish($(this).val())) || 0;
+                if (value > 0) {
+                    nonZeroItemsNeedingVerification++;
+                    const row = $(this).closest('tr');
+                    const checkbox = row.find('.verify-checkbox');
+                    if (checkbox.is(':checked')) {
+                        verifiedNonZeroItems++;
+                    }
                 }
-                
-                itemInfo.type = 'چک';
-                itemInfo.name = `${chequeNumber} - ${branchName}`;
-                itemInfo.amount = amount;
-                itemInfo.account = account;
+            });
+            
+            // بررسی چک‌های پاس شده
+            $('.cheque-status-select').each(function() {
+                if ($(this).val() === 'passed') {
+                    const amountText = $(this).closest('tr').find('td:nth-child(2)').text();
+                    const amount = parseFloat(amountText.replace(/,/g, '')) || 0;
+                    if (amount > 0) {
+                        nonZeroItemsNeedingVerification++;
+                        const row = $(this).closest('tr');
+                        const checkbox = row.find('.verify-checkbox');
+                        if (checkbox.is(':checked')) {
+                            verifiedNonZeroItems++;
+                        }
+                    }
+                }
+            });
+            
+            // بررسی نسیه‌های پرداخت شده
+            $('.credit-status-select').each(function() {
+                if ($(this).val() === 'paid') {
+                    const amountText = $(this).closest('tr').find('td:nth-child(2)').text();
+                    const amount = parseFloat(amountText.replace(/,/g, '')) || 0;
+                    if (amount > 0) {
+                        nonZeroItemsNeedingVerification++;
+                        const row = $(this).closest('tr');
+                        const checkbox = row.find('.verify-checkbox');
+                        if (checkbox.is(':checked')) {
+                            verifiedNonZeroItems++;
+                        }
+                    }
+                }
+            });
+            
+            // فعال/غیرفعال کردن دکمه تایید نهایی
+            const finalizeBtn = $('#finalizeBtn');
+            if (nonZeroItemsNeedingVerification === 0 || 
+                (nonZeroItemsNeedingVerification > 0 && verifiedNonZeroItems === nonZeroItemsNeedingVerification)) {
+                finalizeBtn.prop('disabled', false);
+                finalizeBtn.removeAttr('title');
             } else {
-                return null;
-            }
-            
-        } else if (itemType === 'credit') {
-            const customerName = row.find('td:first .fw-bold').text().trim();
-            const branchName = row.find('td:first small.text-muted').text().split(' - ')[0];
-            const amountText = row.find('td:nth-child(2)').text();
-            const amount = parseFloat(amountText.replace(/,/g, '')) || 0;
-            const status = row.find('.credit-status-select').val();
-            
-            // فقط اگر نسیه پرداخت شده باشد
-            if (status === 'paid' && amount > 0) {
-                let account = null;
-                const method = row.find('.credit-method-select').val();
-                account = getMethodDisplay(method);
-                
-                itemInfo.type = 'نسیه';
-                itemInfo.name = `${customerName} - ${branchName}`;
-                itemInfo.amount = amount;
-                itemInfo.account = account;
-            } else {
-                return null;
+                finalizeBtn.prop('disabled', true);
+                finalizeBtn.attr('title', 
+                    `لطفاً ابتدا آیتم‌های غیرصفر را تایید کنید (${verifiedNonZeroItems}/${nonZeroItemsNeedingVerification})`
+                );
             }
         }
-    } catch (error) {
-        console.error('خطا در استخراج اطلاعات آیتم:', error);
-        return null;
-    }
-    
-    // اگر اطلاعاتی استخراج نشده، null برگردان
-    if (!itemInfo.name || itemInfo.amount === 0) {
-        return null;
-    }
-    
-    return itemInfo;
-}
 
-// تابع اضافه کردن به لیست تایید شده
-function addToVerifiedList(itemType, itemId, row) {
-    const key = `${itemType}_${itemId}`;
-    
-    // اگر قبلاً اضافه شده، حذف کن
-    if (verifiedItems[key]) {
-        return;
-    }
-    
-    // استخراج اطلاعات از ردیف
-    let itemInfo = extractItemInfo(itemType, itemId, row);
-    
-    // اگر اطلاعات استخراج نشد یا مقدار صفر است، برگرد
-    if (!itemInfo) {
-        console.log('آیتم حذف شد چون مقدار صفر دارد یا اطلاعات ناقص است:', itemType, itemId);
-        return;
-    }
-    
-    // ذخیره در آرایه
-    verifiedItems[key] = itemInfo;
-    
-    // به‌روزرسانی لیست نمایش
-    updateVerifiedListDisplay();
-    
-    // به‌روزرسانی وضعیت کلی تایید
-    checkAllVerified();
-    
-    console.log('آیتم اضافه شد:', itemInfo);
-}
-
-    // تابع به‌روزرسانی لیست تایید شده
-    function updateVerifiedListDisplay() {
-        const tbody = $('#verified-items-body');
-        tbody.empty();
-        
-        let total = 0;
-        let index = 1;
-        
-        // تبدیل object به آرایه
-        const itemsArray = Object.values(verifiedItems);
-        
-        if (itemsArray.length === 0) {
-            tbody.append(`
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
-                        <i class="bi bi-check-circle display-4 opacity-25"></i>
-                        <h5 class="mt-3">هیچ موردی تایید نشده است</h5>
-                        <p>لطفاً موارد مورد نظر را تایید کنید تا در اینجا نمایش داده شوند.</p>
-                    </td>
-                </tr>
-            `);
-            
-            $('#verified-count').text('0 مورد');
-            $('#total-verified-amount').text('۰');
-            return;
+        // تابع انصراف
+        function cancelChanges() {
+            if (confirm('آیا از انصراف مطمئن هستید؟ تغییرات ذخیره نشده از بین می‌روند.')) {
+                window.location.href = URLS.calendar;
+            }
         }
-        
-        itemsArray.forEach(item => {
-            if (!item) return;
-            
-            total += item.amount;
-            
-            // تعیین بج بر اساس نوع
-            let badgeHtml = '';
-            switch(item.type) {
-                case 'شعبه':
-                    badgeHtml = '<span class="badge bg-primary">شعبه</span>';
-                    break;
-                case 'سرمایه‌گذاری':
-                    badgeHtml = '<span class="badge bg-success">سرمایه‌گذاری</span>';
-                    break;
-                case 'چک':
-                    badgeHtml = '<span class="badge bg-warning text-dark">چک</span>';
-                    break;
-                case 'نسیه':
-                    badgeHtml = '<span class="badge bg-info">نسیه</span>';
-                    break;
+
+        // تابع تایید نهایی روز
+        function finalizeDay() {
+            if (!confirm('آیا از تایید نهایی این روز مطمئن هستید؟ پس از تایید، امکان ویرایش وجود نخواهد داشت و اطلاعات در صندوق ثبت می‌شوند.')) {
+                return;
             }
             
-            const row = `
-                <tr id="verified-item-${item.item_type}-${item.item_id}">
-                    <td>${index}</td>
-                    <td>${badgeHtml}</td>
-                    <td>${item.name}</td>
-                    <td>
-                        ${item.account ? 
-                        `<span class="account-badge">
-                            ${item.type === 'سرمایه‌گذاری' || item.type === 'چک' ? 
-                                '<i class="bi bi-bank"></i>' : 
-                                '<i class="bi bi-cash-coin"></i>'}
-                            ${item.account}
-                        </span>` : 
-                        '<span class="text-muted">-</span>'}
-                    </td>
-                    <td class="text-end fw-bold">${formatNumber(item.amount.toFixed(0))}</td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-danger" 
-                                onclick="removeFromVerifiedList('${item.item_type}', ${item.item_id})">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
+            const data = {
+                date: $('#currentDate').val()
+            };
             
-            tbody.append(row);
-            index++;
+            sendRequest(
+                URLS.finalizeDay,
+                data,
+                function(response) {
+                    showMessage(response.message);
+                    setTimeout(function() {
+                        window.location.href = response.redirect_url || URLS.calendar;
+                    }, 2000);
+                }
+            );
+        }
+
+        // رویداد تغییر مبالغ شعب
+        $(document).on('change', '.branch-cash-input, .branch-pos-input', function() {
+            if ($('#isVerified').val() === 'true') return;
+
+            const input = $(this);
+            const branchSection = input.closest('.branch-section');
+            const branchId = input.data('branch-id');
+            const field = input.data('field');
+            const value = convertToEnglish(input.val());
+            
+            // پیدا کردن مقدار دیگر
+            const otherField = field === 'cash' ? 'pos' : 'cash';
+            const otherInput = branchSection.find(`.branch-${otherField}-input`);
+            const otherValue = otherInput.length ? convertToEnglish(otherInput.val()) : "0";
+
+            const data = {
+                date: $('#currentDate').val(),
+                branch_id: branchId,
+                cash_amount: field === 'cash' ? value : otherValue,
+                pos_amount: field === 'pos' ? value : otherValue
+            };
+
+            sendRequest(
+                URLS.saveBranchCash,
+                data,
+                function(response) {
+                    showMessage(response.message);
+                    updateTotals();
+                }
+            );
         });
-        
-        // به‌روزرسانی تعداد و مجموع
-        $('#verified-count').text(itemsArray.length + ' مورد');
-        $('#total-verified-amount').text(formatNumber(total.toFixed(0)));
-    }
 
-    // تابع حذف از لیست تایید شده
-    function removeFromVerifiedList(itemType, itemId) {
-        const key = `${itemType}_${itemId}`;
-        delete verifiedItems[key];
-        
-        // به‌روزرسانی چک‌باکس
-        $(`.verify-checkbox[data-type="${itemType}"][data-id="${itemId}"]`).prop('checked', false);
-        
-        // به‌روزرسانی لیست نمایش
-        updateVerifiedListDisplay();
-        
-        // به‌روزرسانی وضعیت کلی تایید
-        checkAllVerified();
-    }
+        // رویداد تایید آیتم‌ها
+        $(document).on('change', '.verify-checkbox', function() {
+            if ($('#isVerified').val() === 'true') return;
 
-// تابع بررسی وضعیت کلی تایید
-function checkAllVerified() {
-    // شمارش چک‌باکس‌های تایید شده که مقدارشان > 0 است
-    let verifiedCount = 0;
-    let totalCount = 0;
-    
-    // بررسی شعبه‌ها
-    $('.branch-cash-input, .branch-pos-input').each(function() {
-        const input = $(this);
-        const value = parseFloat(convertToEnglish(input.val())) || 0;
-        if (value > 0) {
-            totalCount++;
-            const row = input.closest('tr');
-            const checkbox = row.find('.verify-checkbox');
-            if (checkbox.is(':checked')) {
-                verifiedCount++;
-            }
-        }
-    });
-    
-    // بررسی سرمایه‌گذاری‌ها
-    $('.investment-amount-input').each(function() {
-        const value = parseFloat(convertToEnglish($(this).val())) || 0;
-        if (value > 0) {
-            totalCount++;
-            const row = $(this).closest('tr');
-            const checkbox = row.find('.verify-checkbox');
-            if (checkbox.is(':checked')) {
-                verifiedCount++;
-            }
-        }
-    });
-    
-    // بررسی چک‌ها (فقط پاس شده)
-    $('.cheque-status-select').each(function() {
-        if ($(this).val() === 'passed') {
-            totalCount++;
-            const row = $(this).closest('tr');
-            const checkbox = row.find('.verify-checkbox');
-            if (checkbox.is(':checked')) {
-                verifiedCount++;
-            }
-        }
-    });
-    
-    // بررسی نسیه‌ها (فقط پرداخت شده)
-    $('.credit-status-select').each(function() {
-        if ($(this).val() === 'paid') {
-            totalCount++;
-            const row = $(this).closest('tr');
-            const checkbox = row.find('.verify-checkbox');
-            if (checkbox.is(':checked')) {
-                verifiedCount++;
-            }
-        }
-    });
-    
-    console.log(`تایید شده‌ها: ${verifiedCount} از ${totalCount}`);
-    
-    // اگر همه آیتم‌ها تایید شده‌اند، دکمه تایید نهایی فعال شود
-    const finalizeBtn = $('#finalizeBtn');
-    if (totalCount > 0 && verifiedCount === totalCount) {
-        finalizeBtn.prop('disabled', false);
-        finalizeBtn.removeAttr('title');
-    } else {
-        finalizeBtn.prop('disabled', true);
-        finalizeBtn.attr('title', `لطفاً ابتدا همه موارد را تایید کنید (${verifiedCount}/${totalCount})`);
-    }
-}
+            const checkbox = $(this);
+            const itemType = checkbox.data('type');
+            const itemId = checkbox.data('id');
+            const isChecked = checkbox.is(':checked');
 
-    // تابع به‌روزرسانی مجموع‌ها
-    function updateTotals() {
-        // محاسبه مجدد مجموع‌ها از روی مقادیر ورودی
-        let totalCash = 0;
-        let totalPos = 0;
-        let totalInvestments = 0;
-        
-        $('.branch-cash-input').each(function() {
-            totalCash += parseFloat(convertToEnglish($(this).val())) || 0;
-        });
-        
-        $('.branch-pos-input').each(function() {
-            totalPos += parseFloat(convertToEnglish($(this).val())) || 0;
-        });
-        
-        $('.investment-amount-input').each(function() {
-            totalInvestments += parseFloat(convertToEnglish($(this).val())) || 0;
-        });
-        
-        // محاسبه چک‌های پاس شده
-        let totalCheques = 0;
-        $('.cheque-status-select').each(function() {
-            if ($(this).val() === 'passed') {
-                const amountText = $(this).closest('tr').find('td:nth-child(2)').text();
-                totalCheques += parseFloat(amountText.replace(/,/g, '')) || 0;
-            }
-        });
-        
-        // محاسبه نسیه‌های پرداخت شده
-        let totalCredits = 0;
-        $('.credit-status-select').each(function() {
-            if ($(this).val() === 'paid') {
-                const amountText = $(this).closest('tr').find('td:nth-child(2)').text();
-                totalCredits += parseFloat(amountText.replace(/,/g, '')) || 0;
-            }
-        });
-        
-        // به‌روزرسانی نمایش
-        $('#total-cash').text(formatNumber(totalCash.toFixed(0)));
-        $('#total-pos').text(formatNumber(totalPos.toFixed(0)));
-        $('#total-investments').text(formatNumber(totalInvestments.toFixed(0)));
-        
-        const totalAll = totalCash + totalPos + totalCheques + totalCredits + totalInvestments;
-        $('#total-all').text(formatNumber(totalAll.toFixed(0)));
-    }
+            const data = {
+                item_type: itemType,
+                item_id: itemId
+            };
 
-    // تابع انصراف
-    function cancelChanges() {
-        if (confirm('آیا از انصراف مطمئن هستید؟ تغییرات ذخیره نشده از بین می‌روند.')) {
-            window.location.href = URLS.calendar;
-        }
-    }
-
-    // تابع تایید نهایی روز
-    function finalizeDay() {
-        if (!confirm('آیا از تایید نهایی این روز مطمئن هستید؟ پس از تایید، امکان ویرایش وجود نخواهد داشت و اطلاعات در صندوق ثبت می‌شوند.')) {
-            return;
-        }
-        
-        const data = {
-            date: $('#currentDate').val()
-        };
-        
-        sendRequest(
-            URLS.finalizeDay,
-            data,
-            function(response) {
-                showMessage(response.message);
-                setTimeout(function() {
-                    window.location.href = response.redirect_url || URLS.calendar;
-                }, 2000);
-            }
-        );
-    }
-
-    // رویداد تغییر مبالغ شعب
-    $(document).on('change', '.branch-cash-input, .branch-pos-input', function() {
-        if ($('#isVerified').val() === 'true') return;
-
-        const input = $(this);
-        const row = input.closest('tr');
-        
-        // گرفتن branch_id از input
-        let branchId = input.data('branch-id');
-        
-        // اگر از data-branch-id نتوانستیم بگیریم، از hidden field بگیریم
-        if (!branchId) {
-            branchId = row.find('.branch-id-field').val();
-        }
-        
-        if (!branchId) {
-            showMessage('خطا: شناسه شعبه یافت نشد', 'danger');
-            return;
-        }
-        
-        const field = input.data('field');
-        const value = convertToEnglish(input.val());
-        const branchName = row.find('td:first strong').text().trim();
-
-        // پیدا کردن مقدار دیگر
-        const otherField = field === 'cash' ? 'pos' : 'cash';
-        const otherInput = row.find(`.branch-${otherField}-input`);
-        const otherValue = otherInput.length ? convertToEnglish(otherInput.val()) : "0";
-
-        const data = {
-            date: $('#currentDate').val(),
-            branch_id: branchId,
-            cash_amount: field === 'cash' ? value : otherValue,
-            pos_amount: field === 'pos' ? value : otherValue
-        };
-
-        sendRequest(
-            URLS.saveBranchCash,
-            data,
-            function(response) {
-                showMessage(response.message);
-                updateTotals();
-            },
-            function(error) {
-                console.error('خطای سرور:', error);
-            }
-        );
-    });
-
-    // مدیریت نمایش فیلد حساب برای سرمایه‌گذاری بانکی
-    $(document).on('change', '.investment-method-select', function() {
-        const investmentId = $(this).data('id');
-        const method = $(this).val();
-        const accountContainer = $(this).closest('td').find('.investment-account-container');
-        
-        if (method === 'bank') {
-            accountContainer.show();
-        } else {
-            accountContainer.hide();
-        }
-        
-        // ذخیره تغییر
-        saveInvestmentChanges(investmentId);
-    });
-
-    // تابع ذخیره تغییرات سرمایه‌گذاری
-    function saveInvestmentChanges(investmentId) {
-        if ($('#isVerified').val() === 'true') return;
-        
-        const amountInput = $(`.investment-amount-input[data-id="${investmentId}"]`);
-        const methodSelect = $(`.investment-method-select[data-id="${investmentId}"]`);
-        const accountSelect = $(`.investment-account-select[data-id="${investmentId}"]`);
-        
-        const data = {
-            investment_id: investmentId,
-            amount: convertToEnglish(amountInput.val()),
-            payment_method: methodSelect.val(),
-            destination_account: methodSelect.val() === 'bank' ? accountSelect.val() : ''
-        };
-        
-        sendRequest(
-            URLS.saveInvestment,
-            data,
-            function(response) {
-                showMessage(response.message);
-                updateTotals();
-            }
-        );
-    }
-
-    // مدیریت نمایش فیلد حساب برای چک پاس شده
-    $(document).on('change', '.cheque-status-select', function() {
-        const chequeId = $(this).data('id');
-        const status = $(this).val();
-        const accountContainer = $(this).closest('td').find('.cheque-account-container');
-        
-        if (status === 'passed') {
-            accountContainer.show();
-        } else {
-            accountContainer.hide();
-        }
-        
-        // ذخیره تغییر
-        saveChequeChanges(chequeId);
-    });
-
-    // تابع ذخیره تغییرات چک
-    function saveChequeChanges(chequeId) {
-        if ($('#isVerified').val() === 'true') return;
-        
-        const statusSelect = $(`.cheque-status-select[data-id="${chequeId}"]`);
-        const accountSelect = $(`.cheque-account-select[data-id="${chequeId}"]`);
-        
-        const data = {
-            cheque_id: chequeId,
-            status: statusSelect.val(),
-            destination_account: statusSelect.val() === 'passed' ? accountSelect.val() : ''
-        };
-        
-        sendRequest(
-            URLS.saveCheque,
-            data,
-            function(response) {
-                showMessage(response.message);
-                updateTotals();
-            }
-        );
-    }
-
-    // مدیریت نمایش فیلد روش پرداخت برای نسیه پرداخت شده
-    $(document).on('change', '.credit-status-select', function() {
-        const creditId = $(this).data('id');
-        const status = $(this).val();
-        const methodContainer = $(this).closest('td').find('.credit-method-container');
-        
-        if (status === 'paid') {
-            methodContainer.show();
-        } else {
-            methodContainer.hide();
-        }
-        
-        // ذخیره تغییر
-        saveCreditChanges(creditId);
-    });
-
-    // تابع ذخیره تغییرات نسیه
-    function saveCreditChanges(creditId) {
-        if ($('#isVerified').val() === 'true') return;
-        
-        const statusSelect = $(`.credit-status-select[data-id="${creditId}"]`);
-        const methodSelect = $(`.credit-method-select[data-id="${creditId}"]`);
-        
-        const data = {
-            credit_id: creditId,
-            status: statusSelect.val(),
-            payment_method: statusSelect.val() === 'paid' ? methodSelect.val() : ''
-        };
-        
-        sendRequest(
-            URLS.saveCredit,
-            data,
-            function(response) {
-                showMessage(response.message);
-                updateTotals();
-            }
-        );
-    }
-    // رویداد تایید آیتم‌ها
-$(document).on('change', '.verify-checkbox', function() {
-    if ($('#isVerified').val() === 'true') return;
-
-    const checkbox = $(this);
-    const itemType = checkbox.data('type');
-    const itemId = checkbox.data('id');
-    const isChecked = checkbox.is(':checked');
-
-    const data = {
-        item_type: itemType,
-        item_id: itemId
-    };
-
-    sendRequest(
-        URLS.verifyItem,
-        data,
-        function(response) {
-            showMessage(response.message);
-            checkbox.prop('checked', response.is_verified);
-
-            const row = checkbox.closest('tr');
-            if (response.is_verified) {
-                // اضافه کردن به لیست تایید شده
-                if (response.item_info) {
-                    const key = `${response.item_info.type}_${response.item_info.id}`;
-                    verifiedItems[key] = {
-                        type: getTypeDisplay(response.item_info.type),
-                        name: response.item_info.name,
-                        amount: response.item_info.amount,
-                        item_type: response.item_info.type,
-                        item_id: response.item_info.id,
-                        account: response.item_info.account
-                    };
+            sendRequest(
+                URLS.verifyItem,
+                data,
+                function(response) {
+                    showMessage(response.message);
+                    checkbox.prop('checked', response.is_verified);
                     
-                    // به‌روزرسانی لیست نمایش
-                    updateVerifiedListDisplay();
+                    // به‌روزرسانی وضعیت کلی تایید
+                    checkAllVerified();
                 }
-                
-                // به‌روزرسانی نشان تایید در جدول
-                const existingBadge = row.find('.badge.bg-success');
-                if (existingBadge.length === 0) {
-                    row.find('td:first').append('<span class="badge bg-success ms-2">تایید شده</span>');
-                }
+            );
+        });
+
+        // رویداد ورود اعداد در فیلدهای مبلغ
+        $(document).on('input', '.amount-input', function() {
+            let value = $(this).val();
+            value = convertToEnglish(value);
+            $(this).val(value);
+        });
+
+        // رویداد فرمت اعداد هنگام از دست دادن فوکوس
+        $(document).on('blur', '.amount-input', function() {
+            let value = $(this).val();
+            value = formatNumber(value);
+            $(this).val(value);
+        });
+
+        // مدیریت نمایش فیلد حساب برای سرمایه‌گذاری بانکی
+        $(document).on('change', '.investment-method-select', function() {
+            const investmentId = $(this).data('id');
+            const method = $(this).val();
+            const accountContainer = $(this).closest('td').find('.investment-account-container');
+            
+            if (method === 'bank') {
+                accountContainer.show();
             } else {
-                // حذف از لیست تایید شده
-                const key = `${itemType}_${itemId}`;
-                delete verifiedItems[key];
-                updateVerifiedListDisplay();
-                row.find('.badge.bg-success').remove();
+                accountContainer.hide();
             }
+            
+            // ذخیره تغییر
+            saveInvestmentChanges(investmentId);
+        });
+
+        // تابع ذخیره تغییرات سرمایه‌گذاری
+        function saveInvestmentChanges(investmentId) {
+            if ($('#isVerified').val() === 'true') return;
+            
+            const amountInput = $(`.investment-amount-input[data-id="${investmentId}"]`);
+            const methodSelect = $(`.investment-method-select[data-id="${investmentId}"]`);
+            const accountSelect = $(`.investment-account-select[data-id="${investmentId}"]`);
+            
+            const data = {
+                investment_id: investmentId,
+                amount: convertToEnglish(amountInput.val()),
+                payment_method: methodSelect.val(),
+                destination_account: methodSelect.val() === 'bank' ? accountSelect.val() : ''
+            };
+            
+            sendRequest(
+                URLS.saveInvestment,
+                data,
+                function(response) {
+                    showMessage(response.message);
+                }
+            );
+        }
+
+        // مدیریت نمایش فیلد حساب برای چک پاس شده
+        $(document).on('change', '.cheque-status-select', function() {
+            const chequeId = $(this).data('id');
+            const status = $(this).val();
+            const accountContainer = $(this).closest('td').find('.cheque-account-container');
+            
+            if (status === 'passed') {
+                accountContainer.show();
+            } else {
+                accountContainer.hide();
+            }
+            
+            // ذخیره تغییر
+            saveChequeChanges(chequeId);
+        });
+
+        // تابع ذخیره تغییرات چک
+        function saveChequeChanges(chequeId) {
+            if ($('#isVerified').val() === 'true') return;
+            
+            const statusSelect = $(`.cheque-status-select[data-id="${chequeId}"]`);
+            const accountSelect = $(`.cheque-account-select[data-id="${chequeId}"]`);
+            
+            const data = {
+                cheque_id: chequeId,
+                status: statusSelect.val(),
+                destination_account: statusSelect.val() === 'passed' ? accountSelect.val() : ''
+            };
+            
+            sendRequest(
+                URLS.saveCheque,
+                data,
+                function(response) {
+                    showMessage(response.message);
+                }
+            );
+        }
+
+        // مدیریت نمایش فیلد روش پرداخت برای نسیه پرداخت شده
+        $(document).on('change', '.credit-status-select', function() {
+            const creditId = $(this).data('id');
+            const status = $(this).val();
+            const methodContainer = $(this).closest('td').find('.credit-method-container');
+            
+            if (status === 'paid') {
+                methodContainer.show();
+            } else {
+                methodContainer.hide();
+            }
+            
+            // ذخیره تغییر
+            saveCreditChanges(creditId);
+        });
+
+        // تابع ذخیره تغییرات نسیه
+        function saveCreditChanges(creditId) {
+            if ($('#isVerified').val() === 'true') return;
+            
+            const statusSelect = $(`.credit-status-select[data-id="${creditId}"]`);
+            const methodSelect = $(`.credit-method-select[data-id="${creditId}"]`);
+            
+            const data = {
+                credit_id: creditId,
+                status: statusSelect.val(),
+                payment_method: statusSelect.val() === 'paid' ? methodSelect.val() : ''
+            };
+            
+            sendRequest(
+                URLS.saveCredit,
+                data,
+                function(response) {
+                    showMessage(response.message);
+                }
+            );
+        }
+
+        // فرمت اعداد هنگام لود صفحه
+        $(document).ready(function() {
+            // فرمت اعداد ورودی
+            $('.amount-input').each(function() {
+                const value = $(this).val();
+                if (value) {
+                    $(this).val(formatNumber(value));
+                }
+            });
+            
+            // فرمت اعداد در کارت‌های مجموع
+            $('.total-amount').each(function() {
+                const value = $(this).text().trim();
+                $(this).text(formatNumber(value));
+            });
+            
+            // تبدیل اعداد فارسی در جداول
+            $('.table-custom td.fw-bold').each(function() {
+                const value = $(this).text().trim();
+                if (value.match(/^\d+$/)) {
+                    $(this).text(formatNumber(value));
+                }
+            });
             
             // بررسی وضعیت کلی تایید
             checkAllVerified();
-        }
-    );
-});
-
-// تابع نمایش نوع آیتم
-function getTypeDisplay(itemType) {
-    switch(itemType) {
-        case 'branch_cash': return 'شعبه';
-        case 'investment': return 'سرمایه‌گذاری';
-        case 'cheque': return 'چک';
-        case 'credit': return 'نسیه';
-        default: return itemType;
-    }
-}
-
-    // رویداد ورود اعداد در فیلدهای مبلغ
-    $(document).on('input', '.amount-input', function() {
-        let value = $(this).val();
-        value = convertToEnglish(value);
-        $(this).val(value);
-    });
-
-    // رویداد فرمت اعداد هنگام از دست دادن فوکوس
-    $(document).on('blur', '.amount-input', function() {
-        let value = $(this).val();
-        value = formatNumber(value);
-        $(this).val(value);
-    });
-
-    // فرمت اعداد هنگام لود صفحه
-    $(document).ready(function() {
-        // فرمت اعداد ورودی
-        $('.amount-input').each(function() {
-            const value = $(this).val();
-            if (value) {
-                $(this).val(formatNumber(value));
-            }
         });
-        
-        // فرمت اعداد در کارت‌های مجموع
-        $('.total-amount').each(function() {
-            const value = $(this).text().trim();
-            $(this).text(formatNumber(value));
-        });
-        
-        // تبدیل اعداد فارسی در جداول
-        $('.table-custom td.fw-bold').each(function() {
-            const value = $(this).text().trim();
-            if (value.match(/^\d+$/)) {
-                $(this).text(formatNumber(value));
-            }
-        });
-        
-        // مقداردهی اولیه لیست تایید شده
-        updateVerifiedListDisplay();
-        checkAllVerified();
-    });
-    
-</script>
-
+    </script>
 </body>
 </html>
