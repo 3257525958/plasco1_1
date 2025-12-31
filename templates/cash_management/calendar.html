@@ -349,7 +349,7 @@
             body {
                 padding: 10px;
             }
-            
+
             .calendar-card {
                 max-width: 100%;
                 border-radius: 20px;
@@ -425,15 +425,15 @@
                 flex-direction: column;
                 gap: 5px;
             }
-            
+
             .month-name, .year-selector {
                 width: 100%;
             }
-            
+
             .day-number {
                 font-size: 0.8rem;
             }
-            
+
             .day-amount {
                 font-size: 0.55rem;
             }
@@ -493,7 +493,7 @@
             <div class="days-grid">
                 {% for week in calendar_data %}
                     {% for day in week %}
-                    <div class="day 
+                    <div class="day
                         {% if day.status == 'verified' %}day-verified
                         {% elif day.status == 'pending' %}day-pending
                         {% elif day.day and day.is_current_month %}day-normal
@@ -508,7 +508,7 @@
                         {% if day.day %}
                         <div class="day-content">
                             <span class="day-number">{{ day.day }}</span>
-                            
+
                             {% if day.total_amount and day.total_amount > 0 %}
                             <span class="day-amount" id="amount-{{ day.year }}-{{ day.month }}-{{ day.day }}">
                                 {{ day.total_amount|floatformat:0 }}
@@ -552,23 +552,23 @@
             if (!amount || amount === "0" || amount === 0 || amount === "۰" || amount === "-") {
                 return "-";
             }
-            
+
             // حذف همه کاراکترهای غیر عددی
             let numStr = amount.toString().replace(/[^0-9.-]/g, '');
-            
+
             // اگر رشته خالی است
             if (!numStr || numStr === "-") return "-";
-            
+
             // تبدیل به عدد
             let num = parseFloat(numStr);
             if (isNaN(num)) return "-";
-            
+
             // گرد کردن به عدد صحیح
             num = Math.round(num);
-            
+
             // اگر صفر باشد
             if (num === 0) return "-";
-            
+
             // فرمت با جداکننده هزارگان به فارسی
             try {
                 let formatted = num.toLocaleString('fa-IR');
@@ -631,7 +631,7 @@
                     // حذف جداکننده‌ها و تبدیل به عدد
                     const numStr = text.replace(/[^0-9]/g, '');
                     const num = parseInt(numStr, 10);
-                    
+
                     if (!isNaN(num)) {
                         // اگر مبلغ خیلی بزرگ است، به صورت خلاصه نمایش بده
                         if (num >= 1000000000) { // میلیارد
@@ -655,12 +655,12 @@
         // اجرا پس از لود صفحه
         document.addEventListener('DOMContentLoaded', function() {
             convertNumbersToPersian();
-            
+
             // برای نمایش بهتر در موبایل
             if (window.innerWidth <= 480) {
                 shortenLargeAmounts();
             }
-            
+
             // اضافه کردن hover effect برای مبالغ (فقط در دسکتاپ)
             if (window.innerWidth > 480) {
                 document.querySelectorAll('.day').forEach(day => {
@@ -668,12 +668,12 @@
                     if (amountElement && amountElement.textContent !== '-') {
                         const originalText = amountElement.textContent;
                         const amount = day.getAttribute('data-amount');
-                        
+
                         if (amount && amount !== "0") {
                             day.addEventListener('mouseenter', function() {
                                 amountElement.textContent = formatCurrency(amount);
                             });
-                            
+
                             day.addEventListener('mouseleave', function() {
                                 amountElement.textContent = originalText;
                             });
