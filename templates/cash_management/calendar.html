@@ -23,6 +23,7 @@
 
         * {
             font-family: 'Vazirmatn', sans-serif;
+            box-sizing: border-box;
         }
 
         body {
@@ -31,7 +32,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
             margin: 0;
         }
 
@@ -40,7 +41,7 @@
             border-radius: 24px;
             box-shadow: 0 20px 60px rgba(16, 185, 129, 0.15);
             overflow: hidden;
-            max-width: 450px;
+            max-width: 480px;
             width: 100%;
             animation: slideUp 0.6s ease;
         }
@@ -53,7 +54,7 @@
         .calendar-header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 28px 25px;
+            padding: 25px 20px;
             position: relative;
             overflow: hidden;
         }
@@ -77,29 +78,29 @@
         }
 
         .header-content h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 8px;
         }
 
         .header-content p {
             opacity: 0.9;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             margin: 0;
         }
 
         .calendar-body {
-            padding: 25px;
+            padding: 20px;
         }
 
         .month-navigator {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding: 15px 20px;
+            margin-bottom: 20px;
+            padding: 12px 15px;
             background: var(--light);
-            border-radius: 16px;
+            border-radius: 14px;
             border: 1px solid var(--border);
         }
 
@@ -107,16 +108,17 @@
             background: white;
             color: var(--primary);
             border: 2px solid var(--border);
-            width: 42px;
-            height: 42px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         .nav-btn:hover {
@@ -130,30 +132,33 @@
         .month-display {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            flex: 1;
+            justify-content: center;
         }
 
         .month-name {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--dark);
             background: white;
-            padding: 8px 20px;
-            border-radius: 12px;
+            padding: 6px 15px;
+            border-radius: 10px;
             border: 1px solid var(--border);
-            min-width: 120px;
+            min-width: 100px;
             text-align: center;
         }
 
         .year-selector {
             background: white;
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 8px 15px;
-            font-size: 1rem;
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 0.9rem;
             color: var(--dark);
             cursor: pointer;
             transition: all 0.3s;
+            min-width: 80px;
         }
 
         .year-selector:focus {
@@ -165,46 +170,67 @@
         .weekdays {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-bottom: 15px;
+            gap: 4px;
+            margin-bottom: 12px;
         }
 
         .weekday {
             text-align: center;
-            padding: 12px 5px;
+            padding: 10px 2px;
             font-weight: 600;
             color: var(--gray);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .days-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
+            gap: 6px;
         }
 
         .day {
             aspect-ratio: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 14px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s;
             position: relative;
             font-weight: 600;
-            font-size: 1rem;
             border: 2px solid transparent;
+            padding: 4px;
+            overflow: hidden;
+            min-height: 0;
         }
 
         .day:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .day-number {
             position: relative;
             z-index: 2;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .day-amount {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--dark);
+            opacity: 0.9;
+            text-align: center;
+            line-height: 1.1;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 2px;
         }
 
         .day-verified {
@@ -216,9 +242,19 @@
             display: block;
         }
 
+        .day-verified .day-amount {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
+        }
+
         .day-pending {
             background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
             color: white;
+        }
+
+        .day-pending .day-amount {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
         }
 
         .day-normal {
@@ -244,21 +280,21 @@
 
         .day-today {
             border: 2px solid var(--primary);
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); }
-            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
         .status-icon {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: 0.7rem;
+            top: 3px;
+            right: 3px;
+            font-size: 0.6rem;
             display: none;
         }
 
@@ -266,59 +302,152 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 25px;
-            border-radius: 14px;
+            padding: 10px 20px;
+            border-radius: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 25px;
+            margin-top: 20px;
             width: 100%;
             justify-content: center;
+            font-size: 0.9rem;
         }
 
         .today-btn:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .watermark {
+            text-align: center;
+            margin-top: 15px;
+            color: var(--gray);
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .amount-zero {
+            opacity: 0.5;
+            font-style: italic;
+        }
+
+        /* استایل برای مبالغ بزرگ */
+        .amount-short {
+            font-size: 0.6rem;
+        }
+
+        /* استایل برای روزهای کوچک */
+        .day-small {
+            min-height: 55px;
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
             .calendar-card {
                 max-width: 100%;
                 border-radius: 20px;
             }
 
             .calendar-header {
-                padding: 24px 20px;
+                padding: 20px 15px;
             }
 
             .calendar-body {
-                padding: 20px;
+                padding: 15px;
             }
 
             .month-navigator {
-                padding: 12px 15px;
+                padding: 10px 12px;
+                margin-bottom: 15px;
+            }
+
+            .nav-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+
+            .month-name {
+                font-size: 1rem;
+                padding: 5px 12px;
+                min-width: 90px;
+            }
+
+            .year-selector {
+                font-size: 0.85rem;
+                padding: 5px 10px;
+                min-width: 70px;
+            }
+
+            .weekdays {
+                gap: 3px;
+                margin-bottom: 10px;
+            }
+
+            .weekday {
+                padding: 8px 2px;
+                font-size: 0.75rem;
             }
 
             .days-grid {
-                gap: 5px;
+                gap: 4px;
             }
 
             .day {
-                border-radius: 12px;
-                font-size: 0.9rem;
+                border-radius: 10px;
+                padding: 3px;
+            }
+
+            .day-number {
+                font-size: 0.85rem;
+            }
+
+            .day-amount {
+                font-size: 0.6rem;
+            }
+
+            .today-btn {
+                padding: 8px 16px;
+                font-size: 0.85rem;
             }
         }
 
-        .watermark {
-            text-align: center;
-            margin-top: 20px;
-            color: var(--gray);
-            font-size: 0.8rem;
-            opacity: 0.7;
+        /* برای صفحه‌های خیلی کوچک */
+        @media (max-width: 360px) {
+            .month-display {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .month-name, .year-selector {
+                width: 100%;
+            }
+            
+            .day-number {
+                font-size: 0.8rem;
+            }
+            
+            .day-amount {
+                font-size: 0.55rem;
+            }
+        }
+
+        /* جلوگیری از بیرون زدگی */
+        .day-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -338,7 +467,7 @@
                 </button>
 
                 <div class="month-display">
-                    <div class="month-name">{{ current_month_name }}</div>
+                    <div class="month-name" id="monthName">{{ current_month_name }}</div>
                     <select class="year-selector" id="yearSelect" onchange="updateCalendar()">
                         {% for year in year_range %}
                         <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
@@ -352,13 +481,13 @@
             </div>
 
             <div class="weekdays">
-                <div class="weekday">شنبه</div>
-                <div class="weekday">یکشنبه</div>
-                <div class="weekday">دوشنبه</div>
-                <div class="weekday">سه‌شنبه</div>
-                <div class="weekday">چهارشنبه</div>
-                <div class="weekday">پنجشنبه</div>
-                <div class="weekday">جمعه</div>
+                <div class="weekday">ش</div>
+                <div class="weekday">ی</div>
+                <div class="weekday">د</div>
+                <div class="weekday">س</div>
+                <div class="weekday">چ</div>
+                <div class="weekday">پ</div>
+                <div class="weekday">ج</div>
             </div>
 
             <div class="days-grid">
@@ -372,16 +501,28 @@
                         {% if day.is_today %}day-today{% endif %}"
                         {% if day.day and day.is_current_month %}
                         onclick="openDayDetails('{{ day.year }}-{{ day.month }}-{{ day.day|stringformat:"02d" }}')"
-                        {% endif %}>
+                        {% endif %}
+                        data-day="{{ day.day }}"
+                        data-amount="{{ day.total_amount|default:'0' }}">
 
                         {% if day.day %}
-                        <span class="day-number">{{ day.day }}</span>
+                        <div class="day-content">
+                            <span class="day-number">{{ day.day }}</span>
+                            
+                            {% if day.total_amount and day.total_amount > 0 %}
+                            <span class="day-amount" id="amount-{{ day.year }}-{{ day.month }}-{{ day.day }}">
+                                {{ day.total_amount|floatformat:0 }}
+                            </span>
+                            {% else %}
+                            <span class="day-amount amount-zero">-</span>
+                            {% endif %}
 
-                        {% if day.status == 'verified' %}
-                            <span class="status-icon"><i class="fas fa-check"></i></span>
-                        {% elif day.status == 'pending' %}
-                            <span class="status-icon"><i class="fas fa-exclamation"></i></span>
-                        {% endif %}
+                            {% if day.status == 'verified' %}
+                                <span class="status-icon"><i class="fas fa-check"></i></span>
+                            {% elif day.status == 'pending' %}
+                                <span class="status-icon"><i class="fas fa-exclamation"></i></span>
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -394,24 +535,68 @@
             </button>
 
             <div class="watermark">
-                <i class="fas fa-clock"></i> آخرین به‌روزرسانی: هم‌اکنون
+                <i class="fas fa-clock"></i> آخرین به‌روزرسانی: {% now "H:i" %}
             </div>
         </div>
     </div>
 
     <script>
-        // تبدیل اعداد به فارسی
+        // تبدیل اعداد انگلیسی به فارسی
         function toPersianNumber(num) {
             const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             return num.toString().replace(/\d/g, x => persianDigits[x]);
         }
 
-        // تبدیل همه اعداد در صفحه
+        // فرمت مبلغ با جداکننده هزارگان
+        function formatCurrency(amount) {
+            if (!amount || amount === "0" || amount === 0 || amount === "۰" || amount === "-") {
+                return "-";
+            }
+            
+            // حذف همه کاراکترهای غیر عددی
+            let numStr = amount.toString().replace(/[^0-9.-]/g, '');
+            
+            // اگر رشته خالی است
+            if (!numStr || numStr === "-") return "-";
+            
+            // تبدیل به عدد
+            let num = parseFloat(numStr);
+            if (isNaN(num)) return "-";
+            
+            // گرد کردن به عدد صحیح
+            num = Math.round(num);
+            
+            // اگر صفر باشد
+            if (num === 0) return "-";
+            
+            // فرمت با جداکننده هزارگان به فارسی
+            try {
+                let formatted = num.toLocaleString('fa-IR');
+                return formatted;
+            } catch (e) {
+                // Fallback برای مرورگرهای قدیمی
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        }
+
+        // تبدیل همه اعداد در صفحه به فارسی
         function convertNumbersToPersian() {
             // تبدیل اعداد روزها
             document.querySelectorAll('.day-number').forEach(el => {
                 if (el.textContent.trim()) {
                     el.textContent = toPersianNumber(el.textContent);
+                }
+            });
+
+            // تبدیل اعداد مبالغ روزها
+            document.querySelectorAll('.day-amount').forEach(el => {
+                const originalText = el.textContent.trim();
+                if (originalText && originalText !== '-') {
+                    const formatted = formatCurrency(originalText);
+                    if (formatted !== '-') {
+                        el.textContent = formatted;
+                        el.classList.add('amount-short');
+                    }
                 }
             });
 
@@ -424,7 +609,7 @@
             }
 
             // تبدیل ماه اگر عددی است
-            const monthName = document.querySelector('.month-name');
+            const monthName = document.getElementById('monthName');
             if (monthName) {
                 const text = monthName.textContent;
                 const numbers = text.match(/\d+/g);
@@ -438,9 +623,67 @@
             }
         }
 
-        // اجرا پس از لود صفحه
-        document.addEventListener('DOMContentLoaded', convertNumbersToPersian);
+        // نمایش خلاصه مبالغ برای فضاهای کوچک
+        function shortenLargeAmounts() {
+            document.querySelectorAll('.day-amount:not(.amount-zero)').forEach(el => {
+                const text = el.textContent;
+                if (text && text !== '-') {
+                    // حذف جداکننده‌ها و تبدیل به عدد
+                    const numStr = text.replace(/[^0-9]/g, '');
+                    const num = parseInt(numStr, 10);
+                    
+                    if (!isNaN(num)) {
+                        // اگر مبلغ خیلی بزرگ است، به صورت خلاصه نمایش بده
+                        if (num >= 1000000000) { // میلیارد
+                            const value = (num / 1000000000).toFixed(1);
+                            el.textContent = value.replace('.۰', '').replace('.', '') + 'M';
+                            el.title = formatCurrency(num) + ' تومان';
+                        } else if (num >= 1000000) { // میلیون
+                            const value = (num / 1000000).toFixed(1);
+                            el.textContent = value.replace('.۰', '').replace('.', '') + 'K';
+                            el.title = formatCurrency(num) + ' تومان';
+                        } else if (num >= 1000) { // هزار
+                            const value = (num / 1000).toFixed(1);
+                            el.textContent = value.replace('.۰', '').replace('.', '') + 'ه';
+                            el.title = formatCurrency(num) + ' تومان';
+                        }
+                    }
+                }
+            });
+        }
 
+        // اجرا پس از لود صفحه
+        document.addEventListener('DOMContentLoaded', function() {
+            convertNumbersToPersian();
+            
+            // برای نمایش بهتر در موبایل
+            if (window.innerWidth <= 480) {
+                shortenLargeAmounts();
+            }
+            
+            // اضافه کردن hover effect برای مبالغ (فقط در دسکتاپ)
+            if (window.innerWidth > 480) {
+                document.querySelectorAll('.day').forEach(day => {
+                    const amountElement = day.querySelector('.day-amount');
+                    if (amountElement && amountElement.textContent !== '-') {
+                        const originalText = amountElement.textContent;
+                        const amount = day.getAttribute('data-amount');
+                        
+                        if (amount && amount !== "0") {
+                            day.addEventListener('mouseenter', function() {
+                                amountElement.textContent = formatCurrency(amount);
+                            });
+                            
+                            day.addEventListener('mouseleave', function() {
+                                amountElement.textContent = originalText;
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        // تغییر ماه
         function changeMonth(delta) {
             const currentYear = {{ current_year }};
             const currentMonth = {{ current_month }};
@@ -459,31 +702,45 @@
             window.location.href = `{% url 'cash_management:calendar' %}?year=${newYear}&month=${newMonth}`;
         }
 
+        // به‌روزرسانی تقویم با سال جدید
         function updateCalendar() {
             const year = document.getElementById('yearSelect').value;
             window.location.href = `{% url 'cash_management:calendar' %}?year=${year}&month={{ current_month }}`;
         }
 
+        // رفتن به تاریخ امروز
         function goToToday() {
             window.location.href = `{% url 'cash_management:calendar' %}`;
         }
 
-        // در فایل calendar.html - بخش script
+        // باز کردن جزئیات روز
         function openDayDetails(dateStr) {
-            // dateStr فرمت '1403-9-23' دارد (از data attributes می‌آید)
-            // آن را به فرمت استاندارد تبدیل می‌کنیم
             const parts = dateStr.split('-');
             if (parts.length === 3) {
                 const year = parts[0];
                 const month = parts[1];
                 const day = parts[2];
 
-                // ساخت URL با پارامتر GET
                 const url = `{% url 'cash_management:day_detail' %}?date=${year}-${month}-${day}`;
                 window.location.href = url;
             }
         }
+
+        // ریسایز کردن برای موبایل
+        window.addEventListener('resize', function() {
+            if (window.innerWidth <= 480) {
+                shortenLargeAmounts();
+            } else {
+                // بازگرداندن به حالت عادی
+                document.querySelectorAll('.day-amount:not(.amount-zero)').forEach(el => {
+                    if (el.title) {
+                        const fullAmount = el.title.replace(' تومان', '');
+                        el.textContent = fullAmount;
+                        el.removeAttribute('title');
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
-

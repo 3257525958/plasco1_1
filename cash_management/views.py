@@ -2032,3 +2032,159 @@ def cash_balance_report(request):
     }
 
     return render(request, 'cash_management/cash_balance_report.html', context)
+
+
+# این تابع را در بخش توابع کمکی اضافه کنید (بعد از تابع get_date_status)
+def get_day_total_amount_calendar(gregorian_date):
+    """
+    محاسبه مجموع مبلغ یک روز برای نمایش در تقویم
+    این تابع جدا از سایر توابع کار می‌کند و فقط برای تقویم استفاده می‌شود
+    """
+    total = Decimal('0')
+
+    try:
+        # اول: بررسی وجود وضعیت روز
+        daily_status = DailyCashStatus.objects.get(date=gregorian_date)
+
+        # جمع مبالغ شعبه‌های تایید شده
+        branch_totals = DailyBranchCash.objects.filter(
+            daily_status=daily_status,
+            is_verified=True
+        ).aggregate(
+            total_cash=Sum('cash_amount'),
+            total_pos=Sum('pos_amount')
+        )
+
+        # جمع نقدی
+        cash_total = branch_totals.get('total_cash') or Decimal('0')
+        if cash_total:
+            total += cash_total
+
+        # جمع پوز
+        pos_total = branch_totals.get('total_pos') or Decimal('0')
+        if pos_total:
+            total += pos_total
+
+        # جمع سرمایه‌گذاری‌های تایید شده
+        investment_total = DailyInvestment.objects.filter(
+            daily_status=daily_status,
+            is_verified=True
+        ).aggregate(total=Sum('investment_amount'))
+
+        investment_amount = investment_total.get('total') or Decimal('0')
+        if investment_amount:
+            total += investment_amount
+
+        # جمع چک‌های پاس شده و تایید شده
+        cheque_total = DailyCheque.objects.filter(
+            daily_status=daily_status,
+            is_verified=True,
+            status='passed'
+        ).aggregate(total=Sum('cheque_amount'))
+
+        cheque_amount = cheque_total.get('total') or Decimal('0')
+        if cheque_amount:
+            total += cheque_amount
+
+        # جمع نسیه‌های پرداخت شده و تایید شده
+        credit_total = DailyCredit.objects.filter(
+            daily_status=daily_status,
+            is_verified=True,
+            status='paid'
+        ).aggregate(total=Sum('credit_amount'))
+
+        credit_amount = credit_total.get('total') or Decimal('0')
+        if credit_amount:
+            total += credit_amount
+
+    except DailyCashStatus.DoesNotExist:
+        # اگر وضعیت روز وجود ندارد، صفر برمی‌گردانیم
+        total = Decimal('0')
+    except Exception as e:
+        logger.error(f"خطا در محاسبه مجموع روز {gregorian_date}: {str(e)}")
+        total = Decimal('0')
+
+    return total
+
+
+# سپس تابع calendar_view را با اضافه کردن مجموع مبلغ به‌روزرسانی کنید:
+@login_required
+def calendar_view(request):
+    """نمایش تقویم"""
+    today = jdatetime.datetime.now()
+
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except:
+        year, month = today.year, today.month
+
+    month = max(1, min(12, month))
+
+    month_names = [
+        'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+        'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+    ]
+
+    # محاسبه تعداد روزهای ماه
+    if month <= 6:
+        days_in_month = 31
+    elif month <= 11:
+        days_in_month = 30
+    else:
+        first_day = jdatetime.datetime(year, 12, 1)
+        days_in_month = 30 if first_day.isleap() else 29
+
+    # محاسبه اولین روز هفته
+    first_day_obj = jdatetime.datetime(year, month, 1)
+    first_weekday = (first_day_obj.weekday() + 2) % 7
+
+    # ایجاد تقویم
+    calendar_weeks = []
+    day_counter = 0
+
+    for week in range(6):
+        week_days = []
+
+        for weekday in range(7):
+            if (week == 0 and weekday < first_weekday) or day_counter >= days_in_month:
+                day_data = {'day': None, 'status': 'empty'}
+            else:
+                day_number = day_counter + 1
+                jdate = jdatetime.datetime(year, month, day_number)
+                gregorian_date = jdate.togregorian().date()
+
+                # دریافت وضعیت روز (از تابع موجود)
+                status = get_date_status(gregorian_date)
+
+                # محاسبه مجموع مبلغ روز با تابع جدید
+                total_amount = get_day_total_amount_calendar(gregorian_date)
+
+                is_today = (year == today.year and month == today.month and day_number == today.day)
+
+                day_data = {
+                    'day': day_number,
+                    'year': year,
+                    'month': month,
+                    'jalali_date': f"{year}/{month}/{day_number}",
+                    'gregorian_date': gregorian_date,
+                    'is_current_month': True,
+                    'is_today': is_today,
+                    'status': status,
+                    'total_amount': total_amount  # اضافه کردن مجموع مبلغ
+                }
+                day_counter += 1
+
+            week_days.append(day_data)
+
+        calendar_weeks.append(week_days)
+
+    context = {
+        'calendar_data': calendar_weeks,
+        'current_year': year,
+        'current_month': month,
+        'current_month_name': month_names[month - 1],
+        'year_range': range(year - 5, year + 6),
+    }
+
+    return render(request, 'cash_management/calendar.html', context)
