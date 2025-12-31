@@ -2034,209 +2034,145 @@ def cash_balance_report(request):
     return render(request, 'cash_management/cash_balance_report.html', context)
 
 
-# -------------------------------------------------------------------
-# توابع کمکی جدید برای تقویم
-# -------------------------------------------------------------------
+# در views.py - در بخش توابع کمکی (می‌توانید بعد از get_date_status اضافه کنید)
 
-def get_day_total_amount_calendar(gregorian_date):
+def get_day_total_from_day_detail(gregorian_date):
     """
-    محاسبه مجموع مبلغ یک روز برای نمایش در تقویم
-    بدون ایجاد وابستگی به توابع دیگر
+    محاسبه مجموع مبلغ روز دقیقاً مثل صفحه جزئیات روز
+    از همان منطق day_detail_view استفاده می‌کند
     """
+    total = Decimal('0')
+
     try:
+        # همان منطق day_detail_view
+        daily_status = DailyCashStatus.objects.filter(date=gregorian_date).first()
+
+        if daily_status:
+            # جمع مبالغ شعب
+            branch_cashes = DailyBranchCash.objects.filter(daily_status=daily_status)
+            for branch_cash in branch_cashes:
+                total += branch_cash.cash_amount if branch_cash.cash_amount else Decimal('0')
+                total += branch_cash.pos_amount if branch_cash.pos_amount else Decimal('0')
+
+            # جمع سرمایه‌گذاری‌ها
+            investments = DailyInvestment.objects.filter(daily_status=daily_status)
+            for investment in investments:
+                total += investment.investment_amount if investment.investment_amount else Decimal('0')
+
+            # جمع چک‌ها (فقط پاس شده)
+            cheques = DailyCheque.objects.filter(daily_status=daily_status, status='passed')
+            for cheque in cheques:
+                total += cheque.cheque_amount if cheque.cheque_amount else Decimal('0')
+
+            # جمع نسیه‌ها (فقط پرداخت شده)
+            credits = DailyCredit.objects.filter(daily_status=daily_status, status='paid')
+            for credit in credits:
+                total += credit.credit_amount if credit.credit_amount else Decimal('0')
+        else:
+            # اگر وضعیت روز وجود ندارد، از فاکتورها استفاده کن
+            from invoice_app.models import Invoicefrosh
+
+            # جمع فاکتورهای نقدی
+            cash_invoices = Invoicefrosh.objects.filter(
+                created_at__date=gregorian_date,
+                payment_method='cash'
+            )
+            cash_total = cash_invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+            # جمع فاکتورهای پوز
+            pos_invoices = Invoicefrosh.objects.filter(
+                created_at__date=gregorian_date,
+                payment_method='pos'
+            )
+            pos_total = pos_invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+            total = cash_total + pos_total
+
+    except Exception as e:
+        logger.warning(f"خطا در محاسبه مجموع روز {gregorian_date}: {str(e)}")
         total = Decimal('0')
 
-        # 1. ابتدا بررسی می‌کنیم آیا وضعیت روز وجود دارد؟
-        try:
-            daily_status = DailyCashStatus.objects.get(date=gregorian_date)
-        except DailyCashStatus.DoesNotExist:
-            # اگر وضعیت روز وجود ندارد، صفر برمی‌گردانیم
-            return total
-
-        # 2. جمع مبالغ نقدی و پوز شعبه‌های تایید شده
-        try:
-            branch_totals = DailyBranchCash.objects.filter(
-                daily_status=daily_status,
-                is_verified=True
-            ).aggregate(
-                total_cash=Sum('cash_amount'),
-                total_pos=Sum('pos_amount')
-            )
-
-            cash_total = branch_totals.get('total_cash')
-            if cash_total:
-                total += cash_total
-
-            pos_total = branch_totals.get('total_pos')
-            if pos_total:
-                total += pos_total
-        except Exception as e:
-            logger.warning(f"خطا در محاسبه مبالغ شعبه برای {gregorian_date}: {str(e)}")
-
-        # 3. جمع سرمایه‌گذاری‌های تایید شده
-        try:
-            investment_total = DailyInvestment.objects.filter(
-                daily_status=daily_status,
-                is_verified=True
-            ).aggregate(total=Sum('investment_amount'))
-
-            investment_amount = investment_total.get('total')
-            if investment_amount:
-                total += investment_amount
-        except Exception as e:
-            logger.warning(f"خطا در محاسبه سرمایه‌گذاری برای {gregorian_date}: {str(e)}")
-
-        # 4. جمع چک‌های پاس شده و تایید شده
-        try:
-            cheque_total = DailyCheque.objects.filter(
-                daily_status=daily_status,
-                is_verified=True,
-                status='passed'
-            ).aggregate(total=Sum('cheque_amount'))
-
-            cheque_amount = cheque_total.get('total')
-            if cheque_amount:
-                total += cheque_amount
-        except Exception as e:
-            logger.warning(f"خطا در محاسبه چک‌ها برای {gregorian_date}: {str(e)}")
-
-        # 5. جمع نسیه‌های پرداخت شده و تایید شده
-        try:
-            credit_total = DailyCredit.objects.filter(
-                daily_status=daily_status,
-                is_verified=True,
-                status='paid'
-            ).aggregate(total=Sum('credit_amount'))
-
-            credit_amount = credit_total.get('total')
-            if credit_amount:
-                total += credit_amount
-        except Exception as e:
-            logger.warning(f"خطا در محاسبه نسیه‌ها برای {gregorian_date}: {str(e)}")
-
-        return total
-
-    except Exception as e:
-        logger.error(f"خطای کلی در محاسبه مجموع روز {gregorian_date}: {str(e)}")
-        return Decimal('0')
+    return total
 
 
+# سپس در تابع calendar_view، فقط این خط را اضافه کنید:
 @login_required
 def calendar_view(request):
-    """نمایش تقویم - نسخه اصلاح شده برای سرور"""
+    """نمایش تقویم - نسخه ساده"""
+    today = jdatetime.datetime.now()
+
     try:
-        today = jdatetime.datetime.now()
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except:
+        year, month = today.year, today.month
 
-        try:
-            year = int(request.GET.get('year', today.year))
-            month = int(request.GET.get('month', today.month))
-        except (ValueError, TypeError):
-            year, month = today.year, today.month
+    month = max(1, min(12, month))
 
-        # اطمینان از محدوده معتبر ماه
-        month = max(1, min(12, month))
+    month_names = [
+        'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+        'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+    ]
 
-        month_names = [
-            'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
-            'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
-        ]
+    # محاسبه تعداد روزهای ماه
+    if month <= 6:
+        days_in_month = 31
+    elif month <= 11:
+        days_in_month = 30
+    else:
+        first_day = jdatetime.datetime(year, 12, 1)
+        days_in_month = 30 if first_day.isleap() else 29
 
-        # محاسبه تعداد روزهای ماه شمسی
-        if month <= 6:
-            days_in_month = 31
-        elif month <= 11:
-            days_in_month = 30
-        else:
-            # اسفند - بررسی سال کبیسه
-            first_day = jdatetime.datetime(year, 12, 1)
-            days_in_month = 30 if first_day.isleap() else 29
+    # محاسبه اولین روز هفته
+    first_day_obj = jdatetime.datetime(year, month, 1)
+    first_weekday = (first_day_obj.weekday() + 2) % 7
 
-        # محاسبه اولین روز هفته
-        try:
-            first_day_obj = jdatetime.datetime(year, month, 1)
-            first_weekday = (first_day_obj.weekday() + 2) % 7  # تطابق با شروع هفته از شنبه
-        except Exception as e:
-            logger.error(f"خطا در ایجاد تاریخ: {str(e)}")
-            first_weekday = 0
+    # ایجاد تقویم
+    calendar_weeks = []
+    day_counter = 0
 
-        # ایجاد ساختار تقویم
-        calendar_weeks = []
-        day_counter = 0
+    for week in range(6):
+        week_days = []
 
-        for week in range(6):
-            week_days = []
+        for weekday in range(7):
+            if (week == 0 and weekday < first_weekday) or day_counter >= days_in_month:
+                day_data = {'day': None, 'status': 'empty', 'total_amount': Decimal('0')}
+            else:
+                day_number = day_counter + 1
+                jdate = jdatetime.datetime(year, month, day_number)
+                gregorian_date = jdate.togregorian().date()
 
-            for weekday in range(7):
-                if (week == 0 and weekday < first_weekday) or day_counter >= days_in_month:
-                    day_data = {
-                        'day': None,
-                        'status': 'empty',
-                        'total_amount': Decimal('0')
-                    }
-                else:
-                    day_number = day_counter + 1
+                # وضعیت روز
+                status = get_date_status(gregorian_date)
 
-                    try:
-                        # ایجاد تاریخ شمسی
-                        jdate = jdatetime.datetime(year, month, day_number)
-                        gregorian_date = jdate.togregorian().date()
+                # مجموع مبلغ روز - فقط این خط اضافه شده
+                total_amount = get_day_total_from_day_detail(gregorian_date)
 
-                        # دریافت وضعیت روز
-                        status = get_date_status(gregorian_date)
+                is_today = (year == today.year and month == today.month and day_number == today.day)
 
-                        # محاسبه مجموع مبلغ روز
-                        total_amount = get_day_total_amount_calendar(gregorian_date)
+                day_data = {
+                    'day': day_number,
+                    'year': year,
+                    'month': month,
+                    'jalali_date': f"{year}/{month}/{day_number}",
+                    'gregorian_date': gregorian_date,
+                    'is_current_month': True,
+                    'is_today': is_today,
+                    'status': status,
+                    'total_amount': total_amount  # اضافه شده
+                }
+                day_counter += 1
 
-                    except Exception as e:
-                        logger.error(f"خطا در پردازش روز {day_number}: {str(e)}")
-                        status = 'empty'
-                        total_amount = Decimal('0')
-                        gregorian_date = date.today()
+            week_days.append(day_data)
 
-                    is_today = (
-                            year == today.year and
-                            month == today.month and
-                            day_number == today.day
-                    )
+        calendar_weeks.append(week_days)
 
-                    day_data = {
-                        'day': day_number,
-                        'year': year,
-                        'month': month,
-                        'jalali_date': f"{year}/{month}/{day_number}",
-                        'gregorian_date': gregorian_date,
-                        'is_current_month': True,
-                        'is_today': is_today,
-                        'status': status,
-                        'total_amount': total_amount
-                    }
-                    day_counter += 1
+    context = {
+        'calendar_data': calendar_weeks,
+        'current_year': year,
+        'current_month': month,
+        'current_month_name': month_names[month - 1],
+        'year_range': range(year - 5, year + 6),
+    }
 
-                week_days.append(day_data)
-
-            calendar_weeks.append(week_days)
-
-        # لیست سال‌ها برای dropdown
-        current_year = today.year
-        year_range = list(range(current_year - 5, current_year + 6))
-
-        context = {
-            'calendar_data': calendar_weeks,
-            'current_year': year,
-            'current_month': month,
-            'current_month_name': month_names[month - 1],
-            'year_range': year_range,
-            'today_jalali': today.strftime('%Y/%m/%d'),
-        }
-
-        return render(request, 'cash_management/calendar.html', context)
-
-    except Exception as e:
-        logger.error(f"خطای کلی در تقویم: {str(e)}", exc_info=True)
-
-        # صفحه خطای ساده
-        return render(request, 'cash_management/error.html', {
-            'error': 'خطا در بارگذاری تقویم',
-            'details': str(e),
-            'redirect_url': reverse('cash_management:calendar')
-        })
+    return render(request, 'cash_management/calendar.html', context)
