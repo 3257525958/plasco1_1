@@ -454,3 +454,35 @@ class DailyCashAdjustment(models.Model):
         sign = '+' if self.is_positive else '-'
         return f"{sign}{self.amount} - {self.adjustment_type}"
 
+
+class ItemVerificationStatus(models.Model):
+    """مدل ثبت وضعیت تایید هر آیتم"""
+    ITEM_TYPES = [
+        ('branch_cash', 'نقدی شعبه'),
+        ('branch_pos', 'پوز شعبه'),
+        ('investment', 'سرمایه‌گذاری'),
+        ('cheque', 'چک'),
+        ('credit', 'نسیه'),
+    ]
+
+    daily_status = models.ForeignKey(DailyCashStatus, on_delete=models.CASCADE, related_name='item_verifications')
+    item_type = models.CharField(max_length=20, choices=ITEM_TYPES)
+    item_id = models.PositiveIntegerField()  # ID آیتم در جدول مربوطه
+
+    calculated_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    user_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    is_verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'وضعیت تایید آیتم'
+        verbose_name_plural = 'وضعیت تایید آیتم‌ها'
+        unique_together = ['daily_status', 'item_type', 'item_id']
+
+    def __str__(self):
+        return f"{self.get_item_type_display()} - {self.item_id}"

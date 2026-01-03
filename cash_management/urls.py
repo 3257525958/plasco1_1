@@ -43,4 +43,10 @@ urlpatterns = [
     # ------------------------------------------------------گزارش صندوق---------------------------------------
     path('cash-balance-report/', views.cash_balance_report, name='cash_balance_report'),
 
+    path('save-user-amount/', views.save_user_amount, name='save_user_amount'),
+    path('register-cash/', views.register_to_cash_register, name='register_cash'),
+    path('create-discrepancy/', views.create_discrepancy, name='create_discrepancy'),
+    path('update-verification/', views.update_item_verification, name='update_verification'),
+    path('finalize-day/', views.finalize_day, name='finalize_day'),
+    path('register-cash/', views.register_to_cash_register, name='register_cash'),
 ]
