@@ -619,6 +619,77 @@ def get_date_status(gregorian_date):
         return 'pending'
 
 
+def create_fake_invoice_for_verification(branch, date, amount, payment_method, user):
+    """ساخت فاکتور فیک برای زمانی که مبلغ صفر بود و کاربر مبلغ وارد کرد"""
+    try:
+        from invoice_app.models import Invoicefrosh, InvoiceItemfrosh
+        from account_app.models import InventoryCount
+
+        # 1. بررسی و ایجاد کالای 'سیستم' در انبار
+        system_product, created = InventoryCount.objects.get_or_create(
+            product_name='سیستم',
+            branch=branch,
+            defaults={
+                'counter': user,
+                'quantity': 0,
+                'selling_price': 0,
+                'profit_percentage': Decimal('0.00'),
+                'is_new': True,
+            }
+        )
+
+        # 2. محاسبه قیمت معیار و سود
+        # قیمت معیار = (مبلغ ÷ ۱۷) × ۱۰
+        standard_price = int((amount / 17) * 10)
+        profit_amount = amount - standard_price
+
+        # 3. ساخت تاریخ و زمان
+        invoice_datetime = timezone.make_aware(
+            datetime.combine(date, datetime.min.time())
+        )
+
+        # 4. ساخت serial_number
+        import time
+        timestamp = int(time.time())
+        serial_number = f"FAKE-{payment_method.upper()}-{date.strftime('%Y%m%d')}-{branch.id}-{timestamp}"
+
+        # 5. ایجاد فاکتور فیک
+        invoice = Invoicefrosh.objects.create(
+            branch=branch,
+            created_by=user,
+            created_at=invoice_datetime,
+            payment_date=invoice_datetime if payment_method == 'cash' else None,
+            payment_method=payment_method,
+            total_amount=amount,
+            total_without_discount=amount,
+            discount=0,
+            is_finalized=True,
+            is_paid=True,
+            customer_name=f'سیستم - {payment_method} - گردش مالی',
+            customer_phone='',
+            serial_number=serial_number,
+            paid_amount=amount,
+            total_standard_price=standard_price,
+            total_profit=profit_amount
+        )
+
+        # 6. ایجاد آیتم فاکتور
+        InvoiceItemfrosh.objects.create(
+            invoice=invoice,
+            product=system_product,
+            quantity=1,
+            price=amount,
+            total_price=amount,
+            standard_price=standard_price,
+            discount=0
+        )
+
+        logger.info(f"✅ فاکتور فیک ایجاد شد: {invoice.id} برای شعبه {branch.name}")
+        return invoice
+
+    except Exception as e:
+        logger.error(f"❌ خطا در ایجاد فاکتور فیک: {str(e)}", exc_info=True)
+        return None
 def create_fake_invoice(branch, date, amount, payment_method, user):
     """ساخت فاکتور فیک"""
     try:
@@ -1454,22 +1525,24 @@ def save_investment(request):
 @require_POST
 @csrf_exempt
 def verify_item(request):
-    """تایید یک آیتم و انجام عملیات ۵ گانه"""
+    """تایید یک آیتم با انجام ۵ عمل اصلی"""
     try:
         data = json.loads(request.body)
+        logger.info(f"📥 درخواست تایید آیتم دریافت شد: {data}")
 
         item_type = data.get('item_type')
         item_id = data.get('item_id')
         payment_type = data.get('payment_type', '')
-        calculated_amount = Decimal(data.get('calculated_amount', 0))
-        user_amount = Decimal(data.get('user_amount', 0))
+        calculated_amount = Decimal(str(data.get('calculated_amount', 0)))
+        user_amount = Decimal(str(data.get('user_amount', 0)))
         reason = data.get('reason', '')
+        date_str = data.get('date')
 
-        date_str = request.GET.get('date', '')
-        if not date_str:
-            # اگر تاریخ در GET نیست، از session یا امروز استفاده کن
-            today = jdatetime.datetime.now()
-            date_str = f"{today.year}-{today.month}-{today.day}"
+        if not item_type or not item_id or not date_str:
+            return JsonResponse({
+                'success': False,
+                'error': 'داده‌های ناقص'
+            })
 
         # تبدیل تاریخ
         parts = date_str.split('-')
@@ -1477,65 +1550,236 @@ def verify_item(request):
         jdate = jdatetime.datetime(year, month, day)
         gregorian_date = jdate.togregorian().date()
 
+        logger.info(f"📅 تاریخ: {gregorian_date} - نوع: {item_type} - آیتم: {item_id}")
+
         # دریافت وضعیت روز
-        daily_status, _ = DailyCashStatus.objects.get_or_create(
+        daily_status, created = DailyCashStatus.objects.get_or_create(
             date=gregorian_date,
             defaults={'is_verified': False}
         )
 
-        with transaction.atomic():
-            # 1. ثبت در صندوق (CashRegister)
-            cash_register = register_to_cash_register(
-                daily_status=daily_status,
-                item_type=item_type,
-                item_id=item_id,
-                user_amount=user_amount,
-                payment_type=payment_type,
-                user=request.user
-            )
+        if created:
+            daily_status.created_by = request.user
+            daily_status.save()
 
-            # 2. ثبت مغایرت اگر مبلغ متفاوت باشد
-            if calculated_amount != user_amount:
-                discrepancy = create_discrepancy(
+        with transaction.atomic():
+            # 1. ثبت در مدل‌های Daily بر اساس نوع آیتم
+            daily_item = None
+            branch = None
+
+            if item_type == 'branch_cash':
+                # برای نقدی شعبه
+                branch = Branch.objects.get(id=item_id)
+                daily_item, created = DailyBranchCash.objects.get_or_create(
                     daily_status=daily_status,
-                    item_type=item_type,
-                    item_id=item_id,
-                    calculated_amount=calculated_amount,
-                    user_amount=user_amount,
-                    reason=reason,
-                    user=request.user
+                    branch=branch,
+                    defaults={
+                        'cash_amount': user_amount,
+                        'pos_amount': Decimal('0'),
+                        'is_verified': True,
+                        'verified_by': request.user,
+                        'created_by': request.user
+                    }
                 )
+                if not created:
+                    daily_item.cash_amount = user_amount
+                    daily_item.is_verified = True
+                    daily_item.verified_by = request.user
+                    daily_item.verified_at = timezone.now()
+                    daily_item.save()
+
+                logger.info(f"✅ نقدی شعبه {branch.name} ثبت شد: {user_amount}")
+
+            elif item_type == 'branch_pos':
+                # برای پوز شعبه
+                branch = Branch.objects.get(id=item_id)
+                daily_item, created = DailyBranchCash.objects.get_or_create(
+                    daily_status=daily_status,
+                    branch=branch,
+                    defaults={
+                        'cash_amount': Decimal('0'),
+                        'pos_amount': user_amount,
+                        'is_verified': True,
+                        'verified_by': request.user,
+                        'created_by': request.user
+                    }
+                )
+                if not created:
+                    daily_item.pos_amount = user_amount
+                    daily_item.is_verified = True
+                    daily_item.verified_by = request.user
+                    daily_item.verified_at = timezone.now()
+                    daily_item.save()
+
+                logger.info(f"✅ پوز شعبه {branch.name} ثبت شد: {user_amount}")
+
+            elif item_type == 'investment':
+                # برای سرمایه‌گذاری
+                investment = Investment.objects.get(id=item_id)
+                branch = None  # سرمایه‌گذاری شعبه ندارد
+
+                daily_item, created = DailyInvestment.objects.get_or_create(
+                    daily_status=daily_status,
+                    investor_melicode=investment.investor.melicode,
+                    defaults={
+                        'investor_name': f"{investment.investor.firstname} {investment.investor.lastname}",
+                        'investor_phone': investment.investor.phone or '',
+                        'investment_amount': user_amount,
+                        'payment_method': investment.payment_method,
+                        'destination_account': str(investment.payment_account.id) if investment.payment_account else '',
+                        'is_verified': True,
+                        'verified_by': request.user,
+                        'created_by': request.user
+                    }
+                )
+                if not created:
+                    daily_item.investment_amount = user_amount
+                    daily_item.is_verified = True
+                    daily_item.verified_by = request.user
+                    daily_item.verified_at = timezone.now()
+                    daily_item.save()
+
+                logger.info(f"✅ سرمایه‌گذاری {investment.investor} ثبت شد: {user_amount}")
+
+            elif item_type == 'cheque':
+                # برای چک
+                cheque = CheckPayment.objects.get(id=item_id)
+                branch = cheque.invoice.branch
+
+                daily_item, created = DailyCheque.objects.get_or_create(
+                    daily_status=daily_status,
+                    cheque_number=cheque.check_number,
+                    defaults={
+                        'invoice': cheque.invoice,
+                        'branch': branch,
+                        'cheque_amount': user_amount,
+                        'due_date': cheque.check_date,
+                        'bank_name': cheque.bank_name or '',
+                        'status': 'passed',
+                        'is_verified': True,
+                        'verified_by': request.user,
+                        'created_by': request.user
+                    }
+                )
+                if not created:
+                    daily_item.cheque_amount = user_amount
+                    daily_item.status = 'passed'
+                    daily_item.is_verified = True
+                    daily_item.verified_by = request.user
+                    daily_item.verified_at = timezone.now()
+                    daily_item.save()
+
+                logger.info(f"✅ چک {cheque.check_number} ثبت شد: {user_amount}")
+
+            elif item_type == 'credit':
+                # برای نسیه
+                credit = CreditPayment.objects.get(id=item_id)
+                branch = credit.invoice.branch
+
+                daily_item, created = DailyCredit.objects.get_or_create(
+                    daily_status=daily_status,
+                    customer_name=credit.customer_name,
+                    due_date=credit.due_date,
+                    defaults={
+                        'invoice': credit.invoice,
+                        'branch': branch,
+                        'credit_amount': user_amount,
+                        'customer_phone': credit.phone or '',
+                        'status': 'paid',
+                        'payment_method': 'cash',
+                        'is_verified': True,
+                        'verified_by': request.user,
+                        'created_by': request.user
+                    }
+                )
+                if not created:
+                    daily_item.credit_amount = user_amount
+                    daily_item.status = 'paid'
+                    daily_item.is_verified = True
+                    daily_item.verified_by = request.user
+                    daily_item.verified_at = timezone.now()
+                    daily_item.save()
+
+                logger.info(f"✅ نسیه {credit.customer_name} ثبت شد: {user_amount}")
+
+            # 2. ثبت مغایرت اگر تفاوت وجود دارد
+            if calculated_amount != user_amount:
+                try:
+                    discrepancy = Discrepancy.objects.create(
+                        discrepancy_date=gregorian_date,
+                        branch=branch,
+                        previous_amount=calculated_amount,
+                        new_amount=user_amount,
+                        difference=user_amount - calculated_amount,
+                        item_type=item_type,
+                        item_id=item_id,
+                        description=f'مغایرت {get_item_type_display(item_type)}',
+                        reason=reason,
+                        reviewer_melicode=request.user.username,
+                        responder_melicode=request.user.username,
+                        created_by=request.user,
+                        review_status='pending',
+                        resolution_status='unresolved'
+                    )
+                    logger.info(f"📝 مغایرت ثبت شد: {discrepancy.id}")
+                except Exception as e:
+                    logger.error(f"❌ خطا در ثبت مغایرت: {str(e)}")
 
             # 3. ساخت فاکتور فیک اگر برای شعبه و مبلغ صفر بود
             if item_type in ['branch_cash', 'branch_pos'] and calculated_amount == 0 and user_amount > 0:
-                branch_id = item_id
-                branch = Branch.objects.get(id=branch_id)
-                payment_method = 'cash' if item_type == 'branch_cash' else 'pos'
+                try:
+                    fake_invoice = create_fake_invoice_for_verification(
+                        branch=branch,
+                        date=gregorian_date,
+                        amount=float(user_amount),
+                        payment_method='cash' if item_type == 'branch_cash' else 'pos',
+                        user=request.user
+                    )
+                    if fake_invoice:
+                        logger.info(f"📄 فاکتور فیک ساخته شد: {fake_invoice.id}")
+                except Exception as e:
+                    logger.error(f"❌ خطا در ساخت فاکتور فیک: {str(e)}")
 
-                fake_invoice = create_fake_invoice(
-                    branch=branch,
-                    date=gregorian_date,
-                    amount=user_amount,
-                    payment_method=payment_method,
-                    user=request.user
+            # 4. ثبت در CashRegister
+            try:
+                cash_register = register_to_cash_register(
+                    daily_status=daily_status,
+                    item_type=item_type,
+                    item_id=item_id,
+                    user_amount=user_amount,
+                    payment_type=payment_type,
+                    user=request.user,
+                    branch=branch
                 )
+                logger.info(f"💰 در صندوق ثبت شد: {cash_register.id}")
+            except Exception as e:
+                logger.error(f"❌ خطا در ثبت صندوق: {str(e)}")
 
-            # 4. ثبت وضعیت تایید این آیتم
-            ItemVerificationStatus.objects.update_or_create(
-                daily_status=daily_status,
-                item_type=item_type,
-                item_id=item_id,
-                defaults={
-                    'is_verified': True,
-                    'verified_at': timezone.now(),
-                    'verified_by': request.user,
-                    'user_amount': user_amount,
-                    'calculated_amount': calculated_amount
-                }
-            )
+            # 5. ثبت وضعیت تایید
+            try:
+                from .models import ItemVerificationStatus
+                verification, created = ItemVerificationStatus.objects.update_or_create(
+                    daily_status=daily_status,
+                    item_type=item_type,
+                    item_id=item_id,
+                    defaults={
+                        'calculated_amount': calculated_amount,
+                        'user_amount': user_amount,
+                        'is_verified': True,
+                        'verified_at': timezone.now(),
+                        'verified_by': request.user
+                    }
+                )
+                logger.info(f"✅ وضعیت تایید ثبت شد: {verification.id}")
+            except Exception as e:
+                logger.error(f"⚠️ خطا در ثبت وضعیت تایید: {str(e)}")
 
-            # 5. به‌روزرسانی وضعیت کلی روز
-            update_daily_status(daily_status)
+            # 6. به‌روزرسانی وضعیت کلی روز
+            try:
+                update_daily_status(daily_status)
+                logger.info(f"📊 وضعیت روز به‌روز شد: {daily_status.date}")
+            except Exception as e:
+                logger.error(f"⚠️ خطا در به‌روزرسانی وضعیت روز: {str(e)}")
 
         return JsonResponse({
             'success': True,
@@ -1543,11 +1787,24 @@ def verify_item(request):
         })
 
     except Exception as e:
-        logger.error(f"خطا در تایید آیتم: {str(e)}", exc_info=True)
+        logger.error(f"❌ خطا در تایید آیتم: {str(e)}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': f'خطا در تایید آیتم: {str(e)}'
         })
+
+
+def get_item_type_display(item_type):
+    """دریافت نمایش فارسی نوع آیتم"""
+    types = {
+        'branch_cash': 'نقدی شعبه',
+        'branch_pos': 'پوز شعبه',
+        'investment': 'سرمایه‌گذاری',
+        'cheque': 'چک',
+        'credit': 'نسیه'
+    }
+    return types.get(item_type, item_type)
+
 
 @require_POST
 @csrf_exempt
@@ -2202,17 +2459,34 @@ def calendar_view(request):
     return render(request, 'cash_management/calendar.html', context)
 
 
-
-
 def update_daily_status(daily_status):
-    """به‌روزرسانی وضعیت کلی روز"""
+    """به‌روزرسانی وضعیت کلی روز بر اساس آیتم‌های تایید شده"""
     try:
-        # شمارش آیتم‌های قابل تایید
-        total_items = ItemVerificationStatus.objects.filter(daily_status=daily_status).count()
-        verified_items = ItemVerificationStatus.objects.filter(
-            daily_status=daily_status,
-            is_verified=True
-        ).count()
+        # شمارش آیتم‌های تایید شده
+        total_items = 0
+        verified_items = 0
+
+        # شمارش DailyBranchCash
+        branch_cashes = DailyBranchCash.objects.filter(daily_status=daily_status)
+        total_items += branch_cashes.count()
+        verified_items += branch_cashes.filter(is_verified=True).count()
+
+        # شمارش DailyInvestment
+        investments = DailyInvestment.objects.filter(daily_status=daily_status)
+        total_items += investments.count()
+        verified_items += investments.filter(is_verified=True).count()
+
+        # شمارش DailyCheque
+        cheques = DailyCheque.objects.filter(daily_status=daily_status)
+        total_items += cheques.count()
+        verified_items += cheques.filter(is_verified=True).count()
+
+        # شمارش DailyCredit
+        credits = DailyCredit.objects.filter(daily_status=daily_status)
+        total_items += credits.count()
+        verified_items += credits.filter(is_verified=True).count()
+
+        logger.info(f"📊 وضعیت روز {daily_status.date}: {verified_items} از {total_items} آیتم تایید شده")
 
         # بررسی وضعیت روز
         if total_items == 0:
@@ -2220,6 +2494,7 @@ def update_daily_status(daily_status):
         elif verified_items == total_items:
             daily_status.status = 'verified'
             daily_status.is_verified = True
+            daily_status.verified_by = User.objects.first()  # یا از context بگیرید
             daily_status.verified_at = timezone.now()
         elif verified_items > 0:
             daily_status.status = 'partial'
@@ -2230,9 +2505,8 @@ def update_daily_status(daily_status):
         return daily_status
 
     except Exception as e:
-        logger.error(f"خطا در به‌روزرسانی وضعیت روز: {str(e)}")
+        logger.error(f"❌ خطا در به‌روزرسانی وضعیت روز: {str(e)}")
         return None
-
 
 # در views.py - اضافه کن بعد از توابع موجود
 @login_required
@@ -2285,91 +2559,76 @@ def save_user_amount(request):
             'error': str(e)
         })
 
-
-@login_required
-@require_POST
-@csrf_exempt
-def register_to_cash_register(request):
-    """ثبت نهایی در مدل صندوق"""
+def register_to_cash_register(daily_status, item_type, item_id, user_amount, payment_type, user, branch=None):
+    """ثبت در مدل صندوق"""
     try:
-        data = json.loads(request.body)
-
-        item_type = data.get('item_type')
-        item_id = data.get('item_id')
-        amount = data.get('amount', '0')
-        payment_type = data.get('payment_type', '')
-        date_str = data.get('date')
-
-        # تبدیل اعداد
-        amount_decimal = Decimal(convert_persian_to_english(amount))
-
-        # دریافت تاریخ
-        parts = date_str.split('-')
-        year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
-        jdate = jdatetime.datetime(year, month, day)
-        gregorian_date = jdate.togregorian().date()
-
         # تعیین نوع پرداخت برای CashRegister
-        if payment_type == 'cash':
+        if item_type == 'branch_cash':
             payment_method = 'cash'
-        elif payment_type == 'pos':
+            cash_amount = user_amount
+            pos_amount = Decimal('0')
+            cheque_amount = Decimal('0')
+            credit_amount = Decimal('0')
+            investment_amount = Decimal('0')
+        elif item_type == 'branch_pos':
             payment_method = 'pos'
+            cash_amount = Decimal('0')
+            pos_amount = user_amount
+            cheque_amount = Decimal('0')
+            credit_amount = Decimal('0')
+            investment_amount = Decimal('0')
         elif item_type == 'investment':
             payment_method = 'investment'
+            cash_amount = Decimal('0')
+            pos_amount = Decimal('0')
+            cheque_amount = Decimal('0')
+            credit_amount = Decimal('0')
+            investment_amount = user_amount
         elif item_type == 'cheque':
             payment_method = 'cheque'
+            cash_amount = Decimal('0')
+            pos_amount = Decimal('0')
+            cheque_amount = user_amount
+            credit_amount = Decimal('0')
+            investment_amount = Decimal('0')
         elif item_type == 'credit':
             payment_method = 'credit'
+            cash_amount = Decimal('0')
+            pos_amount = Decimal('0')
+            cheque_amount = Decimal('0')
+            credit_amount = user_amount
+            investment_amount = Decimal('0')
         else:
             payment_method = 'other'
+            cash_amount = Decimal('0')
+            pos_amount = Decimal('0')
+            cheque_amount = Decimal('0')
+            credit_amount = Decimal('0')
+            investment_amount = Decimal('0')
 
         # ثبت در CashRegister
         cash_register = CashRegister.objects.create(
-            branch=None,  # بعداً پر می‌شود
-            date=gregorian_date,
-            cash_amount=Decimal('0'),
-            pos_amount=Decimal('0'),
-            cheque_amount=Decimal('0'),
-            credit_amount=Decimal('0'),
-            investment_amount=Decimal('0'),
-            cheque_status='pending',
-            credit_status='pending',
+            branch=branch,
+            date=daily_status.date,
+            cash_amount=cash_amount,
+            pos_amount=pos_amount,
+            cheque_amount=cheque_amount,
+            credit_amount=credit_amount,
+            investment_amount=investment_amount,
+            cheque_status='passed' if item_type == 'cheque' else 'pending',
+            credit_status='paid' if item_type == 'credit' else 'pending',
             investment_returned=False,
             is_verified=True,
-            verified_by=request.user,
+            verified_by=user,
             verified_at=timezone.now(),
-            created_by=request.user
+            created_by=user
         )
 
-        # به‌روزرسانی مبلغ بر اساس نوع
-        if payment_method == 'cash':
-            cash_register.cash_amount = amount_decimal
-        elif payment_method == 'pos':
-            cash_register.pos_amount = amount_decimal
-        elif payment_method == 'cheque':
-            cash_register.cheque_amount = amount_decimal
-            cash_register.cheque_status = 'passed'
-        elif payment_method == 'credit':
-            cash_register.credit_amount = amount_decimal
-            cash_register.credit_status = 'paid'
-        elif payment_method == 'investment':
-            cash_register.investment_amount = amount_decimal
-
-        cash_register.save()
-
-        return JsonResponse({
-            'success': True,
-            'message': 'در صندوق ثبت شد',
-            'cash_register_id': cash_register.id
-        })
+        return cash_register
 
     except Exception as e:
-        logger.error(f"خطا در ثبت صندوق: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
-
+        logger.error(f"❌ خطا در ثبت صندوق: {str(e)}")
+        raise e
 
 # در views.py - اضافه کن بعد از توابع دیگر
 @login_required
