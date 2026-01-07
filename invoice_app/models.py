@@ -75,7 +75,7 @@ class Invoicefrosh(models.Model):
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, verbose_name="شعبه")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="ایجاد کننده")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="تاریخ ایجاد")
     payment_date = models.DateTimeField(null=True, blank=True, verbose_name="تاریخ پرداخت")
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='pos', verbose_name="روش پرداخت")
     pos_device = models.ForeignKey(POSDevice, on_delete=models.SET_NULL, null=True, blank=True,

@@ -1658,7 +1658,7 @@ body.processing #processing-overlay {
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 
     <script>
-    
+
     // =============================================
     // متغیرهای global و تنظیمات اولیه
     // =============================================
@@ -1938,14 +1938,14 @@ function enablePage() {
 
     function processNonDefaultPosPayment(amount, posDeviceId) {
     console.log('💰 پردازش پرداخت برای پوز غیر پیش‌فرض:', { amount, posDeviceId });
-    
+
     // نمایش پیام تأیید
     if (!confirm('⚠️ آیا از ثبت این فاکتور با دستگاه پوز غیر پیش‌فرض اطمینان دارید؟\n\nاین فاکتور با روش پرداخت غیر پیش‌فرض ثبت خواهد شد.')) {
         return;
     }
-    
+
     showToast('در حال ثبت فاکتور با دستگاه پوز غیر پیش‌فرض...', 'info');
-    
+
     // ارسال درخواست به تابع non-pos
     $.ajax({
         url: "{% url 'invoice_app:finalize_invoice_non_pos' %}",
@@ -1960,11 +1960,11 @@ function enablePage() {
         headers: {'X-CSRFToken': getCookie('csrftoken')},
         success: function(data) {
             console.log('✅ پاسخ سرور برای پوز غیر پیش‌فرض:', data);
-            
+
             if (data.status === 'success') {
                 showToast('فاکتور با موفقیت ثبت شد', 'success');
                 currentInvoiceId = data.invoice_id;
-                
+
                 // هدایت به صفحه موفقیت
                 setTimeout(() => {
                     const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
@@ -3473,7 +3473,7 @@ function processNonPosPayment(action, paymentMethod, amount) {
         headers: {'X-CSRFToken': getCookie('csrftoken')},
         success: function(data) {
             console.log('✅ [NON-POS] پاسخ سرور:', data);
-            
+
             if (data.status === 'success') {
                 showToast('فاکتور با موفقیت ثبت شد', 'success');
                 currentInvoiceId = data.invoice_id;
@@ -3483,7 +3483,7 @@ function processNonPosPayment(action, paymentMethod, amount) {
                     const successUrl = "{% url 'invoice_app:invoice_success' 0 %}".replace('0', data.invoice_id);
                     window.location.href = successUrl;
                 }, 1500);
-                
+
             } else {
                 showToast('خطا در ثبت فاکتور: ' + data.message, 'error');
                 console.error('❌ [NON-POS] خطا در ثبت فاکتور:', data.message);
@@ -3495,7 +3495,7 @@ function processNonPosPayment(action, paymentMethod, amount) {
                 error: error,
                 response: xhr.responseText
             });
-            
+
             let errorMessage = 'خطا در ارتباط با سرور';
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMessage += ': ' + xhr.responseJSON.message;
@@ -3627,11 +3627,28 @@ function updateCashModalInvoiceTotal() {
  */
 function saveCashPayment() {
     console.log('💰 شروع فرآیند ثبت فاکتور با نقدی...');
+    
 
     const cashAmount = parseInt($('#cash-amount').val()) || 0;
     const invoiceTotal = calculateInvoiceTotal().totalAmount;
     const remainingAmount = parseInt($('#cash-remaining-amount').val()) || 0;
     const remainingPosDeviceId = $('#cash-remaining-pos-device').val();
+    invoiceDate = $('#invoice-date').val();
+    
+    console.log('📅 تاریخ انتخابی (خام):', invoiceDate);
+    
+    // اگر تاریخ خالی بود، تاریخ امروز را بفرست
+    if (!invoiceDate) {
+        // تاریخ امروز به شمسی
+        const today = new persianDate().format('YYYY/MM/DD');
+        console.log('📆 تاریخ امروز:', today);
+        invoiceDate = today;
+    }
+    
+    // نمایش تاریخ با encodeURIComponent برای دیباگ
+    console.log('🔤 تاریخ با encodeURIComponent:', encodeURIComponent(invoiceDate));
+    console.log('🔤 تاریخ به صورت Unicode:', 
+        Array.from(invoiceDate).map(c => c.charCodeAt(0).toString(16)).join(' '));
 
     // اعتبارسنجی
     if (!cashAmount || cashAmount <= 0) {
@@ -3655,7 +3672,8 @@ function saveCashPayment() {
     const formData = {
         'cash_amount': cashAmount,
         'remaining_amount': remainingAmount,
-        'remaining_pos_device_id': remainingPosDeviceId
+        'remaining_pos_device_id': remainingPosDeviceId,
+        'invoice_date': invoiceDate,
     };
 
     console.log('📋 داده‌های پرداخت نقدی:', formData);
