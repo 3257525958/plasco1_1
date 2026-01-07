@@ -485,6 +485,56 @@ def save_check_payment(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            invoice_date_str = data.get('invoice_date')
+            print(invoice_date_str , flush=True)
+            created_at_date = timezone.now()  # مقدار پیش‌فرض
+
+            if invoice_date_str:
+                try:
+                    print(f"🔧 پردازش تاریخ: {invoice_date_str}", flush=True)
+
+                    # تبدیل اعداد فارسی/عربی به انگلیسی
+                    def convert_persian_numbers(text):
+                        persian_to_english = {
+                            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                        }
+                        result = []
+                        for char in text:
+                            result.append(persian_to_english.get(char, char))
+                        return ''.join(result)
+
+                    # تبدیل اعداد
+                    date_converted = convert_persian_numbers(invoice_date_str)
+                    print(f"🔢 تاریخ بعد از تبدیل اعداد: {date_converted}", flush=True)
+
+                    # بررسی فرمت و تبدیل
+                    if '/' in date_converted:
+                        parts = date_converted.split('/')
+                        if len(parts) == 3:
+                            year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+                            print(f"📊 قسمت‌های تاریخ: {year}/{month}/{day}", flush=True)
+
+                            # تبدیل شمسی به میلادی
+                            jalali_date = jdatetime_datetime(year, month, day)
+                            gregorian_date = jalali_date.togregorian()
+
+                            # زمان فعلی
+                            current_time = datetime.now().time()
+
+                            # ترکیب تاریخ و زمان
+                            combined_datetime = datetime.combine(gregorian_date, current_time)
+
+                            # تبدیل به timezone aware
+                            created_at_date = timezone.make_aware(combined_datetime)
+                            print(f"✅ تاریخ نهایی برای فاکتور: {created_at_date}", flush=True)
+
+                except Exception as date_error:
+                    print(f"⚠️ خطا در پردازش تاریخ: {date_error}", flush=True)
+                    print(f"⚠️ استفاده از تاریخ فعلی", flush=True)
+
             print("📋 اطلاعات دریافتی چک:", data)
 
             required_fields = ['owner_name', 'owner_family', 'national_id', 'phone',
@@ -558,6 +608,7 @@ def save_check_payment(request):
             invoice = Invoicefrosh.objects.create(
                 branch_id=branch_id,
                 created_by=request.user,
+                created_at=created_at_date,
                 payment_method='check',
                 total_amount=total_amount,
                 total_without_discount=sum(item['total'] for item in items),
@@ -650,6 +701,56 @@ def save_credit_payment(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            invoice_date_str = data.get('invoice_date')
+            print(invoice_date_str , flush=True)
+            created_at_date = timezone.now()  # مقدار پیش‌فرض
+
+            if invoice_date_str:
+                try:
+                    print(f"🔧 پردازش تاریخ: {invoice_date_str}", flush=True)
+
+                    # تبدیل اعداد فارسی/عربی به انگلیسی
+                    def convert_persian_numbers(text):
+                        persian_to_english = {
+                            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                        }
+                        result = []
+                        for char in text:
+                            result.append(persian_to_english.get(char, char))
+                        return ''.join(result)
+
+                    # تبدیل اعداد
+                    date_converted = convert_persian_numbers(invoice_date_str)
+                    print(f"🔢 تاریخ بعد از تبدیل اعداد: {date_converted}", flush=True)
+
+                    # بررسی فرمت و تبدیل
+                    if '/' in date_converted:
+                        parts = date_converted.split('/')
+                        if len(parts) == 3:
+                            year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+                            print(f"📊 قسمت‌های تاریخ: {year}/{month}/{day}", flush=True)
+
+                            # تبدیل شمسی به میلادی
+                            jalali_date = jdatetime_datetime(year, month, day)
+                            gregorian_date = jalali_date.togregorian()
+
+                            # زمان فعلی
+                            current_time = datetime.now().time()
+
+                            # ترکیب تاریخ و زمان
+                            combined_datetime = datetime.combine(gregorian_date, current_time)
+
+                            # تبدیل به timezone aware
+                            created_at_date = timezone.make_aware(combined_datetime)
+                            print(f"✅ تاریخ نهایی برای فاکتور: {created_at_date}", flush=True)
+
+                except Exception as date_error:
+                    print(f"⚠️ خطا در پردازش تاریخ: {date_error}", flush=True)
+                    print(f"⚠️ استفاده از تاریخ فعلی", flush=True)
+
 
             required_fields = ['customer_name', 'customer_family', 'national_id', 'phone', 'due_date']
             for field in required_fields:
@@ -719,6 +820,7 @@ def save_credit_payment(request):
             invoice = Invoicefrosh.objects.create(
                 branch_id=branch_id,
                 created_by=request.user,
+                created_at=created_at_date,
                 payment_method='credit',
                 total_amount=total_amount,
                 total_without_discount=sum(item['total'] for item in items),
@@ -1150,6 +1252,56 @@ def finalize_invoice_non_pos(request):
             # دریافت داده‌های JSON
             import json
             data = json.loads(request.body)
+            invoice_date_str = data.get('invoice_date')
+            print(invoice_date_str , flush=True)
+            created_at_date = timezone.now()  # مقدار پیش‌فرض
+
+            if invoice_date_str:
+                try:
+                    print(f"🔧 پردازش تاریخ: {invoice_date_str}", flush=True)
+
+                    # تبدیل اعداد فارسی/عربی به انگلیسی
+                    def convert_persian_numbers(text):
+                        persian_to_english = {
+                            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                        }
+                        result = []
+                        for char in text:
+                            result.append(persian_to_english.get(char, char))
+                        return ''.join(result)
+
+                    # تبدیل اعداد
+                    date_converted = convert_persian_numbers(invoice_date_str)
+                    print(f"🔢 تاریخ بعد از تبدیل اعداد: {date_converted}", flush=True)
+
+                    # بررسی فرمت و تبدیل
+                    if '/' in date_converted:
+                        parts = date_converted.split('/')
+                        if len(parts) == 3:
+                            year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+                            print(f"📊 قسمت‌های تاریخ: {year}/{month}/{day}", flush=True)
+
+                            # تبدیل شمسی به میلادی
+                            jalali_date = jdatetime_datetime(year, month, day)
+                            gregorian_date = jalali_date.togregorian()
+
+                            # زمان فعلی
+                            current_time = datetime.now().time()
+
+                            # ترکیب تاریخ و زمان
+                            combined_datetime = datetime.combine(gregorian_date, current_time)
+
+                            # تبدیل به timezone aware
+                            created_at_date = timezone.make_aware(combined_datetime)
+                            print(f"✅ تاریخ نهایی برای فاکتور: {created_at_date}", flush=True)
+
+                except Exception as date_error:
+                    print(f"⚠️ خطا در پردازش تاریخ: {date_error}", flush=True)
+                    print(f"⚠️ استفاده از تاریخ فعلی", flush=True)
+
 
             branch_id = request.session.get('branch_id')
             items = request.session.get('invoice_items', [])
@@ -1222,6 +1374,7 @@ def finalize_invoice_non_pos(request):
             invoice = Invoicefrosh.objects.create(
                 branch_id=branch_id,
                 created_by=request.user,
+                created_at=created_at_date,
                 payment_method=payment_method,
                 total_amount=total_amount,
                 total_without_discount=total_without_discount,
@@ -1340,6 +1493,56 @@ def process_pos_payment(request):
             data = json.loads(request.body)
             amount_toman = data.get('amount')  # مبلغ به تومان
             pos_device_id = data.get('pos_device_id')
+            invoice_date_str = data.get('invoice_date')
+            print(invoice_date_str , flush=True)
+            created_at_date = timezone.now()  # مقدار پیش‌فرض
+
+            if invoice_date_str:
+                try:
+                    print(f"🔧 پردازش تاریخ: {invoice_date_str}", flush=True)
+
+                    # تبدیل اعداد فارسی/عربی به انگلیسی
+                    def convert_persian_numbers(text):
+                        persian_to_english = {
+                            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                        }
+                        result = []
+                        for char in text:
+                            result.append(persian_to_english.get(char, char))
+                        return ''.join(result)
+
+                    # تبدیل اعداد
+                    date_converted = convert_persian_numbers(invoice_date_str)
+                    print(f"🔢 تاریخ بعد از تبدیل اعداد: {date_converted}", flush=True)
+
+                    # بررسی فرمت و تبدیل
+                    if '/' in date_converted:
+                        parts = date_converted.split('/')
+                        if len(parts) == 3:
+                            year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+                            print(f"📊 قسمت‌های تاریخ: {year}/{month}/{day}", flush=True)
+
+                            # تبدیل شمسی به میلادی
+                            jalali_date = jdatetime_datetime(year, month, day)
+                            gregorian_date = jalali_date.togregorian()
+
+                            # زمان فعلی
+                            current_time = datetime.now().time()
+
+                            # ترکیب تاریخ و زمان
+                            combined_datetime = datetime.combine(gregorian_date, current_time)
+
+                            # تبدیل به timezone aware
+                            created_at_date = timezone.make_aware(combined_datetime)
+                            print(f"✅ تاریخ نهایی برای فاکتور: {created_at_date}", flush=True)
+
+                except Exception as date_error:
+                    print(f"⚠️ خطا در پردازش تاریخ: {date_error}", flush=True)
+                    print(f"⚠️ استفاده از تاریخ فعلی", flush=True)
+
 
             print(f"🔄 شروع پردازش پرداخت POS")
             print(f"📊 داده‌های دریافتی: amount_toman={amount_toman}, device_id={pos_device_id}")
@@ -1402,6 +1605,7 @@ def process_pos_payment(request):
 
             # دریافت پورت از دستگاه پوز
             pos_port = getattr(pos_device, 'port', 1362)
+
 
             print(f"📍 اطلاعات اتصال:")
             print(f"   شعبه: {branch.name}")
