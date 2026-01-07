@@ -1658,30 +1658,6 @@ body.processing #processing-overlay {
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 
     <script>
-function processNonPosPayment(action, paymentMethod, amount) {
-    console.log('📦 [NON-POS] ارسال درخواست ثبت فاکتور...', {
-        action: action,
-        paymentMethod: paymentMethod,
-        amount: amount
-    });
-
-    // 🔴 اضافه کردن تاریخ فاکتور
-    const invoiceDate = $('#invoice-date').val();
-    
-    $.ajax({
-        url: "{% url 'invoice_app:finalize_invoice_non_pos' %}",
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            action: action,
-            payment_method: paymentMethod,
-            paid_amount: amount,
-            invoice_date: invoiceDate,  // 🔴 اضافه شده
-            timestamp: new Date().getTime()
-        }),
-        // ... بقیه کد بدون تغییر
-    });
-}
     // =============================================
     // متغیرهای global و تنظیمات اولیه
     // =============================================
